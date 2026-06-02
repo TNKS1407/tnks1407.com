@@ -1,8 +1,19 @@
 ---
-const works: { title: string; description: string; url: string; tags: string[]; links?: { label: string; url: string }[] }[] = [
+type Work = { title: string; description: string; url: string; tags: string[]; links?: { label: string; url: string }[]; icon?: string };
+
+const quickLinks = [
+  { label: "tnkblog.net", url: "https://tnkblog.net", icon: "📝" },
+  { label: "nico.tnks1407.com", url: "https://nico.tnks1407.com", icon: "💬" },
+  { label: "vg.tnks1407.com", url: "https://vg.tnks1407.com", icon: "🌀" },
+  { label: "events.tnks1407.com", url: "https://events.tnks1407.com", icon: "📊" },
+  { label: "GitHub", url: "https://github.com/TNKS1407", icon: "⚙" },
+];
+
+const works: Work[] = [
   {
     title: "Nico Comment System",
-    description: "プレゼン・配信画面にリアルタイムでコメントを流すニコニコ風オーバーレイシステム。管理パネル・QRオーバーレイ対応。",
+    icon: "💬",
+    description: "プレゼン・配信画面にリアルタイムでコメントを流すニコニコ風オーバーレイシステム。外部依存ゼロのNode.js製。",
     url: "https://nico.tnks1407.com",
     tags: ["Node.js", "SSE", "Self-host"],
     links: [
@@ -13,34 +24,40 @@ const works: { title: string; description: string; url: string; tags: string[]; 
     ]
   },
   {
+    title: "VG Generator",
+    icon: "🌀",
+    description: "ボルテックスジェネレーターSTLをブラウザで生成。スライダーでパラメータ調整、3Dプレビュー付き、そのまま3Dプリント可能。",
+    url: "https://vg.tnks1407.com",
+    tags: ["JavaScript", "3D Print", "STL"]
+  },
+  {
+    title: "イベント会計",
+    icon: "📊",
+    description: "幹事がブラウザで割り勘計算・回収状況を管理し、参加者と公開URLで共有できるツール。ExcelもPythonも不要。",
+    url: "https://events.tnks1407.com",
+    tags: ["Node.js", "LocalStorage"],
+    links: [
+      { label: "幹事ページ", url: "https://events.tnks1407.com/admin" },
+      { label: "参加者ページ", url: "https://events.tnks1407.com" },
+    ]
+  },
+  {
     title: "Vortex Generator Tools",
-    description: "パラメトリックなボルテックスジェネレーター（VG）STLファイルを生成するPythonスクリプト。rect・delta形状対応、3Dプリント用。",
+    icon: "🔧",
+    description: "rect・delta形状のVG STLを生成するPythonスクリプト。numpy・trimeshのみで動作、サンプルSTL付き。",
     url: "https://github.com/TNKS1407/vortex-generator-tools",
     tags: ["Python", "trimesh", "3D Print"]
   },
   {
-    title: "VG Generator",
-    description: "ボルテックスジェネレーターのSTLファイルをブラウザで生成。Rect Vane・Delta Wedge対応、パラメータ変更でリアルタイム3Dプレビュー、そのまま3Dプリント可能。",
-    url: "https://vg.tnks1407.com",
-    tags: ["JavaScript", "WebGL", "3D Print", "STL"]
-  },
-  {
-    title: "イベント会計ビューア",
-    description: "幹事がExcelで管理したイベント会計を参加者が見れるWebページ。JSONをアップロードするだけで公開可能。",
-    url: "https://events.tnks1407.com",
-    tags: ["Python", "Excel", "Static"]
-  },
-  {
     title: "tnks-lab",
-    description: "AI実験・雑メモをGitHub Issueに自動変換する個人用ラボツール。PowerShell製のUIランチャー付き。",
+    icon: "🧪",
+    description: "AI実験・雑メモをGitHub Issueに自動変換する個人用ラボツール。PowerShell製UIランチャー付き。",
     url: "https://github.com/TNKS1407/tnks-lab",
     tags: ["PowerShell", "GitHub API", "CLI"]
   },
 ];
 
-const docs: { title: string; description: string; url: string }[] = [
-  // 例: { title: "レポート", description: "説明", url: "https://..." }
-];
+const docs: { title: string; description: string; url: string }[] = [];
 ---
 
 <!doctype html>
@@ -48,264 +65,252 @@ const docs: { title: string; description: string; url: string }[] = [
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="Apps, tools & documents by TNKS1407" />
+    <meta name="description" content="TNKS1407のアプリ・ツール・文書" />
     <link rel="icon" href="/favicon.ico" />
     <title>TNKS1407</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
     <style>
       :root {
-        --bg: #fdf6fb;
-        --surface: #fff0f8;
-        --surface2: #fce8f4;
-        --border: #f0c8e0;
-        --accent1: #c87ec0;
-        --accent2: #e86fa0;
-        --accent3: #5bbfb0;
-        --text: #3d2848;
-        --text-muted: #9a7aaa;
-        --shadow: rgba(200,126,192,0.15);
+        --bg:#fdf6fb;--surface:#fff0f8;--surface2:#fce8f4;
+        --border:#f0c8e0;--accent1:#c87ec0;--accent2:#e86fa0;
+        --accent3:#5bbfb0;--text:#3d2848;--text-muted:#9a7aaa;
+        --shadow:rgba(200,126,192,0.12);
       }
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-      html { scroll-behavior: smooth; }
-      body {
-        font-family: 'Nunito', sans-serif;
-        background: var(--bg);
-        color: var(--text);
-        min-height: 100vh;
-        overflow-x: hidden;
-      }
+      *{margin:0;padding:0;box-sizing:border-box;}
+      html{scroll-behavior:smooth;}
+      body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
 
-      /* Nav */
-      nav {
-        position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-        display: flex; align-items: center; justify-content: space-between;
-        padding: 1rem 2rem;
-        background: rgba(253,246,251,0.88);
-        backdrop-filter: blur(12px);
-        border-bottom: 1px solid var(--border);
+      /* Header */
+      header{
+        position:sticky;top:0;z-index:100;
+        background:rgba(253,246,251,0.92);backdrop-filter:blur(12px);
+        border-bottom:1.5px solid var(--border);
       }
-      .nav-logo {
-        font-size: 1.2rem; font-weight: 800;
-        background: linear-gradient(90deg, var(--accent1), var(--accent2));
-        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      .header-inner{
+        max-width:900px;margin:0 auto;height:52px;
+        display:flex;align-items:center;justify-content:space-between;padding:0 1.25rem;
       }
-      .nav-links { display: flex; gap: 1.5rem; }
-      .nav-links a {
-        color: var(--text-muted); text-decoration: none;
-        font-size: 0.9rem; font-weight: 700;
-        transition: color 0.2s;
+      .logo{
+        font-size:1.1rem;font-weight:800;
+        background:linear-gradient(90deg,var(--accent1),var(--accent2));
+        -webkit-background-clip:text;-webkit-text-fill-color:transparent;
       }
-      .nav-links a:hover { color: var(--accent1); }
+      .nav-links{display:flex;gap:0.25rem;}
+      .nav-links a{
+        padding:0.35rem 0.6rem;color:var(--text-muted);text-decoration:none;
+        font-size:0.82rem;font-weight:700;border-radius:6px;transition:color 0.15s,background 0.15s;
+      }
+      .nav-links a:hover{color:var(--accent1);background:rgba(200,126,192,0.08);}
+
+      /* Main */
+      main{max-width:900px;margin:0 auto;padding:2rem 1.25rem 5rem;}
 
       /* Hero */
-      .hero {
-        min-height: 100vh;
-        display: flex; align-items: center; justify-content: center;
-        text-align: center;
-        position: relative;
-        overflow: hidden;
-        padding: 6rem 1rem 4rem;
+      .hero{
+        background:linear-gradient(135deg,#fff0f8 0%,#fce8f4 50%,#edf8f6 100%);
+        border:1.5px solid var(--border);border-radius:20px;
+        padding:2.5rem 2rem;margin-bottom:2rem;
+        position:relative;overflow:hidden;
+        box-shadow:0 4px 24px var(--shadow);
       }
-      .hero::before {
-        content: '';
-        position: absolute; inset: 0;
-        background:
-          radial-gradient(ellipse 60% 60% at 30% 40%, rgba(200,126,192,0.12) 0%, transparent 70%),
-          radial-gradient(ellipse 50% 50% at 70% 60%, rgba(232,111,160,0.10) 0%, transparent 70%);
+      .hero-grid{
+        position:absolute;inset:0;
+        background-image:linear-gradient(var(--border) 1px,transparent 1px),
+          linear-gradient(90deg,var(--border) 1px,transparent 1px);
+        background-size:32px 32px;opacity:0.35;
+        mask-image:radial-gradient(ellipse at 70% 50%,black 30%,transparent 70%);
       }
-      .grid-bg {
-        position: absolute; inset: 0;
-        background-image:
-          linear-gradient(var(--border) 1px, transparent 1px),
-          linear-gradient(90deg, var(--border) 1px, transparent 1px);
-        background-size: 40px 40px;
-        opacity: 0.5;
-        mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+      .hero-body{position:relative;z-index:1;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;}
+      .hero-avatar{
+        width:72px;height:72px;border-radius:50%;flex-shrink:0;
+        background:linear-gradient(135deg,var(--accent1),var(--accent2));
+        display:flex;align-items:center;justify-content:center;
+        font-size:1.75rem;font-weight:800;color:#fff;
+        box-shadow:0 4px 20px var(--shadow);border:3px solid rgba(255,255,255,0.5);
       }
-      .hero-content { position: relative; z-index: 1; }
-      .avatar {
-        width: 100px; height: 100px; border-radius: 50%;
-        margin: 0 auto 1.5rem;
-        background: linear-gradient(135deg, var(--accent1), var(--accent2));
-        display: flex; align-items: center; justify-content: center;
-        font-size: 2.5rem; font-weight: 800; color: #fff;
-        box-shadow: 0 8px 32px var(--shadow);
-        border: 3px solid rgba(255,255,255,0.6);
+      .hero-text{flex:1;min-width:0;}
+      .hero-name{
+        font-size:clamp(1.75rem,5vw,2.5rem);font-weight:800;line-height:1;
+        background:linear-gradient(90deg,var(--accent1),var(--accent2),var(--accent3));
+        -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+        margin-bottom:0.4rem;
       }
-      h1 {
-        font-size: clamp(2.5rem, 8vw, 5rem);
-        font-weight: 800; letter-spacing: -0.02em; line-height: 1;
-        margin-bottom: 1rem;
-      }
-      h1 .accent {
-        background: linear-gradient(90deg, var(--accent1), var(--accent2), var(--accent3));
-        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-      }
-      .tagline {
-        font-size: 1.1rem; color: var(--text-muted); margin-bottom: 1.5rem;
-      }
-      .badges { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
-      .badge {
-        background: #fff; border: 1px solid var(--border);
-        padding: 0.25rem 0.75rem; border-radius: 999px;
-        font-size: 0.8rem; font-weight: 700; color: var(--accent1);
-        font-family: 'JetBrains Mono', monospace;
-        box-shadow: 0 2px 8px var(--shadow);
-      }
-      .scroll-hint {
-        position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
-        color: var(--text-muted); font-size: 0.8rem; z-index: 1;
-        animation: bounce 2s infinite;
-      }
-      @keyframes bounce { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(6px)} }
-
-      /* Sections */
-      section { padding: 5rem 1rem; max-width: 900px; margin: 0 auto; }
-      .section-title {
-        font-size: 1.75rem; font-weight: 800; margin-bottom: 2rem;
-        display: flex; align-items: center; gap: 0.5rem;
-      }
-      .section-title .line {
-        flex: 1; height: 2px;
-        background: linear-gradient(90deg, var(--border), transparent);
-        margin-left: 1rem; border-radius: 999px;
+      .hero-desc{font-size:0.9rem;color:var(--text-muted);margin-bottom:0.75rem;}
+      .hero-badges{display:flex;gap:0.4rem;flex-wrap:wrap;}
+      .hero-badge{
+        background:rgba(255,255,255,0.8);border:1px solid var(--border);
+        padding:0.2rem 0.6rem;border-radius:999px;
+        font-size:0.72rem;font-weight:700;color:var(--accent1);
+        font-family:'JetBrains Mono',monospace;
       }
 
-      /* Cards */
-      .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
-      .card {
-        background: #fff; border: 1.5px solid var(--border);
-        border-radius: 16px; overflow: hidden;
-        transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
-        box-shadow: 0 2px 12px var(--shadow);
+      /* Quick links */
+      .quick-links{
+        display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:2rem;
+        padding:1rem 1.25rem;
+        background:#fff;border:1.5px solid var(--border);border-radius:16px;
+        box-shadow:0 2px 12px var(--shadow);
       }
-      .card:hover {
-        border-color: var(--accent1);
-        transform: translateY(-4px);
-        box-shadow: 0 8px 24px var(--shadow);
+      .quick-link{
+        display:flex;align-items:center;gap:0.35rem;
+        padding:0.35rem 0.75rem;border-radius:8px;
+        background:var(--surface);border:1.5px solid var(--border);
+        text-decoration:none;color:var(--text-muted);
+        font-size:0.78rem;font-weight:700;font-family:'JetBrains Mono',monospace;
+        transition:border-color 0.15s,color 0.15s;
       }
-      .card-inner {
-        display: block; padding: 1.5rem;
-        text-decoration: none; color: var(--text);
-      }
-      .card-title { font-size: 1rem; font-weight: 800; margin-bottom: 0.5rem; }
-      .card-desc { font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.5; }
-      .card-tags { display: flex; gap: 0.4rem; flex-wrap: wrap; }
-      .tag {
-        background: var(--surface2); border: 1px solid var(--border);
-        color: var(--accent1); padding: 0.15rem 0.5rem; border-radius: 4px;
-        font-size: 0.75rem; font-weight: 700; font-family: 'JetBrains Mono', monospace;
-      }
-      .card-links {
-        display: flex; gap: 0.4rem; flex-wrap: wrap;
-        padding: 0.75rem 1.5rem; border-top: 1px solid var(--border);
-        background: var(--surface);
-      }
-      .card-link {
-        color: var(--accent1); font-size: 0.78rem; font-weight: 700;
-        text-decoration: none; font-family: 'JetBrains Mono', monospace;
-        padding: 0.15rem 0.5rem; background: rgba(200,126,192,0.08);
-        border-radius: 4px; border: 1px solid rgba(200,126,192,0.2);
-        transition: background 0.15s;
-      }
-      .card-link:hover { background: rgba(200,126,192,0.18); }
+      .quick-link:hover{border-color:var(--accent1);color:var(--accent1);}
+      .quick-link .icon{font-size:0.9rem;}
 
-      /* Empty state */
-      .empty {
-        text-align: center; padding: 3rem;
-        background: #fff; border: 2px dashed var(--border);
-        border-radius: 16px; color: var(--text-muted);
+      /* Section */
+      .section-title{
+        font-size:0.78rem;font-weight:800;color:var(--text-muted);
+        margin-bottom:0.75rem;letter-spacing:0.06em;
+        display:flex;align-items:center;gap:0.5rem;
       }
-      .empty-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+      .section-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+      /* Works grid */
+      .works-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;margin-bottom:2rem;}
+      .work-card{
+        background:#fff;border:1.5px solid var(--border);border-radius:16px;overflow:hidden;
+        box-shadow:0 2px 12px var(--shadow);
+        transition:border-color 0.15s,transform 0.15s,box-shadow 0.15s;
+      }
+      .work-card:hover{border-color:var(--accent1);transform:translateY(-3px);box-shadow:0 6px 20px var(--shadow);}
+      .work-main{display:block;padding:1.25rem;text-decoration:none;color:var(--text);}
+      .work-icon-title{display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;}
+      .work-icon{font-size:1.1rem;}
+      .work-title{font-size:0.95rem;font-weight:800;}
+      .work-desc{font-size:0.82rem;color:var(--text-muted);line-height:1.55;margin-bottom:0.75rem;}
+      .work-tags{display:flex;gap:0.3rem;flex-wrap:wrap;}
+      .tag{
+        background:var(--surface2);border:1px solid var(--border);
+        color:var(--accent1);padding:0.1rem 0.45rem;border-radius:4px;
+        font-size:0.7rem;font-weight:700;font-family:'JetBrains Mono',monospace;
+      }
+      .work-links{
+        display:flex;gap:0.35rem;flex-wrap:wrap;
+        padding:0.6rem 1.25rem;border-top:1px solid var(--border);background:var(--surface);
+      }
+      .work-link{
+        color:var(--accent1);font-size:0.72rem;font-weight:700;
+        text-decoration:none;font-family:'JetBrains Mono',monospace;
+        padding:0.1rem 0.45rem;background:rgba(200,126,192,0.08);
+        border-radius:4px;border:1px solid rgba(200,126,192,0.2);
+        transition:background 0.15s;
+      }
+      .work-link:hover{background:rgba(200,126,192,0.18);}
+
+      /* Empty */
+      .empty{
+        text-align:center;padding:2.5rem;
+        background:#fff;border:2px dashed var(--border);border-radius:16px;color:var(--text-muted);
+      }
 
       /* Footer */
-      footer {
-        border-top: 1px solid var(--border);
-        padding: 2rem; text-align: center;
-        color: var(--text-muted); font-size: 0.8rem;
-        background: var(--surface);
+      footer{
+        border-top:1px solid var(--border);padding:1.5rem;text-align:center;
+        color:var(--text-muted);font-size:0.78rem;background:var(--surface);
       }
-      footer a { color: var(--accent1); text-decoration: none; }
+      footer a{color:var(--accent1);text-decoration:none;}
+
+      @media(max-width:480px){
+        .hero-avatar{width:56px;height:56px;font-size:1.4rem;}
+        .quick-link{font-size:0.7rem;}
+      }
     </style>
   </head>
   <body>
-    <nav>
-      <span class="nav-logo">TNKS1407</span>
-      <div class="nav-links">
-        <a href="#works">Works</a>
-        <a href="#docs">Docs</a>
-        <a href="https://tnkblog.net" target="_blank">Blog</a>
+    <header>
+      <div class="header-inner">
+        <span class="logo">TNKS1407</span>
+        <nav class="nav-links">
+          <a href="#works">Works</a>
+          {docs.length > 0 && <a href="#docs">Docs</a>}
+          <a href="https://tnkblog.net" target="_blank">Blog ↗</a>
+          <a href="https://github.com/TNKS1407" target="_blank">GitHub ↗</a>
+        </nav>
       </div>
-    </nav>
+    </header>
 
-    <div class="hero">
-      <div class="grid-bg"></div>
-      <div class="hero-content">
-        <div class="avatar">T</div>
-        <h1>TNKS<span class="accent">1407</span></h1>
-        <p class="tagline">アプリ・ツール・文書を作っています</p>
-        <div class="badges">
-          <span class="badge">Developer</span>
-          <span class="badge">Creator</span>
-          <span class="badge">Tinkerer</span>
+    <main>
+      <!-- Hero -->
+      <div class="hero">
+        <div class="hero-grid"></div>
+        <div class="hero-body">
+          <div class="hero-avatar">T</div>
+          <div class="hero-text">
+            <div class="hero-name">TNKS1407</div>
+            <div class="hero-desc">アプリ・ツール・文書を作っています</div>
+            <div class="hero-badges">
+              <span class="hero-badge">Developer</span>
+              <span class="hero-badge">Creator</span>
+              <span class="hero-badge">Tinkerer</span>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="scroll-hint">↓ scroll</div>
-    </div>
 
-    <section id="works">
-      <h2 class="section-title">⚙ Works <span class="line"></span></h2>
-      {works.length === 0 ? (
-        <div class="empty">
-          <div class="empty-icon">🚧</div>
-          <p>準備中...</p>
-        </div>
-      ) : (
-        <div class="card-grid">
+      <!-- Quick links -->
+      <div class="quick-links">
+        {quickLinks.map(l => (
+          <a href={l.url} class="quick-link" target="_blank" rel="noopener">
+            <span class="icon">{l.icon}</span>
+            {l.label}
+          </a>
+        ))}
+      </div>
+
+      <!-- Works -->
+      <div id="works">
+        <div class="section-title">WORKS</div>
+        <div class="works-grid">
           {works.map(w => (
-            <div class="card">
-              <a href={w.url} class="card-inner" target="_blank" rel="noopener">
-                <div class="card-title">{w.title}</div>
-                <div class="card-desc">{w.description}</div>
-                <div class="card-tags">
+            <div class="work-card">
+              <a href={w.url} class="work-main" target="_blank" rel="noopener">
+                <div class="work-icon-title">
+                  <span class="work-icon">{w.icon}</span>
+                  <span class="work-title">{w.title}</span>
+                </div>
+                <div class="work-desc">{w.description}</div>
+                <div class="work-tags">
                   {w.tags.map(t => <span class="tag">{t}</span>)}
                 </div>
               </a>
               {w.links && (
-                <div class="card-links">
+                <div class="work-links">
                   {w.links.map(l => (
-                    <a href={l.url} class="card-link" target="_blank" rel="noopener">{l.label} ↗</a>
+                    <a href={l.url} class="work-link" target="_blank" rel="noopener">{l.label} ↗</a>
                   ))}
                 </div>
               )}
             </div>
           ))}
         </div>
-      )}
-    </section>
+      </div>
 
-    <section id="docs">
-      <h2 class="section-title">📄 Documents <span class="line"></span></h2>
-      {docs.length === 0 ? (
-        <div class="empty">
-          <div class="empty-icon">🚧</div>
-          <p>準備中...</p>
-        </div>
-      ) : (
-        <div class="card-grid">
-          {docs.map(d => (
-            <a href={d.url} class="card" target="_blank" rel="noopener">
-              <div class="card-title">{d.title}</div>
-              <div class="card-desc">{d.description}</div>
-            </a>
-          ))}
+      <!-- Docs -->
+      {docs.length > 0 && (
+        <div id="docs">
+          <div class="section-title">DOCUMENTS</div>
+          <div class="works-grid">
+            {docs.map(d => (
+              <a href={d.url} class="work-card work-main" target="_blank" rel="noopener">
+                <div class="work-title">{d.title}</div>
+                <div class="work-desc">{d.description}</div>
+              </a>
+            ))}
+          </div>
         </div>
       )}
-    </section>
+    </main>
 
     <footer>
-      <p>© 2025 TNKS1407 · <a href="https://github.com/TNKS1407" target="_blank">GitHub</a> · <a href="https://tnkblog.net" target="_blank">Blog</a></p>
+      © 2025 TNKS1407 ·
+      <a href="https://github.com/TNKS1407" target="_blank">GitHub</a> ·
+      <a href="https://tnkblog.net" target="_blank">Blog</a>
     </footer>
 
     <!-- Tinks roaming sprite -->
@@ -323,117 +328,65 @@ const docs: { title: string; description: string; url: string }[] = [
       let SCALE = getScale();
       let DRAW_W = CW * SCALE, DRAW_H = CH * SCALE;
       const STATES = {
-        idle:   { row: 0, frames: 6 },
-        runR:   { row: 1, frames: 8 },
-        runL:   { row: 2, frames: 8 },
-        wave:   { row: 3, frames: 4 },
-        jump:   { row: 4, frames: 5 },
-        wait:   { row: 6, frames: 6 },
-        run:    { row: 7, frames: 6 },
+        idle:{row:0,frames:6},runR:{row:1,frames:8},runL:{row:2,frames:8},
+        wave:{row:3,frames:4},jump:{row:4,frames:5},wait:{row:6,frames:6},run:{row:7,frames:6},
       };
-      const QUIPS = [
-        'よろしくね！', '準備中…', 'ランキンのブログ見てね',
-        'ふむ…', 'なにかお手伝いを', 'がんばるよ',
-        '…', '考え中', 'コードは詩だよ',
-      ];
-
+      const QUIPS = ['よろしくね！','準備中…','ランキンのブログ見てね','ふむ…','なにかお手伝いを','…','コードは詩だよ'];
       const canvas = document.getElementById('tinks');
-      function resizeCanvas() {
-        SCALE = getScale(); DRAW_W = CW * SCALE; DRAW_H = CH * SCALE;
-        canvas.width = DRAW_W; canvas.height = DRAW_H;
-      }
+      function resizeCanvas(){SCALE=getScale();DRAW_W=CW*SCALE;DRAW_H=CH*SCALE;canvas.width=DRAW_W;canvas.height=DRAW_H;}
       resizeCanvas();
-      const ctx = canvas.getContext('2d');
-      const bubble = document.getElementById('tinks-bubble');
-
-      const off = document.createElement('canvas');
-      off.width = CW; off.height = CH;
-      const offCtx = off.getContext('2d');
-
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.src = SHEET_URL;
-
-      let posX = 40, posY = 0;
-      let velX = 0.8, state = 'idle', frame = 0;
-      let stateTimer = 0, frameTimer = 0;
-      const FPS = 8, FRAME_MS = 1000 / FPS;
-
-      function chromaKey(data) {
-        for (let i = 0; i < data.length; i += 4)
-          if (data[i] > 200 && data[i+1] < 80 && data[i+2] > 200) data[i+3] = 0;
+      const ctx=canvas.getContext('2d');
+      const bubble=document.getElementById('tinks-bubble');
+      const off=document.createElement('canvas');off.width=CW;off.height=CH;
+      const offCtx=off.getContext('2d');
+      const img=new Image();img.crossOrigin='anonymous';img.src=SHEET_URL;
+      let posX=40,velX=0.8,state='idle',frame=0,stateTimer=0;
+      const FPS=8,FRAME_MS=1000/FPS;
+      function chromaKey(d){for(let i=0;i<d.length;i+=4)if(d[i]>200&&d[i+1]<80&&d[i+2]>200)d[i+3]=0;}
+      function drawSprite(){
+        const s=STATES[state];
+        offCtx.clearRect(0,0,CW,CH);
+        offCtx.drawImage(img,(frame%COLS)*CW,s.row*CH,CW,CH,0,0,CW,CH);
+        const d=offCtx.getImageData(0,0,CW,CH);chromaKey(d.data);offCtx.putImageData(d,0,0);
+        ctx.clearRect(0,0,DRAW_W,DRAW_H);ctx.imageSmoothingEnabled=false;
+        ctx.drawImage(off,0,0,DRAW_W,DRAW_H);
       }
-
-      function drawSprite() {
-        const s = STATES[state];
-        offCtx.clearRect(0, 0, CW, CH);
-        offCtx.drawImage(img, (frame % COLS) * CW, s.row * CH, CW, CH, 0, 0, CW, CH);
-        const d = offCtx.getImageData(0, 0, CW, CH);
-        chromaKey(d.data); offCtx.putImageData(d, 0, 0);
-        ctx.clearRect(0, 0, DRAW_W, DRAW_H);
-        ctx.imageSmoothingEnabled = false;
-        ctx.drawImage(off, 0, 0, DRAW_W, DRAW_H);
+      function positionCanvas(){
+        const maxX=window.innerWidth-DRAW_W;
+        posX=Math.max(0,Math.min(maxX,posX));
+        canvas.style.left=posX+'px';canvas.style.bottom='0px';
+        bubble.style.left=(posX+DRAW_W*0.1)+'px';bubble.style.bottom=(DRAW_H+8)+'px';
       }
-
-      function positionCanvas() {
-        const maxX = window.innerWidth - DRAW_W;
-        posX = Math.max(0, Math.min(maxX, posX));
-        posY = window.innerHeight - DRAW_H;
-        canvas.style.left = posX + 'px';
-        canvas.style.bottom = '0px';
-        bubble.style.left = (posX + DRAW_W * 0.1) + 'px';
-        bubble.style.bottom = (DRAW_H + 8) + 'px';
+      function showBubble(){
+        bubble.textContent=QUIPS[Math.floor(Math.random()*QUIPS.length)];
+        bubble.style.display='block';
+        setTimeout(()=>{bubble.style.display='none';},2500);
       }
-
-      function pickState() {
-        const r = Math.random();
-        if (r < 0.35) { state = 'runR'; velX = 1.2; }
-        else if (r < 0.7) { state = 'runL'; velX = -1.2; }
-        else if (r < 0.82) { state = 'wave'; velX = 0; showBubble(); }
-        else if (r < 0.9) { state = 'jump'; velX = 0; }
-        else { state = 'idle'; velX = 0; }
-        stateTimer = 120 + Math.random() * 180;
-        frame = 0;
+      function pickState(){
+        const r=Math.random();
+        if(r<0.35){state='runR';velX=1.2;}
+        else if(r<0.7){state='runL';velX=-1.2;}
+        else if(r<0.82){state='wave';velX=0;showBubble();}
+        else if(r<0.9){state='jump';velX=0;}
+        else{state='idle';velX=0;}
+        stateTimer=120+Math.random()*180;frame=0;
       }
-
-      function showBubble() {
-        bubble.textContent = QUIPS[Math.floor(Math.random() * QUIPS.length)];
-        bubble.style.display = 'block';
-        setTimeout(() => { bubble.style.display = 'none'; }, 2500);
-      }
-
-      let lastTs = 0;
-      function tick(ts) {
-        if (!img.complete) { requestAnimationFrame(tick); return; }
-        const dt = ts - lastTs;
-
-        if (dt > FRAME_MS) {
-          // Update frame
-          frame = (frame + 1) % STATES[state].frames;
-          // Move
-          posX += velX;
-          // Bounce
-          const maxX = window.innerWidth - DRAW_W;
-          if (posX <= 0) { posX = 0; velX = Math.abs(velX); state = 'runR'; frame = 0; }
-          if (posX >= maxX) { posX = maxX; velX = -Math.abs(velX); state = 'runL'; frame = 0; }
-          // State timer
-          stateTimer--;
-          if (stateTimer <= 0) pickState();
-
-          drawSprite();
-          positionCanvas();
-          lastTs = ts;
+      let lastTs=0;
+      function tick(ts){
+        if(!img.complete){requestAnimationFrame(tick);return;}
+        if(ts-lastTs>FRAME_MS){
+          frame=(frame+1)%STATES[state].frames;
+          posX+=velX;
+          const maxX=window.innerWidth-DRAW_W;
+          if(posX<=0){posX=0;velX=Math.abs(velX);state='runR';frame=0;}
+          if(posX>=maxX){posX=maxX;velX=-Math.abs(velX);state='runL';frame=0;}
+          if(--stateTimer<=0)pickState();
+          drawSprite();positionCanvas();lastTs=ts;
         }
         requestAnimationFrame(tick);
       }
-
-      img.onload = () => {
-        posX = Math.random() * (window.innerWidth - DRAW_W * 2) + DRAW_W;
-        pickState();
-        requestAnimationFrame(tick);
-      };
-
-      window.addEventListener('resize', () => { resizeCanvas(); positionCanvas(); });
+      img.onload=()=>{posX=Math.random()*(window.innerWidth-DRAW_W*2)+DRAW_W;pickState();requestAnimationFrame(tick);};
+      window.addEventListener('resize',()=>{resizeCanvas();positionCanvas();});
     })();
     </script>
   </body>
