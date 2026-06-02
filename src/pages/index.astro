@@ -276,8 +276,10 @@ const docs: { title: string; description: string; url: string }[] = [
     <script>
     (() => {
       const SHEET_URL = 'https://raw.githubusercontent.com/TNKS1407/shinku-tinks/master/spritesheet.webp';
-      const CW = 192, CH = 208, COLS = 8, SCALE = 2;
-      const DRAW_W = CW * SCALE, DRAW_H = CH * SCALE;
+      const CW = 192, CH = 208, COLS = 8;
+      const getScale = () => window.innerWidth < 480 ? 1 : window.innerWidth < 768 ? 1.5 : 2;
+      let SCALE = getScale();
+      let DRAW_W = CW * SCALE, DRAW_H = CH * SCALE;
       const STATES = {
         idle:   { row: 0, frames: 6 },
         runR:   { row: 1, frames: 8 },
@@ -294,7 +296,11 @@ const docs: { title: string; description: string; url: string }[] = [
       ];
 
       const canvas = document.getElementById('tinks');
-      canvas.width = DRAW_W; canvas.height = DRAW_H;
+      function resizeCanvas() {
+        SCALE = getScale(); DRAW_W = CW * SCALE; DRAW_H = CH * SCALE;
+        canvas.width = DRAW_W; canvas.height = DRAW_H;
+      }
+      resizeCanvas();
       const ctx = canvas.getContext('2d');
       const bubble = document.getElementById('tinks-bubble');
 
@@ -385,7 +391,7 @@ const docs: { title: string; description: string; url: string }[] = [
         requestAnimationFrame(tick);
       };
 
-      window.addEventListener('resize', positionCanvas);
+      window.addEventListener('resize', () => { resizeCanvas(); positionCanvas(); });
     })();
     </script>
   </body>
