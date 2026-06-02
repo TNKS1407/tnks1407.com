@@ -1,12 +1,18 @@
 ---
-type Work = { title: string; description: string; url: string; tags: string[]; links?: { label: string; url: string }[]; icon?: string };
+type Work = {
+  title: string; description: string; url: string;
+  tags: string[]; icon?: string;
+  links?: { label: string; url: string }[];
+  prompt?: string;
+};
 
 const quickLinks = [
   { label: "tnkblog.net", url: "https://tnkblog.net", icon: "📝" },
   { label: "nico.tnks1407.com", url: "https://nico.tnks1407.com", icon: "💬" },
+  { label: "fdtd.tnks1407.com", url: "https://fdtd.tnks1407.com", icon: "📡" },
   { label: "vg.tnks1407.com", url: "https://vg.tnks1407.com", icon: "🌀" },
-  { label: "events （参加者）", url: "https://events.tnks1407.com", icon: "📊" },
-  { label: "events （幹事）", url: "https://events.tnks1407.com/admin", icon: "✏️" },
+  { label: "events（幹事）", url: "https://events.tnks1407.com/admin", icon: "✏️" },
+  { label: "events（参加者）", url: "https://events.tnks1407.com", icon: "📊" },
   { label: "seigou.tnks1407.com", url: "https://seigou.tnks1407.com", icon: "📡" },
   { label: "psu.tnks1407.com", url: "https://psu.tnks1407.com", icon: "⚡" },
   { label: "graph.tnks1407.com", url: "https://graph.tnks1407.com", icon: "📐" },
@@ -14,6 +20,25 @@ const quickLinks = [
 ];
 
 const works: Work[] = [
+  {
+    title: "FDTD Human RF",
+    icon: "📡",
+    description: "GHz帯の小型無線源と人体断面の相互作用をFDTD法でシミュレート。電界の影・回り込み・透過・吸収を可視化。Streamlit製。",
+    url: "https://fdtd.tnks1407.com",
+    tags: ["Python", "FDTD", "RF", "Streamlit"],
+    prompt: `GHz帯の小型無線源（点波源）と受信点の間に人体が存在する場合の電磁波伝搬を可視化するPythonツールを作ってほしい。
+
+要件：
+- 2D TMz FDTDシミュレーション
+- 人体あり／なしの比較（自由空間との差分）
+- 皮膚・脂肪・筋肉・骨・肺を持つ簡易断面モデル
+- 受信プローブの時間波形、RMS、遮蔽損失[dB]の出力
+- Ez時間スナップショットのGIF出力
+- StreamlitベースのローカルWeb UI
+- 医療認証用途ではなく設計補助・視覚的理解が目的
+
+注意：精度より「傾向の可視化」を優先する教育用コード`
+  },
   {
     title: "Nico Comment System",
     icon: "💬",
@@ -25,60 +50,135 @@ const works: Work[] = [
       { label: "画面", url: "https://nico.tnks1407.com/s/A7kP3dQ9" },
       { label: "管理", url: "https://nico.tnks1407.com/admin" },
       { label: "QR", url: "https://nico.tnks1407.com/q/A7kP3dQ9" },
-    ]
+    ],
+    prompt: `プレゼンや配信の画面にニコニコ動画風のコメントを流せるリアルタイムシステムを作って。
+
+要件：
+- Node.js製、外部npmパッケージ不要（Node標準APIのみ）
+- Server-Sent Events (SSE) でリアルタイム配信
+- 投稿URL・表示URL・管理URL・QRコード表示URLの4エンドポイント
+- 管理画面でコメント有効/無効の切り替え
+- QRコードをスクリーン上にオーバーレイ表示できる設定
+- Cloudflare Tunnel経由での公開を想定
+- NGワードフィルタ・連投制限・URL/電話番号自動除去
+- 設定はconfig.jsonで管理`
   },
   {
     title: "VG Generator",
     icon: "🌀",
     description: "ボルテックスジェネレーターSTLをブラウザで生成。スライダーでパラメータ調整、3Dプレビュー付き、そのまま3Dプリント可能。",
     url: "https://vg.tnks1407.com",
-    tags: ["JavaScript", "3D Print", "STL"]
+    tags: ["JavaScript", "3D Print", "STL"],
+    prompt: `ボルテックスジェネレーター（VG）のSTLファイルをブラウザだけで生成できるWebアプリを作って。
+
+要件：
+- Rect Vane（台形断面ベーン）とDelta Wedge（楔形）の2形状
+- L・W・H・厚みをスライダーと数値入力で調整
+- パラメータ変更時にリアルタイムで3Dプレビュー更新（canvas 2D、ペインターアルゴリズム）
+- ASCII STLファイルをクライアントサイドで生成してダウンロード
+- numpy・trimesh不要、ブラウザ完結
+- 3Dプリンター直接使用を想定した精度`
   },
   {
     title: "イベント会計",
     icon: "📊",
     description: "幹事がブラウザで割り勘計算・回収状況を管理し、参加者と公開URLで共有できるツール。ExcelもPythonも不要。",
     url: "https://events.tnks1407.com",
-    tags: ["Node.js", "LocalStorage"],
+    tags: ["Node.js", "JSON API"],
     links: [
       { label: "幹事ページ", url: "https://events.tnks1407.com/admin" },
       { label: "参加者ページ", url: "https://events.tnks1407.com" },
-    ]
+    ],
+    prompt: `幹事がExcelなしでイベント割り勘を管理し、参加者と公開URLで共有できるWebアプリを作って。
+
+要件：
+- /admin（幹事）: イベント名・合計・丸め設定・参加者（名前/口数/参加/回収）を入力、リアルタイム計算
+- /（参加者）: 金額・回収状態をカード形式で表示、5秒自動更新
+- 計算ロジック: 口数の重み付き按分、100/500/1000円単位の丸め（切り上げ/四捨五入/切り捨て）
+- データはJSON形式でサーバーのローカルファイルに保存
+- ExcelもPythonも不要、ブラウザ完結
+- Cloudflare Tunnel経由でアクセス可能`
   },
   {
     title: "電源制御ワークベンチ",
     icon: "⚡",
-    description: "Buck/Boostコンバーターの電圧モード制御設計ツール。Bode線図・ステップ応答・デジタル制御シミュレーション対応。モバイル最適化済み。",
+    description: "Buck/Boostコンバーターの電圧モード制御設計ツール。Bode線図・ステップ応答・デジタル制御シミュレーション対応。",
     url: "https://psu.tnks1407.com",
-    tags: ["JavaScript", "Control", "Buck/Boost"]
+    tags: ["JavaScript", "Control", "Buck/Boost"],
+    prompt: `Buck/Boostコンバーターの電圧モード制御を設計・検証できるブラウザツールを作って。
+
+要件：
+- Buck/Boost切り替え
+- 回路パラメータ（L, C, R, Vin, Vout, fs）の入力
+- 小信号モデルに基づくBode線図（プラントとループゲイン）
+- PIコントローラ・Type-II・Type-III補償器の設計
+- ステップ負荷応答シミュレーション
+- デジタル制御（ADC量子化、PWM分解能、計算遅延）のシミュレーション
+- モバイル対応、スクロール不要なコンパクトなUI
+- ダークテーマ`
   },
   {
     title: "グラフ工房",
     icon: "📐",
-    description: "データシート・論文のグラフをAIで読み取りJSONにし、補間・点修正・CSV化・複数グラフ重ね合わせ比較ができる作業台。Claude連携で活きる。",
+    description: "データシート・論文のグラフをAIで読み取りJSONにし、補間・点修正・CSV化・複数グラフ重ね合わせができる作業台。",
     url: "https://graph.tnks1407.com",
-    tags: ["JavaScript", "Graph", "CSV"]
+    tags: ["JavaScript", "Graph", "CSV"],
+    prompt: `データシートや論文のグラフ画像をAIに読み取らせてJSON化し、ブラウザで編集・分析できる作業台を作って。
+
+要件：
+- JSONの読み込み（ファイル選択・貼り付け）
+- 曲線の点を追加・移動・削除できるインタラクティブな編集
+- 線形/対数スケールの補間（曲線上の任意のX値でY値を計算）
+- 複数のJSONを重ねて比較表示（重ね合わせ/横並び）
+- 比較カーソル：X値を指定して各データセットのY値を比較、差分表示
+- CSV書き出し
+- サンプルJSONは周波数応答データ（dBm vs MHz）を想定`
   },
   {
     title: "SEIGOU — RFマッチング",
     icon: "📡",
-    description: "RFインピーダンス整合回路をブラウザで計算・設計するツール。L・π・T型回路に対応、スミスチャート表示付き。",
+    description: "RFインピーダンス整合回路をブラウザで計算・設計するツール。L・π・T型回路対応、スミスチャート表示付き。",
     url: "https://seigou.tnks1407.com",
-    tags: ["JavaScript", "RF", "Impedance Matching"]
+    tags: ["JavaScript", "RF", "Impedance Matching"],
+    prompt: `RFのインピーダンス整合回路（マッチングネットワーク）を設計・計算できるブラウザツールを作って。
+
+要件：
+- 入力: 信号源インピーダンス・負荷インピーダンス・動作周波数
+- L型・π型・T型整合回路の設計値を計算
+- スミスチャート上でインピーダンスの軌跡を表示
+- Q値・帯域幅の表示
+- 複素インピーダンス（抵抗+リアクタンス）の入力対応
+- モバイル対応`
   },
   {
     title: "Vortex Generator Tools",
     icon: "🔧",
     description: "rect・delta形状のVG STLを生成するPythonスクリプト。numpy・trimeshのみで動作、サンプルSTL付き。",
     url: "https://github.com/TNKS1407/vortex-generator-tools",
-    tags: ["Python", "trimesh", "3D Print"]
+    tags: ["Python", "trimesh", "3D Print"],
+    prompt: `Pythonでボルテックスジェネレーター（VG）のSTLファイルを生成するCLIツールを作って。
+
+要件：
+- Rect Vane（台形断面）とDelta Wedge（楔形）の2形状
+- コマンドライン引数でL・W・H・厚みを指定
+- plate モード: 指定個数のVGを配列化してプレートに並べる
+- 依存: numpy, trimesh のみ
+- trimeshのexport()でSTL出力`
   },
   {
     title: "tnks-lab",
     icon: "🧪",
     description: "AI実験・雑メモをGitHub Issueに自動変換する個人用ラボツール。PowerShell製UIランチャー付き。",
     url: "https://github.com/TNKS1407/tnks-lab",
-    tags: ["PowerShell", "GitHub API", "CLI"]
+    tags: ["PowerShell", "GitHub API", "CLI"],
+    prompt: `AI実験のメモや雑なアイデアをdropフォルダに置くだけでGitHub Issueに変換する個人用ツールを作って。
+
+要件：
+- inbox/drop に .md/.txt を置く
+- PowerShellスクリプトを実行するとGitHub Issue（リポジトリ指定）として投稿
+- 処理済みファイルは inbox/processed に移動
+- UIランチャー（.cmd）から操作できる
+- GitHub CLI (gh) を使ってIssue作成`
   },
 ];
 
@@ -106,103 +206,35 @@ const docs: { title: string; description: string; url: string }[] = [];
       html{scroll-behavior:smooth;}
       body{font-family:'Nunito',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
 
-      /* Header */
-      header{
-        position:sticky;top:0;z-index:100;
-        background:rgba(253,246,251,0.92);backdrop-filter:blur(12px);
-        border-bottom:1.5px solid var(--border);
-      }
-      .header-inner{
-        max-width:900px;margin:0 auto;height:52px;
-        display:flex;align-items:center;justify-content:space-between;padding:0 1.25rem;
-      }
-      .logo{
-        font-size:1.1rem;font-weight:800;
-        background:linear-gradient(90deg,var(--accent1),var(--accent2));
-        -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-      }
+      header{position:sticky;top:0;z-index:100;background:rgba(253,246,251,0.92);backdrop-filter:blur(12px);border-bottom:1.5px solid var(--border);}
+      .header-inner{max-width:900px;margin:0 auto;height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 1.25rem;}
+      .logo{font-size:1.1rem;font-weight:800;background:linear-gradient(90deg,var(--accent1),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
       .nav-links{display:flex;gap:0.25rem;}
-      .nav-links a{
-        padding:0.35rem 0.6rem;color:var(--text-muted);text-decoration:none;
-        font-size:0.82rem;font-weight:700;border-radius:6px;transition:color 0.15s,background 0.15s;
-      }
+      .nav-links a{padding:0.35rem 0.6rem;color:var(--text-muted);text-decoration:none;font-size:0.82rem;font-weight:700;border-radius:6px;transition:color 0.15s,background 0.15s;}
       .nav-links a:hover{color:var(--accent1);background:rgba(200,126,192,0.08);}
 
-      /* Main */
       main{max-width:900px;margin:0 auto;padding:2rem 1.25rem 5rem;}
 
-      /* Hero */
-      .hero{
-        background:linear-gradient(135deg,#fff0f8 0%,#fce8f4 50%,#edf8f6 100%);
-        border:1.5px solid var(--border);border-radius:20px;
-        padding:2.5rem 2rem;margin-bottom:2rem;
-        position:relative;overflow:hidden;
-        box-shadow:0 4px 24px var(--shadow);
-      }
-      .hero-grid{
-        position:absolute;inset:0;
-        background-image:linear-gradient(var(--border) 1px,transparent 1px),
-          linear-gradient(90deg,var(--border) 1px,transparent 1px);
-        background-size:32px 32px;opacity:0.35;
-        mask-image:radial-gradient(ellipse at 70% 50%,black 30%,transparent 70%);
-      }
+      .hero{background:linear-gradient(135deg,#fff0f8 0%,#fce8f4 50%,#edf8f6 100%);border:1.5px solid var(--border);border-radius:20px;padding:2.5rem 2rem;margin-bottom:2rem;position:relative;overflow:hidden;box-shadow:0 4px 24px var(--shadow);}
+      .hero-grid{position:absolute;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:32px 32px;opacity:0.35;mask-image:radial-gradient(ellipse at 70% 50%,black 30%,transparent 70%);}
       .hero-body{position:relative;z-index:1;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;}
-      .hero-avatar{
-        width:72px;height:72px;border-radius:50%;flex-shrink:0;
-        background:linear-gradient(135deg,var(--accent1),var(--accent2));
-        display:flex;align-items:center;justify-content:center;
-        font-size:1.75rem;font-weight:800;color:#fff;
-        box-shadow:0 4px 20px var(--shadow);border:3px solid rgba(255,255,255,0.5);
-      }
+      .hero-avatar{width:72px;height:72px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,var(--accent1),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:1.75rem;font-weight:800;color:#fff;box-shadow:0 4px 20px var(--shadow);border:3px solid rgba(255,255,255,0.5);}
       .hero-text{flex:1;min-width:0;}
-      .hero-name{
-        font-size:clamp(1.75rem,5vw,2.5rem);font-weight:800;line-height:1;
-        background:linear-gradient(90deg,var(--accent1),var(--accent2),var(--accent3));
-        -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-        margin-bottom:0.4rem;
-      }
+      .hero-name{font-size:clamp(1.75rem,5vw,2.5rem);font-weight:800;line-height:1;background:linear-gradient(90deg,var(--accent1),var(--accent2),var(--accent3));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:0.4rem;}
       .hero-desc{font-size:0.9rem;color:var(--text-muted);margin-bottom:0.75rem;}
       .hero-badges{display:flex;gap:0.4rem;flex-wrap:wrap;}
-      .hero-badge{
-        background:rgba(255,255,255,0.8);border:1px solid var(--border);
-        padding:0.2rem 0.6rem;border-radius:999px;
-        font-size:0.72rem;font-weight:700;color:var(--accent1);
-        font-family:'JetBrains Mono',monospace;
-      }
+      .hero-badge{background:rgba(255,255,255,0.8);border:1px solid var(--border);padding:0.2rem 0.6rem;border-radius:999px;font-size:0.72rem;font-weight:700;color:var(--accent1);font-family:'JetBrains Mono',monospace;}
 
-      /* Quick links */
-      .quick-links{
-        display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:2rem;
-        padding:1rem 1.25rem;
-        background:#fff;border:1.5px solid var(--border);border-radius:16px;
-        box-shadow:0 2px 12px var(--shadow);
-      }
-      .quick-link{
-        display:flex;align-items:center;gap:0.35rem;
-        padding:0.35rem 0.75rem;border-radius:8px;
-        background:var(--surface);border:1.5px solid var(--border);
-        text-decoration:none;color:var(--text-muted);
-        font-size:0.78rem;font-weight:700;font-family:'JetBrains Mono',monospace;
-        transition:border-color 0.15s,color 0.15s;
-      }
+      .quick-links{display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:2rem;padding:1rem 1.25rem;background:#fff;border:1.5px solid var(--border);border-radius:16px;box-shadow:0 2px 12px var(--shadow);}
+      .quick-link{display:flex;align-items:center;gap:0.35rem;padding:0.35rem 0.75rem;border-radius:8px;background:var(--surface);border:1.5px solid var(--border);text-decoration:none;color:var(--text-muted);font-size:0.78rem;font-weight:700;font-family:'JetBrains Mono',monospace;transition:border-color 0.15s,color 0.15s;}
       .quick-link:hover{border-color:var(--accent1);color:var(--accent1);}
       .quick-link .icon{font-size:0.9rem;}
 
-      /* Section */
-      .section-title{
-        font-size:0.78rem;font-weight:800;color:var(--text-muted);
-        margin-bottom:0.75rem;letter-spacing:0.06em;
-        display:flex;align-items:center;gap:0.5rem;
-      }
+      .section-title{font-size:0.78rem;font-weight:800;color:var(--text-muted);margin-bottom:0.75rem;letter-spacing:0.06em;display:flex;align-items:center;gap:0.5rem;}
       .section-title::after{content:'';flex:1;height:1px;background:var(--border);}
 
-      /* Works grid */
       .works-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;margin-bottom:2rem;}
-      .work-card{
-        background:#fff;border:1.5px solid var(--border);border-radius:16px;overflow:hidden;
-        box-shadow:0 2px 12px var(--shadow);
-        transition:border-color 0.15s,transform 0.15s,box-shadow 0.15s;
-      }
+      .work-card{background:#fff;border:1.5px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 2px 12px var(--shadow);transition:border-color 0.15s,transform 0.15s,box-shadow 0.15s;}
       .work-card:hover{border-color:var(--accent1);transform:translateY(-3px);box-shadow:0 6px 20px var(--shadow);}
       .work-main{display:block;padding:1.25rem;text-decoration:none;color:var(--text);}
       .work-icon-title{display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;}
@@ -210,41 +242,27 @@ const docs: { title: string; description: string; url: string }[] = [];
       .work-title{font-size:0.95rem;font-weight:800;}
       .work-desc{font-size:0.82rem;color:var(--text-muted);line-height:1.55;margin-bottom:0.75rem;}
       .work-tags{display:flex;gap:0.3rem;flex-wrap:wrap;}
-      .tag{
-        background:var(--surface2);border:1px solid var(--border);
-        color:var(--accent1);padding:0.1rem 0.45rem;border-radius:4px;
-        font-size:0.7rem;font-weight:700;font-family:'JetBrains Mono',monospace;
-      }
-      .work-links{
-        display:flex;gap:0.35rem;flex-wrap:wrap;
-        padding:0.6rem 1.25rem;border-top:1px solid var(--border);background:var(--surface);
-      }
-      .work-link{
-        color:var(--accent1);font-size:0.72rem;font-weight:700;
-        text-decoration:none;font-family:'JetBrains Mono',monospace;
-        padding:0.1rem 0.45rem;background:rgba(200,126,192,0.08);
-        border-radius:4px;border:1px solid rgba(200,126,192,0.2);
-        transition:background 0.15s;
-      }
+      .tag{background:var(--surface2);border:1px solid var(--border);color:var(--accent1);padding:0.1rem 0.45rem;border-radius:4px;font-size:0.7rem;font-weight:700;font-family:'JetBrains Mono',monospace;}
+      .work-footer{display:flex;gap:0.35rem;flex-wrap:wrap;padding:0.6rem 1.25rem;border-top:1px solid var(--border);background:var(--surface);align-items:center;}
+      .work-link{color:var(--accent1);font-size:0.72rem;font-weight:700;text-decoration:none;font-family:'JetBrains Mono',monospace;padding:0.1rem 0.45rem;background:rgba(200,126,192,0.08);border-radius:4px;border:1px solid rgba(200,126,192,0.2);transition:background 0.15s;}
       .work-link:hover{background:rgba(200,126,192,0.18);}
+      .prompt-btn{margin-left:auto;font-size:0.7rem;font-weight:700;color:var(--text-muted);background:none;border:1px solid var(--border);border-radius:4px;padding:0.1rem 0.5rem;cursor:pointer;font-family:'JetBrains Mono',monospace;transition:color 0.15s,border-color 0.15s;}
+      .prompt-btn:hover{color:var(--accent1);border-color:var(--accent1);}
 
-      /* Empty */
-      .empty{
-        text-align:center;padding:2.5rem;
-        background:#fff;border:2px dashed var(--border);border-radius:16px;color:var(--text-muted);
-      }
+      /* Modal */
+      .modal-overlay{position:fixed;inset:0;background:rgba(61,40,72,0.5);z-index:200;display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;pointer-events:none;transition:opacity 0.2s;}
+      .modal-overlay.open{opacity:1;pointer-events:all;}
+      .modal{background:#fff;border:1.5px solid var(--border);border-radius:20px;max-width:560px;width:100%;max-height:80vh;overflow:hidden;box-shadow:0 16px 48px rgba(61,40,72,0.2);display:flex;flex-direction:column;}
+      .modal-header{padding:1rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+      .modal-title{font-size:0.9rem;font-weight:800;color:var(--text);}
+      .modal-close{background:none;border:none;cursor:pointer;font-size:1.2rem;color:var(--text-muted);line-height:1;}
+      .modal-body{padding:1.25rem;overflow-y:auto;flex:1;}
+      .modal-body pre{font-family:'JetBrains Mono',monospace;font-size:0.78rem;line-height:1.7;color:var(--text);white-space:pre-wrap;word-break:break-word;background:var(--surface2);border-radius:10px;padding:1rem;}
 
-      /* Footer */
-      footer{
-        border-top:1px solid var(--border);padding:1.5rem;text-align:center;
-        color:var(--text-muted);font-size:0.78rem;background:var(--surface);
-      }
+      footer{border-top:1px solid var(--border);padding:1.5rem;text-align:center;color:var(--text-muted);font-size:0.78rem;background:var(--surface);}
       footer a{color:var(--accent1);text-decoration:none;}
 
-      @media(max-width:480px){
-        .hero-avatar{width:56px;height:56px;font-size:1.4rem;}
-        .quick-link{font-size:0.7rem;}
-      }
+      @media(max-width:480px){.hero-avatar{width:56px;height:56px;font-size:1.4rem;}.quick-link{font-size:0.7rem;}}
     </style>
   </head>
   <body>
@@ -253,7 +271,6 @@ const docs: { title: string; description: string; url: string }[] = [];
         <span class="logo">TNKS1407</span>
         <nav class="nav-links">
           <a href="#works">Works</a>
-          {docs.length > 0 && <a href="#docs">Docs</a>}
           <a href="https://tnkblog.net" target="_blank">Blog ↗</a>
           <a href="https://github.com/TNKS1407" target="_blank">GitHub ↗</a>
         </nav>
@@ -261,7 +278,6 @@ const docs: { title: string; description: string; url: string }[] = [];
     </header>
 
     <main>
-      <!-- Hero -->
       <div class="hero">
         <div class="hero-grid"></div>
         <div class="hero-body">
@@ -278,7 +294,6 @@ const docs: { title: string; description: string; url: string }[] = [];
         </div>
       </div>
 
-      <!-- Quick links -->
       <div class="quick-links">
         {quickLinks.map(l => (
           <a href={l.url} class="quick-link" target="_blank" rel="noopener">
@@ -288,11 +303,10 @@ const docs: { title: string; description: string; url: string }[] = [];
         ))}
       </div>
 
-      <!-- Works -->
       <div id="works">
         <div class="section-title">WORKS</div>
         <div class="works-grid">
-          {works.map(w => (
+          {works.map((w, i) => (
             <div class="work-card">
               <a href={w.url} class="work-main" target="_blank" rel="noopener">
                 <div class="work-icon-title">
@@ -304,32 +318,20 @@ const docs: { title: string; description: string; url: string }[] = [];
                   {w.tags.map(t => <span class="tag">{t}</span>)}
                 </div>
               </a>
-              {w.links && (
-                <div class="work-links">
-                  {w.links.map(l => (
-                    <a href={l.url} class="work-link" target="_blank" rel="noopener">{l.label} ↗</a>
-                  ))}
-                </div>
-              )}
+              <div class="work-footer">
+                {w.links?.map(l => (
+                  <a href={l.url} class="work-link" target="_blank" rel="noopener">{l.label} ↗</a>
+                ))}
+                {w.prompt && (
+                  <button class="prompt-btn" data-idx={String(i)} onclick="openPrompt(this)">
+                    📋 prompt
+                  </button>
+                )}
+              </div>
             </div>
           ))}
         </div>
       </div>
-
-      <!-- Docs -->
-      {docs.length > 0 && (
-        <div id="docs">
-          <div class="section-title">DOCUMENTS</div>
-          <div class="works-grid">
-            {docs.map(d => (
-              <a href={d.url} class="work-card work-main" target="_blank" rel="noopener">
-                <div class="work-title">{d.title}</div>
-                <div class="work-desc">{d.description}</div>
-              </a>
-            ))}
-          </div>
-        </div>
-      )}
     </main>
 
     <footer>
@@ -338,12 +340,39 @@ const docs: { title: string; description: string; url: string }[] = [];
       <a href="https://tnkblog.net" target="_blank">Blog</a>
     </footer>
 
+    <!-- Prompt modal -->
+    <div class="modal-overlay" id="modal-overlay" onclick="closePrompt(event)">
+      <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <span class="modal-title" id="modal-title"></span>
+          <button class="modal-close" onclick="closePrompt()">✕</button>
+        </div>
+        <div class="modal-body">
+          <pre id="modal-content"></pre>
+        </div>
+      </div>
+    </div>
+
     <!-- Tinks roaming sprite -->
     <canvas id="tinks" style="position:fixed;bottom:0;left:0;pointer-events:none;z-index:999;image-rendering:pixelated;image-rendering:crisp-edges;"></canvas>
-    <div id="tinks-bubble" style="position:fixed;bottom:0;left:0;pointer-events:none;z-index:1000;display:none;
-      background:#fff;border:2px solid #f0c8e0;border-radius:12px 12px 12px 2px;
-      padding:0.4rem 0.75rem;font-family:'Nunito',sans-serif;font-size:0.8rem;font-weight:700;
-      color:#3d2848;white-space:nowrap;box-shadow:0 2px 12px rgba(200,126,192,0.15);"></div>
+    <div id="tinks-bubble" style="position:fixed;bottom:0;left:0;pointer-events:none;z-index:1000;display:none;background:#fff;border:2px solid #f0c8e0;border-radius:12px 12px 12px 2px;padding:0.4rem 0.75rem;font-family:'Nunito',sans-serif;font-size:0.8rem;font-weight:700;color:#3d2848;white-space:nowrap;box-shadow:0 2px 12px rgba(200,126,192,0.15);"></div>
+
+    <script define:vars={{ works }}>
+    // Prompt modal
+    function openPrompt(btn) {
+      const idx = parseInt(btn.dataset.idx);
+      const w = works[idx];
+      document.getElementById('modal-title').textContent = w.title + ' — 作成プロンプト';
+      document.getElementById('modal-content').textContent = w.prompt || '';
+      document.getElementById('modal-overlay').classList.add('open');
+    }
+    function closePrompt(e) {
+      if (!e || e.target === document.getElementById('modal-overlay')) {
+        document.getElementById('modal-overlay').classList.remove('open');
+      }
+    }
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closePrompt({target:document.getElementById('modal-overlay')}); });
+    </script>
 
     <script>
     (() => {
@@ -412,14 +441,12 @@ const docs: { title: string; description: string; url: string }[] = [];
       }
       img.onload=()=>{posX=Math.random()*(window.innerWidth-DRAW_W*2)+DRAW_W;pickState();requestAnimationFrame(tick);};
       window.addEventListener('resize',()=>{resizeCanvas();positionCanvas();});
-      // Click anywhere → wave
-      document.addEventListener('click', e => {
-        if(e.target===canvas)return;
+      document.addEventListener('click',e=>{
+        if(e.target===canvas||e.target.closest('.modal-overlay,.prompt-btn'))return;
         state='wave';velX=0;frame=0;stateTimer=60;showBubble();
       });
-      // Cursor near Tinks → stop and idle
-      document.addEventListener('mousemove', e => {
-        const cx=posX+DRAW_W/2, cy=window.innerHeight-DRAW_H/2;
+      document.addEventListener('mousemove',e=>{
+        const cx=posX+DRAW_W/2,cy=window.innerHeight-DRAW_H/2;
         if(Math.hypot(e.clientX-cx,e.clientY-cy)<DRAW_W*1.8&&state!=='wave'&&state!=='jump'){
           state='idle';velX=0;stateTimer=40;
         }
