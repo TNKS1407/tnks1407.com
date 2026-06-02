@@ -325,6 +325,18 @@ const docs: { title: string; description: string; url: string }[] = [];
       .fb-thanks-icon{font-size:2rem;margin-bottom:0.5rem;}
       .fb-thanks-msg{font-size:0.92rem;font-weight:700;color:var(--accent1);margin-bottom:0.35rem;}
       .fb-thanks-sub{font-size:0.78rem;color:var(--text-muted);}
+      .fb-modal{max-height:90vh;display:flex;flex-direction:column;}
+      .fb-scroll{overflow-y:auto;flex:1;}
+      .fb-comments{border-top:1px solid var(--border);padding:1rem 1.25rem;display:flex;flex-direction:column;gap:0.5rem;}
+      .fb-comments-label{font-size:0.72rem;font-weight:800;color:var(--text-muted);margin-bottom:0.25rem;letter-spacing:0.04em;}
+      .fb-comment-card{background:var(--surface);border-radius:8px;padding:0.5rem 0.65rem;}
+      .fb-comment-top{display:flex;align-items:center;gap:0.4rem;margin-bottom:0.2rem;}
+      .fb-comment-badge{font-size:0.62rem;font-weight:800;padding:0.1rem 0.4rem;border-radius:3px;}
+      .fb-comment-badge.bug{background:#fce8ee;color:#d63b68;}
+      .fb-comment-badge.feat{background:#e6faf5;color:#12a37f;}
+      .fb-comment-badge.other{background:#f0f4ff;color:#5c72b4;}
+      .fb-comment-ts{font-size:0.62rem;color:var(--text-muted);margin-left:auto;font-family:'JetBrains Mono',monospace;}
+      .fb-comment-msg{font-size:0.8rem;color:var(--text);line-height:1.55;}
 
       @media(max-width:480px){.hero-avatar{width:56px;height:56px;font-size:1.4rem;}.quick-link{font-size:0.7rem;}}
     </style>
@@ -431,29 +443,35 @@ const docs: { title: string; description: string; url: string }[] = [];
           <span class="fb-title">フィードバック</span>
           <button class="fb-close" id="fb-close-btn">✕</button>
         </div>
-        <div id="fb-form-wrap" class="fb-body">
-          <div>
-            <span class="fb-label">種類</span>
-            <div class="fb-types">
-              <button class="fb-type-btn sel" data-type="バグ報告">🐛 バグ報告</button>
-              <button class="fb-type-btn" data-type="機能の要望">✨ 機能の要望</button>
-              <button class="fb-type-btn" data-type="その他">💬 その他</button>
+        <div class="fb-scroll">
+          <div id="fb-form-wrap" class="fb-body">
+            <div>
+              <span class="fb-label">種類</span>
+              <div class="fb-types">
+                <button class="fb-type-btn sel" data-type="バグ報告">🐛 バグ報告</button>
+                <button class="fb-type-btn" data-type="機能の要望">✨ 機能の要望</button>
+                <button class="fb-type-btn" data-type="その他">💬 その他</button>
+              </div>
             </div>
+            <div>
+              <span class="fb-label">内容 <span style="color:var(--accent2)">*</span></span>
+              <textarea class="fb-textarea" id="fb-msg" placeholder="気になったことや欲しい機能を書いてね"></textarea>
+            </div>
+            <div>
+              <span class="fb-label">連絡先（任意）</span>
+              <input class="fb-input" id="fb-contact" type="text" placeholder="メールアドレス や Twitter/X など" />
+            </div>
+            <button class="fb-submit" id="fb-submit">送信 →</button>
           </div>
-          <div>
-            <span class="fb-label">内容 <span style="color:var(--accent2)">*</span></span>
-            <textarea class="fb-textarea" id="fb-msg" placeholder="気になったことや欲しい機能を書いてね"></textarea>
+          <div id="fb-thanks-wrap" class="fb-thanks" style="display:none">
+            <div class="fb-thanks-icon">✅</div>
+            <div class="fb-thanks-msg">送信しました、ありがとう！</div>
+            <div class="fb-thanks-sub">コメントは公開されます</div>
           </div>
-          <div>
-            <span class="fb-label">連絡先（任意）</span>
-            <input class="fb-input" id="fb-contact" type="text" placeholder="メールアドレス や Twitter/X など" />
+          <div class="fb-comments" id="fb-comments" style="display:none">
+            <div class="fb-comments-label">みんなのコメント</div>
+            <div id="fb-comment-list"></div>
           </div>
-          <button class="fb-submit" id="fb-submit">送信 →</button>
-        </div>
-        <div id="fb-thanks-wrap" class="fb-thanks" style="display:none">
-          <div class="fb-thanks-icon">📨</div>
-          <div class="fb-thanks-msg">ありがとう！</div>
-          <div class="fb-thanks-sub">メールクライアントから送信してね</div>
         </div>
       </div>
     </div>
@@ -574,12 +592,49 @@ const docs: { title: string; description: string; url: string }[] = [];
     </script>
     <script>
     (() => {
+      const API = 'https://feedback.tnks1407.com';
       const overlay = document.getElementById('fb-overlay');
       let selectedType = 'バグ報告';
+
+      function relTime(iso) {
+        const d = (Date.now() - new Date(iso)) / 1000;
+        if (d < 60) return 'たった今';
+        if (d < 3600) return Math.floor(d/60) + '分前';
+        if (d < 86400) return Math.floor(d/3600) + '時間前';
+        return Math.floor(d/86400) + '日前';
+      }
+
+      function badgeClass(type) {
+        if (type === 'バグ報告') return 'bug';
+        if (type === '機能の要望') return 'feat';
+        return 'other';
+      }
+
+      function loadComments() {
+        fetch(API + '/list')
+          .then(r => r.json())
+          .then(list => {
+            const wrap = document.getElementById('fb-comments');
+            const el = document.getElementById('fb-comment-list');
+            if (!list.length) { wrap.style.display = 'none'; return; }
+            el.innerHTML = list.map(c => `
+              <div class="fb-comment-card">
+                <div class="fb-comment-top">
+                  <span class="fb-comment-badge ${badgeClass(c.type)}">${c.type}</span>
+                  <span class="fb-comment-ts">${relTime(c.ts)}</span>
+                </div>
+                <div class="fb-comment-msg">${c.message.replace(/</g,'&lt;')}</div>
+              </div>`).join('');
+            wrap.style.display = '';
+          })
+          .catch(() => {});
+      }
+
       function openFb() {
         document.getElementById('fb-form-wrap').style.display = '';
         document.getElementById('fb-thanks-wrap').style.display = 'none';
         overlay.classList.add('open');
+        loadComments();
       }
       function closeFb() { overlay.classList.remove('open'); }
       document.getElementById('fb-open-btn').addEventListener('click', openFb);
@@ -596,19 +651,26 @@ const docs: { title: string; description: string; url: string }[] = [];
         const msg = document.getElementById('fb-msg').value.trim();
         if (!msg) { document.getElementById('fb-msg').focus(); return; }
         const contact = document.getElementById('fb-contact').value.trim();
-        const subject = encodeURIComponent('[tnks1407.com] ' + selectedType);
-        const body = encodeURIComponent(
-          '【種類】' + selectedType + '\n\n【内容】\n' + msg +
-          (contact ? '\n\n【連絡先】' + contact : '')
-        );
-        const a = document.createElement('a');
-        a.href = 'mailto:t.n.k.s.0086@gmail.com?subject=' + subject + '&body=' + body;
-        a.click();
-        document.getElementById('fb-msg').value = '';
-        document.getElementById('fb-contact').value = '';
-        document.getElementById('fb-form-wrap').style.display = 'none';
-        document.getElementById('fb-thanks-wrap').style.display = '';
-        setTimeout(closeFb, 3000);
+        const btn = document.getElementById('fb-submit');
+        btn.disabled = true;
+        fetch(API + '/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: selectedType, message: msg, contact }),
+        })
+          .then(r => { if (!r.ok) throw new Error(); })
+          .then(() => {
+            document.getElementById('fb-msg').value = '';
+            document.getElementById('fb-contact').value = '';
+            document.getElementById('fb-form-wrap').style.display = 'none';
+            document.getElementById('fb-thanks-wrap').style.display = '';
+            loadComments();
+            setTimeout(closeFb, 3000);
+          })
+          .catch(() => {
+            btn.disabled = false;
+            alert('送信に失敗しました。もう一度試してね。');
+          });
       });
       document.addEventListener('keydown', e => { if (e.key === 'Escape') closeFb(); });
     })();
