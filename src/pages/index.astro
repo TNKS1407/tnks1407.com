@@ -205,6 +205,7 @@ const works: Work[] = [
   },
 ];
 
+const uniqueTags = [...new Set(works.flatMap(w => w.tags))];
 const docs: { title: string; description: string; url: string }[] = [];
 ---
 
@@ -257,7 +258,7 @@ const docs: { title: string; description: string; url: string }[] = [];
       .section-title::after{content:'';flex:1;height:1px;background:var(--border);}
 
       .works-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1rem;margin-bottom:2rem;}
-      .work-card{background:#fff;border:1.5px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 2px 12px var(--shadow);transition:border-color 0.15s,transform 0.15s,box-shadow 0.15s;}
+      .work-card{background:#fff;border:1.5px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 2px 12px var(--shadow);transition:border-color 0.15s,transform 0.15s,box-shadow 0.15s,opacity 0.25s;}
       .work-card:hover{border-color:var(--accent1);transform:translateY(-3px);box-shadow:0 6px 20px var(--shadow);}
       .work-main{display:block;padding:1.25rem;text-decoration:none;color:var(--text);}
       .work-icon-title{display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;}
@@ -284,6 +285,21 @@ const docs: { title: string; description: string; url: string }[] = [];
 
       footer{border-top:1px solid var(--border);padding:1.5rem;text-align:center;color:var(--text-muted);font-size:0.78rem;background:var(--surface);}
       footer a{color:var(--accent1);text-decoration:none;}
+
+      /* tag filter */
+      .tag{cursor:pointer;user-select:none;transition:background 0.15s,color 0.15s,border-color 0.15s;}
+      .tag:hover,.tag.active{background:var(--accent1);color:#fff;border-color:var(--accent1);}
+      .work-card.dimmed{opacity:0.1;transform:scale(0.97);pointer-events:none;}
+      .filter-bar{display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.75rem;min-height:1.6rem;}
+      .filter-chip{display:inline-flex;align-items:center;gap:0.2rem;background:var(--accent1);color:#fff;border:none;border-radius:999px;padding:0.2rem 0.65rem;font-size:0.72rem;font-weight:700;font-family:'JetBrains Mono',monospace;cursor:pointer;transition:background 0.15s;}
+      .filter-chip:hover{background:var(--accent2);}
+      .filter-clear{background:none;border:1px solid var(--border);border-radius:6px;padding:0.2rem 0.5rem;font-size:0.72rem;color:var(--text-muted);cursor:pointer;font-family:'JetBrains Mono',monospace;transition:color 0.15s,border-color 0.15s;}
+      .filter-clear:hover{border-color:var(--accent1);color:var(--accent1);}
+      .filter-count{margin-left:auto;font-size:0.72rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;}
+      /* hero stats */
+      .hero-stats{display:flex;gap:0.5rem;align-items:center;margin-top:0.5rem;font-size:0.75rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted);}
+      .hero-stat-val{font-weight:700;color:var(--accent1);}
+      .hero-stat-sep{opacity:0.4;}
 
       @media(max-width:480px){.hero-avatar{width:56px;height:56px;font-size:1.4rem;}.quick-link{font-size:0.7rem;}}
     </style>
@@ -313,6 +329,11 @@ const docs: { title: string; description: string; url: string }[] = [];
               <span class="hero-badge">Creator</span>
               <span class="hero-badge">Tinkerer</span>
             </div>
+            <div class="hero-stats">
+              <span><span class="hero-stat-val">{works.length}</span> works</span>
+              <span class="hero-stat-sep">·</span>
+              <span><span class="hero-stat-val">{uniqueTags.length}</span> technologies</span>
+            </div>
           </div>
         </div>
       </div>
@@ -328,9 +349,10 @@ const docs: { title: string; description: string; url: string }[] = [];
 
       <div id="works">
         <div class="section-title">WORKS</div>
+        <div class="filter-bar" id="filter-bar"></div>
         <div class="works-grid">
           {works.map((w, i) => (
-            <div class="work-card">
+            <div class="work-card" data-tags={w.tags.join(',')}>
               <a href={w.url} class="work-main" target="_blank" rel="noopener">
                 <div class="work-icon-title">
                   <span class="work-icon">{w.icon}</span>
@@ -487,6 +509,55 @@ const docs: { title: string; description: string; url: string }[] = [];
       let kIdx=0;
       document.addEventListener('keydown',e=>{
         if(e.code===KONAMI[kIdx]){kIdx++;if(kIdx===KONAMI.length){kIdx=0;let n=0;const t=setInterval(()=>{const ss=['runR','runL','jump','wave'];state=ss[n%ss.length];velX=state==='runR'?3.5:state==='runL'?-3.5:0;frame=0;stateTimer=18;showBubble();if(++n>18)clearInterval(t);},280);}}else{kIdx=0;}
+      });
+    })();
+    </script>
+    <script>
+    (() => {
+      const activeTags = new Set();
+      function updateFilter() {
+        const cards = document.querySelectorAll('.work-card');
+        const filterBar = document.getElementById('filter-bar');
+        cards.forEach(card => {
+          if (activeTags.size === 0) {
+            card.classList.remove('dimmed');
+          } else {
+            const cardTags = card.dataset.tags ? card.dataset.tags.split(',') : [];
+            const matches = [...activeTags].some(t => cardTags.includes(t));
+            card.classList.toggle('dimmed', !matches);
+          }
+        });
+        document.querySelectorAll('.tag').forEach(tag => {
+          tag.classList.toggle('active', activeTags.has(tag.textContent.trim()));
+        });
+        filterBar.innerHTML = '';
+        if (activeTags.size > 0) {
+          activeTags.forEach(tag => {
+            const chip = document.createElement('button');
+            chip.className = 'filter-chip';
+            chip.innerHTML = tag + ' <span>×</span>';
+            chip.addEventListener('click', () => { activeTags.delete(tag); updateFilter(); });
+            filterBar.appendChild(chip);
+          });
+          const clearBtn = document.createElement('button');
+          clearBtn.className = 'filter-clear';
+          clearBtn.textContent = 'clear all';
+          clearBtn.addEventListener('click', () => { activeTags.clear(); updateFilter(); });
+          filterBar.appendChild(clearBtn);
+          const visible = [...cards].filter(c => !c.classList.contains('dimmed')).length;
+          const countEl = document.createElement('span');
+          countEl.className = 'filter-count';
+          countEl.textContent = visible + ' / ' + cards.length;
+          filterBar.appendChild(countEl);
+        }
+      }
+      document.querySelectorAll('.tag').forEach(tag => {
+        tag.addEventListener('click', e => {
+          e.stopPropagation();
+          const t = tag.textContent.trim();
+          activeTags.has(t) ? activeTags.delete(t) : activeTags.add(t);
+          updateFilter();
+        });
       });
     })();
     </script>
