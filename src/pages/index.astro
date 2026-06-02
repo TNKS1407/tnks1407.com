@@ -5,7 +5,8 @@ const quickLinks = [
   { label: "tnkblog.net", url: "https://tnkblog.net", icon: "📝" },
   { label: "nico.tnks1407.com", url: "https://nico.tnks1407.com", icon: "💬" },
   { label: "vg.tnks1407.com", url: "https://vg.tnks1407.com", icon: "🌀" },
-  { label: "events.tnks1407.com", url: "https://events.tnks1407.com", icon: "📊" },
+  { label: "events （参加者）", url: "https://events.tnks1407.com", icon: "📊" },
+  { label: "events （幹事）", url: "https://events.tnks1407.com/admin", icon: "✏️" },
   { label: "seigou.tnks1407.com", url: "https://seigou.tnks1407.com", icon: "📡" },
   { label: "GitHub", url: "https://github.com/TNKS1407", icon: "⚙" },
 ];
@@ -332,7 +333,7 @@ const docs: { title: string; description: string; url: string }[] = [];
     (() => {
       const SHEET_URL = 'https://raw.githubusercontent.com/TNKS1407/shinku-tinks/master/spritesheet.webp';
       const CW = 192, CH = 208, COLS = 8;
-      const getScale = () => window.innerWidth < 480 ? 1 : window.innerWidth < 768 ? 1.5 : 2;
+      const getScale = () => window.innerWidth < 480 ? 0.65 : window.innerWidth < 768 ? 0.9 : 1.25;
       let SCALE = getScale();
       let DRAW_W = CW * SCALE, DRAW_H = CH * SCALE;
       const STATES = {
@@ -395,6 +396,18 @@ const docs: { title: string; description: string; url: string }[] = [];
       }
       img.onload=()=>{posX=Math.random()*(window.innerWidth-DRAW_W*2)+DRAW_W;pickState();requestAnimationFrame(tick);};
       window.addEventListener('resize',()=>{resizeCanvas();positionCanvas();});
+      // Click anywhere → wave
+      document.addEventListener('click', e => {
+        if(e.target===canvas)return;
+        state='wave';velX=0;frame=0;stateTimer=60;showBubble();
+      });
+      // Cursor near Tinks → stop and idle
+      document.addEventListener('mousemove', e => {
+        const cx=posX+DRAW_W/2, cy=window.innerHeight-DRAW_H/2;
+        if(Math.hypot(e.clientX-cx,e.clientY-cy)<DRAW_W*1.8&&state!=='wave'&&state!=='jump'){
+          state='idle';velX=0;stateTimer=40;
+        }
+      });
     })();
     </script>
   </body>
