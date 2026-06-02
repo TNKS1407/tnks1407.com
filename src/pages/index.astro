@@ -410,7 +410,7 @@ const docs: { title: string; description: string; url: string }[] = [];
         idle:{row:0,frames:6},runR:{row:1,frames:8},runL:{row:2,frames:8},
         wave:{row:3,frames:4},jump:{row:4,frames:5},wait:{row:6,frames:6},run:{row:7,frames:6},
       };
-      const QUIPS = ['よろしくね！','準備中…','ランキンのブログ見てね','ふむ…','なにかお手伝いを','…','コードは詩だよ'];
+      const QUIPS=(()=>{const h=new Date().getHours();if(h>=6&&h<12)return['おはよう！','今日は何を作る？','朝から元気だな','いい朝だ','コードが気持ちいい時間帯だよ'];if(h>=12&&h<17)return['お昼ちゃんと食べた？','ランキンのブログ見てね','ふむ…','昼寝したい…','なにかお手伝いを'];if(h>=17&&h<21)return['夕方だよ','今日の作業どこまで進んだ？','いい感じじゃない？','そろそろ一区切りかな','コードは詩だよ'];return(['夜更かしはほどほどにね','…','またいる','まだ起きてるの？','静かな夜だ']);})();
       const canvas = document.getElementById('tinks');
       function resizeCanvas(){SCALE=getScale();DRAW_W=CW*SCALE;DRAW_H=CH*SCALE;canvas.width=DRAW_W;canvas.height=DRAW_H;}
       resizeCanvas();
@@ -472,10 +472,49 @@ const docs: { title: string; description: string; url: string }[] = [];
       });
       document.addEventListener('mousemove',e=>{
         const cx=posX+DRAW_W/2,cy=window.innerHeight-DRAW_H/2;
-        if(Math.hypot(e.clientX-cx,e.clientY-cy)<DRAW_W*1.8&&state!=='wave'&&state!=='jump'){
+        const dist=Math.hypot(e.clientX-cx,e.clientY-cy);
+        if(dist<DRAW_W*0.9&&state!=='wave'){
+          const dir=posX+DRAW_W/2<e.clientX?'runL':'runR';
+          if(state!==dir){state=dir;velX=dir==='runR'?2.8:-2.8;frame=0;stateTimer=80;}
+        } else if(dist<DRAW_W*1.8&&state!=='wave'&&state!=='jump'){
           state='idle';velX=0;stateTimer=40;
         }
       });
+      document.querySelector('.hero-avatar')?.addEventListener('click',e=>{
+        e.stopPropagation();state='jump';velX=0;frame=0;stateTimer=60;showBubble();
+      });
+      const KONAMI=['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','KeyB','KeyA'];
+      let kIdx=0;
+      document.addEventListener('keydown',e=>{
+        if(e.code===KONAMI[kIdx]){kIdx++;if(kIdx===KONAMI.length){kIdx=0;let n=0;const t=setInterval(()=>{const ss=['runR','runL','jump','wave'];state=ss[n%ss.length];velX=state==='runR'?3.5:state==='runL'?-3.5:0;frame=0;stateTimer=18;showBubble();if(++n>18)clearInterval(t);},280);}}else{kIdx=0;}
+      });
+    })();
+    </script>
+    <script>
+    (() => {
+      const cv=document.createElement('canvas');
+      cv.style.cssText='position:fixed;inset:0;pointer-events:none;z-index:998;';
+      document.body.appendChild(cv);
+      const ctx=cv.getContext('2d');
+      const resize=()=>{cv.width=window.innerWidth;cv.height=window.innerHeight;};
+      resize();window.addEventListener('resize',resize);
+      const pts=[];
+      const cols=['#c87ec0','#e86fa0','#5bbfb0','#f9a8d4','#a5f3fc','#fde68a'];
+      window.addEventListener('mousemove',e=>{
+        if(Math.random()>0.45)return;
+        pts.push({x:e.clientX,y:e.clientY,vx:(Math.random()-0.5)*1.8,vy:(Math.random()-0.5)*1.8-0.8,
+          life:1,size:Math.random()*3+1.5,col:cols[Math.floor(Math.random()*cols.length)]});
+      });
+      (function loop(){
+        ctx.clearRect(0,0,cv.width,cv.height);
+        for(let i=pts.length-1;i>=0;i--){
+          const p=pts[i];p.life-=0.045;p.x+=p.vx;p.y+=p.vy;p.vy+=0.06;
+          if(p.life<=0){pts.splice(i,1);continue;}
+          ctx.globalAlpha=p.life*0.8;ctx.fillStyle=p.col;
+          ctx.beginPath();ctx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2);ctx.fill();
+        }
+        ctx.globalAlpha=1;requestAnimationFrame(loop);
+      })();
     })();
     </script>
   </body>
