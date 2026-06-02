@@ -323,7 +323,7 @@ const docs: { title: string; description: string; url: string }[] = [];
                   <a href={l.url} class="work-link" target="_blank" rel="noopener">{l.label} ↗</a>
                 ))}
                 {w.prompt && (
-                  <button class="prompt-btn" data-idx={String(i)} onclick="openPrompt(this)">
+                  <button class="prompt-btn" data-idx={String(i)} onclick="window.openPrompt(this)">
                     📋 prompt
                   </button>
                 )}
@@ -341,7 +341,7 @@ const docs: { title: string; description: string; url: string }[] = [];
     </footer>
 
     <!-- Prompt modal -->
-    <div class="modal-overlay" id="modal-overlay" onclick="closePrompt(event)">
+    <div class="modal-overlay" id="modal-overlay" onclick="window.closePrompt(event)">
       <div class="modal" onclick="event.stopPropagation()">
         <div class="modal-header">
           <span class="modal-title" id="modal-title"></span>
@@ -357,21 +357,23 @@ const docs: { title: string; description: string; url: string }[] = [];
     <canvas id="tinks" style="position:fixed;bottom:0;left:0;pointer-events:none;z-index:999;image-rendering:pixelated;image-rendering:crisp-edges;"></canvas>
     <div id="tinks-bubble" style="position:fixed;bottom:0;left:0;pointer-events:none;z-index:1000;display:none;background:#fff;border:2px solid #f0c8e0;border-radius:12px 12px 12px 2px;padding:0.4rem 0.75rem;font-family:'Nunito',sans-serif;font-size:0.8rem;font-weight:700;color:#3d2848;white-space:nowrap;box-shadow:0 2px 12px rgba(200,126,192,0.15);"></div>
 
-    <script define:vars={{ works }}>
-    // Prompt modal
-    function openPrompt(btn) {
+    <script define:vars={{ works }} is:inline>
+    // Prompt modal — is:inline makes functions globally accessible
+    window.openPrompt = function(btn) {
       const idx = parseInt(btn.dataset.idx);
       const w = works[idx];
       document.getElementById('modal-title').textContent = w.title + ' — 作成プロンプト';
       document.getElementById('modal-content').textContent = w.prompt || '';
       document.getElementById('modal-overlay').classList.add('open');
-    }
-    function closePrompt(e) {
+    };
+    window.closePrompt = function(e) {
       if (!e || e.target === document.getElementById('modal-overlay')) {
         document.getElementById('modal-overlay').classList.remove('open');
       }
-    }
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') closePrompt({target:document.getElementById('modal-overlay')}); });
+    };
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') document.getElementById('modal-overlay').classList.remove('open');
+    });
     </script>
 
     <script>
