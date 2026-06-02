@@ -665,7 +665,7 @@ const docs: { title: string; description: string; url: string }[] = [];
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ type: selectedType, message: msg, contact }),
         })
-          .then(r => { if (!r.ok) throw new Error(); })
+          .then(r => { if (r.status === 429) throw new Error('rate'); if (!r.ok) throw new Error(); })
           .then(() => {
             document.getElementById('fb-msg').value = '';
             document.getElementById('fb-contact').value = '';
@@ -674,9 +674,11 @@ const docs: { title: string; description: string; url: string }[] = [];
             loadComments();
             setTimeout(closeFb, 3000);
           })
-          .catch(() => {
+          .catch(e => {
             btn.disabled = false;
-            alert('送信に失敗しました。もう一度試してね。');
+            alert(e.message === 'rate'
+              ? 'しばらく間を置いてから送ってね（10分あたり3件まで）。'
+              : '送信に失敗しました。もう一度試してね。');
           });
       });
       document.addEventListener('keydown', e => { if (e.key === 'Escape') closeFb(); });
