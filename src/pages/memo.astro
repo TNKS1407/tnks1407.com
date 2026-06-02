@@ -1,0 +1,49 @@
+---
+---
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>memo</title>
+    <style>
+      body{font-family:monospace;background:#111;color:#ccc;padding:2rem;max-width:700px;margin:0 auto;line-height:1.8;}
+      h2{color:#e86fa0;margin-top:2rem;}
+      code{background:#222;padding:0.2rem 0.5rem;border-radius:4px;color:#5bbfb0;}
+      pre{background:#222;padding:1rem;border-radius:8px;overflow-x:auto;}
+      pre code{background:none;padding:0;}
+      a{color:#c87ec0;}
+      hr{border:none;border-top:1px solid #333;margin:2rem 0;}
+    </style>
+  </head>
+  <body>
+    <h2>Claude persona sync</h2>
+    <p>スケジューラーが毎週日曜 21:57 JST に動いて CLAUDE.md を更新する。<br>
+    変更後、ローカルに反映するには手動コピーが必要。</p>
+
+    <pre><code># リポジトリを最新に
+cd C:\Users\tnks0\claude-persona
+git pull
+
+# ローカルの Claude 設定に反映
+copy CLAUDE.md C:\Users\tnks0\.claude\CLAUDE.md</code></pre>
+
+    <p>変更ログ: <a href="https://github.com/TNKS1407/claude-persona" target="_blank">github.com/TNKS1407/claude-persona</a></p>
+    <p>日記: <code>claude-persona/diary/YYYY-MM-DD.md</code></p>
+
+    <hr>
+
+    <h2>ルーティン一覧</h2>
+    <ul>
+      <li>ランキン自動投稿 — 毎日 06:00 JST → <a href="https://claude.ai/code/routines/trig_012g3QY9LGaf2pXcfM2eh3D6" target="_blank">trig_012g3QY9LGaf2pXcfM2eh3D6</a></li>
+      <li>日記自動生成 — 毎日 22:57 JST → <a href="https://claude.ai/code/routines/trig_01PFzzWVRMAsGiUcf2aHmb9Q" target="_blank">trig_01PFzzWVRMAsGiUcf2aHmb9Q</a></li>
+      <li>Claude persona 自己更新 — 毎週日曜 21:57 JST → <a href="https://claude.ai/code/routines/trig_01T45wBk2bPHythg7vkMp2n8" target="_blank">trig_01T45wBk2bPHythg7vkMp2n8</a></li>
+    </ul>
+
+    <hr>
+
+    <h2>インフラ起動</h2>
+    <pre><code>powershell C:\Users\tnks0\servers\start-all.ps1</code></pre>
+  </body>
+</html>
