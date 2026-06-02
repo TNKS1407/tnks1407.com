@@ -301,6 +301,31 @@ const docs: { title: string; description: string; url: string }[] = [];
       .hero-stat-val{font-weight:700;color:var(--accent1);}
       .hero-stat-sep{opacity:0.4;}
 
+      /* feedback */
+      .feedback-btn{position:fixed;bottom:1.75rem;right:1.5rem;z-index:998;background:linear-gradient(135deg,var(--accent1),var(--accent2));color:#fff;border:none;border-radius:999px;padding:0.55rem 1rem;font-size:0.82rem;font-weight:700;font-family:'Nunito',sans-serif;cursor:pointer;box-shadow:0 4px 16px rgba(200,126,192,0.35);transition:transform 0.15s,box-shadow 0.15s;display:flex;align-items:center;gap:0.35rem;}
+      .feedback-btn:hover{transform:translateY(-2px);box-shadow:0 6px 22px rgba(200,126,192,0.48);}
+      .fb-overlay{position:fixed;inset:0;background:rgba(61,40,72,0.5);z-index:1001;display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;pointer-events:none;transition:opacity 0.2s;}
+      .fb-overlay.open{opacity:1;pointer-events:all;}
+      .fb-modal{background:#fff;border:1.5px solid var(--border);border-radius:20px;max-width:460px;width:100%;box-shadow:0 16px 48px rgba(61,40,72,0.2);}
+      .fb-header{padding:1rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+      .fb-title{font-size:0.9rem;font-weight:800;color:var(--text);}
+      .fb-close{background:none;border:none;cursor:pointer;font-size:1.2rem;color:var(--text-muted);line-height:1;}
+      .fb-body{padding:1.25rem;display:flex;flex-direction:column;gap:1rem;}
+      .fb-label{font-size:0.78rem;font-weight:700;color:var(--text);margin-bottom:0.35rem;display:block;}
+      .fb-types{display:flex;gap:0.4rem;flex-wrap:wrap;}
+      .fb-type-btn{padding:0.3rem 0.8rem;border-radius:999px;border:1.5px solid var(--border);background:var(--surface);color:var(--text-muted);font-size:0.78rem;font-weight:700;cursor:pointer;transition:all 0.15s;font-family:'Nunito',sans-serif;}
+      .fb-type-btn.sel{background:var(--accent1);color:#fff;border-color:var(--accent1);}
+      .fb-textarea{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:0.65rem 0.85rem;font-family:'Nunito',sans-serif;font-size:0.85rem;resize:vertical;min-height:100px;color:var(--text);background:var(--surface);outline:none;transition:border-color 0.15s;}
+      .fb-textarea:focus{border-color:var(--accent1);}
+      .fb-input{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:0.5rem 0.85rem;font-family:'Nunito',sans-serif;font-size:0.85rem;color:var(--text);background:var(--surface);outline:none;transition:border-color 0.15s;}
+      .fb-input:focus{border-color:var(--accent1);}
+      .fb-submit{background:linear-gradient(135deg,var(--accent1),var(--accent2));color:#fff;border:none;border-radius:10px;padding:0.6rem 1.25rem;font-size:0.88rem;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif;align-self:flex-end;transition:opacity 0.15s;}
+      .fb-submit:hover{opacity:0.88;}
+      .fb-thanks{padding:2rem 1.25rem;text-align:center;}
+      .fb-thanks-icon{font-size:2rem;margin-bottom:0.5rem;}
+      .fb-thanks-msg{font-size:0.92rem;font-weight:700;color:var(--accent1);margin-bottom:0.35rem;}
+      .fb-thanks-sub{font-size:0.78rem;color:var(--text-muted);}
+
       @media(max-width:480px){.hero-avatar{width:56px;height:56px;font-size:1.4rem;}.quick-link{font-size:0.7rem;}}
     </style>
   </head>
@@ -394,6 +419,41 @@ const docs: { title: string; description: string; url: string }[] = [];
         </div>
         <div class="modal-body">
           <pre id="modal-content"></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feedback button + modal -->
+    <button class="feedback-btn" id="fb-open-btn">💬 フィードバック</button>
+    <div class="fb-overlay" id="fb-overlay">
+      <div class="fb-modal" onclick="event.stopPropagation()">
+        <div class="fb-header">
+          <span class="fb-title">フィードバック</span>
+          <button class="fb-close" id="fb-close-btn">✕</button>
+        </div>
+        <div id="fb-form-wrap" class="fb-body">
+          <div>
+            <span class="fb-label">種類</span>
+            <div class="fb-types">
+              <button class="fb-type-btn sel" data-type="バグ報告">🐛 バグ報告</button>
+              <button class="fb-type-btn" data-type="機能の要望">✨ 機能の要望</button>
+              <button class="fb-type-btn" data-type="その他">💬 その他</button>
+            </div>
+          </div>
+          <div>
+            <span class="fb-label">内容 <span style="color:var(--accent2)">*</span></span>
+            <textarea class="fb-textarea" id="fb-msg" placeholder="気になったことや欲しい機能を書いてね"></textarea>
+          </div>
+          <div>
+            <span class="fb-label">連絡先（任意）</span>
+            <input class="fb-input" id="fb-contact" type="text" placeholder="メールアドレス や Twitter/X など" />
+          </div>
+          <button class="fb-submit" id="fb-submit">送信 →</button>
+        </div>
+        <div id="fb-thanks-wrap" class="fb-thanks" style="display:none">
+          <div class="fb-thanks-icon">📨</div>
+          <div class="fb-thanks-msg">ありがとう！</div>
+          <div class="fb-thanks-sub">メールクライアントから送信してね</div>
         </div>
       </div>
     </div>
@@ -510,6 +570,47 @@ const docs: { title: string; description: string; url: string }[] = [];
       document.addEventListener('keydown',e=>{
         if(e.code===KONAMI[kIdx]){kIdx++;if(kIdx===KONAMI.length){kIdx=0;let n=0;const t=setInterval(()=>{const ss=['runR','runL','jump','wave'];state=ss[n%ss.length];velX=state==='runR'?3.5:state==='runL'?-3.5:0;frame=0;stateTimer=18;showBubble();if(++n>18)clearInterval(t);},280);}}else{kIdx=0;}
       });
+    })();
+    </script>
+    <script>
+    (() => {
+      const overlay = document.getElementById('fb-overlay');
+      let selectedType = 'バグ報告';
+      function openFb() {
+        document.getElementById('fb-form-wrap').style.display = '';
+        document.getElementById('fb-thanks-wrap').style.display = 'none';
+        overlay.classList.add('open');
+      }
+      function closeFb() { overlay.classList.remove('open'); }
+      document.getElementById('fb-open-btn').addEventListener('click', openFb);
+      document.getElementById('fb-close-btn').addEventListener('click', closeFb);
+      overlay.addEventListener('click', e => { if (e.target === overlay) closeFb(); });
+      document.querySelectorAll('.fb-type-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.fb-type-btn').forEach(b => b.classList.remove('sel'));
+          btn.classList.add('sel');
+          selectedType = btn.dataset.type;
+        });
+      });
+      document.getElementById('fb-submit').addEventListener('click', () => {
+        const msg = document.getElementById('fb-msg').value.trim();
+        if (!msg) { document.getElementById('fb-msg').focus(); return; }
+        const contact = document.getElementById('fb-contact').value.trim();
+        const subject = encodeURIComponent('[tnks1407.com] ' + selectedType);
+        const body = encodeURIComponent(
+          '【種類】' + selectedType + '\n\n【内容】\n' + msg +
+          (contact ? '\n\n【連絡先】' + contact : '')
+        );
+        const a = document.createElement('a');
+        a.href = 'mailto:t.n.k.s.0086@gmail.com?subject=' + subject + '&body=' + body;
+        a.click();
+        document.getElementById('fb-msg').value = '';
+        document.getElementById('fb-contact').value = '';
+        document.getElementById('fb-form-wrap').style.display = 'none';
+        document.getElementById('fb-thanks-wrap').style.display = '';
+        setTimeout(closeFb, 3000);
+      });
+      document.addEventListener('keydown', e => { if (e.key === 'Escape') closeFb(); });
     })();
     </script>
     <script>
