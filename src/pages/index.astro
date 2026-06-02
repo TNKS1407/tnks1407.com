@@ -1,0 +1,250 @@
+---
+const works: { title: string; description: string; url: string; tags: string[] }[] = [
+  // 例: { title: "MyApp", description: "説明", url: "https://...", tags: ["Rust", "CLI"] }
+];
+
+const docs: { title: string; description: string; url: string }[] = [
+  // 例: { title: "レポート", description: "説明", url: "https://..." }
+];
+---
+
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Apps, tools & documents by TNKS1407" />
+    <link rel="icon" href="/favicon.ico" />
+    <title>TNKS1407</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg: #0d0d1a;
+        --surface: #13132a;
+        --surface2: #1a1a35;
+        --border: #2a2a55;
+        --accent1: #b48ef5;
+        --accent2: #f590c8;
+        --accent3: #5ee8e8;
+        --text: #e8e8f8;
+        --text-muted: #8888aa;
+        --glow1: rgba(180,142,245,0.15);
+        --glow2: rgba(245,144,200,0.12);
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        font-family: 'Nunito', sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      /* Nav */
+      nav {
+        position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 1rem 2rem;
+        background: rgba(13,13,26,0.85);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border);
+      }
+      .nav-logo {
+        font-size: 1.2rem; font-weight: 800;
+        background: linear-gradient(90deg, var(--accent1), var(--accent2));
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      }
+      .nav-links { display: flex; gap: 1.5rem; }
+      .nav-links a {
+        color: var(--text-muted); text-decoration: none;
+        font-size: 0.9rem; font-weight: 600;
+        transition: color 0.2s;
+      }
+      .nav-links a:hover { color: var(--accent1); }
+
+      /* Hero */
+      .hero {
+        min-height: 100vh;
+        display: flex; align-items: center; justify-content: center;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        padding: 6rem 1rem 4rem;
+      }
+      .hero::before {
+        content: '';
+        position: absolute; inset: 0;
+        background:
+          radial-gradient(ellipse 60% 60% at 30% 40%, var(--glow1) 0%, transparent 70%),
+          radial-gradient(ellipse 50% 50% at 70% 60%, var(--glow2) 0%, transparent 70%);
+      }
+      .grid-bg {
+        position: absolute; inset: 0;
+        background-image:
+          linear-gradient(var(--border) 1px, transparent 1px),
+          linear-gradient(90deg, var(--border) 1px, transparent 1px);
+        background-size: 40px 40px;
+        opacity: 0.3;
+        mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+      }
+      .hero-content { position: relative; z-index: 1; }
+      .avatar {
+        width: 100px; height: 100px; border-radius: 50%;
+        margin: 0 auto 1.5rem;
+        background: linear-gradient(135deg, var(--accent1), var(--accent2));
+        display: flex; align-items: center; justify-content: center;
+        font-size: 2.5rem; font-weight: 800; color: #fff;
+        box-shadow: 0 0 40px var(--glow1), 0 0 80px var(--glow2);
+        border: 3px solid rgba(255,255,255,0.15);
+      }
+      h1 {
+        font-size: clamp(2.5rem, 8vw, 5rem);
+        font-weight: 800; letter-spacing: -0.02em; line-height: 1;
+        margin-bottom: 1rem;
+      }
+      h1 .accent {
+        background: linear-gradient(90deg, var(--accent1), var(--accent2), var(--accent3));
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      }
+      .tagline {
+        font-size: 1.1rem; color: var(--text-muted); margin-bottom: 1.5rem;
+      }
+      .badges { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
+      .badge {
+        background: var(--surface2); border: 1px solid var(--border);
+        padding: 0.25rem 0.75rem; border-radius: 999px;
+        font-size: 0.8rem; font-weight: 700; color: var(--accent1);
+        font-family: 'JetBrains Mono', monospace;
+      }
+      .scroll-hint {
+        position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
+        color: var(--text-muted); font-size: 0.8rem; z-index: 1;
+        animation: bounce 2s infinite;
+      }
+      @keyframes bounce { 0%,100%{transform:translateX(-50%) translateY(0)} 50%{transform:translateX(-50%) translateY(6px)} }
+
+      /* Sections */
+      section { padding: 5rem 1rem; max-width: 900px; margin: 0 auto; }
+      .section-title {
+        font-size: 1.75rem; font-weight: 800; margin-bottom: 2rem;
+        display: flex; align-items: center; gap: 0.5rem;
+      }
+      .section-title .line {
+        flex: 1; height: 1px;
+        background: linear-gradient(90deg, var(--border), transparent);
+        margin-left: 1rem;
+      }
+
+      /* Cards */
+      .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
+      .card {
+        background: var(--surface); border: 1px solid var(--border);
+        border-radius: 12px; padding: 1.5rem;
+        text-decoration: none; color: var(--text);
+        transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+        display: block;
+      }
+      .card:hover {
+        border-color: var(--accent1);
+        transform: translateY(-3px);
+        box-shadow: 0 8px 30px var(--glow1);
+      }
+      .card-title { font-size: 1rem; font-weight: 800; margin-bottom: 0.5rem; }
+      .card-desc { font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.5; }
+      .card-tags { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+      .tag {
+        background: rgba(180,142,245,0.12); border: 1px solid rgba(180,142,245,0.25);
+        color: var(--accent1); padding: 0.15rem 0.5rem; border-radius: 4px;
+        font-size: 0.75rem; font-weight: 700; font-family: 'JetBrains Mono', monospace;
+      }
+
+      /* Empty state */
+      .empty {
+        text-align: center; padding: 3rem;
+        background: var(--surface); border: 1px dashed var(--border);
+        border-radius: 12px; color: var(--text-muted);
+      }
+      .empty-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+
+      /* Footer */
+      footer {
+        border-top: 1px solid var(--border);
+        padding: 2rem; text-align: center;
+        color: var(--text-muted); font-size: 0.8rem;
+      }
+      footer a { color: var(--accent1); text-decoration: none; }
+    </style>
+  </head>
+  <body>
+    <nav>
+      <span class="nav-logo">TNKS1407</span>
+      <div class="nav-links">
+        <a href="#works">Works</a>
+        <a href="#docs">Docs</a>
+        <a href="https://tnksblog.com" target="_blank">Blog</a>
+      </div>
+    </nav>
+
+    <div class="hero">
+      <div class="grid-bg"></div>
+      <div class="hero-content">
+        <div class="avatar">T</div>
+        <h1>TNKS<span class="accent">1407</span></h1>
+        <p class="tagline">アプリ・ツール・文書を作っています</p>
+        <div class="badges">
+          <span class="badge">Developer</span>
+          <span class="badge">Creator</span>
+          <span class="badge">Tinkerer</span>
+        </div>
+      </div>
+      <div class="scroll-hint">↓ scroll</div>
+    </div>
+
+    <section id="works">
+      <h2 class="section-title">⚙ Works <span class="line"></span></h2>
+      {works.length === 0 ? (
+        <div class="empty">
+          <div class="empty-icon">🚧</div>
+          <p>準備中...</p>
+        </div>
+      ) : (
+        <div class="card-grid">
+          {works.map(w => (
+            <a href={w.url} class="card" target="_blank" rel="noopener">
+              <div class="card-title">{w.title}</div>
+              <div class="card-desc">{w.description}</div>
+              <div class="card-tags">
+                {w.tags.map(t => <span class="tag">{t}</span>)}
+              </div>
+            </a>
+          ))}
+        </div>
+      )}
+    </section>
+
+    <section id="docs">
+      <h2 class="section-title">📄 Documents <span class="line"></span></h2>
+      {docs.length === 0 ? (
+        <div class="empty">
+          <div class="empty-icon">🚧</div>
+          <p>準備中...</p>
+        </div>
+      ) : (
+        <div class="card-grid">
+          {docs.map(d => (
+            <a href={d.url} class="card" target="_blank" rel="noopener">
+              <div class="card-title">{d.title}</div>
+              <div class="card-desc">{d.description}</div>
+            </a>
+          ))}
+        </div>
+      )}
+    </section>
+
+    <footer>
+      <p>© 2025 TNKS1407 · <a href="https://github.com/TNKS1407" target="_blank">GitHub</a> · <a href="https://tnksblog.com" target="_blank">Blog</a></p>
+    </footer>
+  </body>
+</html>
