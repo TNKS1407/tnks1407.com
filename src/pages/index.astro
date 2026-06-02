@@ -16,6 +16,7 @@ const quickLinks = [
   { label: "seigou.tnks1407.com", url: "https://seigou.tnks1407.com", icon: "📡" },
   { label: "psu.tnks1407.com", url: "https://psu.tnks1407.com", icon: "⚡" },
   { label: "graph.tnks1407.com", url: "https://graph.tnks1407.com", icon: "📐" },
+  { label: "docs.tnks1407.com", url: "https://docs.tnks1407.com", icon: "📚" },
   { label: "GitHub", url: "https://github.com/TNKS1407", icon: "⚙" },
 ];
 
@@ -164,6 +165,28 @@ const works: Work[] = [
 - plate モード: 指定個数のVGを配列化してプレートに並べる
 - 依存: numpy, trimesh のみ
 - trimeshのexport()でSTL出力`
+  },
+  {
+    title: "MOSFETの選定と使用設計ガイド",
+    icon: "📚",
+    description: "パワーMOSFETのスイッチング設計に必要な損失計算・ゲート駆動・熱設計・SOA・アバランシェ・測定を網羅した技術文書。参考文献付き。",
+    url: "https://docs.tnks1407.com",
+    tags: ["MOSFET", "Power Electronics", "技術文書"],
+    prompt: `パワーMOSFETをスイッチング用途で使う際に必要な技術情報を、実務で使える辞書的文書としてまとめてほしい。
+
+対象読者: 電子回路の素養はあるが、MOSFETの詳細設計（損失・熱・ゲート駆動）にまだ慣れていない人
+スタイル: 最初から通読できるが、後半は辞典として使えるリファレンス構成
+
+含める内容:
+- 損失計算（オン抵抗損・スイッチング損・ゲート損）
+- ゲート駆動設計（ゲート抵抗・ブートストラップ・絶縁ドライバ）
+- 熱設計（熱抵抗・放熱計算・過渡熱インピーダンス）
+- SOA（安全動作領域）とデータシートの読み方
+- アバランシェ耐量
+- パルス動作の注意点
+- 参考文献
+
+`
   },
   {
     title: "tnks-lab",
