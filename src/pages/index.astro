@@ -20,17 +20,16 @@ const docs: { title: string; description: string; url: string }[] = [
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
     <style>
       :root {
-        --bg: #0d0d1a;
-        --surface: #13132a;
-        --surface2: #1a1a35;
-        --border: #2a2a55;
-        --accent1: #b48ef5;
-        --accent2: #f590c8;
-        --accent3: #5ee8e8;
-        --text: #e8e8f8;
-        --text-muted: #8888aa;
-        --glow1: rgba(180,142,245,0.15);
-        --glow2: rgba(245,144,200,0.12);
+        --bg: #fdf6fb;
+        --surface: #fff0f8;
+        --surface2: #fce8f4;
+        --border: #f0c8e0;
+        --accent1: #c87ec0;
+        --accent2: #e86fa0;
+        --accent3: #5bbfb0;
+        --text: #3d2848;
+        --text-muted: #9a7aaa;
+        --shadow: rgba(200,126,192,0.15);
       }
       * { margin: 0; padding: 0; box-sizing: border-box; }
       html { scroll-behavior: smooth; }
@@ -47,7 +46,7 @@ const docs: { title: string; description: string; url: string }[] = [
         position: fixed; top: 0; left: 0; right: 0; z-index: 100;
         display: flex; align-items: center; justify-content: space-between;
         padding: 1rem 2rem;
-        background: rgba(13,13,26,0.85);
+        background: rgba(253,246,251,0.88);
         backdrop-filter: blur(12px);
         border-bottom: 1px solid var(--border);
       }
@@ -59,7 +58,7 @@ const docs: { title: string; description: string; url: string }[] = [
       .nav-links { display: flex; gap: 1.5rem; }
       .nav-links a {
         color: var(--text-muted); text-decoration: none;
-        font-size: 0.9rem; font-weight: 600;
+        font-size: 0.9rem; font-weight: 700;
         transition: color 0.2s;
       }
       .nav-links a:hover { color: var(--accent1); }
@@ -77,8 +76,8 @@ const docs: { title: string; description: string; url: string }[] = [
         content: '';
         position: absolute; inset: 0;
         background:
-          radial-gradient(ellipse 60% 60% at 30% 40%, var(--glow1) 0%, transparent 70%),
-          radial-gradient(ellipse 50% 50% at 70% 60%, var(--glow2) 0%, transparent 70%);
+          radial-gradient(ellipse 60% 60% at 30% 40%, rgba(200,126,192,0.12) 0%, transparent 70%),
+          radial-gradient(ellipse 50% 50% at 70% 60%, rgba(232,111,160,0.10) 0%, transparent 70%);
       }
       .grid-bg {
         position: absolute; inset: 0;
@@ -86,7 +85,7 @@ const docs: { title: string; description: string; url: string }[] = [
           linear-gradient(var(--border) 1px, transparent 1px),
           linear-gradient(90deg, var(--border) 1px, transparent 1px);
         background-size: 40px 40px;
-        opacity: 0.3;
+        opacity: 0.5;
         mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
       }
       .hero-content { position: relative; z-index: 1; }
@@ -96,8 +95,8 @@ const docs: { title: string; description: string; url: string }[] = [
         background: linear-gradient(135deg, var(--accent1), var(--accent2));
         display: flex; align-items: center; justify-content: center;
         font-size: 2.5rem; font-weight: 800; color: #fff;
-        box-shadow: 0 0 40px var(--glow1), 0 0 80px var(--glow2);
-        border: 3px solid rgba(255,255,255,0.15);
+        box-shadow: 0 8px 32px var(--shadow);
+        border: 3px solid rgba(255,255,255,0.6);
       }
       h1 {
         font-size: clamp(2.5rem, 8vw, 5rem);
@@ -113,10 +112,11 @@ const docs: { title: string; description: string; url: string }[] = [
       }
       .badges { display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
       .badge {
-        background: var(--surface2); border: 1px solid var(--border);
+        background: #fff; border: 1px solid var(--border);
         padding: 0.25rem 0.75rem; border-radius: 999px;
         font-size: 0.8rem; font-weight: 700; color: var(--accent1);
         font-family: 'JetBrains Mono', monospace;
+        box-shadow: 0 2px 8px var(--shadow);
       }
       .scroll-hint {
         position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%);
@@ -132,30 +132,31 @@ const docs: { title: string; description: string; url: string }[] = [
         display: flex; align-items: center; gap: 0.5rem;
       }
       .section-title .line {
-        flex: 1; height: 1px;
+        flex: 1; height: 2px;
         background: linear-gradient(90deg, var(--border), transparent);
-        margin-left: 1rem;
+        margin-left: 1rem; border-radius: 999px;
       }
 
       /* Cards */
       .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; }
       .card {
-        background: var(--surface); border: 1px solid var(--border);
-        border-radius: 12px; padding: 1.5rem;
+        background: #fff; border: 1.5px solid var(--border);
+        border-radius: 16px; padding: 1.5rem;
         text-decoration: none; color: var(--text);
         transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
         display: block;
+        box-shadow: 0 2px 12px var(--shadow);
       }
       .card:hover {
         border-color: var(--accent1);
-        transform: translateY(-3px);
-        box-shadow: 0 8px 30px var(--glow1);
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px var(--shadow);
       }
       .card-title { font-size: 1rem; font-weight: 800; margin-bottom: 0.5rem; }
       .card-desc { font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.5; }
       .card-tags { display: flex; gap: 0.4rem; flex-wrap: wrap; }
       .tag {
-        background: rgba(180,142,245,0.12); border: 1px solid rgba(180,142,245,0.25);
+        background: var(--surface2); border: 1px solid var(--border);
         color: var(--accent1); padding: 0.15rem 0.5rem; border-radius: 4px;
         font-size: 0.75rem; font-weight: 700; font-family: 'JetBrains Mono', monospace;
       }
@@ -163,8 +164,8 @@ const docs: { title: string; description: string; url: string }[] = [
       /* Empty state */
       .empty {
         text-align: center; padding: 3rem;
-        background: var(--surface); border: 1px dashed var(--border);
-        border-radius: 12px; color: var(--text-muted);
+        background: #fff; border: 2px dashed var(--border);
+        border-radius: 16px; color: var(--text-muted);
       }
       .empty-icon { font-size: 2rem; margin-bottom: 0.5rem; }
 
@@ -173,6 +174,7 @@ const docs: { title: string; description: string; url: string }[] = [
         border-top: 1px solid var(--border);
         padding: 2rem; text-align: center;
         color: var(--text-muted); font-size: 0.8rem;
+        background: var(--surface);
       }
       footer a { color: var(--accent1); text-decoration: none; }
     </style>
