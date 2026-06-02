@@ -8,6 +8,8 @@ const quickLinks = [
   { label: "events （参加者）", url: "https://events.tnks1407.com", icon: "📊" },
   { label: "events （幹事）", url: "https://events.tnks1407.com/admin", icon: "✏️" },
   { label: "seigou.tnks1407.com", url: "https://seigou.tnks1407.com", icon: "📡" },
+  { label: "psu.tnks1407.com", url: "https://psu.tnks1407.com", icon: "⚡" },
+  { label: "graph.tnks1407.com", url: "https://graph.tnks1407.com", icon: "📐" },
   { label: "GitHub", url: "https://github.com/TNKS1407", icon: "⚙" },
 ];
 
@@ -42,6 +44,20 @@ const works: Work[] = [
       { label: "幹事ページ", url: "https://events.tnks1407.com/admin" },
       { label: "参加者ページ", url: "https://events.tnks1407.com" },
     ]
+  },
+  {
+    title: "電源制御ワークベンチ",
+    icon: "⚡",
+    description: "Buck/Boostコンバーターの電圧モード制御設計ツール。Bode線図・ステップ応答・デジタル制御シミュレーション対応。モバイル最適化済み。",
+    url: "https://psu.tnks1407.com",
+    tags: ["JavaScript", "Control", "Buck/Boost"]
+  },
+  {
+    title: "グラフ工房",
+    icon: "📐",
+    description: "データシート・論文のグラフをAIで読み取りJSONにし、補間・点修正・CSV化・複数グラフ重ね合わせ比較ができる作業台。Claude連携で活きる。",
+    url: "https://graph.tnks1407.com",
+    tags: ["JavaScript", "Graph", "CSV"]
   },
   {
     title: "SEIGOU — RFマッチング",
