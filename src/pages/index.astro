@@ -1,12 +1,6 @@
 ---
 const works: { title: string; description: string; url: string; tags: string[] }[] = [
   {
-    title: "Shinku Tinks",
-    description: "白衣を着たエンジニア学部版・新二（Irotoridori no Sekai）のピクセルアートスプライトビューア。idle・走る・ジャンプなど9アニメーション対応。",
-    url: "https://shinku.tnks1407.com",
-    tags: ["Pixel Art", "Canvas", "Sprite"]
-  },
-  {
     title: "Nico Comment System",
     description: "プレゼン・配信画面にリアルタイムでコメントを流すニコニコ風オーバーレイシステム。管理パネル、QRコードオーバーレイ対応。外部ライブラリ不要。",
     url: "https://nico.tnks1407.com",
@@ -265,5 +259,128 @@ const docs: { title: string; description: string; url: string }[] = [
     <footer>
       <p>© 2025 TNKS1407 · <a href="https://github.com/TNKS1407" target="_blank">GitHub</a> · <a href="https://tnkblog.net" target="_blank">Blog</a></p>
     </footer>
+
+    <!-- Tinks roaming sprite -->
+    <canvas id="tinks" style="position:fixed;bottom:0;left:0;pointer-events:none;z-index:999;image-rendering:pixelated;image-rendering:crisp-edges;"></canvas>
+    <div id="tinks-bubble" style="position:fixed;bottom:0;left:0;pointer-events:none;z-index:1000;display:none;
+      background:#fff;border:2px solid #f0c8e0;border-radius:12px 12px 12px 2px;
+      padding:0.4rem 0.75rem;font-family:'Nunito',sans-serif;font-size:0.8rem;font-weight:700;
+      color:#3d2848;white-space:nowrap;box-shadow:0 2px 12px rgba(200,126,192,0.15);"></div>
+
+    <script>
+    (() => {
+      const SHEET_URL = 'https://raw.githubusercontent.com/TNKS1407/shinku-tinks/master/spritesheet.webp';
+      const CW = 192, CH = 208, COLS = 8, SCALE = 2;
+      const DRAW_W = CW * SCALE, DRAW_H = CH * SCALE;
+      const STATES = {
+        idle:   { row: 0, frames: 6 },
+        runR:   { row: 1, frames: 8 },
+        runL:   { row: 2, frames: 8 },
+        wave:   { row: 3, frames: 4 },
+        jump:   { row: 4, frames: 5 },
+        wait:   { row: 6, frames: 6 },
+        run:    { row: 7, frames: 6 },
+      };
+      const QUIPS = [
+        'よろしくね！', '準備中…', 'ランキンのブログ見てね',
+        'ふむ…', 'なにかお手伝いを', 'がんばるよ',
+        '…', '考え中', 'コードは詩だよ',
+      ];
+
+      const canvas = document.getElementById('tinks');
+      canvas.width = DRAW_W; canvas.height = DRAW_H;
+      const ctx = canvas.getContext('2d');
+      const bubble = document.getElementById('tinks-bubble');
+
+      const off = document.createElement('canvas');
+      off.width = CW; off.height = CH;
+      const offCtx = off.getContext('2d');
+
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.src = SHEET_URL;
+
+      let posX = 40, posY = 0;
+      let velX = 0.8, state = 'idle', frame = 0;
+      let stateTimer = 0, frameTimer = 0;
+      const FPS = 8, FRAME_MS = 1000 / FPS;
+
+      function chromaKey(data) {
+        for (let i = 0; i < data.length; i += 4)
+          if (data[i] > 200 && data[i+1] < 80 && data[i+2] > 200) data[i+3] = 0;
+      }
+
+      function drawSprite() {
+        const s = STATES[state];
+        offCtx.clearRect(0, 0, CW, CH);
+        offCtx.drawImage(img, (frame % COLS) * CW, s.row * CH, CW, CH, 0, 0, CW, CH);
+        const d = offCtx.getImageData(0, 0, CW, CH);
+        chromaKey(d.data); offCtx.putImageData(d, 0, 0);
+        ctx.clearRect(0, 0, DRAW_W, DRAW_H);
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(off, 0, 0, DRAW_W, DRAW_H);
+      }
+
+      function positionCanvas() {
+        const maxX = window.innerWidth - DRAW_W;
+        posX = Math.max(0, Math.min(maxX, posX));
+        posY = window.innerHeight - DRAW_H;
+        canvas.style.left = posX + 'px';
+        canvas.style.bottom = '0px';
+        bubble.style.left = (posX + DRAW_W * 0.1) + 'px';
+        bubble.style.bottom = (DRAW_H + 8) + 'px';
+      }
+
+      function pickState() {
+        const r = Math.random();
+        if (r < 0.35) { state = 'runR'; velX = 1.2; }
+        else if (r < 0.7) { state = 'runL'; velX = -1.2; }
+        else if (r < 0.82) { state = 'wave'; velX = 0; showBubble(); }
+        else if (r < 0.9) { state = 'jump'; velX = 0; }
+        else { state = 'idle'; velX = 0; }
+        stateTimer = 120 + Math.random() * 180;
+        frame = 0;
+      }
+
+      function showBubble() {
+        bubble.textContent = QUIPS[Math.floor(Math.random() * QUIPS.length)];
+        bubble.style.display = 'block';
+        setTimeout(() => { bubble.style.display = 'none'; }, 2500);
+      }
+
+      let lastTs = 0;
+      function tick(ts) {
+        if (!img.complete) { requestAnimationFrame(tick); return; }
+        const dt = ts - lastTs;
+
+        if (dt > FRAME_MS) {
+          // Update frame
+          frame = (frame + 1) % STATES[state].frames;
+          // Move
+          posX += velX;
+          // Bounce
+          const maxX = window.innerWidth - DRAW_W;
+          if (posX <= 0) { posX = 0; velX = Math.abs(velX); state = 'runR'; frame = 0; }
+          if (posX >= maxX) { posX = maxX; velX = -Math.abs(velX); state = 'runL'; frame = 0; }
+          // State timer
+          stateTimer--;
+          if (stateTimer <= 0) pickState();
+
+          drawSprite();
+          positionCanvas();
+          lastTs = ts;
+        }
+        requestAnimationFrame(tick);
+      }
+
+      img.onload = () => {
+        posX = Math.random() * (window.innerWidth - DRAW_W * 2) + DRAW_W;
+        pickState();
+        requestAnimationFrame(tick);
+      };
+
+      window.addEventListener('resize', positionCanvas);
+    })();
+    </script>
   </body>
 </html>
