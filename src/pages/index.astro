@@ -215,6 +215,13 @@ const docs: { title: string; description: string; url: string }[] = [];
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="TNKS1407のアプリ・ツール・文書" />
+    <meta property="og:title" content="TNKS1407" />
+    <meta property="og:description" content="アプリ・ツール・文書を作っています" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://tnks1407.com" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="TNKS1407" />
+    <meta name="twitter:description" content="アプリ・ツール・文書を作っています" />
     <link rel="icon" href="/favicon.ico" />
     <title>TNKS1407</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -347,8 +354,8 @@ const docs: { title: string; description: string; url: string }[] = [];
         <span class="logo">TNKS1407</span>
         <nav class="nav-links">
           <a href="#works">Works</a>
-          <a href="https://tnkblog.net" target="_blank">Blog ↗</a>
-          <a href="https://github.com/TNKS1407" target="_blank">GitHub ↗</a>
+          <a href="https://tnkblog.net" target="_blank" rel="noopener noreferrer">Blog ↗</a>
+          <a href="https://github.com/TNKS1407" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
         </nav>
       </div>
     </header>
@@ -377,8 +384,8 @@ const docs: { title: string; description: string; url: string }[] = [];
 
       <div class="quick-links">
         {quickLinks.map(l => (
-          <a href={l.url} class="quick-link" target="_blank" rel="noopener">
-            <span class="icon">{l.icon}</span>
+          <a href={l.url} class="quick-link" target="_blank" rel="noopener noreferrer">
+            <span class="icon" aria-hidden="true">{l.icon}</span>
             {l.label}
           </a>
         ))}
@@ -390,7 +397,7 @@ const docs: { title: string; description: string; url: string }[] = [];
         <div class="works-grid">
           {works.map((w, i) => (
             <div class="work-card" data-tags={w.tags.join(',')}>
-              <a href={w.url} class="work-main" target="_blank" rel="noopener">
+              <a href={w.url} class="work-main" target="_blank" rel="noopener noreferrer">
                 <div class="work-icon-title">
                   <span class="work-icon">{w.icon}</span>
                   <span class="work-title">{w.title}</span>
@@ -402,7 +409,7 @@ const docs: { title: string; description: string; url: string }[] = [];
               </a>
               <div class="work-footer">
                 {w.links?.map(l => (
-                  <a href={l.url} class="work-link" target="_blank" rel="noopener">{l.label} ↗</a>
+                  <a href={l.url} class="work-link" target="_blank" rel="noopener noreferrer">{l.label} ↗</a>
                 ))}
                 {w.prompt && (
                   <button class="prompt-btn" data-idx={String(i)} onclick="window.openPrompt(this)">
@@ -417,9 +424,9 @@ const docs: { title: string; description: string; url: string }[] = [];
     </main>
 
     <footer>
-      © 2025 TNKS1407 ·
-      <a href="https://github.com/TNKS1407" target="_blank">GitHub</a> ·
-      <a href="https://tnkblog.net" target="_blank">Blog</a>
+      © 2026 TNKS1407 ·
+      <a href="https://github.com/TNKS1407" target="_blank" rel="noopener noreferrer">GitHub</a> ·
+      <a href="https://tnkblog.net" target="_blank" rel="noopener noreferrer">Blog</a>
     </footer>
 
     <!-- Prompt modal -->
