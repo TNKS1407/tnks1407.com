@@ -18,10 +18,20 @@ const quickLinks = [
   { label: "graph.tnks1407.com", url: "https://graph.tnks1407.com", icon: "📐" },
   { label: "docs.tnks1407.com", url: "https://docs.tnks1407.com", icon: "📚" },
   { label: "pml.tnks1407.com", url: "https://pml.tnks1407.com", icon: "🧮" },
+  { label: "gradus.tnks1407.com", url: "https://gradus.tnks1407.com", icon: "🎨" },
   { label: "GitHub", url: "https://github.com/TNKS1407", icon: "⚙" },
 ];
 
 const works: Work[] = [
+  {
+    title: "Gradus — 触って学ぶ画像処理ラボ",
+    icon: "🎨",
+    description: "ブラウザ完結の画像処理インタラクティブラボ。明るさ・ぼかし・輪郭・色変換・合成・ノイズ・FFT など30種以上のフィルターをスライダーでリアルタイム操作。KaTeX 数式・理論解説つき。",
+    url: "https://gradus.tnks1407.com",
+    tags: ["JavaScript", "Canvas API", "画像処理", "KaTeX"],
+    status: "Stable", section: "lab",
+    prompt: "ブラウザ完結で画像処理フィルターをリアルタイム操作できる学習ツールを作って。\n\n## 概要\n「触ってわかる」を重視したインタラクティブ画像処理ラボ。スライダーを動かすと即座に結果が変わり、KaTeX で数式も表示される。外部ライブラリなし（KaTeX のみ）。\n\n## フィルター種類\n- 明るさ・コントラスト・ガンマ補正・露出\n- ガウシアンぼかし・箱型ぼかし・モーションブラー\n- ソーベル・ラプラシアン・シャープネス\n- 色相・彩度・色温度・チャンネル分離\n- 2値化・適応的閾値処理\n- 画像合成（加算・乗算・差分・スクリーン）\n- ノイズ追加・メディアンフィルター\n- FFT 周波数スペクトル表示\n\n## UI\n- サンプル画像セレクター（サムネイル一覧）\n- 効果ピル（グループ別）で操作対象を選択\n- パラメータスライダー（リアルタイム更新）\n- 入力・出力画面の並列表示\n- ピクセル座標・RGB値のホバー表示\n- 結果画像のダウンロード・次の入力への送り込み",
+  },
   {
     title: "Process Modeling Lab",
     icon: "🧮",
