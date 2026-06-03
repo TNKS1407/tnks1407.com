@@ -19,10 +19,20 @@ const quickLinks = [
   { label: "docs.tnks1407.com", url: "https://docs.tnks1407.com", icon: "📚" },
   { label: "pml.tnks1407.com", url: "https://pml.tnks1407.com", icon: "🧮" },
   { label: "gradus.tnks1407.com", url: "https://gradus.tnks1407.com", icon: "🎨" },
+  { label: "effect.tnks1407.com", url: "https://effect.tnks1407.com", icon: "🔬" },
   { label: "GitHub", url: "https://github.com/TNKS1407", icon: "⚙" },
 ];
 
 const works: Work[] = [
+  {
+    title: "Process Effect Lab",
+    icon: "🔬",
+    description: "「パラメータを変えると何が起きるか」をスライダーで確認するインタラクティブ実験ツール。単回帰・多重共線性・JIT・グレーボックス・転移学習・生データ診断を、ノイズ量や共線性の強さを動かしながら体験できる。Study Guide と Jupyter Notebook 付き。",
+    url: "https://effect.tnks1407.com",
+    tags: ["Python", "Streamlit", "PLS", "What-If分析"],
+    status: "Prototype", section: "lab",
+    links: [{ label: "GitHub", url: "https://github.com/TNKS1407/process-effect-lab" }],
+  },
   {
     title: "Gradus — 触って学ぶ画像処理ラボ",
     icon: "🎨",
