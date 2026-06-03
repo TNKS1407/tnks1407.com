@@ -2,6 +2,7 @@
 type Work = {
   title: string; description: string; url: string;
   tags: string[]; icon?: string; status?: string; section?: 'works' | 'lab';
+  group?: 'engineering' | 'data-lab' | 'utilities';
   links?: { label: string; url: string }[];
   prompt?: string;
 };
@@ -27,10 +28,10 @@ const works: Work[] = [
   {
     title: "Process Effect Lab",
     icon: "🔬",
-    description: "「パラメータを変えると何が起きるか」をスライダーで確認するインタラクティブ実験ツール。単回帰・多重共線性・JIT・グレーボックス・転移学習・生データ診断を、ノイズ量や共線性の強さを動かしながら体験できる。Study Guide と Jupyter Notebook 付き。",
+    description: "「パラメータを変えると何が起きるか」をスライダーで確認するインタラクティブ実験ツール。単回帰・多重共線性・JIT・グレーボックス・転移学習・生データ診断を、ノイズ量や共線性の強さを動かしながら体験できる。Study Guide 付き。",
     url: "https://effect.tnks1407.com",
-    tags: ["Python", "Streamlit", "PLS", "What-If分析"],
-    status: "Prototype", section: "lab",
+    tags: ["Python", "PLS", "What-If分析"],
+    status: "Prototype", section: "lab", group: "data-lab",
     links: [{ label: "GitHub", url: "https://github.com/TNKS1407/process-effect-lab" }],
   },
   {
@@ -39,7 +40,7 @@ const works: Work[] = [
     description: "ブラウザ完結の画像処理インタラクティブラボ。明るさ・ぼかし・輪郭・色変換・合成・ノイズ・FFT など30種以上のフィルターをスライダーでリアルタイム操作。KaTeX 数式・理論解説つき。",
     url: "https://gradus.tnks1407.com",
     tags: ["JavaScript", "Canvas API", "画像処理", "KaTeX"],
-    status: "Stable", section: "lab",
+    status: "Stable", section: "lab", group: "data-lab",
     prompt: "ブラウザ完結で画像処理フィルターをリアルタイム操作できる学習ツールを作って。\n\n## 概要\n「触ってわかる」を重視したインタラクティブ画像処理ラボ。スライダーを動かすと即座に結果が変わり、KaTeX で数式も表示される。外部ライブラリなし（KaTeX のみ）。\n\n## フィルター種類\n- 明るさ・コントラスト・ガンマ補正・露出\n- ガウシアンぼかし・箱型ぼかし・モーションブラー\n- ソーベル・ラプラシアン・シャープネス\n- 色相・彩度・色温度・チャンネル分離\n- 2値化・適応的閾値処理\n- 画像合成（加算・乗算・差分・スクリーン）\n- ノイズ追加・メディアンフィルター\n- FFT 周波数スペクトル表示\n\n## UI\n- サンプル画像セレクター（サムネイル一覧）\n- 効果ピル（グループ別）で操作対象を選択\n- パラメータスライダー（リアルタイム更新）\n- 入力・出力画面の並列表示\n- ピクセル座標・RGB値のホバー表示\n- 結果画像のダウンロード・次の入力への送り込み",
   },
   {
@@ -48,7 +49,7 @@ const works: Work[] = [
     description: "プロセスデータのモデル化を数値計算で体験する学習ツール。単回帰・多重共線性・PLS・JIT型ソフトセンサー・グレーボックス・転移学習・生データ診断を実際に計算して比較できる。scikit-learn不使用。",
     url: "https://pml.tnks1407.com",
     tags: ["Python", "PLS", "JIT", "転移学習"],
-    status: "Prototype", section: "lab",
+    status: "Prototype", section: "lab", group: "data-lab",
     prompt: "プロセスデータのモデル化を、実際の数値計算で試すための学習ツールを作って。\n\n## 背景\nOLS・Ridge・PCR・PLS・JIT型・グレーボックス・転移学習の違いを「動く数値」で実感できるものが欲しい。教科書の説明ではなく、実際にデータを生成して計算を走らせる。scikit-learnは使わず、アルゴリズムの中身が見えるように自前実装する。\n\n## 含めるシミュレーション\n1. 単回帰: 標準化傾き = 相関係数であることを数値確認\n2. 多重共線性: ほぼ同じ変数でOLS係数が不安定になる例 + PLSで安定化\n3. JIT型ソフトセンサー: メンテ後リセット・非線形・モード差を含むデータで局所モデルを比較\n4. グレーボックス: 物理モデル/統計モデル/パラレル/シリアル型の精度比較\n5. 転移学習: センサー数が違うドメイン間でFEHDA風特徴空間拡張 vs 少数データのみ\n6. 生データ診断: 外れ値・ドリフト・周期変動・下限張り付き・多峰性を自動検出\n\n## 技術要件\n- numpy・pandas・matplotlibのみ（scikit-learnなし）\n- 各アルゴリズムは実装が見えるように中核モジュールに書く\n- Webで動かすため軽量HTTPサーバーで提供（Streamlitなし）\n- 実行結果はPNGで返す",
   },
   {
@@ -57,7 +58,7 @@ const works: Work[] = [
     description: "GHz帯の無線源と人体の相互作用をFDTD法で2Dシミュレート。電界の影・回り込み・透過・吸収をリアルタイム可視化。遮蔽損失[dB]・RMS・GIFアニメ出力対応。",
     url: "https://fdtd.tnks1407.com",
     tags: ["Python", "FDTD", "RF", "Streamlit"],
-    status: "Prototype", section: "lab",
+    status: "Prototype", section: "lab", group: "engineering",
     prompt: "GHz帯の小型無線源（点波源）と受信点の間に人体が存在する場合の電磁波伝搬を可視化するPythonツールを作ってほしい。\n\n## 背景\nBluetooth/Wi-Fi帯域（2.4GHz）で人体が電波をどう遮蔽・散乱させるかを定性的に確認したい。\nFEMやMoMは重く、MATLAB/CST は環境依存が大きいので、手元で動く軽量ツールが欲しい。\n精度より「傾向の理解」を優先する。\n\n## 物理モデル\n- 2D TMz FDTD（Ezフィールドのみ）\n- 人体断面: 皮膚(εr=40, σ=1.5)・脂肪(εr=5, σ=0.1)・筋肉(εr=55, σ=1.8)・骨(εr=12, σ=0.2)・肺(εr=20, σ=0.4)\n- 楕円形状の簡易断面を使う（解剖学的精度は不要）\n- PML（完全一致層）吸収境界、5〜10セル\n- 加算正弦波励振、ガウシアンパルスも選択可\n\n## UI（Streamlit）\n- 周波数・送受信位置・断面サイズをスライダー設定\n- シミュレーション実行ボタン\n- Ez分布のカラーマップ（人体あり／なし）\n- 受信プローブの時間波形グラフ\n- 遮蔽損失[dB]の数値出力\n- GIFアニメーション（時間ステップごとのEz）の保存\n\n## 実装上の制約\n- セルサイズ: λ/20以下（2.4GHzなら約6mm）\n- グリッドサイズ: 100×150程度（速度優先）\n- NumPy配列操作のみ、FortranやC拡張なし\n- 1回のシミュレーション実行が30秒以内に終わること\n- 精度より可視化の美しさを優先してよい"
   },
   {
@@ -66,7 +67,7 @@ const works: Work[] = [
     description: "プレゼン・配信画面にリアルタイムコメントを流すニコニコ風オーバーレイ。投稿URL・表示URL・QRコード・管理画面の4エンドポイント。外部npmゼロ・Node.js標準APIのみ。",
     url: "https://nico.tnks1407.com",
     tags: ["Node.js", "SSE", "Self-host"],
-    status: "Stable", section: "works",
+    status: "Stable", section: "works", group: "utilities",
     links: [
       { label: "投稿", url: "https://nico.tnks1407.com/p/A7kP3dQ9" },
       { label: "画面", url: "https://nico.tnks1407.com/s/A7kP3dQ9" },
@@ -81,7 +82,7 @@ const works: Work[] = [
     description: "ボルテックスジェネレーターのSTLをブラウザだけで生成・ダウンロード。Rect Vane / Delta Wedgeの2形状。リアルタイム3Dプレビュー付き。サーバー不要・3Dプリント直行。",
     url: "https://vg.tnks1407.com",
     tags: ["JavaScript", "3D Print", "STL"],
-    status: "Stable", section: "works",
+    status: "Stable", section: "works", group: "engineering",
     prompt: "ボルテックスジェネレーター（VG）のSTLをブラウザだけで生成するWebアプリを作って。\n\n## 背景\n市販CADなしで3Dプリンター用VGを作りたい。\n物理的なVGはflatplate上の空力デバイスで、剥離制御に使う。\n寸法精度よりも「すぐ出力できる」ことを優先。\n\n## 対象形状\n**Rect Vane（矩形ベーン）**\n- 入力: 長さL・幅W・高さH・取付角θ\n- 断面は矩形、根元から先端まで同一断面\n- Baseプレートとの接合面を底面として生成\n\n**Delta Wedge（デルタ型）**\n- 入力: 根元幅W・高さH・チップ厚t・長さL\n- 先細りの楔形状、平面視で三角形\n- 先端に最小肉厚tを持たせて印刷性を確保\n\n## ジオメトリ生成\n- 各形状を三角形ポリゴンに分解（法線ベクトル付き）\n- ASCII STLフォーマットで出力（バイナリ不要）\n- 頂点座標は mm 単位、小数点以下4桁\n\n## 3Dプレビュー\n- canvas 2D でペインターアルゴリズムによる擬似3D表示\n- 回転はスライダーで操作（elevation / azimuth）\n- パラメータ変更時に即座に再描画（100ms以内）\n\n## UX\n- スライダー + 数値入力フィールドの連動\n- ダウンロードボタンでSTLをBlobとして保存\n- サーバー不要、単一HTMLファイルで動作"
   },
   {
@@ -90,7 +91,7 @@ const works: Work[] = [
     description: "幹事が割り勘計算・回収状況を管理し参加者と公開URLで共有するツール。口数の重み付き按分・端数丸め設定・5秒自動更新。ExcelもPythonも不要。",
     url: "https://events.tnks1407.com",
     tags: ["Node.js", "JSON API"],
-    status: "Stable", section: "works",
+    status: "Stable", section: "works", group: "utilities",
     links: [
       { label: "幹事ページ", url: "https://events.tnks1407.com/admin" },
       { label: "参加者ページ", url: "https://events.tnks1407.com" },
@@ -103,7 +104,7 @@ const works: Work[] = [
     description: "Buck/Boostコンバーターの電圧モード制御設計ツール。小信号モデルからBode線図・ループゲイン・PI/Type-II/III補償器設計・ステップ応答・デジタル制御遅延シミュレーションまで。",
     url: "https://psu.tnks1407.com",
     tags: ["JavaScript", "Control", "Buck/Boost"],
-    status: "Stable", section: "works",
+    status: "Stable", section: "works", group: "engineering",
     prompt: "Buck/Boostコンバーターの電圧モード制御を設計・検証できるブラウザツールを作って。\n\n## 背景\n電源設計で「位相余裕はどのくらいか」「補償器のゼロ点をどこに置くべきか」を\nLTspiceなしでその場で確認したい。Mathcad/Matlabなしで動くブラウザ計算ツール。\n\n## 小信号モデルの導出\n**Buck**: プラント伝達関数 Gvd(s) = Vout/(D) × 1/(1 + s·L/R + s²·LC)\n**Boost**: Gvd(s) = Vout/(1-D)² × (1 - s·L/((1-D)²·R)) / (1 + s·L/((1-D)²·R) + s²·LC/(1-D)²)\n右半平面ゼロ点（Boost）を明示的に表示する。\n\n## Bode線図\n- 周波数レンジ: 10Hz〜Nyquist(fs/2)\n- プロット: プラントゲイン・位相、補償器ゲイン・位相、ループゲイン・位相\n- 位相余裕・ゲイン余裕を数値表示\n- クロスオーバー周波数を自動検出してマーカー表示\n\n## 補償器設計\n- **PI**: ゼロ点1個、−20dB/dec積分特性\n- **Type-II**: ゼロ1個・極1個、ゲインピーク設計\n- **Type-III**: ゼロ2個・極2個、BoostのRHPゼロ点対応\n\n## ステップ応答シミュレーション\n- 負荷電流のステップ変化（Δi_load指定）\n- 出力電圧オーバーシュート・整定時間の推定\n- 離散時間近似（Tustin変換）で実際のデジタル実装を模倣\n\n## デジタル制御モデル\n- ADC量子化ビット数→量子化ノイズのBode線図上への影響\n- PWM分解能（Tpwm/Ts比）\n- 計算遅延（1〜2サンプル）の位相遅れを追加\n\n## UI\n- ダークテーマ、スクロール不要（1画面に収める）\n- スライダーと数値入力の連動\n- パラメータ変更に対してBode線図をリアルタイム更新"
   },
   {
@@ -112,7 +113,7 @@ const works: Work[] = [
     description: "データシート・論文のグラフ画像をAIが読み取りJSON化。点の追加・移動・削除、線形/対数補間、複数グラフ重ね合わせ、比較カーソル、CSV書き出しが可能な作業台。",
     url: "https://graph.tnks1407.com",
     tags: ["JavaScript", "Graph", "CSV"],
-    status: "Stable", section: "works",
+    status: "Stable", section: "works", group: "engineering",
     prompt: "データシート・論文のグラフをAIが読み取ってJSON化し、ブラウザで編集・分析できる「グラフ作業台」を作って。\n\n## 背景\nデータシートのSパラメータグラフや論文の特性曲線を数値で扱いたいとき、\nWebPlotDigitizerは使いにくく、AIに読み取らせた結果を直接使えない。\n「AIがJSONを出力 → このツールで微調整 → CSVで取り出す」というワークフローを作りたい。\n\n## JSONフォーマット（入出力共通）\n\\\\「\\\\」\\\\`json\n{\n  \\\"label\\\": \\\"S21 (typ)\\\",\n  \\\"xLabel\\\": \\\"Frequency (MHz)\\\",\n  \\\"yLabel\\\": \\\"Gain (dB)\\\",\n  \\\"xScale\\\": \\\"log\\\",\n  \\\"yScale\\\": \\\"linear\\\",\n  \\\"points\\\": [\n    {\\\"x\\\": 100, \\\"y\\\": -2.1},\n    {\\\"x\\\": 1000, \\\"y\\\": -3.0}\n  ]\n}\n\\\\「\\\\」\\\\`\n\n## 編集機能\n- Canvas上で点をクリック＆ドラッグで移動\n- キャンバスクリックで新しい点を追加\n- 点を選択してDeleteキーで削除\n- Undo（Ctrl+Z）対応\n\n## 補間・解析\n- 線形スケール: 線形補間\n- 対数スケール(X): log空間で線形補間\n- 任意のXを入力→対応するYを表示\n- 複数カーブ間の差分（例: typ vs min）\n\n## 比較表示\n- 最大4データセットを重ね合わせ表示（色分け・凡例付き）\n- X軸で同期したカーソルラインで各Yを比較\n- 横並び表示（サブプロット）への切替\n\n## 出力\n- CSV書き出し（全点/補間サンプリング/Nポイント均等）\n- JSONの編集結果をそのままコピー\n\n## UX\n- ドラッグ&ドロップでJSONファイルを読み込み\n- ブラウザ完結（サーバー不要）\n- モバイルはプレビューのみ（編集はデスクトップ向け）"
   },
   {
@@ -121,7 +122,7 @@ const works: Work[] = [
     description: "RFエンジニア向け架空マッチングアプリ。インピーダンス・Γ・Q値・VSWRがプロフィール欄に並ぶ。スワイプでMATCH後、L型整合回路のL/C値を計算してくれる。",
     url: "https://seigou.tnks1407.com",
     tags: ["JavaScript", "RF", "スミスチャート"],
-    status: "Toy", section: "lab",
+    status: "Toy", section: "lab", group: "engineering",
     prompt: "RFエンジニア向けの架空マッチングアプリを作って。「相性」をインピーダンス整合の概念で表現し、実際の恋愛とRF工学のダジャレ・メタファーで構成する。\n\nコンセプト：\n- 50Ωに矯正するのでなく、複素負荷のまま電力伝送できる関係を探す\n- プロフィール: インピーダンス傾向・Q値・γ・VSWR・Return Loss・bio・欲しい整合\n- スワイプ: 左=OPEN（開放端）、右=MATCH（共役整合）、上=THRU\n- MATCH後: Z = R+jX 表示とL型整合回路のL/C計算\n- スミスチャートを本格的に表示（定抵抗円・定リアクタンス弧）\n\n技術要件：\n- スワイプ操作はPointerEvents（スマホ・PC共通）\n- profileはprofiles.json外出し\n- プロフィール登録はlocalStorage保存\n- スマホ最適化（max-width 480px）\n- 整合回路計算: L型ネットワークのQ・直列・並列素子値を算出"
   },
   {
@@ -130,7 +131,7 @@ const works: Work[] = [
     description: "Rect Vane・Delta Wedge形状のVG STLをCLIで生成するPythonライブラリ。plate配列モード対応。numpy・trimeshのみ。ブラウザ版VG Generatorのバックエンド相当。",
     url: "https://github.com/TNKS1407/vortex-generator-tools",
     tags: ["Python", "trimesh", "3D Print"],
-    status: "Lab", section: "lab",
+    status: "Lab", section: "lab", group: "engineering",
     prompt: "Pythonでボルテックスジェネレーター（VG）のSTLファイルを生成するCLIツールを作って。\n\n## 背景\nブラウザ版VG GeneratorのPythonバックエンド相当。\nCAD操作なしで形状パラメータ→STLを自動生成したい。\nバッチ処理や形状の組み合わせ試験を想定。\n\n## 対象形状\n**rect_vane（矩形ベーン）**\n- 引数: --length, --width, --height, --angle（取付角度）\n- 矩形断面を取付角θだけ傾けて押し出した形状\n\n**delta_wedge（デルタウェッジ）**\n- 引数: --base-width, --height, --tip-thickness, --length\n- 平面視で三角形、先端に最小肉厚を持つ楔型\n\n## plate モード\n- --mode plate --count N --spacing S でN個のVGを等間隔配置\n- ベース板（薄いフラットプレート）の上に配列する\n- 各VGを向きを揃えて並べる、またはhalf-and-halfで対称配置\n\n## 実装\n- numpy で頂点座標を計算\n- trimesh.Trimesh(vertices, faces) でメッシュ構築\n- trimesh.export() でSTL出力（バイナリ）\n- 法線ベクトルはtrimeshが自動計算\n\n## 出力例\n\\\\「\\\\」\\\\`\npython vg.py rect_vane --length 30 --width 5 --height 8 --angle 15 -o vg.stl\npython vg.py --mode plate --count 6 --spacing 20 rect_vane --length 30 --height 8\n\\\\「\\\\」\\\\`"
   },
   {
@@ -139,7 +140,7 @@ const works: Work[] = [
     description: "パワーMOSFETのスイッチング設計リファレンス。損失計算・ゲート駆動・熱設計・SOA・アバランシェ耐量・測定まで実務で参照できる構成。参考文献付き。",
     url: "https://docs.tnks1407.com",
     tags: ["MOSFET", "Power Electronics", "技術文書"],
-    status: "Stable", section: "works",
+    status: "Stable", section: "works", group: "engineering",
     prompt: "パワーMOSFETのスイッチング用途向け技術リファレンスを、実務で使える辞書的文書としてまとめてほしい。\n\n## 対象読者\n電子回路の基礎知識（Vgs, Id, RdsOn の意味は分かる）はあるが、\nスイッチング電源・モータードライバ・インバータでのMOSFET設計に初めて踏み込む人。\n「データシートを見て何を確認すべきか」「なぜ壊れるか」が分かることがゴール。\n\n## ドキュメント構成\n1. **MOSFETの選定フロー**（電圧マージン・電流マージン・パッケージの選び方）\n2. **損失計算**\n   - オン抵抗損失: P_on = Id² × RdsOn(Tj) × D（温度補正付き）\n   - スイッチング損失: P_sw = ½ × Vds × Id × (tr+tf) × fs\n   - ゲート損失: P_g = Qg × Vgs × fs\n   - 式と数値例を一緒に示す\n3. **ゲート駆動設計**\n   - ゲート抵抗の決め方（スイッチング速度とEMIトレードオフ）\n   - ブートストラップ回路の原理と制限（最大Duty、リフレッシュ）\n   - 絶縁ドライバ（フォトカプラ vs トランス vs 専用IC）の使い分け\n4. **熱設計**\n   - Tj計算: Tj = Tamb + Ptot × (Rth_JC + Rth_CH + Rth_HA)\n   - 過渡熱インピーダンス曲線の読み方（パルス動作での許容損失）\n   - ヒートシンク選定の考え方\n5. **SOA（安全動作領域）**\n   - DC/Pulse/Safe-Operating-Area図の読み方\n   - 誘導性負荷スイッチオフ時のエネルギー\n6. **アバランシェ耐量**\n   - EAS（単発）・EAR（繰り返し）の意味と計算\n   - インダクタンスエネルギー ½LI² との比較\n7. **よくある故障モードと対策**\n8. **参考文献**（INFINEONアプリノート・IRアプリノート等）\n\n## スタイル\n- 式は LaTeX 形式ではなくテキスト表記（プレーンHTMLで表示できる）\n- 数値例は実際に使いそうな値（例: 100V/10A、fs=100kHz）を使う\n- 「なぜそうなるか」の物理的直感を必ず添える"
   },
   {
@@ -148,13 +149,22 @@ const works: Work[] = [
     description: "AI実験ログ・雑メモをdropフォルダに置くだけでGitHub Issueに変換する個人用ワークフロー。PowerShell製UIランチャーで操作。GitHub CLI経由でIssue投稿。",
     url: "https://github.com/TNKS1407/tnks-lab",
     tags: ["PowerShell", "GitHub API", "CLI"],
-    status: "Lab", section: "lab",
+    status: "Lab", section: "lab", group: "utilities",
     prompt: "AI実験ログ・雑メモをdropフォルダに置くだけでGitHub Issueに変換する個人用ワークフローツールを作って。\n\n## 背景\nAIとの実験や思いついたアイデアを「あとで見返せる形」で残したい。\nNotionは重く、Obsidianは別途開く手間がある。\n「ファイルを一つ放り込む → GitHub Issueに自動変換 → 検索できる」が理想。\n\n## ディレクトリ構成\n\\\\「\\\\」\\\\`\ntnks-lab/\n  inbox/\n    drop/          ← ここに .md/.txt を置く\n    processed/     ← 処理済みファイルの移動先\n  scripts/\n    push-issues.ps1  ← メイン処理スクリプト\n    config.json      ← デフォルトリポジトリ・ラベル設定\n  launch.cmd         ← ダブルクリックで起動するUIランチャー\n\\\\「\\\\」\\\\`\n\n## 処理フロー（push-issues.ps1）\n1. inbox/drop内の .md/.txt をすべて取得\n2. ファイル名からタイトルを生成（YYYY-MM-DD_タイトル.md → \\\"タイトル\\\"）\n3. ファイル先頭の 「# タイトル」 があればそれをIssueタイトルに使用\n4. 「gh issue create --title \\\"...\\\" --body \\\"...\\\" --repo TNKS1407/tnks-lab」 で投稿\n5. 成功したら inbox/processed/ に移動\n6. 失敗したらエラーログを出力してスキップ（ファイルは削除しない）\n\n## launch.cmd（UIランチャー）\n- PowerShellウィンドウで実行状況を表示\n- 処理件数・成功/失敗をサマリー表示\n- Enterで終了\n\n## config.json\n\\\\「\\\\」\\\\`json\n{\n  \\\"defaultRepo\\\": \\\"TNKS1407/tnks-lab\\\",\n  \\\"defaultLabel\\\": \\\"log\\\",\n  \\\"watchDir\\\": \\\"./inbox/drop\\\"\n}\n\\\\「\\\\」\\\\`\n\n## 制約\n- GitHub CLI (gh) がインストール済み・認証済みであること前提\n- PowerShell 7+ 対応\n- ファイルエンコーディングは UTF-8"
   },
 ];
 
 const uniqueTags = [...new Set(works.flatMap(w => w.tags))];
-const docs: { title: string; description: string; url: string }[] = [];
+
+const GROUPS = [
+  { key: 'engineering', label: 'Engineering', desc: 'RF・電力制御・電磁シミュレーション・CAD・データ可視化' },
+  { key: 'data-lab',    label: 'Data Lab',    desc: 'プロセスデータのモデリングと画像処理の学習ラボ' },
+  { key: 'utilities',   label: 'Utilities',   desc: 'プレゼン・イベント・ワークフロー管理の実用ツール' },
+] as const;
+
+const grouped = Object.fromEntries(
+  GROUPS.map(g => [g.key, works.filter(w => w.group === g.key)])
+);
 ---
 
 <!doctype html>
@@ -162,14 +172,14 @@ const docs: { title: string; description: string; url: string }[] = [];
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="description" content="TNKS1407のアプリ・ツール・文書" />
+    <meta name="description" content="RF・電力制御・データサイエンス・画像処理のツールと学習ラボ" />
     <meta property="og:title" content="TNKS1407" />
-    <meta property="og:description" content="アプリ・ツール・文書を作っています" />
+    <meta property="og:description" content="RF・電力制御・データサイエンス・画像処理のツールと学習ラボ" />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://tnks1407.com" />
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content="TNKS1407" />
-    <meta name="twitter:description" content="アプリ・ツール・文書を作っています" />
+    <meta name="twitter:description" content="RF・電力制御・データサイエンス・画像処理のツールと学習ラボ" />
     <link rel="icon" href="/favicon.ico" />
     <title>TNKS1407</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -319,10 +329,35 @@ const docs: { title: string; description: string; url: string }[] = [];
       .fb-comment-ts{font-size:0.62rem;color:var(--text-faint);margin-left:auto;font-family:'JetBrains Mono',monospace;}
       .fb-comment-msg{font-size:0.8rem;color:var(--text);line-height:1.55;}
 
+      /* Group headers */
+      .group-header{display:flex;align-items:baseline;gap:0.75rem;margin:2.25rem 0 0.9rem;}
+      .group-label{font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;
+        color:var(--text-faint);letter-spacing:.1em;text-transform:uppercase;}
+      .group-label::before{content:'// ';color:var(--accent);opacity:.6;}
+      .group-desc{font-size:.78rem;color:var(--text-faint);}
+      .group-header::after{content:'';flex:1;height:1px;background:var(--border);}
+
+      /* Recent blog posts */
+      .blog-strip{background:var(--card);border:1px solid var(--border);border-radius:14px;
+        padding:1.1rem 1.25rem;margin-bottom:2rem;box-shadow:0 1px 6px var(--shadow);}
+      .blog-strip-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem;}
+      .blog-strip-title{font-family:'JetBrains Mono',monospace;font-size:.7rem;font-weight:700;
+        color:var(--text-faint);letter-spacing:.1em;text-transform:uppercase;}
+      .blog-strip-link{font-size:.72rem;color:var(--accent);font-family:'JetBrains Mono',monospace;text-decoration:none;}
+      .blog-strip-link:hover{text-decoration:underline;}
+      .blog-posts{display:flex;flex-direction:column;gap:.5rem;}
+      .blog-post-item{display:flex;align-items:baseline;gap:.75rem;text-decoration:none;color:var(--text);
+        padding:.35rem .5rem;border-radius:7px;transition:background .15s;}
+      .blog-post-item:hover{background:var(--accent-dim);}
+      .blog-post-date{font-size:.69rem;color:var(--text-faint);font-family:'JetBrains Mono',monospace;flex-shrink:0;}
+      .blog-post-title{font-size:.82rem;font-weight:500;line-height:1.4;}
+      .blog-loading{font-size:.78rem;color:var(--text-faint);font-family:'JetBrains Mono',monospace;padding:.25rem .5rem;}
+
       @media(max-width:480px){
         .hero-avatar{width:60px;height:60px;background-size:450px auto;}
         .quick-link{font-size:0.7rem;}
         main{padding:1.5rem 1rem 5rem;}
+        .group-desc{display:none;}
       }
     </style>
   </head>
@@ -344,11 +379,12 @@ const docs: { title: string; description: string; url: string }[] = [];
           <div class="hero-avatar" title="ランキン"></div>
           <div class="hero-text">
             <div class="hero-name">TNKS<span>1407</span></div>
-            <div class="hero-desc">アプリ・ツール・文書を作っています。電気・RF・信号処理あたりが好き。</div>
+            <div class="hero-desc">RF・電力制御・データサイエンス・画像処理のツールと学習ラボを作っています。</div>
             <div class="hero-badges">
-              <span class="hero-badge">Engineer</span>
-              <span class="hero-badge">Builder</span>
-              <span class="hero-badge">Tinkerer</span>
+              <span class="hero-badge">RF & Electronics</span>
+              <span class="hero-badge">Data Science</span>
+              <span class="hero-badge">3D & CAD</span>
+              <span class="hero-badge">Web Utils</span>
             </div>
             <div class="hero-stats">
               <span><span class="hero-stat-val">{works.length}</span> works</span>
@@ -370,65 +406,57 @@ const docs: { title: string; description: string; url: string }[] = [];
         ))}
       </div>
 
-      <div id="works">
-        <div class="section-title">WORKS</div>
-        <div class="filter-bar" id="filter-bar"></div>
-        <div class="works-grid">
-          {works.filter(w => w.section !== 'lab').map((w, i) => (
-            <div class="work-card" data-tags={w.tags.join(',')}>
-              <a href={w.url} class="work-main" target="_blank" rel="noopener noreferrer">
-                <div class="work-icon-title">
-                  <span class="work-icon">{w.icon}</span>
-                  <span class="work-title">{w.title}</span>
-                </div>
-                <div class="work-desc">{w.description}</div>
-                <div class="work-tags">
-                  {w.status && <span class={`status-badge status-${w.status}`}>{w.status}</span>}
-                  {w.tags.map(t => <span class="tag">{t}</span>)}
-                </div>
-              </a>
-              <div class="work-footer">
-                {w.links?.map(l => (
-                  <a href={l.url} class="work-link" target="_blank" rel="noopener noreferrer">{l.label} ↗</a>
-                ))}
-                {w.prompt && (
-                  <button class="prompt-btn" data-idx={String(works.indexOf(w))} onclick="window.openPrompt(this)">
-                    📋 prompt
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
+      <!-- Recent blog posts -->
+      <div class="blog-strip">
+        <div class="blog-strip-head">
+          <span class="blog-strip-title">最近の記事 — tnkblog.net</span>
+          <a href="https://tnkblog.net" class="blog-strip-link" target="_blank" rel="noopener noreferrer">すべて見る ↗</a>
         </div>
+        <div class="blog-posts" id="blog-posts">
+          <span class="blog-loading">読み込み中…</span>
+        </div>
+      </div>
 
-        <div class="section-title" style="margin-top:1.5rem">LAB</div>
-        <div class="works-grid">
-          {works.filter(w => w.section === 'lab').map((w, i) => (
-            <div class="work-card" data-tags={w.tags.join(',')}>
-              <a href={w.url} class="work-main" target="_blank" rel="noopener noreferrer">
-                <div class="work-icon-title">
-                  <span class="work-icon">{w.icon}</span>
-                  <span class="work-title">{w.title}</span>
-                </div>
-                <div class="work-desc">{w.description}</div>
-                <div class="work-tags">
-                  {w.status && <span class={`status-badge status-${w.status}`}>{w.status}</span>}
-                  {w.tags.map(t => <span class="tag">{t}</span>)}
-                </div>
-              </a>
-              <div class="work-footer">
-                {w.links?.map(l => (
-                  <a href={l.url} class="work-link" target="_blank" rel="noopener noreferrer">{l.label} ↗</a>
+      <!-- Works by group -->
+      <div id="works">
+        <div class="filter-bar" id="filter-bar"></div>
+        {GROUPS.map(g => (
+          grouped[g.key].length > 0 && (
+            <div>
+              <div class="group-header">
+                <span class="group-label">{g.label}</span>
+                <span class="group-desc">{g.desc}</span>
+              </div>
+              <div class="works-grid">
+                {grouped[g.key].map((w) => (
+                  <div class="work-card" data-tags={w.tags.join(',')}>
+                    <a href={w.url} class="work-main" target="_blank" rel="noopener noreferrer">
+                      <div class="work-icon-title">
+                        <span class="work-icon">{w.icon}</span>
+                        <span class="work-title">{w.title}</span>
+                      </div>
+                      <div class="work-desc">{w.description}</div>
+                      <div class="work-tags">
+                        {w.status && <span class={`status-badge status-${w.status}`}>{w.status}</span>}
+                        {w.tags.map(t => <span class="tag">{t}</span>)}
+                      </div>
+                    </a>
+                    <div class="work-footer">
+                      {w.links?.map(l => (
+                        <a href={l.url} class="work-link" target="_blank" rel="noopener noreferrer">{l.label} ↗</a>
+                      ))}
+                      {w.prompt && (
+                        <button class="prompt-btn" data-idx={String(works.indexOf(w))} onclick="window.openPrompt(this)">
+                          📋 prompt
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 ))}
-                {w.prompt && (
-                  <button class="prompt-btn" data-idx={String(works.indexOf(w))} onclick="window.openPrompt(this)">
-                    📋 prompt
-                  </button>
-                )}
               </div>
             </div>
-          ))}
-        </div>
+          )
+        ))}
       </div>
     </main>
 
@@ -497,6 +525,33 @@ const docs: { title: string; description: string; url: string }[] = [];
     <canvas id="tinks" style="position:fixed;bottom:0;left:0;pointer-events:none;z-index:999;image-rendering:pixelated;image-rendering:crisp-edges;"></canvas>
     <div id="tinks-bubble" style="position:fixed;bottom:0;left:0;pointer-events:none;z-index:1000;display:none;background:#fff;border:1.5px solid #c8bfb2;border-radius:12px 12px 12px 2px;padding:0.4rem 0.75rem;font-family:'Zen Kaku Gothic New',sans-serif;font-size:0.78rem;font-weight:500;color:#1d1b17;white-space:nowrap;box-shadow:0 2px 10px rgba(29,27,23,0.1);"></div>
 
+    <script is:inline>
+    // Fetch recent posts from tnkblog RSS
+    (async () => {
+      const wrap = document.getElementById('blog-posts');
+      if (!wrap) return;
+      try {
+        const res = await fetch('https://tnkblog.net/rss.xml', { cache: 'no-store' });
+        const text = await res.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(text, 'application/xml');
+        const items = [...doc.querySelectorAll('item')].slice(0, 4);
+        if (!items.length) { wrap.innerHTML = '<span class="blog-loading">記事がありません</span>'; return; }
+        wrap.innerHTML = items.map(item => {
+          const title = item.querySelector('title')?.textContent?.trim() ?? '';
+          const link  = item.querySelector('link')?.textContent?.trim() ?? '#';
+          const pub   = item.querySelector('pubDate')?.textContent?.trim() ?? '';
+          const date  = pub ? new Date(pub).toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' }) : '';
+          return `<a class="blog-post-item" href="${link}" target="_blank" rel="noopener noreferrer">
+            <span class="blog-post-date">${date}</span>
+            <span class="blog-post-title">${title}</span>
+          </a>`;
+        }).join('');
+      } catch {
+        wrap.innerHTML = '<span class="blog-loading">— tnkblog.net</span>';
+      }
+    })();
+    </script>
     <script define:vars={{ works }} is:inline>
     // Prompt modal — is:inline makes functions globally accessible
     window.openPrompt = function(btn) {
