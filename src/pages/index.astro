@@ -344,6 +344,8 @@ const docs: { title: string; description: string; url: string }[] = [];
               <span><span class="hero-stat-val">{works.length}</span> works</span>
               <span class="hero-stat-sep">·</span>
               <span><span class="hero-stat-val">{uniqueTags.length}</span> tags</span>
+              <span class="hero-stat-sep">·</span>
+              <span id="visit-count" style="display:none"><span class="hero-stat-val" id="visit-num">…</span> visits</span>
             </div>
           </div>
         </div>
@@ -506,6 +508,28 @@ const docs: { title: string; description: string; url: string }[] = [];
 
     <script>
     (() => {
+      /* ---- access counter ---- */
+      const API = 'https://feedback.tnks1407.com';
+      if (!sessionStorage.getItem('_hit')) {
+        sessionStorage.setItem('_hit', '1');
+        fetch(API + '/hit', { method: 'POST' })
+          .then(r => r.json())
+          .then(d => {
+            const el = document.getElementById('visit-num');
+            const wrap = document.getElementById('visit-count');
+            if (el && d.count) { el.textContent = d.count.toLocaleString(); wrap.style.display = ''; }
+          }).catch(() => {});
+      } else {
+        fetch(API + '/count').then(r => r.json()).then(d => {
+          const el = document.getElementById('visit-num');
+          const wrap = document.getElementById('visit-count');
+          if (el && d.count) { el.textContent = d.count.toLocaleString(); wrap.style.display = ''; }
+        }).catch(() => {});
+      }
+    })();
+    </script>
+    <script>
+    (() => {
       const SHEET_URL = 'https://raw.githubusercontent.com/TNKS1407/shinku-tinks/master/spritesheet.webp';
       const CW = 192, CH = 208, COLS = 8;
       const getScale = () => window.innerWidth < 480 ? 0.65 : window.innerWidth < 768 ? 0.9 : 1.25;
@@ -515,7 +539,19 @@ const docs: { title: string; description: string; url: string }[] = [];
         idle:{row:0,frames:6},runR:{row:1,frames:8},runL:{row:2,frames:8},
         wave:{row:3,frames:4},jump:{row:4,frames:5},wait:{row:6,frames:6},run:{row:7,frames:6},
       };
-      const QUIPS=(()=>{const h=new Date().getHours();if(h>=6&&h<12)return['おはよう！','今日は何を作る？','朝から元気だな','いい朝だ','コードが気持ちいい時間帯だよ'];if(h>=12&&h<17)return['お昼ちゃんと食べた？','ランキンのブログ見てね','ふむ…','昼寝したい…','なにかお手伝いを'];if(h>=17&&h<21)return['夕方だよ','今日の作業どこまで進んだ？','いい感じじゃない？','そろそろ一区切りかな','コードは詩だよ'];return(['夜更かしはほどほどにね','…','またいる','まだ起きてるの？','静かな夜だ']);})();
+
+      const h = new Date().getHours();
+      const TIME_QUIPS =
+        h>=6&&h<12  ? ['おはよう！','今日は何を作る？','コードが気持ちいい時間帯だよ','朝型だね','早起きは三文の徳とか言うよ'] :
+        h>=12&&h<17 ? ['お昼ちゃんと食べた？','ちょっと休憩しよ','ふむ…','コードより眠気が勝ちそう','いい感じじゃない？'] :
+        h>=17&&h<21 ? ['夕方だよ','今日どこまで進んだ？','そろそろ一区切りかな','コードは詩だよ','いい仕事したね'] :
+                      ['夜更かしはほどほどにね','…静かだ','またいる','まだ起きてるの？','深夜のコードは後で読めないやつ'];
+      const CARD_QUIPS = ['これ作ったの？','気になる','触ってみてよ','面白いよ','へえ〜'];
+      const PET_QUIPS  = ['くすぐったいよ','なでなでしすぎ…','もう…','えへへ','止まらないの？'];
+      const JUMP_QUIPS = ['ひょいっ','たかーい','気持ちいい','またやって','ぴょん'];
+
+      function randQuip(arr) { return arr[Math.floor(Math.random()*arr.length)]; }
+
       const canvas = document.getElementById('tinks');
       function resizeCanvas(){SCALE=getScale();DRAW_W=CW*SCALE;DRAW_H=CH*SCALE;canvas.width=DRAW_W;canvas.height=DRAW_H;}
       resizeCanvas();
@@ -524,8 +560,52 @@ const docs: { title: string; description: string; url: string }[] = [];
       const off=document.createElement('canvas');off.width=CW;off.height=CH;
       const offCtx=off.getContext('2d');
       const img=new Image();img.crossOrigin='anonymous';img.src=SHEET_URL;
-      let posX=40,velX=0.8,state='idle',frame=0,stateTimer=0;
-      const FPS=8,FRAME_MS=1000/FPS;
+
+      let posX=40, velX=0.8, state='idle', frame=0, stateTimer=0;
+      const FPS=8, FRAME_MS=1000/FPS;
+
+      /* ---- footprints ---- */
+      const footCanvas = document.createElement('canvas');
+      footCanvas.style.cssText='position:fixed;inset:0;pointer-events:none;z-index:997;';
+      document.body.appendChild(footCanvas);
+      const footCtx = footCanvas.getContext('2d');
+      const footResize = () => { footCanvas.width=window.innerWidth; footCanvas.height=window.innerHeight; };
+      footResize(); window.addEventListener('resize', footResize);
+      const footprints = [];
+      let footStep = 0;
+      function addFootprint() {
+        if (state !== 'runR' && state !== 'runL') return;
+        footStep++;
+        if (footStep % 18 !== 0) return;
+        const side = state === 'runR' ? 1 : -1;
+        footprints.push({
+          x: posX + DRAW_W * 0.45 + side * DRAW_W * 0.18,
+          y: window.innerHeight - 6,
+          life: 1.0,
+          flip: side < 0,
+        });
+        if (footprints.length > 30) footprints.shift();
+      }
+      function drawFootprints() {
+        footCtx.clearRect(0, 0, footCanvas.width, footCanvas.height);
+        for (const f of footprints) {
+          f.life -= 0.012;
+          if (f.life <= 0) continue;
+          footCtx.save();
+          footCtx.globalAlpha = f.life * 0.45;
+          footCtx.fillStyle = '#3c7876';
+          footCtx.beginPath();
+          const rx = f.flip ? -4 : 4;
+          footCtx.ellipse(f.x, f.y, 4, 2.5, f.flip ? -0.3 : 0.3, 0, Math.PI*2);
+          footCtx.fill();
+          footCtx.restore();
+        }
+        footprints.splice(0, footprints.filter(f => f.life <= 0).length);
+      }
+
+      /* ---- pet counter ---- */
+      let petCount = 0, petTimer = null;
+
       function chromaKey(d){for(let i=0;i<d.length;i+=4)if(d[i]>200&&d[i+1]<80&&d[i+2]>200)d[i+3]=0;}
       function drawSprite(){
         const s=STATES[state];
@@ -541,16 +621,17 @@ const docs: { title: string; description: string; url: string }[] = [];
         canvas.style.left=posX+'px';canvas.style.bottom='0px';
         bubble.style.left=(posX+DRAW_W*0.1)+'px';bubble.style.bottom=(DRAW_H+8)+'px';
       }
-      function showBubble(){
-        bubble.textContent=QUIPS[Math.floor(Math.random()*QUIPS.length)];
+      function showBubble(text, dur=2800){
+        bubble.textContent=text;
         bubble.style.display='block';
-        setTimeout(()=>{bubble.style.display='none';},2500);
+        clearTimeout(bubble._t);
+        bubble._t=setTimeout(()=>{bubble.style.display='none';},dur);
       }
       function pickState(){
         const r=Math.random();
         if(r<0.35){state='runR';velX=1.2;}
         else if(r<0.7){state='runL';velX=-1.2;}
-        else if(r<0.82){state='wave';velX=0;showBubble();}
+        else if(r<0.82){state='wave';velX=0;showBubble(randQuip(TIME_QUIPS));}
         else if(r<0.9){state='jump';velX=0;}
         else{state='idle';velX=0;}
         stateTimer=120+Math.random()*180;frame=0;
@@ -565,33 +646,75 @@ const docs: { title: string; description: string; url: string }[] = [];
           if(posX<=0){posX=0;velX=Math.abs(velX);state='runR';frame=0;}
           if(posX>=maxX){posX=maxX;velX=-Math.abs(velX);state='runL';frame=0;}
           if(--stateTimer<=0)pickState();
-          drawSprite();positionCanvas();lastTs=ts;
+          addFootprint();
+          drawSprite();drawFootprints();positionCanvas();lastTs=ts;
         }
         requestAnimationFrame(tick);
       }
       img.onload=()=>{posX=Math.random()*(window.innerWidth-DRAW_W*2)+DRAW_W;pickState();requestAnimationFrame(tick);};
       window.addEventListener('resize',()=>{resizeCanvas();positionCanvas();});
+
+      /* ---- click anywhere → wave ---- */
       document.addEventListener('click',e=>{
-        if(e.target===canvas||e.target.closest('.modal-overlay,.prompt-btn'))return;
-        state='wave';velX=0;frame=0;stateTimer=60;showBubble();
+        if(e.target===canvas||e.target.closest('.modal-overlay,.prompt-btn,.fb-overlay'))return;
+        state='wave';velX=0;frame=0;stateTimer=60;showBubble(randQuip(TIME_QUIPS));
       });
+
+      /* ---- click on Rankine → pet ---- */
+      canvas.addEventListener('click', e => {
+        e.stopPropagation();
+        petCount++;
+        clearTimeout(petTimer);
+        petTimer = setTimeout(() => { petCount = 0; }, 1200);
+        if (petCount >= 5) {
+          state='jump';velX=0;frame=0;stateTimer=80;
+          showBubble(randQuip(PET_QUIPS), 3200);
+          petCount = 0;
+        } else {
+          state='wave';velX=0;frame=0;stateTimer=50;
+          showBubble(randQuip(PET_QUIPS));
+        }
+      });
+
+      /* ---- hover near Rankine → react ---- */
       document.addEventListener('mousemove',e=>{
         const cx=posX+DRAW_W/2,cy=window.innerHeight-DRAW_H/2;
         const dist=Math.hypot(e.clientX-cx,e.clientY-cy);
-        if(dist<DRAW_W*0.9&&state!=='wave'){
+        if(dist<DRAW_W*0.9&&state!=='wave'&&state!=='jump'){
           const dir=posX+DRAW_W/2<e.clientX?'runL':'runR';
           if(state!==dir){state=dir;velX=dir==='runR'?2.8:-2.8;frame=0;stateTimer=80;}
         } else if(dist<DRAW_W*1.8&&state!=='wave'&&state!=='jump'){
           state='idle';velX=0;stateTimer=40;
         }
       });
-      document.querySelector('.hero-avatar')?.addEventListener('click',e=>{
-        e.stopPropagation();state='jump';velX=0;frame=0;stateTimer=60;showBubble();
+
+      /* ---- hover on work card → Rankine runs toward it ---- */
+      let cardHoverTimer = null;
+      document.querySelectorAll('.work-card').forEach(card => {
+        card.addEventListener('mouseenter', () => {
+          cardHoverTimer = setTimeout(() => {
+            if (state === 'wave' || state === 'jump') return;
+            const rect = card.getBoundingClientRect();
+            const targetX = rect.left + rect.width / 2;
+            const dir = posX + DRAW_W / 2 < targetX ? 'runR' : 'runL';
+            state = dir; velX = dir === 'runR' ? 2.0 : -2.0; frame = 0; stateTimer = 100;
+            showBubble(randQuip(CARD_QUIPS));
+          }, 700);
+        });
+        card.addEventListener('mouseleave', () => clearTimeout(cardHoverTimer));
       });
+
+      /* ---- hero avatar click → jump ---- */
+      document.querySelector('.hero-avatar')?.addEventListener('click',e=>{
+        e.stopPropagation();state='jump';velX=0;frame=0;stateTimer=60;
+        showBubble(randQuip(JUMP_QUIPS));
+      });
+
+      /* ---- Konami code ---- */
       const KONAMI=['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','KeyB','KeyA'];
       let kIdx=0;
       document.addEventListener('keydown',e=>{
-        if(e.code===KONAMI[kIdx]){kIdx++;if(kIdx===KONAMI.length){kIdx=0;let n=0;const t=setInterval(()=>{const ss=['runR','runL','jump','wave'];state=ss[n%ss.length];velX=state==='runR'?3.5:state==='runL'?-3.5:0;frame=0;stateTimer=18;showBubble();if(++n>18)clearInterval(t);},280);}}else{kIdx=0;}
+        if(e.code===KONAMI[kIdx]){kIdx++;if(kIdx===KONAMI.length){kIdx=0;let n=0;const t=setInterval(()=>{const ss=['runR','runL','jump','wave'];state=ss[n%ss.length];velX=state==='runR'?3.5:state==='runL'?-3.5:0;frame=0;stateTimer=18;showBubble('コナミコマンド！');if(++n>18)clearInterval(t);},280);}}else{kIdx=0;}
       });
     })();
     </script>
