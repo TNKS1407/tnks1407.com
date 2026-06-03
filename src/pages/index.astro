@@ -1,7 +1,7 @@
 ---
 type Work = {
   title: string; description: string; url: string;
-  tags: string[]; icon?: string;
+  tags: string[]; icon?: string; status?: string; section?: 'works' | 'lab';
   links?: { label: string; url: string }[];
   prompt?: string;
 };
@@ -24,9 +24,10 @@ const works: Work[] = [
   {
     title: "FDTD Human RF",
     icon: "📡",
-    description: "GHz帯の小型無線源と人体断面の相互作用をFDTD法でシミュレート。電界の影・回り込み・透過・吸収を可視化。Streamlit製。",
+    description: "GHz帯の無線源と人体の相互作用をFDTD法で2Dシミュレート。電界の影・回り込み・透過・吸収をリアルタイム可視化。遮蔽損失[dB]・RMS・GIFアニメ出力対応。",
     url: "https://fdtd.tnks1407.com",
     tags: ["Python", "FDTD", "RF", "Streamlit"],
+    status: "Prototype", section: "lab",
     prompt: `GHz帯の小型無線源（点波源）と受信点の間に人体が存在する場合の電磁波伝搬を可視化するPythonツールを作ってほしい。
 
 要件：
@@ -43,9 +44,10 @@ const works: Work[] = [
   {
     title: "Nico Comment System",
     icon: "💬",
-    description: "プレゼン・配信画面にリアルタイムでコメントを流すニコニコ風オーバーレイシステム。外部依存ゼロのNode.js製。",
+    description: "プレゼン・配信画面にリアルタイムコメントを流すニコニコ風オーバーレイ。投稿URL・表示URL・QRコード・管理画面の4エンドポイント。外部npmゼロ・Node.js標準APIのみ。",
     url: "https://nico.tnks1407.com",
     tags: ["Node.js", "SSE", "Self-host"],
+    status: "Stable", section: "works",
     links: [
       { label: "投稿", url: "https://nico.tnks1407.com/p/A7kP3dQ9" },
       { label: "画面", url: "https://nico.tnks1407.com/s/A7kP3dQ9" },
@@ -67,9 +69,10 @@ const works: Work[] = [
   {
     title: "VG Generator",
     icon: "🌀",
-    description: "ボルテックスジェネレーターSTLをブラウザで生成。スライダーでパラメータ調整、3Dプレビュー付き、そのまま3Dプリント可能。",
+    description: "ボルテックスジェネレーターのSTLをブラウザだけで生成・ダウンロード。Rect Vane / Delta Wedgeの2形状。リアルタイム3Dプレビュー付き。サーバー不要・3Dプリント直行。",
     url: "https://vg.tnks1407.com",
     tags: ["JavaScript", "3D Print", "STL"],
+    status: "Stable", section: "works",
     prompt: `ボルテックスジェネレーター（VG）のSTLファイルをブラウザだけで生成できるWebアプリを作って。
 
 要件：
@@ -83,9 +86,10 @@ const works: Work[] = [
   {
     title: "イベント会計",
     icon: "📊",
-    description: "幹事がブラウザで割り勘計算・回収状況を管理し、参加者と公開URLで共有できるツール。ExcelもPythonも不要。",
+    description: "幹事が割り勘計算・回収状況を管理し参加者と公開URLで共有するツール。口数の重み付き按分・端数丸め設定・5秒自動更新。ExcelもPythonも不要。",
     url: "https://events.tnks1407.com",
     tags: ["Node.js", "JSON API"],
+    status: "Stable", section: "works",
     links: [
       { label: "幹事ページ", url: "https://events.tnks1407.com/admin" },
       { label: "参加者ページ", url: "https://events.tnks1407.com" },
@@ -103,9 +107,10 @@ const works: Work[] = [
   {
     title: "電源制御ワークベンチ",
     icon: "⚡",
-    description: "Buck/Boostコンバーターの電圧モード制御設計ツール。Bode線図・ステップ応答・デジタル制御シミュレーション対応。",
+    description: "Buck/Boostコンバーターの電圧モード制御設計ツール。小信号モデルからBode線図・ループゲイン・PI/Type-II/III補償器設計・ステップ応答・デジタル制御遅延シミュレーションまで。",
     url: "https://psu.tnks1407.com",
     tags: ["JavaScript", "Control", "Buck/Boost"],
+    status: "Stable", section: "works",
     prompt: `Buck/Boostコンバーターの電圧モード制御を設計・検証できるブラウザツールを作って。
 
 要件：
@@ -121,9 +126,10 @@ const works: Work[] = [
   {
     title: "グラフ工房",
     icon: "📐",
-    description: "データシート・論文のグラフをAIで読み取りJSONにし、補間・点修正・CSV化・複数グラフ重ね合わせができる作業台。",
+    description: "データシート・論文のグラフ画像をAIが読み取りJSON化。点の追加・移動・削除、線形/対数補間、複数グラフ重ね合わせ、比較カーソル、CSV書き出しが可能な作業台。",
     url: "https://graph.tnks1407.com",
     tags: ["JavaScript", "Graph", "CSV"],
+    status: "Stable", section: "works",
     prompt: `データシートや論文のグラフ画像をAIに読み取らせてJSON化し、ブラウザで編集・分析できる作業台を作って。
 
 要件：
@@ -136,27 +142,35 @@ const works: Work[] = [
 - サンプルJSONは周波数応答データ（dBm vs MHz）を想定`
   },
   {
-    title: "SEIGOU — RFマッチング",
-    icon: "📡",
-    description: "RFインピーダンス整合回路をブラウザで計算・設計するツール。L・π・T型回路対応、スミスチャート表示付き。",
+    title: "SEIGOU",
+    icon: "💑",
+    description: "RFエンジニア向け架空マッチングアプリ。インピーダンス・Γ・Q値・VSWRがプロフィール欄に並ぶ。スワイプでMATCH後、L型整合回路のL/C値を計算してくれる。",
     url: "https://seigou.tnks1407.com",
-    tags: ["JavaScript", "RF", "Impedance Matching"],
-    prompt: `RFのインピーダンス整合回路（マッチングネットワーク）を設計・計算できるブラウザツールを作って。
+    tags: ["JavaScript", "RF", "スミスチャート"],
+    status: "Toy", section: "lab",
+    prompt: `RFエンジニア向けの架空マッチングアプリを作って。「相性」をインピーダンス整合の概念で表現し、実際の恋愛とRF工学のダジャレ・メタファーで構成する。
 
-要件：
-- 入力: 信号源インピーダンス・負荷インピーダンス・動作周波数
-- L型・π型・T型整合回路の設計値を計算
-- スミスチャート上でインピーダンスの軌跡を表示
-- Q値・帯域幅の表示
-- 複素インピーダンス（抵抗+リアクタンス）の入力対応
-- モバイル対応`
+コンセプト：
+- 50Ωに矯正するのでなく、複素負荷のまま電力伝送できる関係を探す
+- プロフィール: インピーダンス傾向・Q値・γ・VSWR・Return Loss・bio・欲しい整合
+- スワイプ: 左=OPEN（開放端）、右=MATCH（共役整合）、上=THRU
+- MATCH後: Z = R+jX 表示とL型整合回路のL/C計算
+- スミスチャートを本格的に表示（定抵抗円・定リアクタンス弧）
+
+技術要件：
+- スワイプ操作はPointerEvents（スマホ・PC共通）
+- profileはprofiles.json外出し
+- プロフィール登録はlocalStorage保存
+- スマホ最適化（max-width 480px）
+- 整合回路計算: L型ネットワークのQ・直列・並列素子値を算出`
   },
   {
     title: "Vortex Generator Tools",
     icon: "🔧",
-    description: "rect・delta形状のVG STLを生成するPythonスクリプト。numpy・trimeshのみで動作、サンプルSTL付き。",
+    description: "Rect Vane・Delta Wedge形状のVG STLをCLIで生成するPythonライブラリ。plate配列モード対応。numpy・trimeshのみ。ブラウザ版VG Generatorのバックエンド相当。",
     url: "https://github.com/TNKS1407/vortex-generator-tools",
     tags: ["Python", "trimesh", "3D Print"],
+    status: "Lab", section: "lab",
     prompt: `Pythonでボルテックスジェネレーター（VG）のSTLファイルを生成するCLIツールを作って。
 
 要件：
@@ -169,9 +183,10 @@ const works: Work[] = [
   {
     title: "MOSFETの選定と使用設計ガイド",
     icon: "📚",
-    description: "パワーMOSFETのスイッチング設計に必要な損失計算・ゲート駆動・熱設計・SOA・アバランシェ・測定を網羅した技術文書。参考文献付き。",
+    description: "パワーMOSFETのスイッチング設計リファレンス。損失計算・ゲート駆動・熱設計・SOA・アバランシェ耐量・測定まで実務で参照できる構成。参考文献付き。",
     url: "https://docs.tnks1407.com",
     tags: ["MOSFET", "Power Electronics", "技術文書"],
+    status: "Stable", section: "works",
     prompt: `パワーMOSFETをスイッチング用途で使う際に必要な技術情報を、実務で使える辞書的文書としてまとめてほしい。
 
 対象読者: 電子回路の素養はあるが、MOSFETの詳細設計（損失・熱・ゲート駆動）にまだ慣れていない人
@@ -191,9 +206,10 @@ const works: Work[] = [
   {
     title: "tnks-lab",
     icon: "🧪",
-    description: "AI実験・雑メモをGitHub Issueに自動変換する個人用ラボツール。PowerShell製UIランチャー付き。",
+    description: "AI実験ログ・雑メモをdropフォルダに置くだけでGitHub Issueに変換する個人用ワークフロー。PowerShell製UIランチャーで操作。GitHub CLI経由でIssue投稿。",
     url: "https://github.com/TNKS1407/tnks-lab",
     tags: ["PowerShell", "GitHub API", "CLI"],
+    status: "Lab", section: "lab",
     prompt: `AI実験のメモや雑なアイデアをdropフォルダに置くだけでGitHub Issueに変換する個人用ツールを作って。
 
 要件：
@@ -272,8 +288,13 @@ const docs: { title: string; description: string; url: string }[] = [];
       .work-icon{font-size:1.1rem;}
       .work-title{font-size:0.95rem;font-weight:800;}
       .work-desc{font-size:0.82rem;color:var(--text-muted);line-height:1.55;margin-bottom:0.75rem;}
-      .work-tags{display:flex;gap:0.3rem;flex-wrap:wrap;}
+      .work-tags{display:flex;gap:0.3rem;flex-wrap:wrap;align-items:center;}
       .tag{background:var(--surface2);border:1px solid var(--border);color:var(--accent1);padding:0.1rem 0.45rem;border-radius:4px;font-size:0.7rem;font-weight:700;font-family:'JetBrains Mono',monospace;}
+      .status-badge{padding:0.1rem 0.45rem;border-radius:4px;font-size:0.68rem;font-weight:800;font-family:'JetBrains Mono',monospace;border:1px solid;}
+      .status-Stable{background:#e6faf5;color:#0d9488;border-color:#99e6d8;}
+      .status-Prototype{background:#eff6ff;color:#2563eb;border-color:#bfdbfe;}
+      .status-Lab{background:#fff7ed;color:#c2410c;border-color:#fed7aa;}
+      .status-Toy{background:#fdf4ff;color:#7e22ce;border-color:#e9d5ff;}
       .work-footer{display:flex;gap:0.35rem;flex-wrap:wrap;padding:0.6rem 1.25rem;border-top:1px solid var(--border);background:var(--surface);align-items:center;}
       .work-link{color:var(--accent1);font-size:0.72rem;font-weight:700;text-decoration:none;font-family:'JetBrains Mono',monospace;padding:0.1rem 0.45rem;background:rgba(200,126,192,0.08);border-radius:4px;border:1px solid rgba(200,126,192,0.2);transition:background 0.15s;}
       .work-link:hover{background:rgba(200,126,192,0.18);}
@@ -395,7 +416,7 @@ const docs: { title: string; description: string; url: string }[] = [];
         <div class="section-title">WORKS</div>
         <div class="filter-bar" id="filter-bar"></div>
         <div class="works-grid">
-          {works.map((w, i) => (
+          {works.filter(w => w.section !== 'lab').map((w, i) => (
             <div class="work-card" data-tags={w.tags.join(',')}>
               <a href={w.url} class="work-main" target="_blank" rel="noopener noreferrer">
                 <div class="work-icon-title">
@@ -404,6 +425,7 @@ const docs: { title: string; description: string; url: string }[] = [];
                 </div>
                 <div class="work-desc">{w.description}</div>
                 <div class="work-tags">
+                  {w.status && <span class={`status-badge status-${w.status}`}>{w.status}</span>}
                   {w.tags.map(t => <span class="tag">{t}</span>)}
                 </div>
               </a>
@@ -412,7 +434,36 @@ const docs: { title: string; description: string; url: string }[] = [];
                   <a href={l.url} class="work-link" target="_blank" rel="noopener noreferrer">{l.label} ↗</a>
                 ))}
                 {w.prompt && (
-                  <button class="prompt-btn" data-idx={String(i)} onclick="window.openPrompt(this)">
+                  <button class="prompt-btn" data-idx={String(works.indexOf(w))} onclick="window.openPrompt(this)">
+                    📋 prompt
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div class="section-title" style="margin-top:1.5rem">LAB</div>
+        <div class="works-grid">
+          {works.filter(w => w.section === 'lab').map((w, i) => (
+            <div class="work-card" data-tags={w.tags.join(',')}>
+              <a href={w.url} class="work-main" target="_blank" rel="noopener noreferrer">
+                <div class="work-icon-title">
+                  <span class="work-icon">{w.icon}</span>
+                  <span class="work-title">{w.title}</span>
+                </div>
+                <div class="work-desc">{w.description}</div>
+                <div class="work-tags">
+                  {w.status && <span class={`status-badge status-${w.status}`}>{w.status}</span>}
+                  {w.tags.map(t => <span class="tag">{t}</span>)}
+                </div>
+              </a>
+              <div class="work-footer">
+                {w.links?.map(l => (
+                  <a href={l.url} class="work-link" target="_blank" rel="noopener noreferrer">{l.label} ↗</a>
+                ))}
+                {w.prompt && (
+                  <button class="prompt-btn" data-idx={String(works.indexOf(w))} onclick="window.openPrompt(this)">
                     📋 prompt
                   </button>
                 )}
