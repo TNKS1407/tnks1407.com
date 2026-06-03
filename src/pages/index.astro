@@ -17,10 +17,20 @@ const quickLinks = [
   { label: "psu.tnks1407.com", url: "https://psu.tnks1407.com", icon: "⚡" },
   { label: "graph.tnks1407.com", url: "https://graph.tnks1407.com", icon: "📐" },
   { label: "docs.tnks1407.com", url: "https://docs.tnks1407.com", icon: "📚" },
+  { label: "pml.tnks1407.com", url: "https://pml.tnks1407.com", icon: "🧮" },
   { label: "GitHub", url: "https://github.com/TNKS1407", icon: "⚙" },
 ];
 
 const works: Work[] = [
+  {
+    title: "Process Modeling Lab",
+    icon: "🧮",
+    description: "プロセスデータのモデル化を数値計算で体験する学習ツール。単回帰・多重共線性・PLS・JIT型ソフトセンサー・グレーボックス・転移学習・生データ診断を実際に計算して比較できる。scikit-learn不使用。",
+    url: "https://pml.tnks1407.com",
+    tags: ["Python", "PLS", "JIT", "転移学習"],
+    status: "Prototype", section: "lab",
+    prompt: "プロセスデータのモデル化を、実際の数値計算で試すための学習ツールを作って。\n\n## 背景\nOLS・Ridge・PCR・PLS・JIT型・グレーボックス・転移学習の違いを「動く数値」で実感できるものが欲しい。教科書の説明ではなく、実際にデータを生成して計算を走らせる。scikit-learnは使わず、アルゴリズムの中身が見えるように自前実装する。\n\n## 含めるシミュレーション\n1. 単回帰: 標準化傾き = 相関係数であることを数値確認\n2. 多重共線性: ほぼ同じ変数でOLS係数が不安定になる例 + PLSで安定化\n3. JIT型ソフトセンサー: メンテ後リセット・非線形・モード差を含むデータで局所モデルを比較\n4. グレーボックス: 物理モデル/統計モデル/パラレル/シリアル型の精度比較\n5. 転移学習: センサー数が違うドメイン間でFEHDA風特徴空間拡張 vs 少数データのみ\n6. 生データ診断: 外れ値・ドリフト・周期変動・下限張り付き・多峰性を自動検出\n\n## 技術要件\n- numpy・pandas・matplotlibのみ（scikit-learnなし）\n- 各アルゴリズムは実装が見えるように中核モジュールに書く\n- Webで動かすため軽量HTTPサーバーで提供（Streamlitなし）\n- 実行結果はPNGで返す",
+  },
   {
     title: "FDTD Human RF",
     icon: "📡",
