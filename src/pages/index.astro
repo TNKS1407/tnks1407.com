@@ -40,7 +40,7 @@ const works: Work[] = [
     links: [
       { label: "投稿", url: "https://nico.tnks1407.com/p/A7kP3dQ9" },
       { label: "画面", url: "https://nico.tnks1407.com/s/A7kP3dQ9" },
-      { label: "管理", url: "https://nico.tnks1407.com/admin" },
+      { label: "管理（要認証）", url: "https://nico.tnks1407.com/admin" },
       { label: "QR", url: "https://nico.tnks1407.com/q/A7kP3dQ9" },
     ],
     prompt: "プレゼンや配信画面にリアルタイムコメントを流す「ニコニコ風オーバーレイ」を作って。\n\n## 背景\nOBSのブラウザソース・Zoom画面共有・スライド発表で使う。\nDiscordや外部サービスに依存せず、自分のPC/サーバーだけで動かしたい。\nスマホから投稿→画面に流れるという体験が1コマンドで立ち上がること。\n\n## アーキテクチャ\n単一の Node.js ファイル（server.js）でHTTPサーバを立てる。\nnpmパッケージ不使用（node:http, node:fs, node:crypto のみ）。\n\n## エンドポイント設計\n- GET /s/:roomId → 表示画面（コメントが右から左に流れるHTML）\n- GET /p/:roomId → 投稿フォーム（スマホ向けシンプルUI）\n- GET /q/:roomId → QRコード付き投稿URL表示（OBSオーバーレイ用）\n- GET /admin → 管理画面（コメント一覧・有効無効・クリア）\n- GET /events/:roomId → SSEストリーム（表示画面が購読）\n- POST /comment → コメント投稿\n\n## コメント表示\n- ランダムな上下位置・速度・フォントサイズ（12〜24px）\n- テキスト色はランダム（視認性確保のため暗色背景前提で明るい色）\n- アニメーションはCSSのtranslateXで右→左\n- 表示中は背景透明（OBSでchromakey不要）\n\n## 安全対策\n- IPベースの連投制限（30秒間に3件まで）\n- NGワードリスト（config.jsonで設定）\n- コメント内のURL・電話番号を正規表現で除去\n- コメント長200文字上限\n\n## 設定（config.json）\nroomId・port・ngWords・maxLen・rateLimit などを管理する"
