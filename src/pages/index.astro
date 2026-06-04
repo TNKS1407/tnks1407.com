@@ -35,6 +35,7 @@ const works: Work[] = [
     url: "https://astro.tnks1407.com",
     tags: ["JavaScript", "Canvas", "天文学", "シミュレーション"],
     status: "Stable", section: "lab", group: "engineering",
+    prompt: "古典天文学の2本セットを作って。\n\n## Theatrum Mundi（天動説シミュレーター）\nプトレマイオスの地球中心モデルを視覚化する。惑星ごとに離心円・周転円のパラメータを持ち、日付スライダーを動かすと惑星が動く。夜空の雰囲気で真鍮・金色系のカラーパレット。\n\n## Tabula Motuum（天体軌跡図）\n惑星の軌跡を時間積分して描く。古い羊皮紙・写本のスタイルで白黒。軌跡を重ねると逆行運動（retrograde）が可視化される。",
   },
   {
     title: "空間群エクスプローラ",
@@ -43,6 +44,7 @@ const works: Work[] = [
     url: "https://sg.tnks1407.com",
     tags: ["Three.js", "結晶学", "空間群", "対称性"],
     status: "Stable", section: "lab", group: "engineering",
+    prompt: "結晶学の空間群を3Dで探索できるブラウザツールを作って。\n\n## 機能要件\n- 全230空間群（標準設定）をリストで検索・選択\n- Three.jsで単位胞を3D描画。格子ベクトル・対称操作の回転軸・鏡映面を可視化\n- 一般位置(x,y,z)スライダーで等価位置の生成をリアルタイム確認\n- 各空間群のHermann-Mauguin記号をトークンに分解して説明\n- 逆空間（ブリルアンゾーン）表示モード\n- NaCl・ダイヤモンド等の実在結晶プリセット（原子の等価位置を色分け）\n\n## UI\n- 左：空間群リスト（結晶系フィルタ・検索）\n- 中央：3Dビューア\n- 右：対称操作リスト・記号解説",
   },
   {
     title: "Engineering Mini Tools",
@@ -51,6 +53,7 @@ const works: Work[] = [
     url: "https://eng.tnks1407.com",
     tags: ["JavaScript", "RF", "Power Electronics", "計算ツール"],
     status: "Prototype", section: "works", group: "engineering",
+    prompt: "よく使う工学計算を1ページにカード形式で集めたブラウザツールを作って。外部ライブラリなし。\n\n## 含めるカード\n1. dB変換（電圧比・電力比の相互変換）\n2. RC時定数（τ=RC、f_c=1/(2πRC)）\n3. LCR共振（f_r、Q値、帯域幅）\n4. 抵抗分圧（V_out算出・逆算）\n5. LED保護抵抗（V_supply/V_f/I_f から R算出）\n6. MOSFET損失概算（P_on + P_sw）\n7. 熱抵抗（Tj = Ta + Ptot × Rth）\n8. Bode近似（1次LPF/HPF の折れ線特性）\n9. AWGリファレンス表（線径・抵抗・許容電流）\n\n## UI\n- カードグリッド。各カードは入力欄と計算結果を持ち、入力変更でリアルタイム更新\n- 計算式の簡単な説明も添える\n- 注意書き（安全係数は自分で判断）",
   },
   {
     title: "Process Effect Lab",
@@ -60,6 +63,7 @@ const works: Work[] = [
     tags: ["Python", "PLS", "What-If分析"],
     status: "Prototype", section: "lab", group: "data-lab",
     links: [{ label: "GitHub", url: "https://github.com/TNKS1407/process-effect-lab" }],
+    prompt: "プロセスデータのモデリング手法を「パラメータを変えると何が起きるか」で体験するツールを作って。\n\n## 背景\nProcess Modeling Lab（pml.tnks1407.com）は「実験を実行してPNG結果を見る」形式。このv2は「スライダーを動かしながらリアルタイムに変化を観察する」What-If形式にしたい。\n\n## 実験タブ（タブ切替）\n1. 単回帰 — ノイズ量・サンプル数・真の傾きを変える\n2. 多重共線性 — 共線性の強さ（相関係数）を動かしてOLS係数の不安定化を観察\n3. JITソフトセンサー — 局所窓サイズ・ノイズで局所 vs グローバルを比較\n4. グレーボックス — 物理モデル精度（θのズレ）を変えて各手法のRMSEを比較\n5. 転移学習 — ターゲットサンプル数を動かしてFEHDAの優位性が出る条件を確認\n6. 生データ診断 — 外れ値率・ドリフト強度を変えてフラグ検出率を観察\n\n## 技術\n- Python軽量HTTPサーバー（Streamlitなし）\n- スライダー変更→POST→matplotlib図をbase64で返す\n- Study Guide（各手法の理論説明）をサイドバーまたはタブ内に配置",
   },
   {
     title: "Gradus — 触って学ぶ画像処理ラボ",
