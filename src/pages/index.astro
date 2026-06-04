@@ -22,6 +22,7 @@ const quickLinks = [
   { label: "gradus.tnks1407.com", url: "https://gradus.tnks1407.com", icon: "🎨" },
   { label: "effect.tnks1407.com", url: "https://effect.tnks1407.com", icon: "🔬" },
   { label: "eng.tnks1407.com", url: "https://eng.tnks1407.com", icon: "🔧" },
+  { label: "Stepper Lab", url: "/stepper-motor-lab", icon: "⚙️" },
   { label: "GitHub", url: "https://github.com/TNKS1407", icon: "⚙" },
 ];
 
@@ -33,6 +34,14 @@ const works: Work[] = [
     url: "https://eng.tnks1407.com",
     tags: ["JavaScript", "RF", "Power Electronics", "計算ツール"],
     status: "Prototype", section: "works", group: "engineering",
+  },
+  {
+    title: "Stepper Motor Lab",
+    icon: "⚙️",
+    description: "2相ハイブリッドステッピングモータの相電流・合成磁界・ロータ追従・トルク低下・脱調リスクをブラウザ上で可視化する教育用ラボ。Wave / Full / Half / Microstep / Chopper を切り替えて比較できる。",
+    url: "/stepper-motor-lab",
+    tags: ["TypeScript", "Motor", "Canvas", "可視化"],
+    status: "Prototype", section: "lab", group: "engineering",
   },
   {
     title: "Process Effect Lab",
@@ -230,7 +239,7 @@ const grouped = Object.fromEntries(
         border:2.5px solid var(--border);box-shadow:0 2px 12px var(--shadow-md);
         background:var(--surface2);cursor:pointer;
         /* Tinks sprite — idle row 0, first frame (192×208), sheet is 1536×1872 */
-        background-image:url('https://raw.githubusercontent.com/TNKS1407/shinku-tinks/master/spritesheet.webp');
+        background-image:url('/spritesheet.webp');
         background-size:576px auto;background-position:0 -4px;background-repeat:no-repeat;
       }
       .hero-text{flex:1;min-width:0;}
@@ -604,7 +613,7 @@ const grouped = Object.fromEntries(
     </script>
     <script>
     (() => {
-      const SHEET_URL = 'https://raw.githubusercontent.com/TNKS1407/shinku-tinks/master/spritesheet.webp';
+      const SHEET_URL = '/spritesheet.webp';
       const CW = 192, CH = 208, COLS = 8;
       const getScale = () => window.innerWidth < 480 ? 0.65 : window.innerWidth < 768 ? 0.9 : 1.25;
       let SCALE = getScale();
