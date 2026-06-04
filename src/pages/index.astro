@@ -22,11 +22,19 @@ const quickLinks = [
   { label: "gradus.tnks1407.com", url: "https://gradus.tnks1407.com", icon: "🎨" },
   { label: "effect.tnks1407.com", url: "https://effect.tnks1407.com", icon: "🔬" },
   { label: "eng.tnks1407.com", url: "https://eng.tnks1407.com", icon: "🔧" },
-  { label: "Stepper Lab", url: "/stepper-motor-lab", icon: "⚙️" },
+  { label: "sg.tnks1407.com", url: "https://sg.tnks1407.com", icon: "🔷" },
   { label: "GitHub", url: "https://github.com/TNKS1407", icon: "⚙" },
 ];
 
 const works: Work[] = [
+  {
+    title: "空間群エクスプローラ",
+    icon: "🔷",
+    description: "全230空間群をブラウザで探索する3Dビジュアライザ。Hermann-Mauguin記号を選ぶと対称操作が可視化され、一般位置(x,y,z)スライダーで等価位置の生成が見える。逆空間（BZ）モード・実在結晶プリセット付き。",
+    url: "https://sg.tnks1407.com",
+    tags: ["Three.js", "結晶学", "空間群", "対称性"],
+    status: "Stable", section: "lab", group: "engineering",
+  },
   {
     title: "Engineering Mini Tools",
     icon: "🔧",
@@ -34,14 +42,6 @@ const works: Work[] = [
     url: "https://eng.tnks1407.com",
     tags: ["JavaScript", "RF", "Power Electronics", "計算ツール"],
     status: "Prototype", section: "works", group: "engineering",
-  },
-  {
-    title: "Stepper Motor Lab",
-    icon: "⚙️",
-    description: "2相ハイブリッドステッピングモータの相電流・合成磁界・ロータ追従・トルク低下・脱調リスクをブラウザ上で可視化する教育用ラボ。Wave / Full / Half / Microstep / Chopper を切り替えて比較できる。",
-    url: "/stepper-motor-lab",
-    tags: ["TypeScript", "Motor", "Canvas", "可視化"],
-    status: "Prototype", section: "lab", group: "engineering",
   },
   {
     title: "Process Effect Lab",
