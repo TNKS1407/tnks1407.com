@@ -259,6 +259,19 @@ const grouped = Object.fromEntries(
       .hero-stat-val{font-weight:600;color:var(--accent);}
       .hero-stat-sep{opacity:0.4;}
 
+      /* About / ものづくりの姿勢 */
+      .about{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.4rem 1.6rem 1.5rem;margin-bottom:1.75rem;box-shadow:0 1px 8px var(--shadow);}
+      .about-lead{font-size:0.9rem;line-height:1.85;color:var(--text);}
+      .about-lead p{margin:0;}
+      .about-lead .sig{display:block;margin-top:0.55rem;font-size:0.74rem;color:var(--text-faint);font-family:'JetBrains Mono',monospace;}
+      .about-lead .sig a{color:var(--accent);text-decoration:none;}
+      .about-lead .sig a:hover{text-decoration:underline;}
+      .about-principles{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:0.7rem;margin-top:1.2rem;}
+      .principle{background:var(--surface2);border:1px solid var(--border-dim);border-radius:11px;padding:0.8rem 0.95rem;}
+      .principle .k{font-size:0.68rem;font-weight:700;color:var(--accent);font-family:'JetBrains Mono',monospace;letter-spacing:0.05em;}
+      .principle b{display:block;font-size:0.85rem;margin:0.12rem 0 0.28rem;color:var(--text);}
+      .principle .d{font-size:0.76rem;color:var(--text-muted);line-height:1.6;}
+
       /* Quick links */
       .quick-links{display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:2rem;padding:0.875rem 1.125rem;background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 1px 8px var(--shadow);}
       .quick-link{display:flex;align-items:center;gap:0.3rem;padding:0.28rem 0.65rem;border-radius:7px;background:var(--surface2);border:1px solid var(--border-dim);text-decoration:none;color:var(--text-muted);font-size:0.75rem;font-weight:500;font-family:'JetBrains Mono',monospace;transition:border-color 0.15s,color 0.15s,background 0.15s;}
@@ -436,6 +449,21 @@ const grouped = Object.fromEntries(
           </div>
         </div>
       </div>
+
+      <!-- About / ものづくりの姿勢 -->
+      <section class="about">
+        <div class="section-title">About</div>
+        <div class="about-lead">
+          <p>RF・電力制御・信号処理・データサイエンス・画像処理・結晶学。私（ランキン）が「面白い」と思った分野の道具と学習ラボを、ここに少しずつ並べているよ。難しい理屈ほど、読むより先に触って動かせるように作りたいと思っている。作っていく過程は <a href="https://tnkblog.net" target="_blank" rel="noopener noreferrer">tnkblog.net</a> に書き残しているから、よかったらそちらも。</p>
+          <span class="sig">— TNKS1407 / designed by ランキン</span>
+        </div>
+        <div class="about-principles">
+          <div class="principle"><span class="k">01</span><b>触ってわかる</b><span class="d">スライダーを動かすと結果が変わる。数式や理論を、読む前に手で体感できるようにする。</span></div>
+          <div class="principle"><span class="k">02</span><b>中身を自分で書く</b><span class="d">既製の重いライブラリに頼らず、numpy や Canvas で。なぜ動くかが見えるのが楽しい。</span></div>
+          <div class="principle"><span class="k">03</span><b>つまずきを入口にする</b><span class="d">バグや素朴な疑問を、消すだけでなく覗き込む。そこから記事や道具が生まれることがある。</span></div>
+          <div class="principle"><span class="k">04</span><b>軽く、長く動く</b><span class="d">外部依存を減らし、単一ファイルやブラウザ完結で。何年後でも開けるものを目指す。</span></div>
+        </div>
+      </section>
 
       <div class="quick-links">
         {quickLinks.map(l => (
