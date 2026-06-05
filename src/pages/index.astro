@@ -239,6 +239,7 @@ const grouped = Object.fromEntries(
       /* Hero */
       .hero{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:2.25rem 2rem;margin-bottom:1.75rem;position:relative;overflow:hidden;box-shadow:0 2px 16px var(--shadow);}
       .hero::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--accent-soft) 0%,transparent 60%);opacity:0.6;pointer-events:none;}
+      .hero-bg{position:absolute;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:0.42;}
       .hero-body{position:relative;z-index:1;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;}
       .hero-avatar{
         width:76px;height:76px;border-radius:50%;flex-shrink:0;overflow:hidden;
@@ -299,6 +300,20 @@ const grouped = Object.fromEntries(
       .modal-close{background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--text-muted);line-height:1;}
       .modal-body{padding:1.25rem;overflow-y:auto;flex:1;}
       .modal-body pre{font-family:'JetBrains Mono',monospace;font-size:0.77rem;line-height:1.7;color:var(--text);white-space:pre-wrap;word-break:break-word;background:var(--surface2);border-radius:10px;padding:1rem;}
+
+      /* Preview button + modal */
+      .preview-btn{font-size:0.68rem;font-weight:600;color:var(--text-faint);background:none;border:1px solid var(--border);border-radius:4px;padding:0.1rem 0.45rem;cursor:pointer;font-family:'JetBrains Mono',monospace;transition:color 0.15s,border-color 0.15s;}
+      .preview-btn:hover{color:var(--accent);border-color:var(--accent);}
+      .work-footer .preview-btn{margin-left:auto;}
+      .work-footer .preview-btn + .prompt-btn{margin-left:0.3rem;}
+      .preview-modal{background:var(--card);border:1px solid var(--border);border-radius:16px;width:100%;max-width:1040px;height:86vh;max-height:860px;overflow:hidden;box-shadow:0 20px 56px var(--shadow-md);display:flex;flex-direction:column;}
+      .preview-head{padding:0.7rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:0.75rem;}
+      .preview-title{font-size:0.85rem;font-weight:700;color:var(--text);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+      .preview-open{font-size:0.72rem;font-weight:600;color:var(--accent);text-decoration:none;font-family:'JetBrains Mono',monospace;padding:0.18rem 0.55rem;background:var(--accent-dim);border-radius:6px;border:1px solid rgba(60,120,118,0.18);white-space:nowrap;}
+      .preview-open:hover{background:rgba(60,120,118,0.16);}
+      .preview-frame-wrap{flex:1;position:relative;background:var(--surface2);}
+      .preview-frame-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff;}
+      .preview-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--text-faint);font-size:0.8rem;font-family:'JetBrains Mono',monospace;}
 
       footer{border-top:1px solid var(--border);padding:1.5rem;text-align:center;color:var(--text-faint);font-size:0.75rem;background:var(--surface);}
       footer a{color:var(--text-muted);text-decoration:none;transition:color 0.15s;}
@@ -399,6 +414,7 @@ const grouped = Object.fromEntries(
 
     <main>
       <div class="hero">
+        <canvas class="hero-bg" id="hero-bg" aria-hidden="true"></canvas>
         <div class="hero-body">
           <div class="hero-avatar" title="ランキン"></div>
           <div class="hero-text">
@@ -469,6 +485,9 @@ const grouped = Object.fromEntries(
                       {w.links?.map(l => (
                         <a href={l.url} class="work-link" target="_blank" rel="noopener noreferrer">{l.label} ↗</a>
                       ))}
+                      <button class="preview-btn" data-url={w.url} data-title={w.title} onclick="window.openPreview(this)">
+                        👁 preview
+                      </button>
                       {w.prompt && (
                         <button class="prompt-btn" data-idx={String(works.indexOf(w))} onclick="window.openPrompt(this)">
                           📋 prompt
@@ -500,6 +519,21 @@ const grouped = Object.fromEntries(
         </div>
         <div class="modal-body">
           <pre id="modal-content"></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Preview modal (live iframe) -->
+    <div class="modal-overlay" id="preview-overlay" onclick="window.closePreview(event)">
+      <div class="preview-modal" onclick="event.stopPropagation()">
+        <div class="preview-head">
+          <span class="preview-title" id="preview-title"></span>
+          <a class="preview-open" id="preview-open" href="#" target="_blank" rel="noopener noreferrer">新しいタブで開く ↗</a>
+          <button class="modal-close" onclick="window.closePreview()">✕</button>
+        </div>
+        <div class="preview-frame-wrap">
+          <div class="preview-loading" id="preview-loading">読み込み中…</div>
+          <iframe id="preview-frame" title="プレビュー" loading="lazy"></iframe>
         </div>
       </div>
     </div>
@@ -590,9 +624,124 @@ const grouped = Object.fromEntries(
         document.getElementById('modal-overlay').classList.remove('open');
       }
     };
+
+    // Preview modal — live iframe of the tool
+    window.openPreview = function(btn) {
+      const url = btn.dataset.url, title = btn.dataset.title;
+      const overlay = document.getElementById('preview-overlay');
+      const frame = document.getElementById('preview-frame');
+      const loading = document.getElementById('preview-loading');
+      document.getElementById('preview-title').textContent = title;
+      document.getElementById('preview-open').href = url;
+      loading.style.display = 'flex';
+      loading.textContent = '読み込み中…';
+      frame.onload = function() { loading.style.display = 'none'; };
+      frame.src = url;
+      overlay.classList.add('open');
+      // 一部のサイトは枠内表示を拒否することがある。数秒で読めなければ新しいタブへ促す。
+      clearTimeout(window._pvTimer);
+      window._pvTimer = setTimeout(() => {
+        if (loading.style.display !== 'none') {
+          loading.innerHTML = 'このサイトは枠内表示できないみたい。<br>上の「新しいタブで開く ↗」から見てね。';
+        }
+      }, 6000);
+    };
+    window.closePreview = function(e) {
+      if (!e || e.target === document.getElementById('preview-overlay')) {
+        const overlay = document.getElementById('preview-overlay');
+        overlay.classList.remove('open');
+        const frame = document.getElementById('preview-frame');
+        frame.src = 'about:blank';           // 背後でのロード/音を止める
+        clearTimeout(window._pvTimer);
+      }
+    };
     document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') document.getElementById('modal-overlay').classList.remove('open');
+      if (e.key === 'Escape') {
+        document.getElementById('modal-overlay').classList.remove('open');
+        window.closePreview();
+      }
     });
+    </script>
+
+    <script>
+    /* ---- hero: 待機/手振りするアバター + 背景の信号アート ---- */
+    (() => {
+      // アバターのコマ送り（idle 6 / wave 4。CSS背景の position を動かす）
+      const av = document.querySelector('.hero-avatar');
+      if (av) {
+        let FW, RH, NUDGE;
+        function calib() {
+          const boxW = av.getBoundingClientRect().width || 76;
+          const sizeW = boxW * 7.5;
+          av.style.backgroundSize = sizeW + 'px auto';
+          const scale = sizeW / 1536;
+          FW = 192 * scale; RH = 208 * scale; NUDGE = 4 * (boxW / 76);
+        }
+        calib(); window.addEventListener('resize', calib);
+        const FRAMES = { idle: 6, wave: 4 }, ROW = { idle: 0, wave: 3 };
+        let st = 'idle', f = 0, cyc = 0;
+        const paint = () => { av.style.backgroundPosition = `${-f * FW}px ${-(ROW[st] * RH) - NUDGE}px`; };
+        paint();
+        setInterval(() => {
+          f++;
+          if (f >= FRAMES[st]) {
+            f = 0;
+            if (st === 'wave') st = 'idle';
+            else { cyc++; if (cyc >= 5) { cyc = 0; st = 'wave'; } }   // 数周ごとに手を振る
+          }
+          paint();
+        }, 150);
+        av.addEventListener('mouseenter', () => { if (st === 'idle') { st = 'wave'; f = 0; paint(); } });
+      }
+
+      // 背景: ゆっくり回るエピサイクルが曲線を描く（RF/信号っぽい個性）
+      const hb = document.getElementById('hero-bg');
+      if (hb) {
+        const hctx = hb.getContext('2d');
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        let HW, HH;
+        function hresize() {
+          const r = hb.parentElement.getBoundingClientRect();
+          HW = hb.width = Math.round(r.width * dpr);
+          HH = hb.height = Math.round(r.height * dpr);
+        }
+        hresize(); window.addEventListener('resize', hresize);
+        const accent = (getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()) || '#3c7876';
+        const circles = [{ f: 1, p: 0, k: 0.60 }, { f: -3, p: 1.3, k: 0.30 }, { f: 5, p: 0.4, k: 0.15 }];
+        const trail = [];
+        let t = 0, raf = 0;
+        function hdraw() {
+          hctx.clearRect(0, 0, HW, HH);
+          const cx = HW * 0.80, cy = HH * 0.5, R = Math.min(HW, HH) * 0.34;
+          // エピサイクルの円（薄く）
+          hctx.strokeStyle = accent; hctx.lineWidth = 1 * dpr;
+          let px = cx, py = cy;
+          hctx.globalAlpha = 0.16;
+          for (const c of circles) {
+            hctx.beginPath(); hctx.arc(px, py, R * c.k, 0, Math.PI * 2); hctx.stroke();
+            px += R * c.k * Math.cos(c.f * t + c.p);
+            py += R * c.k * Math.sin(c.f * t + c.p);
+          }
+          // 先端の軌跡
+          trail.push([px, py]); if (trail.length > 300) trail.shift();
+          hctx.globalAlpha = 0.85; hctx.lineWidth = 1.6 * dpr;
+          hctx.beginPath();
+          trail.forEach(([x, y], i) => i ? hctx.lineTo(x, y) : hctx.moveTo(x, y));
+          hctx.stroke();
+          // 先端の点
+          hctx.globalAlpha = 1; hctx.fillStyle = accent;
+          hctx.beginPath(); hctx.arc(px, py, 2.4 * dpr, 0, Math.PI * 2); hctx.fill();
+          t += 0.012;
+          raf = requestAnimationFrame(hdraw);
+        }
+        // タブが見えないときは止める（軽さのため）
+        document.addEventListener('visibilitychange', () => {
+          if (document.hidden) { cancelAnimationFrame(raf); raf = 0; }
+          else if (!raf) raf = requestAnimationFrame(hdraw);
+        });
+        hdraw();
+      }
+    })();
     </script>
 
     <script>

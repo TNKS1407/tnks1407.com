@@ -1,0 +1,13 @@
+
+> tnks1407-portfolio@0.0.1 dev
+> astro dev --host 127.0.0.1 --port 4321
+
+[vite] connected.
+[2m10:53:08[22m [34m[types][39m Generated [2m1ms[22m
+[2m10:53:08[22m [34m[vite][39m Re-optimizing dependencies because vite config has changed
+[42m[1m astro [22m[49m [32mv6.4.2[39m [2mready in[22m 1726 [2mms[22m
+[2m┃[22m Local    [36mhttp://127.0.0.1:4321/[39m
+[2m10:53:08[22m [32mwatching for file changes...[39m
+[2m10:53:09[22m [34m[200][39m /stepper-motor-lab/ [2m21ms[22m
+[2m10:53:25[22m [34m[200][39m /stepper-motor-lab/ [2m3ms[22m
+[2m10:55:34[22m [34m[200][39m /stepper-motor-lab/ [2m2ms[22m
