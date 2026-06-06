@@ -198,6 +198,19 @@ const grouped = Object.fromEntries(
   GROUPS.map(g => [g.key, works.filter(w => w.group === g.key)])
 );
 
+// お気に入りキー（作品ごと）: URLのサブドメイン名から w-<label> を作る（例: w-stepper）
+const favKey = (w: Work) => {
+  let label = '';
+  try {
+    const u = new URL(w.url);
+    label = u.hostname.includes('github.com')
+      ? (u.pathname.split('/').filter(Boolean).pop() || 'github')  // github はリポジトリ名で
+      : u.hostname.split('.')[0];                                  // それ以外はサブドメイン名で
+  } catch {}
+  label = (label || 'x').toLowerCase().replace(/[^a-z0-9-]/g, '');
+  return 'w-' + (label || 'x');
+};
+
 ---
 
 <!doctype html>
@@ -328,6 +341,11 @@ const grouped = Object.fromEntries(
       .preview-btn:hover{color:var(--accent);border-color:var(--accent);}
       .work-footer .preview-btn{margin-left:auto;}
       .work-footer .preview-btn + .prompt-btn{margin-left:0.3rem;}
+      .fav-btn{display:inline-flex;align-items:center;gap:0.25rem;font-size:0.68rem;font-weight:600;color:var(--text-faint);background:none;border:1px solid var(--border);border-radius:4px;padding:0.1rem 0.45rem;cursor:pointer;font-family:'JetBrains Mono',monospace;transition:color 0.15s,border-color 0.15s,background 0.15s;}
+      .fav-btn:hover{color:var(--accent);border-color:var(--accent);}
+      .fav-btn.faved{color:var(--accent);border-color:var(--accent);background:var(--accent-dim);cursor:default;}
+      .fav-btn.faved .star{color:#e8b339;}
+      .fav-btn .star{font-size:0.85rem;line-height:1;}
       .preview-modal{background:var(--card);border:1px solid var(--border);border-radius:16px;width:100%;max-width:1040px;height:86vh;max-height:860px;overflow:hidden;box-shadow:0 20px 56px var(--shadow-md);display:flex;flex-direction:column;}
       .preview-head{padding:0.7rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:0.75rem;}
       .preview-title{font-size:0.85rem;font-weight:700;color:var(--text);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -519,6 +537,9 @@ const grouped = Object.fromEntries(
                       </div>
                     </a>
                     <div class="work-footer">
+                      <button class="fav-btn" data-fav={favKey(w)} type="button" aria-pressed="false" title="お気に入り（一人一回）">
+                        <span class="star">☆</span><span class="fav-n">·</span>
+                      </button>
                       {w.links?.map(l => (
                         <a href={l.url} class="work-link" target="_blank" rel="noopener noreferrer">{l.label} ↗</a>
                       ))}
@@ -778,6 +799,34 @@ const grouped = Object.fromEntries(
         });
         hdraw();
       }
+    })();
+    </script>
+
+    <script>
+    /* ---- お気に入り（★）: 作品ごと・一人一回（localStorage＋サーバIP重複チェック） ---- */
+    (() => {
+      const API = 'https://feedback.tnks1407.com';
+      const btns = [...document.querySelectorAll('.fav-btn[data-fav]')];
+      if (!btns.length) return;
+      const fill = (b) => {
+        b.classList.add('faved'); b.setAttribute('aria-pressed', 'true');
+        const s = b.querySelector('.star'); if (s) s.textContent = '★';
+      };
+      const setN = (b, n) => { const e = b.querySelector('.fav-n'); if (e) e.textContent = String(n); };
+      fetch(API + '/favs').then(r => r.json()).then(d => {
+        btns.forEach(b => {
+          const k = b.dataset.fav;
+          setN(b, d[k] || 0);
+          if (localStorage.getItem('_faved_' + k)) fill(b);
+        });
+      }).catch(() => btns.forEach(b => setN(b, 0)));
+      btns.forEach(b => b.addEventListener('click', () => {
+        const k = b.dataset.fav;
+        if (localStorage.getItem('_faved_' + k)) return;
+        localStorage.setItem('_faved_' + k, '1'); fill(b);
+        fetch(API + '/fav?key=' + encodeURIComponent(k), { method: 'POST' })
+          .then(r => r.json()).then(d => { if (typeof d.count === 'number') setN(b, d.count); }).catch(() => {});
+      }));
     })();
     </script>
 
