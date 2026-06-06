@@ -8,7 +8,12 @@ type Work = {
 };
 
 const quickLinks = [
-  { label: "tnkblog.net", url: "https://tnkblog.net", icon: "📝" },
+  { label: "tnkblog.net", url: "https://tnkblog.net", icon: "📝", featured: true },
+  { label: "eom.tnks1407.com", url: "https://eom.tnks1407.com", icon: "🪐", featured: true },
+  { label: "rd.tnks1407.com", url: "https://rd.tnks1407.com", icon: "🧫", featured: true },
+  { label: "sg.tnks1407.com", url: "https://sg.tnks1407.com", icon: "🔷", featured: true },
+  { label: "stepper.tnks1407.com", url: "https://stepper.tnks1407.com", icon: "🧲", featured: true },
+  { label: "GitHub", url: "https://github.com/TNKS1407", icon: "⚙", featured: true },
   { label: "nico.tnks1407.com", url: "https://nico.tnks1407.com", icon: "💬" },
   { label: "fdtd.tnks1407.com", url: "https://fdtd.tnks1407.com", icon: "📡" },
   { label: "vg.tnks1407.com", url: "https://vg.tnks1407.com", icon: "🌀" },
@@ -22,14 +27,11 @@ const quickLinks = [
   { label: "gradus.tnks1407.com", url: "https://gradus.tnks1407.com", icon: "🎨" },
   { label: "effect.tnks1407.com", url: "https://effect.tnks1407.com", icon: "🔬" },
   { label: "eng.tnks1407.com", url: "https://eng.tnks1407.com", icon: "🔧" },
-  { label: "sg.tnks1407.com", url: "https://sg.tnks1407.com", icon: "🔷" },
   { label: "astro.tnks1407.com", url: "https://astro.tnks1407.com", icon: "🌌" },
-  { label: "stepper.tnks1407.com", url: "https://stepper.tnks1407.com", icon: "🧲" },
-  { label: "rd.tnks1407.com", url: "https://rd.tnks1407.com", icon: "🧫" },
-  { label: "eom.tnks1407.com", url: "https://eom.tnks1407.com", icon: "🪐" },
   { label: "status（要認証）", url: "https://status.tnks1407.com", icon: "📈" },
-  { label: "GitHub", url: "https://github.com/TNKS1407", icon: "⚙" },
 ];
+const qlFeatured = quickLinks.filter(l => l.featured);
+const qlRest = quickLinks.filter(l => !l.featured);
 
 const works: Work[] = [
   {
@@ -314,9 +316,16 @@ const favKey = (w: Work) => {
       .principle .d{font-size:0.76rem;color:var(--text-muted);line-height:1.6;}
 
       /* Quick links */
-      .quick-links{display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:2rem;padding:0.875rem 1.125rem;background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 1px 8px var(--shadow);}
+      .quick-links-wrap{margin-bottom:2rem;padding:0.875rem 1.125rem;background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 1px 8px var(--shadow);}
+      .ql-head{display:flex;align-items:center;justify-content:space-between;gap:0.6rem;margin-bottom:0.7rem;}
+      .ql-label{font-size:0.72rem;font-weight:700;color:var(--text-faint);letter-spacing:0.1em;font-family:'JetBrains Mono',monospace;}
+      .ql-toggle{font-family:'JetBrains Mono',monospace;font-size:0.72rem;font-weight:600;color:var(--text-muted);background:none;border:1px solid var(--border);border-radius:999px;padding:0.22rem 0.7rem;cursor:pointer;transition:border-color 0.15s,color 0.15s;}
+      .ql-toggle:hover{border-color:var(--accent);color:var(--accent);}
+      .quick-links{display:flex;gap:0.4rem;flex-wrap:wrap;}
+      .ql-rest{margin-top:0.55rem;padding-top:0.6rem;border-top:1px dashed var(--border);}
       .quick-link{display:flex;align-items:center;gap:0.3rem;padding:0.28rem 0.65rem;border-radius:7px;background:var(--surface2);border:1px solid var(--border-dim);text-decoration:none;color:var(--text-muted);font-size:0.75rem;font-weight:500;font-family:'JetBrains Mono',monospace;transition:border-color 0.15s,color 0.15s,background 0.15s;}
       .quick-link:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
+      .quick-link.feat{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);font-weight:600;}
       .quick-link .icon{font-size:0.85rem;}
 
       /* Section headings */
@@ -511,13 +520,27 @@ const favKey = (w: Work) => {
         </div>
       </section>
 
-      <div class="quick-links">
-        {quickLinks.map(l => (
-          <a href={l.url} class="quick-link" target="_blank" rel="noopener noreferrer">
-            <span class="icon" aria-hidden="true">{l.icon}</span>
-            {l.label}
-          </a>
-        ))}
+      <div class="quick-links-wrap">
+        <div class="ql-head">
+          <span class="ql-label">おすすめ</span>
+          <button class="ql-toggle" id="ql-toggle" type="button" aria-expanded="false">すべてのツール ▾</button>
+        </div>
+        <div class="quick-links">
+          {qlFeatured.map(l => (
+            <a href={l.url} class="quick-link feat" target="_blank" rel="noopener noreferrer">
+              <span class="icon" aria-hidden="true">{l.icon}</span>
+              {l.label}
+            </a>
+          ))}
+        </div>
+        <div class="quick-links ql-rest" id="ql-rest" hidden>
+          {qlRest.map(l => (
+            <a href={l.url} class="quick-link" target="_blank" rel="noopener noreferrer">
+              <span class="icon" aria-hidden="true">{l.icon}</span>
+              {l.label}
+            </a>
+          ))}
+        </div>
       </div>
 
       <!-- Recent blog posts -->
@@ -1228,6 +1251,18 @@ const favKey = (w: Work) => {
         ctx.globalAlpha=1;requestAnimationFrame(loop);
       })();
     })();
+    </script>
+    <script is:inline>
+      (function(){
+        var btn = document.getElementById('ql-toggle');
+        var rest = document.getElementById('ql-rest');
+        if(!btn || !rest) return;
+        btn.addEventListener('click', function(){
+          var open = rest.hasAttribute('hidden');
+          if(open){ rest.removeAttribute('hidden'); btn.textContent='閉じる ▴'; btn.setAttribute('aria-expanded','true'); }
+          else { rest.setAttribute('hidden',''); btn.textContent='すべてのツール ▾'; btn.setAttribute('aria-expanded','false'); }
+        });
+      })();
     </script>
   </body>
 </html>
