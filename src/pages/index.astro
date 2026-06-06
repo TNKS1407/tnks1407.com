@@ -1061,6 +1061,11 @@ const favKey = (w: Work) => {
         if (type === '機能の要望') return 'feat';
         return 'other';
       }
+      function escapeHtml(s) {
+        return String(s == null ? '' : s)
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      }
 
       function loadComments() {
         fetch(API + '/list')
@@ -1072,10 +1077,10 @@ const favKey = (w: Work) => {
             el.innerHTML = list.map(c => `
               <div class="fb-comment-card">
                 <div class="fb-comment-top">
-                  <span class="fb-comment-badge ${badgeClass(c.type)}">${c.type}</span>
+                  <span class="fb-comment-badge ${badgeClass(c.type)}">${escapeHtml(c.type)}</span>
                   <span class="fb-comment-ts">${relTime(c.ts)}</span>
                 </div>
-                <div class="fb-comment-msg">${c.message.replace(/</g,'&lt;')}</div>
+                <div class="fb-comment-msg">${escapeHtml(c.message)}</div>
               </div>`).join('');
             wrap.style.display = '';
           })
