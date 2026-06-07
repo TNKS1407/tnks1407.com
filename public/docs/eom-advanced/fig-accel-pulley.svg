@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 400" width="460" height="400" font-family="'Segoe UI',system-ui,sans-serif">
+  <defs>
+    <marker id="ar-gray" markerWidth="10" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#6b6b6b"/></marker>
+    <marker id="ar-teal" markerWidth="10" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#2f7d77"/></marker>
+    <marker id="ar-orange" markerWidth="10" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#e0892f"/></marker>
+  </defs>
+  <rect x="0" y="0" width="460" height="400" fill="#f5f2ec"/>
+  <!-- pulley -->
+  <circle cx="230" cy="120" r="28" fill="#fff" stroke="#2b2b29" stroke-width="2.5"/>
+  <circle cx="230" cy="120" r="3" fill="#2b2b29"/>
+  <text x="230" y="125" font-size="15" text-anchor="middle" fill="#2b2b29">M</text>
+  <!-- F (applied force) -->
+  <line x1="214" y1="94" x2="214" y2="44" stroke="#2f7d77" stroke-width="3" marker-end="url(#ar-teal)"/>
+  <text x="196" y="58" font-size="16" fill="#2f7d77">F</text>
+  <!-- alpha (accel) -->
+  <line x1="252" y1="94" x2="252" y2="52" stroke="#e0892f" stroke-width="2.6" marker-end="url(#ar-orange)"/>
+  <text x="260" y="64" font-size="16" fill="#c9761f">α</text>
+  <!-- pulley weight / 2T -->
+  <text x="158" y="150" font-size="14" fill="#2f7d77">2T</text>
+  <!-- strings -->
+  <g stroke="#2b2b29" stroke-width="2">
+    <line x1="203" y1="130" x2="178" y2="250"/>
+    <line x1="257" y1="130" x2="284" y2="230"/>
+  </g>
+  <!-- mass m1 (heavier) -->
+  <rect x="150" y="250" width="52" height="46" rx="3" fill="#cdd9d6" stroke="#2b2b29" stroke-width="2"/>
+  <text x="176" y="278" font-size="17" text-anchor="middle" fill="#2b2b29">m₁</text>
+  <!-- mass m2 -->
+  <rect x="262" y="230" width="44" height="40" rx="3" fill="#d7e3e1" stroke="#2b2b29" stroke-width="2"/>
+  <text x="284" y="255" font-size="16" text-anchor="middle" fill="#2b2b29">m₂</text>
+  <!-- tensions -->
+  <line x1="176" y1="250" x2="176" y2="214" stroke="#2f7d77" stroke-width="2.4" marker-end="url(#ar-teal)"/>
+  <text x="156" y="232" font-size="14" fill="#2f7d77">T</text>
+  <line x1="284" y1="230" x2="284" y2="196" stroke="#2f7d77" stroke-width="2.4" marker-end="url(#ar-teal)"/>
+  <text x="290" y="214" font-size="14" fill="#2f7d77">T</text>
+  <!-- gravities -->
+  <line x1="176" y1="296" x2="176" y2="332" stroke="#6b6b6b" stroke-width="2.4" marker-end="url(#ar-gray)"/>
+  <text x="183" y="328" font-size="14" fill="#5a5a5a">m₁g</text>
+  <line x1="284" y1="270" x2="284" y2="306" stroke="#6b6b6b" stroke-width="2.4" marker-end="url(#ar-gray)"/>
+  <text x="291" y="302" font-size="14" fill="#5a5a5a">m₂g</text>
+  <!-- accelerations of masses -->
+  <line x1="138" y1="256" x2="138" y2="296" stroke="#e0892f" stroke-width="2.6" marker-end="url(#ar-orange)"/>
+  <text x="120" y="280" font-size="15" fill="#c9761f">β</text>
+  <line x1="322" y1="250" x2="322" y2="212" stroke="#e0892f" stroke-width="2.6" marker-end="url(#ar-orange)"/>
+  <text x="328" y="234" font-size="15" fill="#c9761f">γ</text>
+  <!-- note -->
+  <text x="60" y="370" font-size="13" fill="#5a5a5a">m₁ &gt; m₂</text>
+  <!-- caption -->
+  <text x="240" y="380" font-size="15" text-anchor="middle" fill="#3c7876">T = 2 m₁ m₂ (g + α) / (m₁ + m₂)</text>
+</svg>

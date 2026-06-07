@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 380" width="480" height="380" font-family="'Segoe UI',system-ui,sans-serif">
+  <defs>
+    <marker id="ar-gray" markerWidth="10" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#6b6b6b"/></marker>
+    <marker id="ar-blue" markerWidth="10" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#2f6db0"/></marker>
+    <marker id="ar-orange" markerWidth="10" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#e0892f"/></marker>
+  </defs>
+  <rect x="0" y="0" width="480" height="380" fill="#f5f2ec"/>
+  <!-- floor -->
+  <line x1="40" y1="330" x2="440" y2="330" stroke="#2b2b29" stroke-width="3"/>
+  <g stroke="#2b2b29" stroke-width="1.2">
+    <line x1="60" y1="330" x2="48" y2="342"/><line x1="90" y1="330" x2="78" y2="342"/>
+    <line x1="120" y1="330" x2="108" y2="342"/><line x1="150" y1="330" x2="138" y2="342"/>
+    <line x1="180" y1="330" x2="168" y2="342"/><line x1="210" y1="330" x2="198" y2="342"/>
+    <line x1="240" y1="330" x2="228" y2="342"/><line x1="270" y1="330" x2="258" y2="342"/>
+    <line x1="300" y1="330" x2="288" y2="342"/><line x1="330" y1="330" x2="318" y2="342"/>
+    <line x1="360" y1="330" x2="348" y2="342"/><line x1="390" y1="330" x2="378" y2="342"/>
+    <line x1="420" y1="330" x2="408" y2="342"/>
+  </g>
+  <!-- wedge -->
+  <polygon points="120,330 120,180 380,330" fill="#ece5d8" stroke="#2b2b29" stroke-width="2.5"/>
+  <text x="180" y="312" font-size="17" fill="#2b2b29">M</text>
+  <!-- angle theta at lower-right -->
+  <path d="M340,330 A40,40 0 0 1 345,310" fill="none" stroke="#2b2b29" stroke-width="1.6"/>
+  <text x="350" y="324" font-size="15" fill="#2b2b29">θ</text>
+  <!-- block -->
+  <circle cx="205" cy="213" r="13" fill="#d7e3e1" stroke="#2f7d77" stroke-width="2"/>
+  <text x="205" y="218" font-size="13" text-anchor="middle" fill="#2b2b29">m</text>
+  <!-- gravity -->
+  <line x1="205" y1="213" x2="205" y2="288" stroke="#6b6b6b" stroke-width="2.6" marker-end="url(#ar-gray)"/>
+  <text x="212" y="284" font-size="15" fill="#5a5a5a">mg</text>
+  <!-- normal on block -->
+  <line x1="205" y1="213" x2="240" y2="152" stroke="#2f6db0" stroke-width="2.6" marker-end="url(#ar-blue)"/>
+  <text x="244" y="148" font-size="15" fill="#2f6db0">N</text>
+  <!-- block acceleration (resultant, down-left) -->
+  <line x1="205" y1="213" x2="171" y2="243" stroke="#e0892f" stroke-width="2.6" marker-end="url(#ar-orange)"/>
+  <text x="118" y="252" font-size="14" fill="#c9761f">(aₓ, a_y)</text>
+  <!-- reaction on wedge -->
+  <line x1="198" y1="225" x2="172" y2="270" stroke="#2f6db0" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#ar-blue)"/>
+  <text x="120" y="284" font-size="13" fill="#2f6db0">N（反作用）</text>
+  <!-- wedge acceleration -->
+  <line x1="250" y1="305" x2="300" y2="305" stroke="#e0892f" stroke-width="2.6" marker-end="url(#ar-orange)"/>
+  <text x="306" y="309" font-size="16" fill="#c9761f">Aₓ</text>
+  <!-- caption -->
+  <text x="240" y="368" font-size="15" text-anchor="middle" fill="#3c7876">N = m M g cosθ / (M + m sin²θ)</text>
+</svg>

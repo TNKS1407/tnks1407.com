@@ -85,7 +85,7 @@ $$ma = T - mg, \qquad MA = Mg - 2T$$
 
 具体例1で考えよう。動滑車を $A$ だけ動かすには、糸が伸びない以上、その2倍を引かなければならない。
 
-![動滑車の幾何](/docs/eom-advanced/image10.png)
+![動滑車の束縛条件 a=2A](/docs/eom-advanced/fig-movable-pulley.svg)
 
 だから
 
@@ -121,7 +121,7 @@ $$a = 2A$$
 
 ![一物体に注目](/docs/eom-advanced/image15.png)
 
-![力の分解](/docs/eom-advanced/image16.png)
+![斜面上のばね：力の分解](/docs/eom-advanced/fig-incline-spring.svg)
 
 斜面に垂直な向きには動けない（めり込まない・浮かない）ので、束縛条件は
 
@@ -153,7 +153,7 @@ $$a_y = g\sin^2\theta - \frac{kx}{m}\sin\theta$$
 
 小物体には台から垂直抗力 $N$ がかかる。
 
-![力の図示](/docs/eom-advanced/image21.png)
+![可動斜面台：力と加速度](/docs/eom-advanced/fig-movable-wedge.svg)
 
 ![小物体に注目](/docs/eom-advanced/image22.png)
 
@@ -197,7 +197,7 @@ $$N = \frac{mMg\cos\theta}{M + m\sin^2\theta}$$
 
 滑車にも質量があることに注意。座標を取って束縛条件を探そう。
 
-![力の書き込み](/docs/eom-advanced/image27.png)
+![加速する滑車：力と加速度](/docs/eom-advanced/fig-accel-pulley.svg)
 
 運動方程式：
 
@@ -261,7 +261,7 @@ $$v(t) \propto t, \qquad x(t) = \tfrac12\,a\,t^2$$
 
 台とともに加速する人から見ると、小物体は「ただ斜面を滑るだけ」に見えて、運動の向きが一意に決まる。ただし、この座標は加速しているので **慣性力** を入れないと辻褄が合わない。
 
-![台と同じ加速度の座標](/docs/eom-advanced/image34.png)
+![慣性力：加速する系で現れる見かけの力](/docs/eom-advanced/fig-inertial-force.svg)
 
 慣性力とは、加速度 $\boldsymbol{a}_0$ で動く観測者が質量 $m$ の物体を見るときに、$-m\boldsymbol{a}_0$ だけの力がかかって見えると約束することで、加速系でもニュートンの法則を成り立たせるための力だ。これを入れると、静止系で立てた式と無矛盾になる。
 

@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 320" width="480" height="320" font-family="'Segoe UI',system-ui,sans-serif">
+  <defs>
+    <marker id="ar-orange" markerWidth="10" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#e0892f"/></marker>
+    <marker id="ar-red" markerWidth="10" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#cf4b2c"/></marker>
+  </defs>
+  <rect x="0" y="0" width="480" height="320" fill="#f5f2ec"/>
+  <!-- ground -->
+  <line x1="60" y1="252" x2="420" y2="252" stroke="#2b2b29" stroke-width="2.5"/>
+  <g stroke="#2b2b29" stroke-width="1.1">
+    <line x1="80" y1="252" x2="70" y2="262"/><line x1="110" y1="252" x2="100" y2="262"/>
+    <line x1="140" y1="252" x2="130" y2="262"/><line x1="170" y1="252" x2="160" y2="262"/>
+    <line x1="200" y1="252" x2="190" y2="262"/><line x1="230" y1="252" x2="220" y2="262"/>
+    <line x1="260" y1="252" x2="250" y2="262"/><line x1="290" y1="252" x2="280" y2="262"/>
+    <line x1="320" y1="252" x2="310" y2="262"/><line x1="350" y1="252" x2="340" y2="262"/>
+    <line x1="380" y1="252" x2="370" y2="262"/><line x1="410" y1="252" x2="400" y2="262"/>
+  </g>
+  <!-- frame (accelerating reference) -->
+  <rect x="110" y="120" width="250" height="116" rx="6" fill="#ece5d8" stroke="#2b2b29" stroke-width="2.5"/>
+  <circle cx="155" cy="236" r="13" fill="#fff" stroke="#2b2b29" stroke-width="2"/>
+  <circle cx="315" cy="236" r="13" fill="#fff" stroke="#2b2b29" stroke-width="2"/>
+  <text x="335" y="142" font-size="13" fill="#6b6b6b">加速する系</text>
+  <!-- a0 of the frame -->
+  <line x1="235" y1="98" x2="330" y2="98" stroke="#e0892f" stroke-width="3" marker-end="url(#ar-orange)"/>
+  <text x="232" y="90" font-size="15" text-anchor="end" fill="#c9761f">a₀（系の加速度）</text>
+  <!-- mass -->
+  <circle cx="210" cy="180" r="18" fill="#d7e3e1" stroke="#2f7d77" stroke-width="2"/>
+  <text x="210" y="185" font-size="15" text-anchor="middle" fill="#2b2b29">m</text>
+  <!-- inertial force -->
+  <line x1="192" y1="180" x2="124" y2="180" stroke="#cf4b2c" stroke-width="2.8" stroke-dasharray="6 4" marker-end="url(#ar-red)"/>
+  <text x="120" y="170" font-size="14" fill="#cf4b2c">−m a₀（慣性力）</text>
+  <!-- note -->
+  <text x="240" y="292" font-size="13" text-anchor="middle" fill="#5a5a5a">加速度 a₀ で動く座標から見ると、質量 m には進行方向と逆向きに</text>
+  <text x="240" y="310" font-size="13" text-anchor="middle" fill="#5a5a5a">−m a₀ の見かけの力が加わって見える。</text>
+</svg>
