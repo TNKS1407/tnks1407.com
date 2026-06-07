@@ -95,9 +95,11 @@ $$ma = T - mg, \qquad MA = Mg - 2T$$
 
 具体例1で考えよう。動滑車を $A$ だけ動かすには、糸が伸びない以上、その2倍を引かなければならない。
 
-![動滑車の束縛条件 a=2A](/docs/eom-advanced/fig-movable-pulley.svg)
-
-<small>[元の手書き図を見る](/docs/eom-advanced/image10.png)</small>
+<figure class="fig-toggle" data-svg="/docs/eom-advanced/fig-movable-pulley.svg" data-orig="/docs/eom-advanced/image10.png">
+  <img src="/docs/eom-advanced/fig-movable-pulley.svg" alt="動滑車の束縛条件 a=2A" loading="lazy" />
+  <figcaption class="fig-toggle-cap">動滑車の束縛条件：糸が伸びない → a = 2A</figcaption>
+  <button type="button" class="fig-toggle-btn">作者の手書き図を見る</button>
+</figure>
 
 だから
 
@@ -135,9 +137,11 @@ $$a = 2A$$
 
 ![物体だけを取り出すと、重力 mg・ばねの力 kx・斜面の垂直抗力 N がはたらく](/docs/eom-advanced/image15.png)
 
-![斜面上のばね：力の分解](/docs/eom-advanced/fig-incline-spring.svg)
-
-<small>[元の手書き図を見る](/docs/eom-advanced/image16.png)</small>
+<figure class="fig-toggle" data-svg="/docs/eom-advanced/fig-incline-spring.svg" data-orig="/docs/eom-advanced/image16.png">
+  <img src="/docs/eom-advanced/fig-incline-spring.svg" alt="斜面上のばね：重力を斜面方向と垂直方向に分解" loading="lazy" />
+  <figcaption class="fig-toggle-cap">斜面上のばね：力の分解（重力を斜面方向・垂直方向へ）</figcaption>
+  <button type="button" class="fig-toggle-btn">作者の手書き図を見る</button>
+</figure>
 
 斜面に垂直な向きには動けない（めり込まない・浮かない）ので、束縛条件は
 
@@ -169,9 +173,11 @@ $$a_y = g\sin^2\theta - \frac{kx}{m}\sin\theta$$
 
 小物体には台から垂直抗力 $N$ がかかる。
 
-![可動斜面台：力と加速度](/docs/eom-advanced/fig-movable-wedge.svg)
-
-<small>[元の手書き図を見る](/docs/eom-advanced/image21.png)</small>
+<figure class="fig-toggle" data-svg="/docs/eom-advanced/fig-movable-wedge.svg" data-orig="/docs/eom-advanced/image21.png">
+  <img src="/docs/eom-advanced/fig-movable-wedge.svg" alt="可動斜面台：小物体への垂直抗力 N・重力 mg と、小物体の加速度・台の加速度" loading="lazy" />
+  <figcaption class="fig-toggle-cap">可動斜面台：小物体は左下へ、台は右へ。垂直抗力 N とその反作用</figcaption>
+  <button type="button" class="fig-toggle-btn">作者の手書き図を見る</button>
+</figure>
 
 ![小物体だけを取り出すと、重力 mg と斜面からの垂直抗力 N がはたらく](/docs/eom-advanced/image22.png)
 
@@ -189,9 +195,11 @@ $$M A_x = N\sin\theta$$
 
 これで運動方程式が出そろう。あとは束縛条件。
 
-![束縛の幾何：小物体は斜面に沿うので、縦の動き a_y と横の動き aₓ+Aₓ が tanθ で結ばれる](/docs/eom-advanced/fig-wedge-constraint.svg)
-
-<small>[元の手書き図を見る](/docs/eom-advanced/image25.png)</small>
+<figure class="fig-toggle" data-svg="/docs/eom-advanced/fig-wedge-constraint.svg" data-orig="/docs/eom-advanced/image25.png">
+  <img src="/docs/eom-advanced/fig-wedge-constraint.svg" alt="束縛の幾何：小物体は斜面に沿うので、縦の動き a_y と横の動き aₓ+Aₓ が tanθ で結ばれる" loading="lazy" />
+  <figcaption class="fig-toggle-cap">束縛の幾何：a_y = tanθ (aₓ + Aₓ)</figcaption>
+  <button type="button" class="fig-toggle-btn">作者の手書き図を見る</button>
+</figure>
 
 台は床にめり込まないので $A_y = 0$。小物体は斜面から離れないので、相対的に斜面に沿う条件
 
@@ -221,9 +229,11 @@ $$N = \frac{mMg\cos\theta}{M + m\sin^2\theta}$$
 
 滑車にも質量があることに注意。座標を取って束縛条件を探そう。
 
-![加速する滑車：力と加速度](/docs/eom-advanced/fig-accel-pulley.svg)
-
-<small>[元の手書き図を見る](/docs/eom-advanced/image27.png)</small>
+<figure class="fig-toggle" data-svg="/docs/eom-advanced/fig-accel-pulley.svg" data-orig="/docs/eom-advanced/image27.png">
+  <img src="/docs/eom-advanced/fig-accel-pulley.svg" alt="加速する滑車：F・α・張力 T・両端の質量 m₁,m₂ と加速度 β,γ" loading="lazy" />
+  <figcaption class="fig-toggle-cap">加速する滑車：力と加速度（手書き図は座標の取り方を示す）</figcaption>
+  <button type="button" class="fig-toggle-btn">作者の手書き図（座標）を見る</button>
+</figure>
 
 運動方程式：
 
@@ -289,9 +299,11 @@ $$v(t) \propto t, \qquad x(t) = \tfrac12\,a\,t^2$$
 
 台とともに加速する人から見ると、小物体は「ただ斜面を滑るだけ」に見えて、運動の向きが一意に決まる。ただし、この座標は加速しているので **慣性力** を入れないと辻褄が合わない。
 
-![慣性力：加速する系で現れる見かけの力](/docs/eom-advanced/fig-inertial-force.svg)
-
-<small>[元の手書き図を見る](/docs/eom-advanced/image34.png)</small>
+<figure class="fig-toggle" data-svg="/docs/eom-advanced/fig-inertial-force.svg" data-orig="/docs/eom-advanced/image34.png">
+  <img src="/docs/eom-advanced/fig-inertial-force.svg" alt="慣性力：加速度 a₀ の系で、質量 m に逆向きの見かけの力 −m a₀ が加わる" loading="lazy" />
+  <figcaption class="fig-toggle-cap">慣性力の考え方（手書き図はこの斜面台を加速系で見たもの）</figcaption>
+  <button type="button" class="fig-toggle-btn">作者の手書き図（斜面台）を見る</button>
+</figure>
 
 慣性力とは、加速度 $\boldsymbol{a}_0$ で動く観測者が質量 $m$ の物体を見るときに、$-m\boldsymbol{a}_0$ だけの力がかかって見えると約束することで、加速系でもニュートンの法則を成り立たせるための力だ。これを入れると、静止系で立てた式と無矛盾になる。
 
