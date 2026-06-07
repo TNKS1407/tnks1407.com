@@ -37,6 +37,13 @@ $$W = \int_{x_0}^{x_1} \vec{F}\cdot d\vec{x} = \int_{x_0}^{x_1} F\cos\theta\,dx$
 
 （$\theta$ は力と運動の向きのなす角）と定義しておけば、**された仕事の分だけ運動エネルギーが増える** ── この一文で、力がからむ多くの問題が解けるようになる。
 
+積分 $\int F\,dx$ は、つまり **力のグラフの下の面積** のこと。下を左右にドラッグすると、面積（＝した仕事）が溜まっていくのが見える。面白いのは、これが力学だけの話じゃないこと ── 分野を切り替えると、コンデンサのエネルギー $\int V\,dq$ も、気体がする仕事 $\int P\,dV$ も、まったく同じ「曲線の下の面積」だと分かる。積分という一点で、力学・電磁気・熱がつながっているんだ。
+
+<div class="demo-embed">
+  <iframe src="https://work.tnks1407.com" title="面積＝仕事" loading="lazy"></iframe>
+  <div class="cap"><span>work.tnks1407.com</span><a href="https://work.tnks1407.com" target="_blank" rel="noopener noreferrer">全画面で開く ↗</a></div>
+</div>
+
 ### 例：ばねと重力
 
 **ばね**：自然長からの伸びを $x$ とすると力は $F=-kx$。$x_0$ から $x_1$ まで伸びるあいだに物体がされる仕事は
