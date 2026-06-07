@@ -1,4 +1,6 @@
 ---
+import { getCollection } from 'astro:content';
+
 type Work = {
   title: string; description: string; url: string;
   tags: string[]; icon?: string; status?: string; section?: 'works' | 'lab';
@@ -6,6 +8,10 @@ type Work = {
   links?: { label: string; url: string }[];
   prompt?: string;
 };
+
+const explainers = (await getCollection('docs')).sort(
+  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+);
 
 const quickLinks = [
   { label: "tnkblog.net", url: "https://tnkblog.net", icon: "📝", featured: true },
@@ -328,6 +334,19 @@ const favKey = (w: Work) => {
       .quick-link.feat{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);font-weight:600;}
       .quick-link .icon{font-size:0.85rem;}
 
+      /* Explainers */
+      .explainers{margin-bottom:2rem;}
+      .explainer-list{display:flex;flex-direction:column;gap:0.7rem;}
+      .explainer-card{display:block;background:var(--card);border:1px solid var(--border);border-radius:14px;
+        padding:0.95rem 1.15rem;text-decoration:none;color:var(--text);box-shadow:0 1px 6px var(--shadow);
+        transition:border-color 0.2s,transform 0.2s,box-shadow 0.2s;}
+      .explainer-card:hover{border-color:var(--accent);transform:translateX(3px);box-shadow:0 4px 16px var(--shadow);opacity:1;}
+      .explainer-row{display:flex;align-items:center;gap:0.6rem;justify-content:space-between;}
+      .explainer-title{font-weight:700;font-size:0.97rem;color:var(--text);}
+      .explainer-tag{flex-shrink:0;font-size:0.66rem;font-weight:700;color:var(--accent);background:var(--accent-dim);
+        border:1px solid rgba(60,120,118,.25);border-radius:999px;padding:0.1rem 0.55rem;font-family:'JetBrains Mono',monospace;}
+      .explainer-desc{font-size:0.83rem;color:var(--text-muted);line-height:1.55;margin-top:0.35rem;}
+
       /* Section headings */
       .section-title{font-size:0.72rem;font-weight:700;color:var(--text-faint);margin-bottom:0.85rem;letter-spacing:0.1em;display:flex;align-items:center;gap:0.6rem;font-family:'JetBrains Mono',monospace;}
       .section-title::after{content:'';flex:1;height:1px;background:var(--border);}
@@ -473,6 +492,7 @@ const favKey = (w: Work) => {
       <div class="header-inner">
         <span class="logo">TNK<span>S</span>1407</span>
         <nav class="nav-links">
+          <a href="#docs">解説</a>
           <a href="#works">Works</a>
           <a href="https://tnkblog.net" target="_blank" rel="noopener noreferrer">Blog ↗</a>
           <a href="https://github.com/TNKS1407" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
@@ -553,6 +573,24 @@ const favKey = (w: Work) => {
           <span class="blog-loading">読み込み中…</span>
         </div>
       </div>
+
+      <!-- Explainers / 解説記事 -->
+      {explainers.length > 0 && (
+        <section id="docs" class="explainers">
+          <div class="section-title">解説 — Explainers</div>
+          <div class="explainer-list">
+            {explainers.map(doc => (
+              <a class="explainer-card" href={`/docs/${doc.id}/`}>
+                <div class="explainer-row">
+                  <span class="explainer-title">{doc.data.title}</span>
+                  {doc.data.demo && <span class="explainer-tag">▶ デモ</span>}
+                </div>
+                <div class="explainer-desc">{doc.data.description}</div>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
 
       <!-- Works by group -->
       <div id="works">
