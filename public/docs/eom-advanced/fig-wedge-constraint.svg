@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 300" width="480" height="300" font-family="'Segoe UI','Hiragino Kaku Gothic ProN',system-ui,sans-serif">
+  <defs>
+    <marker id="ar-orange" markerWidth="10" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#e0892f"/></marker>
+    <marker id="ar-gray" markerWidth="10" markerHeight="8" refX="7" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#8a8a8a"/></marker>
+  </defs>
+  <rect x="0" y="0" width="480" height="300" fill="#f5f2ec"/>
+  <!-- wedge (incline surface = O→R) -->
+  <polygon points="120,80 120,210 360,210" fill="#ece5d8" stroke="#2b2b29" stroke-width="2"/>
+  <!-- angle theta at O between horizontal and incline -->
+  <path d="M120,80 m 38,0 a 38,38 0 0 1 -9.8,24.6" fill="none" stroke="#2b2b29" stroke-width="1.5"/>
+  <text x="170" y="100" font-size="15" fill="#2b2b29">θ</text>
+  <!-- relative motion along the incline -->
+  <line x1="120" y1="80" x2="354" y2="207" stroke="#e0892f" stroke-width="2.8" marker-end="url(#ar-orange)"/>
+  <text x="232" y="160" font-size="13" fill="#c9761f" transform="rotate(28 232 160)">斜面に沿う相対運動</text>
+  <!-- horizontal component a_x + A_x -->
+  <line x1="120" y1="80" x2="354" y2="80" stroke="#8a8a8a" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#ar-gray)"/>
+  <text x="238" y="72" font-size="14" text-anchor="middle" fill="#6b6b66">aₓ + Aₓ</text>
+  <!-- vertical component a_y -->
+  <line x1="360" y1="80" x2="360" y2="204" stroke="#8a8a8a" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#ar-gray)"/>
+  <text x="368" y="148" font-size="14" fill="#6b6b66">a_y</text>
+  <!-- right-angle mark at A=(360,80) -->
+  <path d="M360,94 L346,94 L346,80" fill="none" stroke="#8a8a8a" stroke-width="1.3"/>
+  <!-- formula -->
+  <text x="240" y="252" font-size="15" text-anchor="middle" fill="#3c7876">tanθ = a_y / (aₓ + Aₓ)</text>
+  <text x="240" y="276" font-size="15" text-anchor="middle" fill="#3c7876">→ a_y = tanθ · (aₓ + Aₓ)</text>
+</svg>

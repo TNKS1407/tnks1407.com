@@ -9,6 +9,16 @@ tags: ['古典力学', '運動方程式', '束縛条件', '発展']
 
 これは [運動方程式と束縛条件](/docs/equations-of-motion-constraints/) の発展編。あちらで述べた「物理を解く＝モデルを数式に写すこと」を、実際の問題で最後まで通せるように、手順と例題でまとめておくよ。少し長いけれど、ここを越えると力学の問題で迷わなくなると思う。
 
+> **この記事でできるようになること**
+> 1. 物体ごとに力を書き出して、運動方程式を立てられる。
+> 2. 糸・斜面・可動台などの束縛条件を、式にできる。
+> 3. 座標の取り方を変えても、同じ運動を表せると分かる（慣性力まで）。
+>
+> **読む順番**
+> - まず読む：[運動方程式を立てる4ステップ](#運動方程式を立てる手順) と [束縛条件](#束縛条件)
+> - 例題で確認：[動滑車](#具体例1定滑車動滑車) → [固定斜面のばね](#例題1-1固定斜面上のばね) → [可動斜面台](#例題1-2可動な斜面台)
+> - 余裕があれば：[加速する滑車](#例題1-3加速する滑車) → [座標選び](#座標の取り方で難しさが変わる) → [慣性力](#慣性力加速する観測者の力)
+
 ## 運動方程式を立てる手順
 
 やることは、いつも同じ4ステップだ。
@@ -29,11 +39,11 @@ tags: ['古典力学', '運動方程式', '束縛条件', '発展']
 - **重力**：質量が分かれば、鉛直下向きに $mg$。
 - **ばね**：自然長から $x$ 伸びた（縮んだ）とき $kx$。伸びと縮みで向きが逆になること、ばねの両端に力がかかることに注意。
 
-![ばねの力](/docs/eom-advanced/image1.png)
+![自然長からの伸び x に比例した力 kx。ばねの両端にはたらく](/docs/eom-advanced/image1.png)
 
 - **万有引力**：2物体が同じ大きさの力で引き合う。
 
-![万有引力](/docs/eom-advanced/image2.png)
+![2物体が同じ大きさで互いに引き合う万有引力](/docs/eom-advanced/image2.png)
 
 - **電場による力**：電場 $E$ の場所に電荷 $q$ を置くと $qE$。
 - **磁場による力**：磁束密度 $B$ の中を速さ $v$ で動く電荷には $qvB\sin\theta$。簡単には「$B$ に垂直な向きに速さ $v$ で動く電荷には $qvB$」と覚えるとよい（詳しくは電磁気で）。
@@ -43,19 +53,19 @@ tags: ['古典力学', '運動方程式', '束縛条件', '発展']
 
 - **糸**：ピンと張っているとき、両端から内向きに（例えば）$T$。
 
-![糸の張力](/docs/eom-advanced/image3.png)
+![ピンと張った糸は、両端から内向きに張力 T を及ぼす](/docs/eom-advanced/image3.png)
 
 - **定滑車**：糸にかかる張力をそのまま書く。
 
-![定滑車](/docs/eom-advanced/image4.png)
+![定滑車。糸の張力はそのまま両側に伝わる](/docs/eom-advanced/image4.png)
 
 - **動滑車**：両端の糸の張力と、中心にかかる力を書く。
 
-![動滑車](/docs/eom-advanced/image5.png)
+![動滑車。両側の糸の張力と、中心にかかる力がはたらく](/docs/eom-advanced/image5.png)
 
 - **垂直抗力**：床と物体の間に $N$。物体側と床側の両方に力がかかることに注意。
 
-![垂直抗力](/docs/eom-advanced/image6.png)
+![接触面では、物体側と床側の両方に垂直抗力 N がはたらく](/docs/eom-advanced/image6.png)
 
 これらは「力」ではなく状況（張り具合・接触）で決まるので、運動方程式だけでは数が足りなくなる。そこを埋めるのが束縛条件だ。
 
@@ -63,15 +73,15 @@ tags: ['古典力学', '運動方程式', '束縛条件', '発展']
 
 次の装置で運動方程式を立ててみよう（滑車は質量なし）。
 
-![装置](/docs/eom-advanced/image7.png)
+![定滑車と動滑車を含む装置。左の質量 m と右の質量 M が1本の糸でつながれている](/docs/eom-advanced/image7.png)
 
 まず加速度を仮定する。図と式が合うように、小物体 $m$ は上向きに加速度 $a$、動滑車側の物体 $M$ は下向きに加速度 $A$ とする。
 
-![加速度の仮定](/docs/eom-advanced/image8.png)
+![m は上向きに加速度 a、動滑車側の M は下向きに加速度 A と置く](/docs/eom-advanced/image8.png)
 
 次に張力と重力を書き込む。動滑車には糸が2本かかるので、中心を引く力は $2T$ になる。
 
-![力の書き込み](/docs/eom-advanced/image9.png)
+![各物体に張力と重力を書き込む。動滑車には糸が2本かかり、中心を引く力は 2T になる](/docs/eom-advanced/image9.png)
 
 加速度と同じ向きの力を正、逆を負として立てると、
 
@@ -87,11 +97,15 @@ $$ma = T - mg, \qquad MA = Mg - 2T$$
 
 ![動滑車の束縛条件 a=2A](/docs/eom-advanced/fig-movable-pulley.svg)
 
+<small>[元の手書き図を見る](/docs/eom-advanced/image10.png)</small>
+
 だから
 
 $$a = 2A$$
 
 これで未知数3つに式3本。連立すれば解ける。運動方程式と束縛条件を「セットで立てれば必ず閉じる」というのが、この章で一番伝えたいことだ。
+
+> 🔬 **ラボで確認**：[運動方程式ラボ](https://eom.tnks1407.com) でこの例を作ると、運動方程式2本だけでは未知数が1つ残る。束縛条件 $a=2A$ を足した瞬間に自由度が $0$ になって、運動が決まるのが見えるよ。
 
 ## いろいろな束縛条件
 
@@ -99,29 +113,31 @@ $$a = 2A$$
 
 - **伸びない糸（定滑車）**：両物体の位置を $x_1, x_2$ とすると糸の長さが一定で $x_1 + x_2 = \text{const}$。2回時間微分すると加速度の大きさが等しいと分かる。
 
-![定滑車の糸](/docs/eom-advanced/image11.png)
+![定滑車をはさんだ2物体。位置 x₁, x₂ の和が一定で、加速度の大きさが等しくなる](/docs/eom-advanced/image11.png)
 
 - **変形しない固定斜面**：物体は常に $y = x\tan\theta$ の上にしかいられない。だから「加速度は斜面方向」「斜面に垂直な加速度は $0$」といった条件がつく。
 
-![固定斜面](/docs/eom-advanced/image12.png)
+![固定斜面上の物体は y=x tanθ の線上にしかいられず、斜面に垂直な加速度が 0 になる](/docs/eom-advanced/image12.png)
 
 - **動く斜面台**：台の端を $X(t)$、小物体を $(x(t), y(t))$ とすると、斜面上にいる条件から関係式が立ち、2回微分して加速度の関係（小物体 $(a_x,a_y)$ と台の $A_x$）が得られる。
 
-![動く斜面台](/docs/eom-advanced/image13.png)
+![動く斜面台。台の端 X(t) と小物体 (x(t),y(t)) の関係を2回微分すると加速度の束縛が出る](/docs/eom-advanced/image13.png)
 
 ## 例題1-1：固定斜面上のばね
 
 動かない斜面の上に、ばね（伸び $x$）でつながれた質量 $m$ の物体がある。
 
-![例題1-1](/docs/eom-advanced/image14.png)
+![固定された斜面の上に、ばね（伸び x）でつながれた質量 m の物体が乗っている](/docs/eom-advanced/image14.png)
 
 ### 解法2：斜面に平行・垂直な軸で
 
 斜面に沿って動くので、平行・垂直に軸を取るのが素直だ。
 
-![一物体に注目](/docs/eom-advanced/image15.png)
+![物体だけを取り出すと、重力 mg・ばねの力 kx・斜面の垂直抗力 N がはたらく](/docs/eom-advanced/image15.png)
 
 ![斜面上のばね：力の分解](/docs/eom-advanced/fig-incline-spring.svg)
+
+<small>[元の手書き図を見る](/docs/eom-advanced/image16.png)</small>
 
 斜面に垂直な向きには動けない（めり込まない・浮かない）ので、束縛条件は
 
@@ -133,9 +149,9 @@ $$a_\parallel = g\sin\theta - \frac{kx}{m}, \qquad N = mg\cos\theta$$
 
 ### 解法1：水平・鉛直な軸で
 
-![解法1の軸](/docs/eom-advanced/image17.png)
+![同じ問題を、水平・鉛直に軸を取り直して考える](/docs/eom-advanced/image17.png)
 
-![力の分解（水平鉛直）](/docs/eom-advanced/image18.png)
+![水平・鉛直軸での力の分解。束縛条件は「加速度が斜面方向」になる](/docs/eom-advanced/image18.png)
 
 水平・鉛直に軸を取ると、束縛条件は「加速度が斜面方向」＝ $a_y = a_x\tan\theta$ の形になる。代入して解くと、鉛直方向の加速度は
 
@@ -147,15 +163,17 @@ $$a_y = g\sin^2\theta - \frac{kx}{m}\sin\theta$$
 
 なめらかな床の上に質量 $M$・傾角 $\theta$ の斜面台、その斜面に質量 $m$ の小物体を乗せて静かに離す。台は右へ $A_x$、小物体は左へ $a_x$・下へ $a_y$ で動き出す。
 
-![設定](/docs/eom-advanced/image19.png)
+![なめらかな床の上の斜面台 M と、その斜面に乗せた質量 m の小物体](/docs/eom-advanced/image19.png)
 
-![加速度](/docs/eom-advanced/image20.png)
+![台は右へ加速度 Aₓ、小物体は左へ aₓ・下へ a_y で動き出す](/docs/eom-advanced/image20.png)
 
 小物体には台から垂直抗力 $N$ がかかる。
 
 ![可動斜面台：力と加速度](/docs/eom-advanced/fig-movable-wedge.svg)
 
-![小物体に注目](/docs/eom-advanced/image22.png)
+<small>[元の手書き図を見る](/docs/eom-advanced/image21.png)</small>
+
+![小物体だけを取り出すと、重力 mg と斜面からの垂直抗力 N がはたらく](/docs/eom-advanced/image22.png)
 
 小物体の運動方程式（水平・鉛直）：
 
@@ -163,15 +181,17 @@ $$m a_x = N\sin\theta, \qquad m a_y = mg - N\cos\theta$$
 
 次に台。反作用 $N$ を受けて水平に動く。
 
-![台の力](/docs/eom-advanced/image23.png)
+![台だけを見ると、小物体からの反作用の垂直抗力 N を受けて水平に動く](/docs/eom-advanced/image23.png)
 
-![台の力（始点をそろえる）](/docs/eom-advanced/image24.png)
+![力の始点をそろえて、台にはたらく力を水平方向に整理する](/docs/eom-advanced/image24.png)
 
 $$M A_x = N\sin\theta$$
 
 これで運動方程式が出そろう。あとは束縛条件。
 
-![束縛の幾何](/docs/eom-advanced/image25.png)
+![束縛の幾何：小物体は斜面に沿うので、縦の動き a_y と横の動き aₓ+Aₓ が tanθ で結ばれる](/docs/eom-advanced/fig-wedge-constraint.svg)
+
+<small>[元の手書き図を見る](/docs/eom-advanced/image25.png)</small>
 
 台は床にめり込まないので $A_y = 0$。小物体は斜面から離れないので、相対的に斜面に沿う条件
 
@@ -185,19 +205,25 @@ $$a_y = \tan\theta\,(a_x + A_x)$$
 
 $$N = \frac{mMg\cos\theta}{M + m\sin^2\theta}$$
 
+コピー用： `N = m M g cosθ / (M + m sin²θ)`
+
 （途中、小物体の鉛直加速度は $a_y = g - \dfrac{N}{m}\cos\theta$。質量は $m$ で、$M$ と取り違えないこと。）
 
 **検算の小技**：$M \to \infty$ とすると $N \to mg\cos\theta$ で、固定斜面の結果に一致する。$\theta \to 0$ で $N \to mg$。極端な値を入れて既知の答えに戻るか確かめると、ミスに気づける。
+
+> 🔬 **ラボで確認**：可動台では、力の式だけでなく「斜面から離れない」という幾何の束縛がないと解けない。[ラボ](https://eom.tnks1407.com) で束縛条件を外すと、破綻した運動が“合法”になってしまうのも確かめられるよ。
 
 ## 例題1-3：加速する滑車
 
 質量 $M$ の滑車に糸をかけ、両端に $m_1 > m_2$ をつるし、滑車を上向き加速度 $\alpha$ で引き上げる。上向きを正、$m_1,m_2$ の加速度を $\beta,\gamma$、張力を $T$、引き上げる力を $F$ とする。
 
-![設定](/docs/eom-advanced/image26.png)
+![質量 M の滑車に糸をかけ、両端に m₁>m₂ をつるし、滑車を上向き加速度 α で引き上げる](/docs/eom-advanced/image26.png)
 
 滑車にも質量があることに注意。座標を取って束縛条件を探そう。
 
 ![加速する滑車：力と加速度](/docs/eom-advanced/fig-accel-pulley.svg)
+
+<small>[元の手書き図を見る](/docs/eom-advanced/image27.png)</small>
 
 運動方程式：
 
@@ -210,6 +236,8 @@ $$\beta + \gamma = 2\alpha$$
 が出る。$\beta,\gamma$ を $T$ で表して代入すると、
 
 $$T = \frac{2 m_1 m_2 (g + \alpha)}{m_1 + m_2}$$
+
+コピー用： `T = 2 m₁ m₂ (g + α) / (m₁ + m₂)`
 
 ### 別解：滑車とともに動く非慣性系で
 
@@ -235,13 +263,13 @@ $$m_1 A = T - m_1(g + \alpha), \qquad -m_2 A = T - m_2(g + \alpha)$$
 
 同じ可動台を、$t=0$ に小物体 $A$ が台 $B$ の最上点にある状況で、斜面に沿う座標で解いてみる。
 
-![設定](/docs/eom-advanced/image30.png)
+![同じ可動台。t=0 に小物体 A が台 B の最上点にある状況から始める](/docs/eom-advanced/image30.png)
 
 $t=0$ の小物体の位置を原点に、斜面下向きに $x$ 軸、斜面に垂直に $y$ 軸を取る。台 $B$ は回転しないので、上端を代表点にすれば状態が一意に決まる。
 
-![座標を取る](/docs/eom-advanced/image31.png)
+![斜面下向きに x 軸、斜面に垂直に y 軸を取り、t=0 の小物体位置を原点にする](/docs/eom-advanced/image31.png)
 
-![力を図示](/docs/eom-advanced/image32.png)
+![この座標で、各物体に重力と垂直抗力を書き込む](/docs/eom-advanced/image32.png)
 
 この座標だと加速度をベクトルで素直に置ける。加速度4成分＋束縛力2つで未知数6つ。だから束縛条件が2本要る ── 台が床から離れない条件と、小物体が斜面から離れない条件だ。これらを連立して解くと、小物体の斜面方向加速度は一定になり、速度・位置は
 
@@ -253,7 +281,7 @@ $$v(t) \propto t, \qquad x(t) = \tfrac12\,a\,t^2$$
 
 斜面に沿う座標だけだと面倒なときは、床に平行な $X$ 軸・鉛直上向きの $Y$ 軸を追加して、台は $X$-$Y$、小物体は $x$-$y$ で考えると整理しやすい。
 
-![軸を増やす](/docs/eom-advanced/image33.png)
+![床に平行な X 軸・鉛直上向きの Y 軸を追加し、台は X-Y、小物体は x-y で見る](/docs/eom-advanced/image33.png)
 
 最後に、二つの座標の関係（$x$ 軸負の向きと $X$ 軸正の向きのなす角が $\theta$）で結べば、静止座標での運動に戻せる。
 
@@ -263,17 +291,19 @@ $$v(t) \propto t, \qquad x(t) = \tfrac12\,a\,t^2$$
 
 ![慣性力：加速する系で現れる見かけの力](/docs/eom-advanced/fig-inertial-force.svg)
 
+<small>[元の手書き図を見る](/docs/eom-advanced/image34.png)</small>
+
 慣性力とは、加速度 $\boldsymbol{a}_0$ で動く観測者が質量 $m$ の物体を見るときに、$-m\boldsymbol{a}_0$ だけの力がかかって見えると約束することで、加速系でもニュートンの法則を成り立たせるための力だ。これを入れると、静止系で立てた式と無矛盾になる。
 
-![力を求める](/docs/eom-advanced/image35.png)
+![台とともに動く系では、重力・垂直抗力に加えて慣性力 −ma₀ を書き込んで力を求める](/docs/eom-advanced/image35.png)
 
 台とともに動く座標では、小物体は $x$ 軸に平行に動くので $y$ 方向の加速度が $0$。この束縛のもとで解き、
 
-![静止系へ戻す](/docs/eom-advanced/image36.png)
+![加速系で解いた小物体の動きを、静止系に戻す準備](/docs/eom-advanced/image36.png)
 
 最後に「静止系から見た台の変位」＋「加速系から見た小物体の変位」を足せば、静止系での位置が復元できる。
 
-![変位を足す](/docs/eom-advanced/image37.png)
+![台の変位と、加速系から見た小物体の変位を足して、静止系での位置を復元する](/docs/eom-advanced/image37.png)
 
 別々の座標で解いても、ちゃんと同じ運動に行き着く。どれも正しいが、難易度はまるで違う ── だから「いま何を知りたいか」に合わせて座標を選ぶ技術が効いてくる。
 
