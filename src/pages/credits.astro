@@ -1,0 +1,83 @@
+---
+const libs = [
+  { name: 'Astro', use: 'サイトの構築フレームワーク', license: 'MIT', url: 'https://astro.build' },
+  { name: 'KaTeX', use: '数式の組版（解説記事）', license: 'MIT', url: 'https://katex.org' },
+  { name: 'remark-math / rehype-katex', use: 'Markdown中の数式処理', license: 'MIT', url: 'https://github.com/remarkjs/remark-math' },
+  { name: 'sharp', use: '図(SVG)の画像化・検証（制作時のみ）', license: 'Apache-2.0', url: 'https://sharp.pixelplumbing.com' },
+];
+const fonts = [
+  { name: 'Zen Kaku Gothic New', use: '本文', license: 'SIL OFL 1.1', url: 'https://fonts.google.com/specimen/Zen+Kaku+Gothic+New' },
+  { name: 'JetBrains Mono', use: '等幅・コード', license: 'SIL OFL 1.1', url: 'https://www.jetbrains.com/lp/mono/' },
+];
+---
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>クレジット｜TNKS1407</title>
+    <meta name="description" content="このサイトで使っているオープンソースソフトウェアとフォントのクレジット。サイトのコードは MIT ライセンス。" />
+    <link rel="icon" href="/favicon.ico" />
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+    <style>
+      :root{--bg:#f5f2ec;--ink:#1d1b17;--sub:#7d7568;--accent:#3c7876;--line:#e3dbd0;--card:#fff;--dot:#cfc9be;}
+      *{box-sizing:border-box}
+      html,body{margin:0;background:var(--bg);color:var(--ink);line-height:1.85;
+        background-image:radial-gradient(circle,var(--dot) 1px,transparent 0);background-size:20px 20px;
+        font-family:'Zen Kaku Gothic New','Hiragino Sans','Meiryo',system-ui,sans-serif;}
+      main{max-width:720px;margin:0 auto;padding:2.4rem 1.1rem 4rem;}
+      a{color:var(--accent);text-decoration:none;} a:hover{opacity:.75;}
+      .back{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--sub);}
+      h1{font-size:1.5rem;margin:.6rem 0 .3rem;}
+      .lead{color:var(--sub);font-size:.92rem;margin:0 0 1.6rem;}
+      h2{font-size:1.1rem;color:var(--accent);margin:2rem 0 .6rem;}
+      table{width:100%;border-collapse:collapse;font-size:.9rem;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;}
+      th,td{text-align:left;padding:.6rem .7rem;border-bottom:1px solid var(--line);vertical-align:top;}
+      th{background:#faf8f4;color:var(--sub);font-weight:600;font-size:.8rem;}
+      tr:last-child td{border-bottom:0;}
+      .lic{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--sub);white-space:nowrap;}
+      .note{background:#fff;border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:.8rem 1rem;font-size:.9rem;color:var(--sub);margin:1.4rem 0;}
+      footer{margin-top:2.6rem;border-top:1px solid var(--line);padding-top:1rem;font-size:.78rem;color:var(--sub);font-family:'JetBrains Mono',monospace;}
+    </style>
+  </head>
+  <body>
+    <main>
+      <a class="back" href="/">← TNKS1407</a>
+      <h1>クレジット</h1>
+      <p class="lead">このサイトは、たくさんのオープンソースの上に成り立っています。感謝とともに記しておきます。</p>
+
+      <div class="note">
+        <strong>このサイトのコード</strong>は <a href="https://github.com/TNKS1407/tnks1407.com" target="_blank" rel="noopener noreferrer">MIT ライセンス</a>で公開しています。自由に使ってもらって構いません。
+      </div>
+
+      <h2>使用しているソフトウェア</h2>
+      <table>
+        <tr><th>名前</th><th>用途</th><th>ライセンス</th></tr>
+        {libs.map((l) => (
+          <tr>
+            <td><a href={l.url} target="_blank" rel="noopener noreferrer">{l.name}</a></td>
+            <td>{l.use}</td>
+            <td class="lic">{l.license}</td>
+          </tr>
+        ))}
+      </table>
+
+      <h2>フォント</h2>
+      <table>
+        <tr><th>名前</th><th>用途</th><th>ライセンス</th></tr>
+        {fonts.map((f) => (
+          <tr>
+            <td><a href={f.url} target="_blank" rel="noopener noreferrer">{f.name}</a></td>
+            <td>{f.use}</td>
+            <td class="lic">{f.license}</td>
+          </tr>
+        ))}
+      </table>
+
+      <h2>図・コンテンツについて</h2>
+      <p style="font-size:.9rem;color:var(--sub)">解説記事の図と文章、各ツールのコードは、特記なき限り自作です。外部のデータや図を参照した場合は、その記事内に出典を記しています。</p>
+
+      <footer>© 2026 TNKS1407 · <a href="/">home</a> · <a href="https://github.com/TNKS1407/tnks1407.com" target="_blank" rel="noopener noreferrer">source (MIT)</a></footer>
+    </main>
+  </body>
+</html>
