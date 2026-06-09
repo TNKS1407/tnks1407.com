@@ -12,6 +12,10 @@ type Work = {
 const explainers = (await getCollection('docs')).sort(
   (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
 );
+// 「発展」タグの記事はトップでは控えめに（小さく）出す
+const isAdvanced = (doc: any) => (doc.data.tags ?? []).includes('発展');
+const mainDocs = explainers.filter(d => !isAdvanced(d));
+const subDocs  = explainers.filter(d => isAdvanced(d));
 
 const quickLinks = [
   { label: "tnkblog.net", url: "https://tnkblog.net", icon: "📝", featured: true },
@@ -354,6 +358,16 @@ const favKey = (w: Work) => {
       .explainer-tag{flex-shrink:0;font-size:0.66rem;font-weight:700;color:var(--accent);background:var(--accent-dim);
         border:1px solid rgba(60,120,118,.25);border-radius:999px;padding:0.1rem 0.55rem;font-family:'JetBrains Mono',monospace;}
       .explainer-desc{font-size:0.83rem;color:var(--text-muted);line-height:1.55;margin-top:0.35rem;}
+      /* 発展記事はトップでは小さく・1行で控えめに */
+      .explainer-sub-list{display:flex;flex-direction:column;gap:0.4rem;margin-top:0.5rem;}
+      .explainer-sub{display:flex;align-items:center;gap:0.55rem;padding:0.5rem 0.85rem;border-radius:10px;
+        box-shadow:none;background:var(--surface,#faf8f4);opacity:0.85;}
+      .explainer-sub:hover{transform:translateX(2px);opacity:1;}
+      .explainer-sub-flag{flex-shrink:0;font-size:0.6rem;font-weight:700;color:var(--text-muted);
+        background:var(--surface2,#f0ece6);border:1px solid var(--border);border-radius:999px;
+        padding:0.05rem 0.45rem;font-family:'JetBrains Mono',monospace;}
+      .explainer-sub-title{font-weight:600;font-size:0.82rem;color:var(--text-muted);
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 
       /* Section headings */
       .section-title{font-size:0.72rem;font-weight:700;color:var(--text-faint);margin-bottom:0.85rem;letter-spacing:0.1em;display:flex;align-items:center;gap:0.6rem;font-family:'JetBrains Mono',monospace;}
@@ -587,7 +601,7 @@ const favKey = (w: Work) => {
         <section id="docs" class="explainers">
           <div class="section-title">解説 — Explainers</div>
           <div class="explainer-list">
-            {explainers.map(doc => (
+            {mainDocs.map(doc => (
               <a class="explainer-card" href={`/docs/${doc.id}/`}>
                 <div class="explainer-row">
                   <span class="explainer-title">{doc.data.title}</span>
@@ -597,6 +611,17 @@ const favKey = (w: Work) => {
               </a>
             ))}
           </div>
+          {subDocs.length > 0 && (
+            <div class="explainer-sub-list">
+              {subDocs.map(doc => (
+                <a class="explainer-card explainer-sub" href={`/docs/${doc.id}/`}>
+                  <span class="explainer-sub-flag">発展</span>
+                  <span class="explainer-sub-title">{doc.data.title}</span>
+                  {doc.data.demo && <span class="explainer-tag">▶</span>}
+                </a>
+              ))}
+            </div>
+          )}
         </section>
       )}
 
