@@ -17,31 +17,39 @@ const isAdvanced = (doc: any) => (doc.data.tags ?? []).includes('発展');
 const mainDocs = explainers.filter(d => !isAdvanced(d));
 const subDocs  = explainers.filter(d => isAdvanced(d));
 
-const quickLinks = [
+type QuickLink = { label: string; url: string; icon: string; featured?: boolean; cat?: 'eng' | 'data' | 'other' };
+const quickLinks: QuickLink[] = [
   { label: "tnkblog.net", url: "https://tnkblog.net", icon: "📝", featured: true },
   { label: "eom.tnks1407.com", url: "https://eom.tnks1407.com", icon: "🪐", featured: true },
   { label: "rd.tnks1407.com", url: "https://rd.tnks1407.com", icon: "🧫", featured: true },
   { label: "sg.tnks1407.com", url: "https://sg.tnks1407.com", icon: "🔷", featured: true },
   { label: "stepper.tnks1407.com", url: "https://stepper.tnks1407.com", icon: "🧲", featured: true },
   { label: "GitHub", url: "https://github.com/TNKS1407", icon: "⚙", featured: true },
-  { label: "nico.tnks1407.com", url: "https://nico.tnks1407.com", icon: "💬" },
-  { label: "fdtd.tnks1407.com", url: "https://fdtd.tnks1407.com", icon: "📡" },
-  { label: "vg.tnks1407.com", url: "https://vg.tnks1407.com", icon: "🌀" },
-  { label: "events（幹事）", url: "https://events.tnks1407.com/admin", icon: "✏️" },
-  { label: "events（参加者）", url: "https://events.tnks1407.com", icon: "📊" },
-  { label: "seigou.tnks1407.com", url: "https://seigou.tnks1407.com", icon: "📡" },
-  { label: "psu.tnks1407.com", url: "https://psu.tnks1407.com", icon: "⚡" },
-  { label: "graph.tnks1407.com", url: "https://graph.tnks1407.com", icon: "📐" },
-  { label: "docs.tnks1407.com", url: "https://docs.tnks1407.com", icon: "📚" },
-  { label: "pml.tnks1407.com", url: "https://pml.tnks1407.com", icon: "🧮" },
-  { label: "gradus.tnks1407.com", url: "https://gradus.tnks1407.com", icon: "🎨" },
-  { label: "effect.tnks1407.com", url: "https://effect.tnks1407.com", icon: "🔬" },
-  { label: "eng.tnks1407.com", url: "https://eng.tnks1407.com", icon: "🔧" },
-  { label: "astro.tnks1407.com", url: "https://astro.tnks1407.com", icon: "🌌" },
-  { label: "status（要認証）", url: "https://status.tnks1407.com", icon: "📈" },
+  { label: "fdtd.tnks1407.com", url: "https://fdtd.tnks1407.com", icon: "📡", cat: 'eng' },
+  { label: "vg.tnks1407.com", url: "https://vg.tnks1407.com", icon: "🌀", cat: 'eng' },
+  { label: "psu.tnks1407.com", url: "https://psu.tnks1407.com", icon: "⚡", cat: 'eng' },
+  { label: "graph.tnks1407.com", url: "https://graph.tnks1407.com", icon: "📐", cat: 'eng' },
+  { label: "astro.tnks1407.com", url: "https://astro.tnks1407.com", icon: "🌌", cat: 'eng' },
+  { label: "eng.tnks1407.com", url: "https://eng.tnks1407.com", icon: "🔧", cat: 'eng' },
+  { label: "seigou.tnks1407.com", url: "https://seigou.tnks1407.com", icon: "📡", cat: 'eng' },
+  { label: "pml.tnks1407.com", url: "https://pml.tnks1407.com", icon: "🧮", cat: 'data' },
+  { label: "gradus.tnks1407.com", url: "https://gradus.tnks1407.com", icon: "🎨", cat: 'data' },
+  { label: "effect.tnks1407.com", url: "https://effect.tnks1407.com", icon: "🔬", cat: 'data' },
+  { label: "nico.tnks1407.com", url: "https://nico.tnks1407.com", icon: "💬", cat: 'other' },
+  { label: "events（幹事）", url: "https://events.tnks1407.com/admin", icon: "✏️", cat: 'other' },
+  { label: "events（参加者）", url: "https://events.tnks1407.com", icon: "📊", cat: 'other' },
+  { label: "docs.tnks1407.com", url: "https://docs.tnks1407.com", icon: "📚", cat: 'other' },
+  { label: "status（要認証）", url: "https://status.tnks1407.com", icon: "📈", cat: 'other' },
 ];
 const qlFeatured = quickLinks.filter(l => l.featured);
-const qlRest = quickLinks.filter(l => !l.featured);
+const QL_CATS = [
+  { key: 'eng',   label: 'エンジニアリング' },
+  { key: 'data',  label: 'データ・画像' },
+  { key: 'other', label: '運用・その他' },
+] as const;
+const qlByCat = Object.fromEntries(
+  QL_CATS.map(c => [c.key, quickLinks.filter(l => l.cat === c.key)])
+);
 
 const works: Work[] = [
   {
@@ -342,7 +350,9 @@ const favKey = (w: Work) => {
       .ql-toggle{font-family:'JetBrains Mono',monospace;font-size:0.72rem;font-weight:600;color:var(--text-muted);background:none;border:1px solid var(--border);border-radius:999px;padding:0.22rem 0.7rem;cursor:pointer;transition:border-color 0.15s,color 0.15s;}
       .ql-toggle:hover{border-color:var(--accent);color:var(--accent);}
       .quick-links{display:flex;gap:0.4rem;flex-wrap:wrap;}
-      .ql-rest{margin-top:0.55rem;padding-top:0.6rem;border-top:1px dashed var(--border);}
+      .ql-rest{margin-top:0.55rem;padding-top:0.7rem;border-top:1px dashed var(--border);display:flex;flex-direction:column;gap:0.7rem;}
+      .ql-rest[hidden]{display:none;}
+      .ql-group-label{display:block;font-size:0.64rem;font-weight:700;color:var(--text-faint);letter-spacing:0.08em;font-family:'JetBrains Mono',monospace;margin-bottom:0.4rem;}
       .quick-link{display:flex;align-items:center;gap:0.3rem;padding:0.28rem 0.65rem;border-radius:7px;background:var(--surface2);border:1px solid var(--border-dim);text-decoration:none;color:var(--text-muted);font-size:0.75rem;font-weight:500;font-family:'JetBrains Mono',monospace;transition:border-color 0.15s,color 0.15s,background 0.15s;}
       .quick-link:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-dim);}
       .quick-link.feat{background:var(--accent-dim);border-color:var(--accent);color:var(--accent);font-weight:600;}
@@ -577,12 +587,19 @@ const favKey = (w: Work) => {
             </a>
           ))}
         </div>
-        <div class="quick-links ql-rest" id="ql-rest" hidden>
-          {qlRest.map(l => (
-            <a href={l.url} class="quick-link" target="_blank" rel="noopener noreferrer">
-              <span class="icon" aria-hidden="true">{l.icon}</span>
-              {l.label}
-            </a>
+        <div class="ql-rest" id="ql-rest" hidden>
+          {QL_CATS.map(c => (
+            <div class="ql-group">
+              <span class="ql-group-label">{c.label}</span>
+              <div class="quick-links">
+                {qlByCat[c.key].map(l => (
+                  <a href={l.url} class="quick-link" target="_blank" rel="noopener noreferrer">
+                    <span class="icon" aria-hidden="true">{l.icon}</span>
+                    {l.label}
+                  </a>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </div>
