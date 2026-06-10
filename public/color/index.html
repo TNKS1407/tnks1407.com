@@ -29,6 +29,9 @@
   input[type=range]{width:100%;accent-color:var(--accent);}
   .checks{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:10px;}
   .checks label{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text);cursor:pointer;}
+  .bgbtns{display:flex;gap:6px;}
+  .bgbtns button{flex:1;padding:5px 0;font-size:12px;background:#2a2a33;color:var(--text);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-family:inherit;}
+  .bgbtns button:hover{border-color:var(--accent);color:var(--accent);}
   .note{font-size:11px;color:var(--muted);line-height:1.65;margin-top:12px;border-top:1px solid var(--border);padding-top:10px;}
   .note b{color:var(--accent);}
   .hint{position:fixed;bottom:12px;right:14px;font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;background:var(--panel);padding:6px 10px;border-radius:8px;border:1px solid var(--border);}
@@ -64,6 +67,16 @@
     <label><input type="checkbox" id="cAxis" checked> 中立軸</label>
     <label><input type="checkbox" id="cRing" checked> 色相環</label>
     <label><input type="checkbox" id="cSlice"> スライス面</label>
+    <label><input type="checkbox" id="cRound"> 丸み（球状）</label>
+  </div>
+  <div class="row" style="margin-top:12px;">
+    <label>背景</label>
+    <div class="bgbtns">
+      <button data-bg="0x15151b">暗</button>
+      <button data-bg="0x000000">黒</button>
+      <button data-bg="0xffffff">白</button>
+      <button data-bg="0x808080">灰</button>
+    </div>
   </div>
   <div class="note" id="note"></div>
   <div class="note" style="border:0;padding-top:8px;"><a class="back" href="https://tnks1407.com">← tnks1407.com に戻る</a></div>
@@ -87,10 +100,11 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true; controls.target.set(0,0,0);
 
 const R = 1.0, Hgt = 2.0;
-let lsel = 0.5, twist = 0, warp = 0;
+let lsel = 0.5, twist = 0, warp = 0, round = false;
 let showSolid=true, showAxis=true, showRing=true, showSlice=false;
 
-function maxChroma(l){ return 1 - Math.abs(2*l - 1); }          // その明度で使える彩度の幅
+// 断面プロファイル：bicone=1-|2l-1|（HSL正規） / round=√(1-(2l-1)²)（球状）
+function maxChroma(l){ const u=2*l-1; return round ? Math.sqrt(Math.max(0,1-u*u)) : (1 - Math.abs(u)); }
 function centerOffset(l){ return warp * Math.sin(Math.PI*l) * 0.55 * R; } // 中立軸の横ずれ
 function hueAngle(h, l){ return h*2*Math.PI + twist*(l-0.5)*2*Math.PI; }   // ねじれ込みの色相角
 
@@ -99,7 +113,7 @@ const col = new THREE.Color();
 
 function buildCloud(){
   if(cloud){ scene.remove(cloud); cloud.geometry.dispose(); cloud.material.dispose(); }
-  const Nh=40, Ns=8, Nl=26;
+  const Nh=64, Ns=11, Nl=34;
   const pos=[], colr=[];
   for(let li=0; li<Nl; li++){
     const l = li/(Nl-1);
@@ -163,10 +177,14 @@ function buildRing(){
 }
 
 function buildSlice(){
-  if(slice){ scene.remove(slice); slice.geometry.dispose(); slice.material.dispose(); }
-  const mc=maxChroma(lsel);
-  const cg=new THREE.CircleGeometry(Math.max(mc*R,0.01)*1.05, 48);
-  slice=new THREE.Mesh(cg, new THREE.MeshBasicMaterial({ color:0xffffff, transparent:true, opacity:0.07, side:THREE.DoubleSide }));
+  if(slice){ scene.remove(slice); slice.traverse(o=>{ if(o.geometry)o.geometry.dispose(); if(o.material)o.material.dispose(); }); }
+  const mc=Math.max(maxChroma(lsel)*R, 0.01);
+  slice=new THREE.Group();
+  const disk=new THREE.Mesh(new THREE.CircleGeometry(mc*1.05, 64),
+    new THREE.MeshBasicMaterial({ color:0xffffff, transparent:true, opacity:0.16, side:THREE.DoubleSide, depthWrite:false }));
+  const rim=new THREE.Mesh(new THREE.RingGeometry(mc*1.02, mc*1.08, 64),
+    new THREE.MeshBasicMaterial({ color:0x5fc8c2, transparent:true, opacity:0.9, side:THREE.DoubleSide, depthWrite:false }));
+  slice.add(disk, rim);
   slice.rotation.x=-Math.PI/2;
   slice.position.set(centerOffset(lsel),(lsel-0.5)*Hgt,0);
   slice.visible=showSlice; scene.add(slice);
@@ -194,6 +212,10 @@ chk('cSolid', v=>{ showSolid=v; if(cloud)cloud.visible=v; });
 chk('cAxis', v=>{ showAxis=v; if(axisLine)axisLine.visible=v; if(axisDots)axisDots.visible=v; });
 chk('cRing', v=>{ showRing=v; if(ring)ring.visible=v; });
 chk('cSlice', v=>{ showSlice=v; if(slice)slice.visible=v; });
+chk('cRound', v=>{ round=v; rebuildGeom(); rebuildSlice(); });
+document.querySelectorAll('.bgbtns button').forEach(b=>{
+  b.addEventListener('click', ()=>{ scene.background = new THREE.Color(parseInt(b.dataset.bg)); });
+});
 
 addEventListener('resize', ()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); });
 (function loop(){ requestAnimationFrame(loop); controls.update(); renderer.render(scene,camera); })();
