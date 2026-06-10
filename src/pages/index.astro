@@ -24,6 +24,7 @@ const quickLinks: QuickLink[] = [
   { label: "rd.tnks1407.com", url: "https://rd.tnks1407.com", icon: "🧫", featured: true },
   { label: "sg.tnks1407.com", url: "https://sg.tnks1407.com", icon: "🔷", featured: true },
   { label: "stepper.tnks1407.com", url: "https://stepper.tnks1407.com", icon: "🧲", featured: true },
+  { label: "色空間3D (/color)", url: "/color/", icon: "🎨", featured: true },
   { label: "GitHub", url: "https://github.com/TNKS1407", icon: "⚙", featured: true },
   { label: "fdtd.tnks1407.com", url: "https://fdtd.tnks1407.com", icon: "📡", cat: 'eng' },
   { label: "vg.tnks1407.com", url: "https://vg.tnks1407.com", icon: "🌀", cat: 'eng' },
@@ -120,6 +121,14 @@ const works: Work[] = [
     status: "Prototype", section: "lab", group: "data-lab",
     links: [{ label: "GitHub", url: "https://github.com/TNKS1407/process-effect-lab" }],
     prompt: "プロセスデータのモデリング手法を「パラメータを変えると何が起きるか」で体験する What-If 実験台を作って。\n\n## コンセプト\nProcess Modeling Lab（pml.tnks1407.com）は「実験ボタンを押してPNG結果を見る」形式。\nこの v2 は「スライダーを動かしながらリアルタイムに変化を観察する」形式にしたい。\n\n学習したい問いの例:\n- 「ノイズをどこまで増やしたら OLS が PLS に負け始めるか？」\n- 「共線性が強くなるほど OLS 係数はどう発散するか？」\n- 「JIT の局所窓サイズを小さくしすぎると何が起きるか？」\n\n## 技術スタック\n- Python 軽量 HTTP サーバー（server.py、外部フレームワークなし）\n- スライダー変更 → fetch POST /api/run → matplotlib PNG を base64 で返す\n- フロントエンド: 単一 index.html（バニラJS）/ タブ切替UI（6実験）\n\n## 実験タブ詳細\n### Tab 1: 単回帰 — スライダー: n, σ, β, 外れ値数\n### Tab 2: 多重共線性と PLS — スライダー: 共線性ρ, σ, PLS成分数\n### Tab 3: JIT ソフトセンサー — スライダー: 局所窓サイズk, ノイズ, モード変化量\n### Tab 4: グレーボックスモデル — スライダー: 物理モデル誤差%, 追加ノイズ\n### Tab 5: 転移学習（FEHDA）— スライダー: ターゲットサンプル数, 分布シフト量\n### Tab 6: 生データ診断 — スライダー: 外れ値率, ドリフト強度, ノイズ変化点\n\n## Study Guide\n各タブに「このアルゴリズムが何を解こうとしているか」を2〜3段落で説明するアコーディオンパネルを置く。数式はテキスト表記。「なぜ動くか」の物理的直感を重視。",
+  },
+  {
+    title: "色空間ビューア — Color Space Explorer",
+    icon: "🎨",
+    description: "色を3Dで掴むツール。HSL色立体をドラッグで回し、中立軸（グレーの芯）・色相環(S¹)・等明度スライスをその場で確認できる。「中立軸のゆがみ」で軸が曲がり、「ねじれ」で色相環が螺旋にねじれる＝ベゾルト・ブリュッケ効果まで触れる。Three.js・クライアント完結。",
+    url: "/color/",
+    tags: ["Three.js", "色彩", "知覚", "幾何"],
+    status: "Beta", section: "lab", group: "data-lab",
   },
   {
     title: "Gradus — 触って学ぶ画像処理ラボ",
