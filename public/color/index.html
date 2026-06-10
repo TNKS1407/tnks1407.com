@@ -177,15 +177,30 @@ function buildRing(){
 }
 
 function buildSlice(){
-  if(slice){ scene.remove(slice); slice.traverse(o=>{ if(o.geometry)o.geometry.dispose(); if(o.material)o.material.dispose(); }); }
-  const mc=Math.max(maxChroma(lsel)*R, 0.01);
-  slice=new THREE.Group();
-  const disk=new THREE.Mesh(new THREE.CircleGeometry(mc*1.05, 64),
-    new THREE.MeshBasicMaterial({ color:0xffffff, transparent:true, opacity:0.16, side:THREE.DoubleSide, depthWrite:false }));
-  const rim=new THREE.Mesh(new THREE.RingGeometry(mc*1.02, mc*1.08, 64),
-    new THREE.MeshBasicMaterial({ color:0x5fc8c2, transparent:true, opacity:0.9, side:THREE.DoubleSide, depthWrite:false }));
-  slice.add(disk, rim);
-  slice.rotation.x=-Math.PI/2;
+  if(slice){ scene.remove(slice); slice.geometry.dispose(); slice.material.dispose(); }
+  const mc=Math.max(maxChroma(lsel)*R, 0.001);
+  // その明度の色断面（色相＝角度, 彩度＝半径, 色＝HSL(h,s,lsel)）を色付き円盤で
+  const Nh=72, Nr=12;
+  const pos=[0,0,0], cols=[]; col.setHSL(0,0,lsel); cols.push(col.r,col.g,col.b);
+  for(let r=1;r<=Nr;r++){ const rad=(r/Nr)*mc;
+    for(let h=0;h<Nh;h++){ const a=h/Nh*2*Math.PI;
+      pos.push(rad*Math.cos(a), 0, rad*Math.sin(a));
+      col.setHSL(h/Nh, r/Nr, lsel); cols.push(col.r,col.g,col.b);
+    }
+  }
+  const vi=(r,h)=>1+(r-1)*Nh+(h%Nh);
+  const idx=[];
+  for(let h=0;h<Nh;h++){ idx.push(0, vi(1,h), vi(1,h+1)); }
+  for(let r=1;r<Nr;r++){ for(let h=0;h<Nh;h++){
+    const a=vi(r,h),b=vi(r,h+1),c=vi(r+1,h),d=vi(r+1,h+1);
+    idx.push(a,c,b, b,c,d);
+  }}
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos,3));
+  g.setAttribute('color', new THREE.Float32BufferAttribute(cols,3));
+  g.setIndex(idx);
+  slice=new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors:true, side:THREE.DoubleSide }));
+  slice.rotation.y = twist*(lsel-0.5)*2*Math.PI;
   slice.position.set(centerOffset(lsel),(lsel-0.5)*Hgt,0);
   slice.visible=showSlice; scene.add(slice);
 }
