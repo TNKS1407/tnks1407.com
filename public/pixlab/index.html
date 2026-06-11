@@ -96,7 +96,8 @@
     <div class="row"><span class="rlab">見る面</span><div class="ops" id="chans"></div></div>
     <div class="row"><span class="rlab">演算</span><div class="ops" id="kers"></div></div>
     <div class="row"><span class="rlab">見せ方</span><div class="ops" id="reprs"></div></div>
-    <div class="row"><span class="rlab">絵の色</span><div class="ops" id="rgbshow"></div><span class="status" style="margin:0 0 0 .3rem;">※ 元ドット絵と結果の絵に反映（複数可）</span></div>
+    <div class="row"><span class="rlab">元の色</span><div class="ops" id="showL"></div></div>
+    <div class="row"><span class="rlab">結果の色</span><div class="ops" id="showR"></div><span class="status" style="margin:0 0 0 .3rem;">※ 左右それぞれ R/G/B を選べる（複数可）</span></div>
 
     <canvas id="cv" width="640" height="320"></canvas>
     <div class="controls">
@@ -125,7 +126,7 @@
   var SRC=256, SS=288, SX=18, SY=30, GX=334;
   var TEAL='#13897c', WARM='#df5e3c';
   var sc=document.createElement('canvas'); sc.width=sc.height=SRC; var sctx=sc.getContext('2d');
-  var srcData=null, N=16, chan='L', kerId='none', repr='mat', showCh={R:true,G:true,B:true};
+  var srcData=null, N=16, chan='L', kerId='none', repr='mat', showChL={R:true,G:true,B:true}, showChR={R:true,G:true,B:true};
   var dots=[], outDots=[], cur=0, subK=0, hlCell=-1, curRes=null, lastShow=null, lastJust=null, ncells=[], timer=null, speed=62;
 
   var KER=[
@@ -175,22 +176,38 @@
     var prod=[],sum=0; for(var i=0;i<9;i++){ var p=k.m[i]*wsel[i]; prod.push(p); sum+=p; }
     return { out:oc, win:wsel, prod:prod, sum:sum, disp:applyDisp(sum,k) };
   }
+  function blockAvg(col,row){
+    var x0=Math.floor(col*SRC/N),x1=Math.floor((col+1)*SRC/N),y0=Math.floor(row*SRC/N),y1=Math.floor((row+1)*SRC/N),sr=0,sg=0,sb=0,cnt=0;
+    for(var yy=y0;yy<y1;yy++)for(var xx=x0;xx<x1;xx++){ var k=(yy*SRC+xx)*4; sr+=srcData[k];sg+=srcData[k+1];sb+=srcData[k+2];cnt++; }
+    cnt=cnt||1;
+    return { out:[Math.round(sr/cnt),Math.round(sg/cnt),Math.round(sb/cnt)], box:{x0:x0,x1:x1,y0:y0,y1:y1}, n:cnt };
+  }
+  function showPixReadout(r,c,res){
+    var o=res.out, bw=res.box.x1-res.box.x0, bh=res.box.y1-res.box.y0;
+    var sw='<span style="display:inline-block;width:1.4em;height:1.4em;border:1px solid #ccc;border-radius:4px;vertical-align:middle;margin:0 .25em;background:rgb('+o[0]+','+o[1]+','+o[2]+')"></span>';
+    document.getElementById('readout').innerHTML='<div class="rhead">写真をドット絵に（標本化）　／　ドット (x='+c+', y='+r+')</div>'+
+      '<div class="kmean">元写真のこのブロック（'+bw+'×'+bh+' = '+res.n+' 画素）の R・G・B をそれぞれ平均して、1ドットの色にする。これが"ちゃんとした縮小＝面積平均（ボックスフィルタ）"。演算を選べば、出来たドット絵に畳み込みをかけられるよ。</div>'+
+      '<div class="msum">平均色 '+sw+' R̄=<b>'+o[0]+'</b>　Ḡ=<b>'+o[1]+'</b>　B̄=<b>'+o[2]+'</b></div>';
+  }
 
   // ---- canvas ----
-  function maskCol(d){ return 'rgb('+(showCh.R?d[0]:0)+','+(showCh.G?d[1]:0)+','+(showCh.B?d[2]:0)+')'; }
+  function maskCol(d,s){ return 'rgb('+(s.R?d[0]:0)+','+(s.G?d[1]:0)+','+(s.B?d[2]:0)+')'; }
   function label(t,x,y,c){ ctx.fillStyle=c; ctx.font='600 12px '+'"JetBrains Mono",monospace'; ctx.textAlign='left'; ctx.textBaseline='alphabetic'; ctx.fillText(t,x,y); }
   function drawCanvas(){
     ctx.clearRect(0,0,cv.width,cv.height);
-    label('元のドット絵',SX,SY-10,'#7d7568'); label(kerId==='none'?'そのまま':'結果',GX,SY-10,TEAL);
-    var ds=SS/N;
-    for(var i=0;i<N*N;i++){ var d=dots[i],c=i%N,r=(i/N|0); ctx.fillStyle=maskCol(d); ctx.fillRect(SX+c*ds,SY+r*ds,Math.ceil(ds),Math.ceil(ds)); }
+    var none=(kerId==='none'), ds=SS/N;
+    label(none?'元の写真':'元のドット絵',SX,SY-10,'#7d7568'); label(none?'ドット絵':'結果',GX,SY-10,TEAL);
+    if(none){ ctx.imageSmoothingEnabled=true; ctx.drawImage(sc,SX,SY,SS,SS);
+      ctx.globalCompositeOperation='multiply'; ctx.fillStyle='rgb('+(showChL.R?255:0)+','+(showChL.G?255:0)+','+(showChL.B?255:0)+')'; ctx.fillRect(SX,SY,SS,SS); ctx.globalCompositeOperation='source-over'; }
+    else { for(var i=0;i<N*N;i++){ var d=dots[i],c=i%N,r=(i/N|0); ctx.fillStyle=maskCol(d,showChL); ctx.fillRect(SX+c*ds,SY+r*ds,Math.ceil(ds),Math.ceil(ds)); } }
     ctx.strokeStyle='#e6e1d8'; ctx.lineWidth=1; ctx.strokeRect(SX+0.5,SY+0.5,SS,SS);
     ctx.fillStyle='#efeae1'; ctx.fillRect(GX,SY,SS,SS);
-    for(var i=0;i<N*N;i++){ var o=(kerId==='none')?dots[i]:outDots[i]; if(o){ var c=i%N,r=(i/N|0); ctx.fillStyle=maskCol(o); ctx.fillRect(GX+c*ds,SY+r*ds,Math.ceil(ds),Math.ceil(ds)); } }
+    for(var i=0;i<N*N;i++){ var o=outDots[i]; if(o){ var c=i%N,r=(i/N|0); ctx.fillStyle=maskCol(o,showChR); ctx.fillRect(GX+c*ds,SY+r*ds,Math.ceil(ds),Math.ceil(ds)); } }
     ctx.strokeStyle='#e6e1d8'; ctx.strokeRect(GX+0.5,SY+0.5,SS,SS);
     if(hlCell>=0 && hlCell<N*N){
-      var c=hlCell%N, r=(hlCell/N|0), x0=Math.max(0,c-1),x1=Math.min(N-1,c+1),y0=Math.max(0,r-1),y1=Math.min(N-1,r+1);
-      ctx.strokeStyle=TEAL; ctx.lineWidth=2.5; ctx.strokeRect(SX+x0*ds-1,SY+y0*ds-1,(x1-x0+1)*ds+2,(y1-y0+1)*ds+2);
+      var c=hlCell%N, r=(hlCell/N|0);
+      if(none){ ctx.strokeStyle=TEAL; ctx.lineWidth=2.5; ctx.strokeRect(SX+c/N*SS-1,SY+r/N*SS-1,SS/N+2,SS/N+2); }
+      else { var x0=Math.max(0,c-1),x1=Math.min(N-1,c+1),y0=Math.max(0,r-1),y1=Math.min(N-1,r+1); ctx.strokeStyle=TEAL; ctx.lineWidth=2.5; ctx.strokeRect(SX+x0*ds-1,SY+y0*ds-1,(x1-x0+1)*ds+2,(y1-y0+1)*ds+2); }
       ctx.strokeStyle=WARM; ctx.lineWidth=2.5; ctx.strokeRect(GX+c*ds-1,SY+r*ds-1,ds+2,ds+2);
     }
   }
@@ -245,37 +262,39 @@
     mg.style.gridTemplateColumns='repeat('+N+', '+cell+'em)'; mg.innerHTML=''; ncells=[];
     for(var i=0;i<N*N;i++){ var d=document.createElement('div'); d.className='nc';
       d.style.width=cell+'em'; d.style.height=(cell*0.78)+'em'; d.style.fontSize=fs+'rem';
-      var src=(kerId==='none')?dots[i]:(outDots[i]||null);
+      var src=outDots[i]||null;
       if(src){ var v=selOf(src); d.style.background=chanBg(v); d.style.color=(v>140?'rgba(20,20,20,.8)':'rgba(255,255,255,.92)'); d.textContent=cell>=1.6?v:''; }
       else { d.style.background='#fff'; d.style.color='#cfc9bf'; d.textContent=cell>=1.6?'·':''; }
       mg.appendChild(d); ncells.push(d); }
-    var what=(kerId==='none')?'いま「見る面」の値':'演算の結果（'+chanName()+'面）';
+    var what=(kerId==='none')?'ドット絵の値（標本化の結果）':'演算の結果（'+chanName()+'面）';
     document.getElementById('matlab').innerHTML=what+'の行列（'+N+'×'+N+'）— <b>'+chanName()+'</b>';
   }
   function fillMatCell(i,v){ var d=ncells[i]; if(!d)return; if(lastJust&&lastJust!==d){} d.style.background=chanBg(v); d.style.color=(v>140?'rgba(20,20,20,.8)':'rgba(255,255,255,.92)'); var cell=N<=8?2.7:N<=16?2.2:N<=24?1.85:1.5; d.textContent=cell>=1.6?v:''; d.style.outline='1.5px solid '+WARM; if(lastJust&&lastJust!==d) lastJust.style.outline='none'; lastJust=d; }
 
-  function setStatus(){ var k=curKer(); document.getElementById('status').textContent=(kerId==='none')?(N*N+' 個（'+N+'×'+N+'、'+chanName()+'）'):('進み '+Math.min(cur,N*N)+' / '+(N*N)+'（'+k.label+'、'+chanName()+'面）'); }
+  function setStatus(){ var k=curKer(); document.getElementById('status').textContent=(kerId==='none')?('ドット絵化 '+Math.min(cur,N*N)+' / '+(N*N)+'（'+N+'×'+N+'）'):('演算 '+Math.min(cur,N*N)+' / '+(N*N)+'（'+k.label+'、'+chanName()+'面）'); }
 
   function finalize(res){ outDots[cur]=res.out; fillMatCell(cur, selOf(res.out)); cur++; subK=0; curRes=null; }
   function endNote(){ if(cur>=N*N){ stop(); document.getElementById('readout').innerHTML+='<div class="msum">——完成！ '+(N*N)+' 個ぜんぶに'+curKer().label+'をかけた。</div>'; } }
-  function stepOnce(){ if(kerId==='none'){ stop(); return; } if(cur>=N*N){ stop(); return; }
-    var r=(cur/N|0),c=cur%N,res=convCell(c,r); showReadout(r,c,res,9); hlCell=cur; finalize(res); drawCanvas(); setStatus(); endNote(); }
-  function subStep(){ stop(); if(kerId==='none'||cur>=N*N) return;
+  function stepOnce(){ if(cur>=N*N){ stop(); return; }
+    var r=(cur/N|0),c=cur%N,res;
+    if(kerId==='none'){ res=blockAvg(c,r); showPixReadout(r,c,res); } else { res=convCell(c,r); showReadout(r,c,res,9); }
+    hlCell=cur; finalize(res); drawCanvas(); setStatus(); endNote(); }
+  function subStep(){ stop(); if(cur>=N*N) return; if(kerId==='none'){ stepOnce(); return; }
     var r=(cur/N|0),c=cur%N; hlCell=cur; if(subK===0) curRes=convCell(c,r); subK++;
     showReadout(r,c,curRes,subK); if(subK>=9){ finalize(curRes); } drawCanvas(); setStatus(); endNote(); }
   function delay(){ return Math.round(360 - speed*3.0); }
-  function play(){ if(timer||kerId==='none') return; var b=document.getElementById('play'); b.textContent='⏸ 停止'; b.classList.add('on'); timer=setInterval(stepOnce, delay()); }
+  function play(){ if(timer) return; var b=document.getElementById('play'); b.textContent='⏸ 停止'; b.classList.add('on'); timer=setInterval(stepOnce, delay()); }
   function stop(){ if(timer){clearInterval(timer);timer=null;} var b=document.getElementById('play'); b.textContent='▶ 再生'; b.classList.remove('on'); }
   function resetStep(){ stop(); cur=0; subK=0; hlCell=-1; curRes=null; lastShow=null; lastJust=null; outDots=new Array(N*N).fill(null);
     document.getElementById('readout').innerHTML = (kerId==='none')
-      ? '<div class="kmean">'+curKer().mean+'</div>'
+      ? '<div class="kmean">「▶ 再生」か「1ステップ」で、写真を各ブロックの平均RGBで一マスずつドット絵にしていくよ（標本化）。出来たら「演算」でカーネルを選ぶと、そのドット絵に畳み込みをかけられる。</div>'
       : '「▶ 再生」か「1ステップ」で、'+curKer().label+'を一マスずつ計算していくよ。';
     buildMat(); drawCanvas(); setStatus(); }
 
   function render(){ pixelate(); resetStep(); }
 
   function setN(n){ N=n; sel('#grids',n,'data-n'); render(); }
-  function setChan(c){ chan=c; sel('#chans',c,'data-c'); if(lastShow&&kerId!=='none'){ /* recompute display */ } buildMat(); drawCanvas(); if(lastShow) showReadout(lastShow.r,lastShow.c,convCell(lastShow.c,lastShow.r),lastShow.rk); setStatus(); }
+  function setChan(c){ chan=c; sel('#chans',c,'data-c'); buildMat(); drawCanvas(); if(lastShow&&kerId!=='none') showReadout(lastShow.r,lastShow.c,convCell(lastShow.c,lastShow.r),lastShow.rk); setStatus(); }
   function setKer(id){ kerId=id; sel('#kers',id,'data-k'); resetStep(); }
   function setRepr(rp){ repr=rp; sel('#reprs',rp,'data-r'); if(lastShow) showReadout(lastShow.r,lastShow.c,lastShow.res,lastShow.rk); }
   function sel(wrap,val,attr){ document.querySelectorAll(wrap+' .pill').forEach(function(el){ var a=el.getAttribute(attr); el.classList.toggle('on', a===String(val)); }); }
@@ -285,7 +304,8 @@
   mkPills('chans',[['R','赤 R'],['G','緑 G'],['B','青 B'],['L','明るさ L']],'data-c',chan,setChan);
   mkPills('kers',KER.map(function(k){return [k.id,k.label];}),'data-k',kerId,setKer);
   mkPills('reprs',[['mat','行列 (⊙)'],['expr','式（和）']],'data-r',repr,setRepr);
-  (function(){ var rs=document.getElementById('rgbshow'); [['R','赤 R'],['G','緑 G'],['B','青 B']].forEach(function(m){ var b=document.createElement('div'); b.className='pill on'; b.setAttribute('data-ch',m[0]); b.textContent=m[1]; b.onclick=function(){ showCh[m[0]]=!showCh[m[0]]; b.classList.toggle('on',showCh[m[0]]); drawCanvas(); }; rs.appendChild(b); }); })();
+  function mkRGB(wrapId,set){ var rs=document.getElementById(wrapId); [['R','赤 R'],['G','緑 G'],['B','青 B']].forEach(function(m){ var b=document.createElement('div'); b.className='pill on'; b.setAttribute('data-ch',m[0]); b.textContent=m[1]; b.onclick=function(){ set[m[0]]=!set[m[0]]; b.classList.toggle('on',set[m[0]]); drawCanvas(); }; rs.appendChild(b); }); }
+  mkRGB('showL',showChL); mkRGB('showR',showChR);
 
   document.getElementById('play').onclick=function(){ if(timer) stop(); else { if(cur>=N*N) resetStep(); play(); } };
   document.getElementById('step').onclick=function(){ stop(); if(cur>=N*N) resetStep(); stepOnce(); };
