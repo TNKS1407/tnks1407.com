@@ -96,6 +96,7 @@
     <div class="row"><span class="rlab">見る面</span><div class="ops" id="chans"></div></div>
     <div class="row"><span class="rlab">演算</span><div class="ops" id="kers"></div></div>
     <div class="row"><span class="rlab">見せ方</span><div class="ops" id="reprs"></div></div>
+    <div class="row"><span class="rlab">絵の色</span><div class="ops" id="rgbshow"></div><span class="status" style="margin:0 0 0 .3rem;">※ 元ドット絵と結果の絵に反映（複数可）</span></div>
 
     <canvas id="cv" width="640" height="320"></canvas>
     <div class="controls">
@@ -124,7 +125,7 @@
   var SRC=256, SS=288, SX=18, SY=30, GX=334;
   var TEAL='#13897c', WARM='#df5e3c';
   var sc=document.createElement('canvas'); sc.width=sc.height=SRC; var sctx=sc.getContext('2d');
-  var srcData=null, N=16, chan='L', kerId='none', repr='mat';
+  var srcData=null, N=16, chan='L', kerId='none', repr='mat', showCh={R:true,G:true,B:true};
   var dots=[], outDots=[], cur=0, subK=0, hlCell=-1, curRes=null, lastShow=null, lastJust=null, ncells=[], timer=null, speed=62;
 
   var KER=[
@@ -176,15 +177,16 @@
   }
 
   // ---- canvas ----
+  function maskCol(d){ return 'rgb('+(showCh.R?d[0]:0)+','+(showCh.G?d[1]:0)+','+(showCh.B?d[2]:0)+')'; }
   function label(t,x,y,c){ ctx.fillStyle=c; ctx.font='600 12px '+'"JetBrains Mono",monospace'; ctx.textAlign='left'; ctx.textBaseline='alphabetic'; ctx.fillText(t,x,y); }
   function drawCanvas(){
     ctx.clearRect(0,0,cv.width,cv.height);
     label('元のドット絵',SX,SY-10,'#7d7568'); label(kerId==='none'?'そのまま':'結果',GX,SY-10,TEAL);
     var ds=SS/N;
-    for(var i=0;i<N*N;i++){ var d=dots[i],c=i%N,r=(i/N|0); ctx.fillStyle='rgb('+d[0]+','+d[1]+','+d[2]+')'; ctx.fillRect(SX+c*ds,SY+r*ds,Math.ceil(ds),Math.ceil(ds)); }
+    for(var i=0;i<N*N;i++){ var d=dots[i],c=i%N,r=(i/N|0); ctx.fillStyle=maskCol(d); ctx.fillRect(SX+c*ds,SY+r*ds,Math.ceil(ds),Math.ceil(ds)); }
     ctx.strokeStyle='#e6e1d8'; ctx.lineWidth=1; ctx.strokeRect(SX+0.5,SY+0.5,SS,SS);
     ctx.fillStyle='#efeae1'; ctx.fillRect(GX,SY,SS,SS);
-    for(var i=0;i<N*N;i++){ var o=(kerId==='none')?dots[i]:outDots[i]; if(o){ var c=i%N,r=(i/N|0); ctx.fillStyle='rgb('+o[0]+','+o[1]+','+o[2]+')'; ctx.fillRect(GX+c*ds,SY+r*ds,Math.ceil(ds),Math.ceil(ds)); } }
+    for(var i=0;i<N*N;i++){ var o=(kerId==='none')?dots[i]:outDots[i]; if(o){ var c=i%N,r=(i/N|0); ctx.fillStyle=maskCol(o); ctx.fillRect(GX+c*ds,SY+r*ds,Math.ceil(ds),Math.ceil(ds)); } }
     ctx.strokeStyle='#e6e1d8'; ctx.strokeRect(GX+0.5,SY+0.5,SS,SS);
     if(hlCell>=0 && hlCell<N*N){
       var c=hlCell%N, r=(hlCell/N|0), x0=Math.max(0,c-1),x1=Math.min(N-1,c+1),y0=Math.max(0,r-1),y1=Math.min(N-1,r+1);
@@ -283,6 +285,7 @@
   mkPills('chans',[['R','赤 R'],['G','緑 G'],['B','青 B'],['L','明るさ L']],'data-c',chan,setChan);
   mkPills('kers',KER.map(function(k){return [k.id,k.label];}),'data-k',kerId,setKer);
   mkPills('reprs',[['mat','行列 (⊙)'],['expr','式（和）']],'data-r',repr,setRepr);
+  (function(){ var rs=document.getElementById('rgbshow'); [['R','赤 R'],['G','緑 G'],['B','青 B']].forEach(function(m){ var b=document.createElement('div'); b.className='pill on'; b.setAttribute('data-ch',m[0]); b.textContent=m[1]; b.onclick=function(){ showCh[m[0]]=!showCh[m[0]]; b.classList.toggle('on',showCh[m[0]]); drawCanvas(); }; rs.appendChild(b); }); })();
 
   document.getElementById('play').onclick=function(){ if(timer) stop(); else { if(cur>=N*N) resetStep(); play(); } };
   document.getElementById('step').onclick=function(){ stop(); if(cur>=N*N) resetStep(); stepOnce(); };
