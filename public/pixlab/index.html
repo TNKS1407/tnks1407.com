@@ -105,6 +105,7 @@
         <button class="btn" id="play" type="button">▶ 再生</button>
         <button class="btn" id="step" type="button">1ステップ</button>
         <button class="btn" id="substep" type="button">1項ずつ</button>
+        <button class="btn" id="finish" type="button">一気に完成</button>
         <button class="btn" id="reset" type="button">リセット</button>
       </div>
       <div class="ctrl-group" style="margin-left:auto;"><label>速さ</label><input type="range" id="speed" min="0" max="100" value="62"></div>
@@ -291,6 +292,11 @@
       : '「▶ 再生」か「1ステップ」で、'+curKer().label+'を一マスずつ計算していくよ。';
     buildMat(); drawCanvas(); setStatus(); }
 
+  function finishAll(){ stop(); var cellEm=N<=8?2.7:N<=16?2.2:N<=24?1.85:1.5;
+    while(cur<N*N){ var r=(cur/N|0),c=cur%N, res=(kerId==='none')?blockAvg(c,r):convCell(c,r); outDots[cur]=res.out;
+      var d=ncells[cur]; if(d){ var v=selOf(res.out); d.style.background=chanBg(v); d.style.color=(v>140?'rgba(20,20,20,.8)':'rgba(255,255,255,.92)'); d.textContent=cellEm>=1.6?v:''; d.style.outline='none'; } cur++; }
+    subK=0; curRes=null; hlCell=-1; lastJust=null; drawCanvas(); setStatus();
+    document.getElementById('readout').innerHTML='<div class="kmean">'+(kerId==='none'?('全 '+(N*N)+' マスの平均が完成＝ドット絵のできあがり。'):('全 '+(N*N)+' マスに'+curKer().label+'をかけ終わった。'))+'</div>'; }
   function render(){ pixelate(); resetStep(); }
 
   function setN(n){ N=n; sel('#grids',n,'data-n'); render(); }
@@ -310,6 +316,7 @@
   document.getElementById('play').onclick=function(){ if(timer) stop(); else { if(cur>=N*N) resetStep(); play(); } };
   document.getElementById('step').onclick=function(){ stop(); if(cur>=N*N) resetStep(); stepOnce(); };
   document.getElementById('substep').onclick=function(){ if(cur>=N*N) resetStep(); subStep(); };
+  document.getElementById('finish').onclick=finishAll;
   document.getElementById('reset').onclick=resetStep;
   document.getElementById('reimg').onclick=function(){ defaultScene(); render(); };
   var sp=document.getElementById('speed'); sp.oninput=function(){ speed=+sp.value; if(timer){ clearInterval(timer); timer=setInterval(stepOnce, delay()); } };
