@@ -142,9 +142,11 @@ function buildAxis(){
   if(axisDots){ scene.remove(axisDots); axisDots.geometry.dispose(); axisDots.material.dispose(); }
   const pts=[];
   for(let i=0;i<=40;i++){ const l=i/40; pts.push(new THREE.Vector3(centerOffset(l), (l-0.5)*Hgt, 0)); }
-  const g=new THREE.BufferGeometry().setFromPoints(pts);
-  axisLine=new THREE.Line(g, new THREE.LineBasicMaterial({ color:0xece8e0 }));
-  axisLine.visible=showAxis; scene.add(axisLine);
+  // 線(THREE.Line)はWebGLで常に1px＝細すぎて雲に埋もれる。太さのあるチューブにする(ゆがみ曲線にも沿う)
+  const curve=new THREE.CatmullRomCurve3(pts);
+  const g=new THREE.TubeGeometry(curve, 64, 0.017, 10, false);
+  axisLine=new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color:0xf4efe6 }));
+  axisLine.renderOrder=2; axisLine.visible=showAxis; scene.add(axisLine);
   // 黒(下)・白(上)の玉
   const dg=new THREE.SphereGeometry(0.045,16,16);
   axisDots=new THREE.Group();
