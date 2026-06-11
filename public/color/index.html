@@ -138,22 +138,29 @@ function buildCloud(){
 }
 
 function buildAxis(){
-  if(axisLine){ scene.remove(axisLine); axisLine.geometry.dispose(); axisLine.material.dispose(); }
-  if(axisDots){ scene.remove(axisDots); axisDots.geometry.dispose(); axisDots.material.dispose(); }
+  // axisDots は Group(geometry無し)。旧コードは .geometry.dispose() で例外→スライダ再構築時に軸が消えてた。traverseで安全に破棄
+  const dispose3=(o)=>{ if(!o)return; scene.remove(o); o.traverse(x=>{ if(x.geometry)x.geometry.dispose(); if(x.material)x.material.dispose(); }); };
+  dispose3(axisLine); dispose3(axisDots);
   const pts=[];
   for(let i=0;i<=40;i++){ const l=i/40; pts.push(new THREE.Vector3(centerOffset(l), (l-0.5)*Hgt, 0)); }
   // 線(THREE.Line)はWebGLで常に1px＝細すぎて雲に埋もれる。太さのあるチューブにする(ゆがみ曲線にも沿う)
-  const curve=new THREE.CatmullRomCurve3(pts);
-  const g=new THREE.TubeGeometry(curve, 64, 0.017, 10, false);
-  axisLine=new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color:0xf4efe6 }));
-  axisLine.renderOrder=2; axisLine.visible=showAxis; scene.add(axisLine);
-  // 黒(下)・白(上)の玉
-  const dg=new THREE.SphereGeometry(0.045,16,16);
+  const curve=new THREE.CatmullRomCurve3(pts, false, 'catmullrom', 0.5);
+  const TUB=72, RAD=12;
+  const g=new THREE.TubeGeometry(curve, TUB, 0.02, RAD, false);
+  // 中立軸＝明度の芯。下(L=0)が黒→上(L=1)が白のグラデーションで着色する
+  const pc=g.attributes.position.count, rc=RAD+1, colArr=new Float32Array(pc*3);
+  for(let i=0;i<pc;i++){ const t=Math.floor(i/rc)/TUB; colArr[i*3]=t; colArr[i*3+1]=t; colArr[i*3+2]=t; }
+  g.setAttribute('color', new THREE.Float32BufferAttribute(colArr,3));
+  // depthTest:false＝雲に隠れず常に手前に描く。warpで曲がっても消えない／全長の黒→白が見える
+  axisLine=new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors:true, depthTest:false }));
+  axisLine.renderOrder=10; axisLine.visible=showAxis; scene.add(axisLine);
+  // 端の玉（黒/白）＝端点を分かりやすく
+  const dg=new THREE.SphereGeometry(0.05,16,16);
   axisDots=new THREE.Group();
-  const black=new THREE.Mesh(dg, new THREE.MeshBasicMaterial({color:0x000000}));
-  black.position.set(centerOffset(0), -Hgt/2, 0);
-  const white=new THREE.Mesh(dg, new THREE.MeshBasicMaterial({color:0xffffff}));
-  white.position.set(centerOffset(1), Hgt/2, 0);
+  const black=new THREE.Mesh(dg, new THREE.MeshBasicMaterial({color:0x111111, depthTest:false}));
+  black.position.set(centerOffset(0), -Hgt/2, 0); black.renderOrder=10;
+  const white=new THREE.Mesh(dg, new THREE.MeshBasicMaterial({color:0xffffff, depthTest:false}));
+  white.position.set(centerOffset(1), Hgt/2, 0); white.renderOrder=10;
   axisDots.add(black, white); axisDots.visible=showAxis; scene.add(axisDots);
 }
 
