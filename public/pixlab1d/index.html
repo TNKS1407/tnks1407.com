@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>1次元の微分 — 明るさ→差分→エッジ</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f5f2ec; --card:#fff; --ink:#232a2e; --sub:#6c777d; --faint:#9aa3a8;
+    --line:#e6e1d8; --teal:#13897c; --teal-d:#0e6f64; --warm:#df5e3c; --surface:#faf8f4;
+    --mono:'JetBrains Mono',ui-monospace,monospace; --sans:'Zen Kaku Gothic New',system-ui,sans-serif; --round:'Zen Maru Gothic',var(--sans);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.6;
+    background-image:radial-gradient(circle at 1px 1px,#e9e4da 1px,transparent 0);background-size:22px 22px;}
+  .wrap{max-width:760px;margin:0 auto;padding:24px 18px 60px;}
+  header{display:flex;align-items:flex-end;gap:12px;margin-bottom:8px;flex-wrap:wrap;}
+  .brand{font-family:var(--round);font-weight:700;font-size:25px;line-height:1;}
+  .brand .p{color:var(--teal);} .brand .dot{color:var(--warm);}
+  .tag{font-size:12px;color:var(--sub);padding-bottom:3px;}
+  .back{margin-left:auto;font-size:12px;color:var(--sub);font-family:var(--mono);text-decoration:none;}
+  .back:hover{color:var(--teal);}
+  .path{font-size:11.5px;color:var(--sub);font-family:var(--mono);margin:0 0 16px;line-height:1.7;}
+  .path b{color:var(--teal-d);} .path a{color:var(--warm);text-decoration:none;} .path a:hover{text-decoration:underline;}
+  .lead{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 18px;margin-bottom:18px;
+    font-size:13px;color:#3a444a;line-height:1.72;box-shadow:0 1px 0 #fff inset,0 6px 20px -16px rgba(20,40,40,.4);}
+  .lead b{color:var(--ink);font-family:var(--round);}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:22px;
+    box-shadow:0 1px 0 #fff inset,0 6px 20px -16px rgba(20,40,40,.4);}
+  .row{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;margin-bottom:.6rem;}
+  .rlab{font-size:.72rem;font-family:var(--mono);color:var(--sub);min-width:4.5em;}
+  .ops{display:flex;flex-wrap:wrap;gap:.45rem;}
+  .pill{padding:.34rem .8rem;border:1px solid var(--line);border-radius:999px;background:var(--surface);font-size:.74rem;
+    color:var(--sub);cursor:pointer;font-family:var(--mono);transition:all .12s;}
+  .pill:hover{border-color:var(--teal);color:var(--teal);}
+  .pill.on{background:var(--teal);color:#fff;border-color:var(--teal);font-weight:700;}
+  .btn{padding:.38rem .9rem;border:1px solid var(--line);border-radius:9px;background:none;font-family:inherit;
+    font-size:.78rem;color:var(--sub);cursor:pointer;transition:all .15s;}
+  .btn:hover{border-color:var(--teal);color:var(--teal);}
+  .controls{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;margin-top:1rem;}
+  .ctrl-group{display:flex;align-items:center;gap:.5rem;}
+  .ctrl-group label{font-size:.72rem;font-family:var(--mono);color:var(--sub);}
+  .ctrl-group input[type=range]{width:90px;accent-color:var(--teal);}
+  canvas{border:1px solid var(--line);border-radius:10px;display:block;background:var(--surface);width:100%;height:auto;margin-top:.4rem;}
+  .readout{margin-top:1rem;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:1rem 1.1rem;min-height:4.5em;}
+  .rhead{font-family:var(--mono);font-size:.74rem;color:var(--teal);font-weight:700;margin-bottom:.5rem;}
+  .calc{font-family:var(--mono);font-size:1rem;color:#2a4d49;line-height:1.7;} .calc b{color:var(--warm);font-size:1.1rem;}
+  .calc .g{color:var(--teal-d);font-weight:700;} .calc .r{color:var(--warm);font-weight:700;}
+  .note{margin-top:.6rem;font-size:.82rem;color:#33433f;line-height:1.7;background:#fff;border-left:3px solid var(--teal);border-radius:0 8px 8px 0;padding:.5rem .8rem;}
+  .status{font-size:.72rem;font-family:var(--mono);color:var(--faint);margin-top:.7rem;}
+  footer{text-align:center;color:var(--faint);font-size:11px;font-family:var(--mono);margin-top:10px;}
+  .next{display:inline-block;margin-top:6px;font-size:12px;font-family:var(--mono);color:var(--warm);text-decoration:none;}
+  .next:hover{text-decoration:underline;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><span class="p">1次元</span>の微分<span class="dot">.</span></div>
+    <div class="tag">明るさ → 差分 → エッジ</div>
+    <a class="back" href="/pixlab/">PixLab（2次元）→</a>
+  </header>
+  <div class="path">学びの道：<b>① 1次元の微分（いまここ）</b> → <a href="/pixlab/">② 標本化→畳み込み</a> → <a href="/pixlab/">③ 統計（大津）・色（減色/WB）</a> → <a href="https://gradus.tnks1407.com" target="_blank" rel="noopener">📖 詳しく（Gradus）</a></div>
+
+  <div class="lead">
+    <p>エッジ検出（Sobel や ラプラシアン）の正体は、結局 <b>「隣との差」</b>＝微分だよ。難しい 2 次元に行く前に、横一列の明るさ <b>f(x)</b> でいちばん素の形を見ておこう。</p>
+    <p>各点で <b>Δf(x) = f(x) − f(x−1)</b>（隣との差）を取ると、平らな所では 0、明るさが急に変わる所で大きくなる。その「大きい所」がエッジだ。連続関数の微分 df/dx を、格子の上では <b>差分</b> で近似している、ということになるね。</p>
+  </div>
+
+  <div class="card">
+    <div class="row"><span class="rlab">信号</span><div class="ops" id="sigs"></div></div>
+    <div class="row"><span class="rlab">差分</span><div class="ops" id="dtypes"></div></div>
+
+    <canvas id="cv" width="680" height="304"></canvas>
+
+    <div class="controls">
+      <div class="ctrl-group">
+        <button class="btn" id="play" type="button">▶ 再生</button>
+        <button class="btn" id="step" type="button">1ステップ</button>
+        <button class="btn" id="finish" type="button">一気に完成</button>
+        <button class="btn" id="reset" type="button">リセット</button>
+      </div>
+      <div class="ctrl-group" style="margin-left:auto;"><label>速さ</label><input type="range" id="speed" min="0" max="100" value="58"></div>
+    </div>
+
+    <div class="readout" id="readout"></div>
+    <div class="status" id="status"></div>
+  </div>
+  <footer>PixLab — tnks1407 / 画像ラボ ・ <a class="next" href="/pixlab/">2次元（標本化→畳み込み）へ進む →</a></footer>
+</div>
+
+<script>
+(function(){
+  var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+  var TEAL='#13897c', TEALD='#0e6f64', WARM='#df5e3c', GRAY='#9aa3a8';
+  var N=32, sig='step', dtype='fwd', cur=0, timer=null, speed=58;
+  var f=[], diff=[], filled=[];
+
+  // ---- signals: return array of N brightness values (0..255) ----
+  function gen(){
+    f=new Array(N); var i,t;
+    if(sig==='step'){ for(i=0;i<N;i++) f[i]= i<N*0.5?42:222; }
+    else if(sig==='smooth'){ for(i=0;i<N;i++){ var s=1/(1+Math.exp(-(i-N*0.5)/2.0)); f[i]=Math.round(42+180*s); } }
+    else if(sig==='bar'){ for(i=0;i<N;i++){ f[i]=(i>=N*0.34&&i<N*0.66)?222:48; } }
+    else if(sig==='bump'){ for(i=0;i<N;i++){ var u=(i-N*0.5)/(N*0.16); f[i]=Math.round(40+185*Math.exp(-u*u)); } }
+    else if(sig==='ramp'){ for(i=0;i<N;i++) f[i]=Math.round(38+ (200*i/(N-1))); }
+    else if(sig==='sine'){ for(i=0;i<N;i++) f[i]=Math.round(128+92*Math.sin(i/N*Math.PI*2*2.5)); }
+    else { /* noisy step */ for(i=0;i<N;i++){ var base= i<N*0.5?70:190; f[i]=Math.max(0,Math.min(255, Math.round(base+(rand(i)-0.5)*70))); } }
+    diff=new Array(N).fill(null); filled=new Array(N).fill(false);
+  }
+  function rand(n){ var x=Math.sin(n*97.13+sig.length*3.7)*43758.5453; return x-Math.floor(x); }
+
+  function drange(){ if(dtype==='fwd') return [1,N-1]; return [1,N-2]; }
+  function diffAt(x){
+    if(dtype==='fwd') return f[x]-f[x-1];
+    if(dtype==='central') return (f[x+1]-f[x-1])/2;
+    return f[x-1]-2*f[x]+f[x+1]; // 2nd
+  }
+  function maxAbs(){ var r=drange(),m=1; for(var x=r[0];x<=r[1];x++){ var v=Math.abs(diffAt(x)); if(v>m)m=v; } return m; }
+
+  // ---- layout ----
+  var LX=14, RX=14, W, CW;
+  function layout(){ W=cv.width; CW=(W-LX-RX)/N; }
+  var FY=30, FH=26, FGY=62, FGH=52;            // f strip + graph
+  var DY=146, DH=26, DGY=180, DGH=58, DMID=180+29; // diff strip + graph(mid)
+  var EY=270, EH=26;                            // edge strip
+
+  function grayOf(v){ v=Math.max(0,Math.min(255,Math.round(v))); return 'rgb('+v+','+v+','+v+')'; }
+  function txt(t,x,y,c,sz,al){ ctx.fillStyle=c; ctx.font='600 '+(sz||11)+'px "JetBrains Mono",monospace'; ctx.textAlign=al||'left'; ctx.textBaseline='alphabetic'; ctx.fillText(t,x,y); }
+
+  function draw(){
+    layout();
+    ctx.clearRect(0,0,cv.width,cv.height);
+    var r=drange(), ma=maxAbs(), i,x;
+    // labels
+    txt('明るさ  f(x)', LX, FY-7, '#7d7568', 11);
+    txt('差分  Δf(x) '+(dtype==='fwd'?'= f(x)−f(x−1)':dtype==='central'?'= (f(x+1)−f(x−1))/2':'= f(x−1)−2f(x)+f(x+1)'), LX, DY-7, TEALD, 11);
+    txt('|Δf|  → エッジ（変化の大きい所）', LX, EY-7, WARM, 11);
+
+    // f strip
+    for(i=0;i<N;i++){ ctx.fillStyle=grayOf(f[i]); ctx.fillRect(LX+i*CW, FY, Math.ceil(CW), FH); }
+    ctx.strokeStyle='#e6e1d8'; ctx.lineWidth=1; ctx.strokeRect(LX+.5,FY+.5,N*CW,FH);
+    // f graph (polyline)
+    ctx.strokeStyle='#cdd5d2'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(LX,FGY+FGH); ctx.lineTo(LX+N*CW,FGY+FGH); ctx.stroke();
+    ctx.strokeStyle=TEAL; ctx.lineWidth=1.8; ctx.beginPath();
+    for(i=0;i<N;i++){ var gx=LX+(i+0.5)*CW, gy=FGY+FGH-(f[i]/255)*FGH; if(i===0)ctx.moveTo(gx,gy); else ctx.lineTo(gx,gy); }
+    ctx.stroke();
+    for(i=0;i<N;i++){ var gx=LX+(i+0.5)*CW, gy=FGY+FGH-(f[i]/255)*FGH; ctx.fillStyle=TEAL; ctx.beginPath(); ctx.arc(gx,gy,1.6,0,7); ctx.fill(); }
+
+    // diff strip (filled cells)
+    for(i=0;i<N;i++){ if(!filled[i]){ ctx.fillStyle='#fbfaf7'; ctx.fillRect(LX+i*CW,DY,Math.ceil(CW),DH); continue; }
+      var d=diff[i]; ctx.fillStyle = d>0? signCol(d,ma,true) : d<0? signCol(d,ma,false) : '#eceae4';
+      ctx.fillRect(LX+i*CW,DY,Math.ceil(CW),DH); }
+    ctx.strokeStyle='#e6e1d8'; ctx.strokeRect(LX+.5,DY+.5,N*CW,DH);
+    // diff graph (bars from midline)
+    ctx.strokeStyle='#cdd5d2'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(LX,DMID); ctx.lineTo(LX+N*CW,DMID); ctx.stroke();
+    for(i=0;i<N;i++){ if(!filled[i])continue; var d=diff[i]; if(d===0)continue; var bh=(Math.abs(d)/ma)*(DGH/2-2);
+      ctx.fillStyle= d>0?TEALD:WARM; if(d>0) ctx.fillRect(LX+i*CW+CW*0.18, DMID-bh, Math.max(1,CW*0.64), bh); else ctx.fillRect(LX+i*CW+CW*0.18, DMID, Math.max(1,CW*0.64), bh); }
+
+    // edge strip
+    for(i=0;i<N;i++){ if(!filled[i]){ ctx.fillStyle='#fbfaf7'; } else { var e=Math.min(255,Math.abs(diff[i])* (dtype==='central'?2:1.4)); ctx.fillStyle=grayOf(e); } ctx.fillRect(LX+i*CW,EY,Math.ceil(CW),EH); }
+    ctx.strokeStyle='#e6e1d8'; ctx.strokeRect(LX+.5,EY+.5,N*CW,EH);
+
+    // highlight current window on f strip + current diff cell
+    if(cur>=r[0] && cur<=r[1]){
+      var lo = dtype==='fwd'? cur-1 : cur-1, hi = dtype==='fwd'? cur : cur+1;
+      ctx.strokeStyle=WARM; ctx.lineWidth=2.4; ctx.strokeRect(LX+lo*CW-1, FY-1, (hi-lo+1)*CW+2, FH+2);
+      // center marker for the output x
+      ctx.strokeStyle=TEAL; ctx.lineWidth=2.4; ctx.strokeRect(LX+cur*CW-1, DY-1, CW+2, DH+2);
+      ctx.strokeStyle=TEAL; ctx.strokeRect(LX+cur*CW-1, EY-1, CW+2, EH+2);
+    }
+  }
+  function signCol(d,ma,pos){ var t=Math.min(1,Math.abs(d)/ma); if(pos){ return 'rgba(19,137,124,'+(0.18+0.62*t)+')'; } return 'rgba(223,94,60,'+(0.18+0.62*t)+')'; }
+
+  // ---- readout ----
+  function showReadout(x){
+    var d=diffAt(x), head, body;
+    if(dtype==='fwd'){ head='前進差分　x = '+x; body='Δf('+x+') = f('+x+') − f('+(x-1)+') = '+f[x]+' − '+f[x-1]+' = <b>'+sgn(d)+'</b>'; }
+    else if(dtype==='central'){ head='中心差分　x = '+x; body='Δf('+x+') = ( f('+(x+1)+') − f('+(x-1)+') ) / 2 = ( '+f[x+1]+' − '+f[x-1]+' ) / 2 = <b>'+sgn(d)+'</b>'; }
+    else { head='2階差分　x = '+x; body='Δ²f('+x+') = f('+(x-1)+') − 2·f('+x+') + f('+(x+1)+') = '+f[x-1]+' − '+(2*f[x])+' + '+f[x+1]+' = <b>'+sgn(d)+'</b>'; }
+    var mean;
+    if(dtype==='2nd'){ mean = Math.abs(d)<8?'ほぼ 0 ＝ まっすぐ（曲がっていない）。':(d>0?'正 ＝ 下に凸（谷ぎみ）。':'負 ＝ 上に凸（山ぎみ）。')+' 2階差分はエッジの所で <span class="r">＋から−へ符号が反転</span>する。'; }
+    else { mean = Math.abs(d)<8?'ほぼ 0 ＝ 明るさが平ら。エッジではない。':(d>0?'<span class="g">正の大きな値</span> ＝ 暗→明 の急な立ち上がり。':'<span class="r">負の大きな値</span> ＝ 明→暗 の急な立ち下がり。')+' |Δf| が大きいほど強いエッジ。'; }
+    document.getElementById('readout').innerHTML='<div class="rhead">'+head+'</div><div class="calc">'+body+'</div><div class="note">'+mean+'</div>';
+  }
+  function sgn(d){ d=Math.round(d*100)/100; return (d>0?'+':'')+d; }
+
+  function setStatus(){ var r=drange(); document.getElementById('status').textContent='差分を計算　'+Math.min(Math.max(cur-r[0]+(filled.some(Boolean)?0:0),0), r[1]-r[0]+1)+' / '+(r[1]-r[0]+1)+'　（'+labelOf(sig)+'、'+(dtype==='fwd'?'前進差分':dtype==='central'?'中心差分':'2階差分')+'）'; }
+  function labelOf(id){ var m={step:'段差',smooth:'なめらかな段差',bar:'明るい帯',bump:'山',ramp:'階段（グラデ）',sine:'さざ波',noise:'ノイズ入り段差'}; return m[id]||id; }
+
+  // ---- stepping ----
+  function stepOnce(){ var r=drange(); if(cur>r[1]){ stop(); endNote(); return; } if(cur<r[0]) cur=r[0];
+    diff[cur]=diffAt(cur); filled[cur]=true; showReadout(cur); draw(); setStatus(); cur++; if(cur>r[1]){ stop(); endNote(); } }
+  function endNote(){ document.getElementById('readout').innerHTML += '<div class="note" style="border-color:var(--warm);">完成。下の段の明るい所＝|Δf| が大きい所＝<b>エッジ</b>だね。これを縦・横の2方向に広げると、PixLab の <b>Sobel</b>（2次元の微分）になる。<a class="next" href="/pixlab/">→ 2次元へ</a></div>'; }
+  function finishAll(){ stop(); var r=drange(); for(var x=r[0];x<=r[1];x++){ diff[x]=diffAt(x); filled[x]=true; } cur=r[1]+1; showReadout(r[1]); draw(); setStatus(); endNote(); }
+  function delay(){ return Math.round(300 - speed*2.4); }
+  function play(){ if(timer)return; var b=document.getElementById('play'); b.textContent='⏸ 停止'; b.classList.add('on'); timer=setInterval(stepOnce,delay()); }
+  function stop(){ if(timer){clearInterval(timer);timer=null;} var b=document.getElementById('play'); b.textContent='▶ 再生'; b.classList.remove('on'); }
+  function reset(){ stop(); gen(); cur=drange()[0]; draw(); setStatus();
+    document.getElementById('readout').innerHTML='<div class="note">「▶ 再生」か「1ステップ」で、左から順に Δf(x) = 隣との差 を計算していくよ。真ん中の段に差分が、いちばん下の段に |Δf|（エッジ）が埋まっていく。</div>'; }
+
+  // ---- pills ----
+  function mk(wrap,arr,cur,fn){ var w=document.getElementById(wrap); arr.forEach(function(it){ var b=document.createElement('div'); b.className='pill'+(it[0]===cur?' on':''); b.setAttribute('data-v',it[0]); b.textContent=it[1]; b.onclick=function(){ fn(it[0]); }; w.appendChild(b); }); }
+  function sel(wrap,v){ document.querySelectorAll(wrap+' .pill').forEach(function(el){ el.classList.toggle('on', el.getAttribute('data-v')===v); }); }
+  mk('sigs',[['step','段差'],['smooth','なめらかな段差'],['bar','明るい帯'],['bump','山'],['ramp','階段'],['sine','さざ波'],['noise','ノイズ入り']],sig,function(v){ sig=v; sel('#sigs',v); reset(); });
+  mk('dtypes',[['fwd','前進差分'],['central','中心差分'],['2nd','2階差分']],dtype,function(v){ dtype=v; sel('#dtypes',v); reset(); });
+
+  document.getElementById('play').onclick=function(){ if(timer) stop(); else { if(cur>drange()[1]) reset(); play(); } };
+  document.getElementById('step').onclick=function(){ stop(); if(cur>drange()[1]) reset(); stepOnce(); };
+  document.getElementById('finish').onclick=finishAll;
+  document.getElementById('reset').onclick=reset;
+  var sp=document.getElementById('speed'); sp.oninput=function(){ speed=+sp.value; if(timer){ clearInterval(timer); timer=setInterval(stepOnce,delay()); } };
+
+  reset();
+})();
+</script>
+</body>
+</html>
