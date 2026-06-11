@@ -178,6 +178,7 @@
     {id:'prewitt', m:[-1,0,1,-1,0,1,-1,0,1],      div:1, disp:'abs',   label:'Prewitt 横',     mean:'Sobelと同じ「右−左」の差分。重みが均一なぶん素朴。横方向の傾き。'},
     {id:'lap',     m:[-1,-1,-1,-1,8,-1,-1,-1,-1], div:1, disp:'abs',   label:'ラプラシアン(輪郭)',mean:'中心を8倍して周り8マスを引く＝2階微分（曲がり具合）。エッジでゼロをまたぐ。'},
     {id:'emboss',  m:[-2,-1,0,-1,1,1,0,1,2],      div:1, disp:'offset',label:'エンボス',        mean:'左上（−）から右下（＋）への斜めの差分＝斜めの傾き＝凹凸の陰影。'},
+    {id:'grad',    label:'勾配の大きさ（横²+縦²）', mean:'横の差Gxと縦の差Gyを両方とって長さ√(Gx²+Gy²)に。向き問わず輪郭が出る＝Gradusの輪郭抽出と同じ。出力はグレー。'},
     {id:'otsu',    label:'二値化（大津）', mean:'明るさのヒストグラムを2つの山に分ける一本のしきい値を、最適な位置に自動で選んで白黒に分ける。畳み込みではなく"統計"の処理。'},
     {id:'reduce',  label:'知覚減色（K色）', mean:'似た色どうしをK個にまとめて代表色で塗り直す＝k-means減色。「近い」を知覚(Lab)で測るかRGBで測るかで結果が変わる。'},
     {id:'awb',     label:'オートWB（色かぶり除去）', mean:'写真に乗った照明の色を推定して、各チャンネルを割り戻して打ち消す＝ホワイトバランス（von Kries）。リニア光で処理する。'}
@@ -263,6 +264,24 @@
     var prod=[],sum=0; for(var i=0;i<9;i++){ var p=k.m[i]*wsel[i]; prod.push(p); sum+=p; }
     return { out:oc, win:wsel, prod:prod, sum:sum, disp:applyDisp(sum,k) };
   }
+  function gradCell(col,row){
+    var sx=[-1,0,1,-2,0,2,-1,0,1], sy=[-1,-2,-1,0,0,0,1,2,1], win=[], i=0;
+    for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++){ win.push(selOf(dots[ci(row+dy)*N+ci(col+dx)])); }
+    var gx=0,gy=0,gxp=[],gyp=[];
+    for(i=0;i<9;i++){ gxp.push(sx[i]*win[i]); gx+=sx[i]*win[i]; gyp.push(sy[i]*win[i]); gy+=sy[i]*win[i]; }
+    var mag=Math.round(Math.sqrt(gx*gx+gy*gy)); if(mag>255)mag=255;
+    return { out:[mag,mag,mag], win:win, gx:gx, gy:gy, mag:mag, gxp:gxp, gyp:gyp };
+  }
+  function showGradReadout(r,c,res){
+    var head='<div class="rhead">勾配の大きさ（'+chanName()+'面）　／　出力 (x='+c+', y='+r+')</div>';
+    var mean='<div class="kmean">横方向の差 <b>Gx</b>（Sobel横）と縦方向の差 <b>Gy</b>（Sobel縦）を両方計算して、ベクトル (Gx, Gy) の<b>長さ √(Gx²+Gy²)</b> を取る。これが「向きを問わない輪郭の強さ」。片方向だけのSobelと違って、横線・縦線・斜め線をぜんぶ拾える。出力はグレー（輝度）。</div>';
+    var body='<div class="matview">'+
+      '<div class="mblock"><div class="mlab">横 Gx の積</div>'+grid3(res.gxp,true,9,false)+'</div>'+
+      '<div class="mblock"><div class="mlab">縦 Gy の積</div>'+grid3(res.gyp,true,9,false)+'</div></div>';
+    var sum='<div class="msum">Gx = <b>'+res.gx+'</b>　Gy = <b>'+res.gy+'</b>　→ √(Gx²+Gy²) = √('+(res.gx*res.gx)+' + '+(res.gy*res.gy)+') = <b>'+res.mag+'</b>　→ 輪郭の強さ（グレー）に</div>';
+    var note='<div class="mnote">※ Sobel横だけだと横線（上下の境目）で Gx≈0 になって取りこぼす。縦も足して"長さ"にすると、どの向きの輪郭も出る＝Gradus の輪郭抽出と同じ考え方。</div>';
+    document.getElementById('readout').innerHTML=head+mean+body+sum+note;
+  }
   function blockAvg(col,row){
     var x0=Math.floor(col*SRC/N),x1=Math.floor((col+1)*SRC/N),y0=Math.floor(row*SRC/N),y1=Math.floor((row+1)*SRC/N),sr=0,sg=0,sb=0,cnt=0;
     for(var yy=y0;yy<y1;yy++)for(var xx=x0;xx<x1;xx++){ var k=(yy*SRC+xx)*4; sr+=srcData[k];sg+=srcData[k+1];sb+=srcData[k+2];cnt++; }
@@ -288,7 +307,7 @@
     ctx.clearRect(0,0,cv.width,cv.height);
     var none=(kerId==='none'), otsu=(kerId==='otsu'), ds=SS/N;
     var awb=(kerId==='awb');
-    label(awb?(awbCast?'元（色かぶり）':'元'):otsu?('元（'+chanName()+'）'):none?'元の写真':'元のドット絵',SX,SY-10,'#7d7568'); label(otsu?'二値化（白黒）':kerId==='reduce'?('減色（K='+redK+'）'):awb?'WB補正後':none?'ドット絵':'結果',GX,GY-10,TEAL);
+    label(awb?(awbCast?'元（色かぶり）':'元'):otsu?('元（'+chanName()+'）'):none?'元の写真':'元のドット絵',SX,SY-10,'#7d7568'); label(otsu?'二値化（白黒）':kerId==='reduce'?('減色（K='+redK+'）'):awb?'WB補正後':kerId==='grad'?'勾配（輪郭）':none?'ドット絵':'結果',GX,GY-10,TEAL);
     if(none){ ctx.imageSmoothingEnabled=true; ctx.filter=grayView?'grayscale(1)':'none'; ctx.drawImage(sc,SX,SY,SS,SS); ctx.filter='none';
       if(!grayView){ ctx.globalCompositeOperation='multiply'; ctx.fillStyle='rgb('+(showChL.R?255:0)+','+(showChL.G?255:0)+','+(showChL.B?255:0)+')'; ctx.fillRect(SX,SY,SS,SS); ctx.globalCompositeOperation='source-over'; } }
     else if(otsu){ for(var i=0;i<N*N;i++){ var d=dots[i],v=selOf(d),c=i%N,r=(i/N|0); ctx.fillStyle='rgb('+v+','+v+','+v+')'; ctx.fillRect(SX+c*ds,SY+r*ds,Math.ceil(ds),Math.ceil(ds)); } }
@@ -363,7 +382,7 @@
       else { d.style.background='#fff'; d.style.color='#cfc9bf'; d.textContent=cell>=1.6?'·':''; }
       mg.appendChild(d); ncells.push(d); }
     if(kerId==='reduce'){ document.getElementById('matlab').innerHTML='代表色インデックス（どの色グループに属すか, 0〜K-1）の行列（'+N+'×'+N+'）'; return; }
-    var what=(kerId==='none')?'ドット絵の値（標本化の結果）':(kerId==='otsu')?'二値化の結果（0=黒 / 255=白）':(kerId==='awb')?'WB補正後の値（'+chanName()+'面）':'演算の結果（'+chanName()+'面）';
+    var what=(kerId==='none')?'ドット絵の値（標本化の結果）':(kerId==='otsu')?'二値化の結果（0=黒 / 255=白）':(kerId==='awb')?'WB補正後の値（'+chanName()+'面）':(kerId==='grad')?'勾配の大きさ √(Gx²+Gy²)（輪郭の強さ）':'演算の結果（'+chanName()+'面）';
     document.getElementById('matlab').innerHTML=what+'の行列（'+N+'×'+N+'）— <b>'+chanName()+'</b>';
   }
   function fillMatCell(i,v){ var d=ncells[i]; if(!d)return; if(lastJust&&lastJust!==d){} d.style.background=chanBg(v); d.style.color=(v>140?'rgba(20,20,20,.8)':'rgba(255,255,255,.92)'); var cell=N<=8?2.7:N<=16?2.2:N<=24?1.85:N<=32?1.5:0.95; d.textContent=cell>=1.6?v:''; d.style.outline='1.5px solid '+WARM; if(lastJust&&lastJust!==d) lastJust.style.outline='none'; lastJust=d; }
@@ -378,9 +397,9 @@
   function endNote(){ if(cur>=N*N){ stop(); document.getElementById('readout').innerHTML+='<div class="msum">——完成！ '+(N*N)+' 個ぜんぶに'+curKer().label+'をかけた。</div>'; } }
   function stepOnce(){ if(kerId==='otsu'){ otsuStep(); return; } if(kerId==='reduce'){ redStep(); return; } if(kerId==='awb'){ awbStep(); return; } if(cur>=N*N){ stop(); return; }
     var r=(cur/N|0),c=cur%N,res;
-    if(kerId==='none'){ res=blockAvg(c,r); showPixReadout(r,c,res); } else { res=convCell(c,r); showReadout(r,c,res,9); }
+    if(kerId==='none'){ res=blockAvg(c,r); showPixReadout(r,c,res); } else if(kerId==='grad'){ res=gradCell(c,r); showGradReadout(r,c,res); } else { res=convCell(c,r); showReadout(r,c,res,9); }
     hlCell=cur; finalize(res); drawCanvas(); setStatus(); endNote(); }
-  function subStep(){ if(kerId==='otsu'){ otsuStep(); return; } if(kerId==='reduce'){ redStep(); return; } if(kerId==='awb'){ awbStep(); return; } stop(); if(cur>=N*N) return; if(kerId==='none'){ stepOnce(); return; }
+  function subStep(){ if(kerId==='otsu'){ otsuStep(); return; } if(kerId==='reduce'){ redStep(); return; } if(kerId==='awb'){ awbStep(); return; } stop(); if(cur>=N*N) return; if(kerId==='none'||kerId==='grad'){ stepOnce(); return; }
     var r=(cur/N|0),c=cur%N; hlCell=cur; if(subK===0) curRes=convCell(c,r); subK++;
     showReadout(r,c,curRes,subK); if(subK>=9){ finalize(curRes); } drawCanvas(); setStatus(); endNote(); }
   function delay(){ return Math.round(360 - speed*3.0); }
@@ -398,6 +417,11 @@
       document.getElementById('readout').innerHTML='<div class="kmean">「▶ 再生」か「1ステップ」で、しきい値 k を 0→255 と動かしながら大津の方法で最適な境目をさがしていくよ。下のヒストグラム（'+chanName()+'）の橙の線が動き、緑の線（クラス間分散）が最大になる所が選ばれる。</div>'; return; }
     if(kerId==='none'){
       document.getElementById('readout').innerHTML='<div class="kmean">「▶ 再生」か「1ステップ」で、写真を各ブロックの平均RGBで一マスずつドット絵にしていくよ（標本化）。出来たら「演算」でカーネルを選ぶと、そのドット絵に畳み込みをかけられる。</div>';
+    } else if(kerId==='grad'){
+      document.getElementById('readout').innerHTML='<div class="rhead">勾配の大きさ（横²+縦²）　— どんな計算？</div>'+
+        '<div class="kmean">横の差 <b>Gx</b>（Sobel横）と縦の差 <b>Gy</b>（Sobel縦）を両方とって、ベクトル (Gx, Gy) の<b>長さ √(Gx²+Gy²)</b> を「輪郭の強さ」にする。向きを問わず輪郭が出る、明るさ面の1枚計算。「▶ 再生」か「1ステップ」で一マスずつ。マスをクリックすればその場の Gx・Gy・合成も見れる。</div>'+
+        '<div class="matview"><div class="mblock"><div class="mlab">Sobel 横 Gx</div>'+grid3([-1,0,1,-2,0,2,-1,0,1],true,9,false)+'</div><div class="mop">＋</div><div class="mblock"><div class="mlab">Sobel 縦 Gy</div>'+grid3([-1,-2,-1,0,0,0,1,2,1],true,9,false)+'</div></div>'+
+        '<div class="klegend">この2枚を両方かけて、出力 = √(Gx²+Gy²)。Sobel横だけより輪郭がきれいに出るよ（＝Gradusの輪郭抽出と同じ）。</div>';
     } else {
       var k=curKer(), dn=k.disp==='avg'?('÷'+k.div):k.disp==='abs'?'→|絶対値|':k.disp==='offset'?'+128':'→クランプ';
       document.getElementById('readout').innerHTML='<div class="rhead">'+k.label+'　— どんな計算をするの？</div>'+
@@ -411,7 +435,7 @@
     if(kerId==='reduce'){ stop(); var guard=0; while(!redDone && guard++<40) redStep(); return; }
     if(kerId==='awb'){ stop(); while(awbStage<3) awbStep(); return; }
     stop(); var cellEm=N<=8?2.7:N<=16?2.2:N<=24?1.85:N<=32?1.5:0.95;
-    while(cur<N*N){ var r=(cur/N|0),c=cur%N, res=(kerId==='none')?blockAvg(c,r):convCell(c,r); outDots[cur]=res.out;
+    while(cur<N*N){ var r=(cur/N|0),c=cur%N, res=(kerId==='none')?blockAvg(c,r):(kerId==='grad')?gradCell(c,r):convCell(c,r); outDots[cur]=res.out;
       var d=ncells[cur]; if(d){ var v=selOf(res.out); d.style.background=chanBg(v); d.style.color=(v>140?'rgba(20,20,20,.8)':'rgba(255,255,255,.92)'); d.textContent=cellEm>=1.6?v:''; d.style.outline='none'; } cur++; }
     subK=0; curRes=null; hlCell=-1; lastJust=null; drawCanvas(); setStatus();
     document.getElementById('readout').innerHTML='<div class="kmean">'+(kerId==='none'?('全 '+(N*N)+' マスの平均が完成＝ドット絵のできあがり。'):('全 '+(N*N)+' マスに'+curKer().label+'をかけ終わった。'))+'</div>'; }
@@ -425,7 +449,7 @@
     if(col<0||col>=N||row<0||row>=N) return null; return {c:col,r:row};
   }
   function inspect(c,r){ stop(); hlCell=r*N+c;
-    if(kerId==='none') showPixReadout(r,c,blockAvg(c,r)); else if(kerId==='otsu') showOtsuPix(r,c); else if(kerId==='reduce') showRedPix(r,c); else if(kerId==='awb') showAwbPix(r,c); else showReadout(r,c,convCell(c,r),9);
+    if(kerId==='none') showPixReadout(r,c,blockAvg(c,r)); else if(kerId==='otsu') showOtsuPix(r,c); else if(kerId==='reduce') showRedPix(r,c); else if(kerId==='awb') showAwbPix(r,c); else if(kerId==='grad') showGradReadout(r,c,gradCell(c,r)); else showReadout(r,c,convCell(c,r),9);
     drawCanvas(); }
   function feedResult(){ finishAll(); dots=outDots.map(function(d){ return d?[d[0],d[1],d[2]]:[0,0,0]; }); resetStep();
     document.getElementById('readout').innerHTML='<div class="kmean">結果を新しい入力にしたよ。続けて別の演算をかけると"重ねがけ"になる（例：ぼかし→エッジ）。元写真に戻すには「最初の写真に戻す」。</div>'; }
@@ -581,7 +605,7 @@
   function render(){ pixelate(); resetStep(); }
 
   function setN(n){ N=n; sel('#grids',n,'data-n'); render(); }
-  function setChan(c){ chan=c; sel('#chans',c,'data-c'); if(kerId==='otsu'){ resetStep(); return; } if(kerId==='reduce'){ return; } if(kerId==='awb'){ buildMat(); drawCanvas(); return; } buildMat(); drawCanvas(); if(lastShow&&kerId!=='none') showReadout(lastShow.r,lastShow.c,convCell(lastShow.c,lastShow.r),lastShow.rk); setStatus(); }
+  function setChan(c){ chan=c; sel('#chans',c,'data-c'); if(kerId==='otsu'){ resetStep(); return; } if(kerId==='reduce'){ return; } if(kerId==='grad'){ resetStep(); return; } if(kerId==='awb'){ buildMat(); drawCanvas(); return; } buildMat(); drawCanvas(); if(lastShow&&kerId!=='none') showReadout(lastShow.r,lastShow.c,convCell(lastShow.c,lastShow.r),lastShow.rk); setStatus(); }
   function setKer(id){ kerId=id; sel('#kers',id,'data-k'); resetStep(); }
   function setRepr(rp){ repr=rp; sel('#reprs',rp,'data-r'); if(lastShow) showReadout(lastShow.r,lastShow.c,lastShow.res,lastShow.rk); }
   function sel(wrap,val,attr){ document.querySelectorAll(wrap+' .pill').forEach(function(el){ var a=el.getAttribute(attr); el.classList.toggle('on', a===String(val)); }); }
