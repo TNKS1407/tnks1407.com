@@ -99,6 +99,7 @@
     <div class="row"><span class="rlab">元の色</span><div class="ops" id="showL"></div></div>
     <div class="row"><span class="rlab">結果の色</span><div class="ops" id="showR"></div><span class="status" style="margin:0 0 0 .3rem;">※ 左右それぞれ R/G/B を選べる（複数可）</span></div>
     <div class="row"><span class="rlab">表示</span><div class="ops" id="grayrow"></div><span class="status" style="margin:0 0 0 .3rem;">※ エッジ・ラプラシアン系は「グレー（輝度）」だと境界の線がくっきり見える</span></div>
+    <div class="row" id="extrarow" style="display:none;"><span class="rlab" id="extralab"></span><div class="ops" id="extraops"></div></div>
 
     <canvas id="cv" width="640" height="320"></canvas>
     <canvas id="hist" width="640" height="156" style="display:none;margin-top:.5rem;"></canvas>
@@ -138,6 +139,7 @@
   var srcData=null, N=16, chan='L', kerId='none', repr='mat', showChL={R:true,G:true,B:true}, showChR={R:true,G:true,B:true}, grayView=false;
   var dots=[], outDots=[], cur=0, subK=0, hlCell=-1, curRes=null, lastShow=null, lastJust=null, ncells=[], timer=null, speed=62;
   var otsuK=0, otsuBestK=0, otsuBestV=-1, otsuCurve=[], otsuMaxV=1, otsuFinalK=0, otsuH=null, otsuStepSize=3;
+  var redK=6, redSpace='lab', redCentroids=[], redAssign=[], redDotsLab=null, redIter=0, redDone=false;
 
   var KER=[
     {id:'none',    label:'なし（元のまま）', mean:'演算を選ぶと、ドット絵に畳み込みを一歩ずつかけられるよ。下の行列は、いま「見る面」の値そのまま。'},
@@ -149,9 +151,16 @@
     {id:'prewitt', m:[-1,0,1,-1,0,1,-1,0,1],      div:1, disp:'abs',   label:'Prewitt 横',     mean:'Sobelと同じ「右−左」の差分。重みが均一なぶん素朴。横方向の傾き。'},
     {id:'lap',     m:[-1,-1,-1,-1,8,-1,-1,-1,-1], div:1, disp:'abs',   label:'ラプラシアン(輪郭)',mean:'中心を8倍して周り8マスを引く＝2階微分（曲がり具合）。エッジでゼロをまたぐ。'},
     {id:'emboss',  m:[-2,-1,0,-1,1,1,0,1,2],      div:1, disp:'offset',label:'エンボス',        mean:'左上（−）から右下（＋）への斜めの差分＝斜めの傾き＝凹凸の陰影。'},
-    {id:'otsu',    label:'二値化（大津）', mean:'明るさのヒストグラムを2つの山に分ける一本のしきい値を、最適な位置に自動で選んで白黒に分ける。畳み込みではなく"統計"の処理。'}
+    {id:'otsu',    label:'二値化（大津）', mean:'明るさのヒストグラムを2つの山に分ける一本のしきい値を、最適な位置に自動で選んで白黒に分ける。畳み込みではなく"統計"の処理。'},
+    {id:'reduce',  label:'知覚減色（K色）', mean:'似た色どうしをK個にまとめて代表色で塗り直す＝k-means減色。「近い」を知覚(Lab)で測るかRGBで測るかで結果が変わる。'}
   ];
   function curKer(){ for(var i=0;i<KER.length;i++) if(KER[i].id===kerId) return KER[i]; return KER[0]; }
+  function srgb2lin(c){ c/=255; return c<=0.04045? c/12.92 : Math.pow((c+0.055)/1.055,2.4); }
+  function lin2srgb(c){ c=c<0?0:c>1?1:c; var v=c<=0.0031308? c*12.92 : 1.055*Math.pow(c,1/2.4)-0.055; return Math.round(v*255); }
+  function rgb2lab(d){ var r=srgb2lin(d[0]),g=srgb2lin(d[1]),b=srgb2lin(d[2]);
+    var X=(r*0.4124+g*0.3576+b*0.1805)/0.95047, Y=r*0.2126+g*0.7152+b*0.0722, Z=(r*0.0193+g*0.1192+b*0.9505)/1.08883;
+    function f(t){ return t>0.008856? Math.cbrt(t) : 7.787*t+0.137931; }
+    var fx=f(X),fy=f(Y),fz=f(Z); return [116*fy-16, 500*(fx-fy), 200*(fy-fz)]; }
   function chanName(){ return chan==='R'?'赤 R':chan==='G'?'緑 G':chan==='B'?'青 B':'明るさ L'; }
   function chanBg(v){ return chan==='R'?'rgb('+v+',28,28)':chan==='G'?'rgb(28,'+v+',28)':chan==='B'?'rgb(40,40,'+v+')':'rgb('+v+','+v+','+v+')'; }
   function selOf(d){ return chan==='R'?d[0]:chan==='G'?d[1]:chan==='B'?d[2]:Math.round(0.299*d[0]+0.587*d[1]+0.114*d[2]); }
@@ -211,7 +220,7 @@
   function drawCanvas(){
     ctx.clearRect(0,0,cv.width,cv.height);
     var none=(kerId==='none'), otsu=(kerId==='otsu'), ds=SS/N;
-    label(otsu?('元（'+chanName()+'）'):none?'元の写真':'元のドット絵',SX,SY-10,'#7d7568'); label(otsu?'二値化（白黒）':none?'ドット絵':'結果',GX,SY-10,TEAL);
+    label(otsu?('元（'+chanName()+'）'):none?'元の写真':'元のドット絵',SX,SY-10,'#7d7568'); label(otsu?'二値化（白黒）':kerId==='reduce'?('減色（K='+redK+'）'):none?'ドット絵':'結果',GX,SY-10,TEAL);
     if(none){ ctx.imageSmoothingEnabled=true; ctx.filter=grayView?'grayscale(1)':'none'; ctx.drawImage(sc,SX,SY,SS,SS); ctx.filter='none';
       if(!grayView){ ctx.globalCompositeOperation='multiply'; ctx.fillStyle='rgb('+(showChL.R?255:0)+','+(showChL.G?255:0)+','+(showChL.B?255:0)+')'; ctx.fillRect(SX,SY,SS,SS); ctx.globalCompositeOperation='source-over'; } }
     else if(otsu){ for(var i=0;i<N*N;i++){ var d=dots[i],v=selOf(d),c=i%N,r=(i/N|0); ctx.fillStyle='rgb('+v+','+v+','+v+')'; ctx.fillRect(SX+c*ds,SY+r*ds,Math.ceil(ds),Math.ceil(ds)); } }
@@ -223,7 +232,7 @@
     if(hlCell>=0 && hlCell<N*N){
       var c=hlCell%N, r=(hlCell/N|0);
       if(none){ ctx.strokeStyle=TEAL; ctx.lineWidth=2.5; ctx.strokeRect(SX+c/N*SS-1,SY+r/N*SS-1,SS/N+2,SS/N+2); }
-      else if(otsu){ ctx.strokeStyle=TEAL; ctx.lineWidth=2.5; ctx.strokeRect(SX+c*ds-1,SY+r*ds-1,ds+2,ds+2); }
+      else if(otsu||kerId==='reduce'){ ctx.strokeStyle=TEAL; ctx.lineWidth=2.5; ctx.strokeRect(SX+c*ds-1,SY+r*ds-1,ds+2,ds+2); }
       else { var x0=Math.max(0,c-1),x1=Math.min(N-1,c+1),y0=Math.max(0,r-1),y1=Math.min(N-1,r+1); ctx.strokeStyle=TEAL; ctx.lineWidth=2.5; ctx.strokeRect(SX+x0*ds-1,SY+y0*ds-1,(x1-x0+1)*ds+2,(y1-y0+1)*ds+2); }
       ctx.strokeStyle=WARM; ctx.lineWidth=2.5; ctx.strokeRect(GX+c*ds-1,SY+r*ds-1,ds+2,ds+2);
     }
@@ -283,38 +292,51 @@
       if(src){ var v=selOf(src); d.style.background=chanBg(v); d.style.color=(v>140?'rgba(20,20,20,.8)':'rgba(255,255,255,.92)'); d.textContent=cell>=1.6?v:''; }
       else { d.style.background='#fff'; d.style.color='#cfc9bf'; d.textContent=cell>=1.6?'·':''; }
       mg.appendChild(d); ncells.push(d); }
+    if(kerId==='reduce'){ document.getElementById('matlab').innerHTML='代表色インデックス（どの色グループに属すか, 0〜K-1）の行列（'+N+'×'+N+'）'; return; }
     var what=(kerId==='none')?'ドット絵の値（標本化の結果）':(kerId==='otsu')?'二値化の結果（0=黒 / 255=白）':'演算の結果（'+chanName()+'面）';
     document.getElementById('matlab').innerHTML=what+'の行列（'+N+'×'+N+'）— <b>'+chanName()+'</b>';
   }
   function fillMatCell(i,v){ var d=ncells[i]; if(!d)return; if(lastJust&&lastJust!==d){} d.style.background=chanBg(v); d.style.color=(v>140?'rgba(20,20,20,.8)':'rgba(255,255,255,.92)'); var cell=N<=8?2.7:N<=16?2.2:N<=24?1.85:1.5; d.textContent=cell>=1.6?v:''; d.style.outline='1.5px solid '+WARM; if(lastJust&&lastJust!==d) lastJust.style.outline='none'; lastJust=d; }
 
   function setStatus(){ var k=curKer();
+    if(kerId==='reduce'){ document.getElementById('status').textContent='知覚減色 — 反復 '+redIter+' 回（K='+redK+'、'+(redSpace==='lab'?'Lab':'RGB')+'距離）'+(redDone?' 収束':''); return; }
     if(kerId==='otsu'){ document.getElementById('status').textContent='大津のしきい値さがし — k = '+Math.min(otsuK,255)+' / 255（'+chanName()+'面、ベスト k*='+otsuBestK+'）'; return; }
     document.getElementById('status').textContent=(kerId==='none')?('ドット絵化 '+Math.min(cur,N*N)+' / '+(N*N)+'（'+N+'×'+N+'）'):('演算 '+Math.min(cur,N*N)+' / '+(N*N)+'（'+k.label+'、'+chanName()+'面）'); }
 
   function finalize(res){ outDots[cur]=res.out; fillMatCell(cur, selOf(res.out)); cur++; subK=0; curRes=null; }
   function endNote(){ if(cur>=N*N){ stop(); document.getElementById('readout').innerHTML+='<div class="msum">——完成！ '+(N*N)+' 個ぜんぶに'+curKer().label+'をかけた。</div>'; } }
-  function stepOnce(){ if(kerId==='otsu'){ otsuStep(); return; } if(cur>=N*N){ stop(); return; }
+  function stepOnce(){ if(kerId==='otsu'){ otsuStep(); return; } if(kerId==='reduce'){ redStep(); return; } if(cur>=N*N){ stop(); return; }
     var r=(cur/N|0),c=cur%N,res;
     if(kerId==='none'){ res=blockAvg(c,r); showPixReadout(r,c,res); } else { res=convCell(c,r); showReadout(r,c,res,9); }
     hlCell=cur; finalize(res); drawCanvas(); setStatus(); endNote(); }
-  function subStep(){ if(kerId==='otsu'){ otsuStep(); return; } stop(); if(cur>=N*N) return; if(kerId==='none'){ stepOnce(); return; }
+  function subStep(){ if(kerId==='otsu'){ otsuStep(); return; } if(kerId==='reduce'){ redStep(); return; } stop(); if(cur>=N*N) return; if(kerId==='none'){ stepOnce(); return; }
     var r=(cur/N|0),c=cur%N; hlCell=cur; if(subK===0) curRes=convCell(c,r); subK++;
     showReadout(r,c,curRes,subK); if(subK>=9){ finalize(curRes); } drawCanvas(); setStatus(); endNote(); }
   function delay(){ return Math.round(360 - speed*3.0); }
   function play(){ if(timer) return; var b=document.getElementById('play'); b.textContent='⏸ 停止'; b.classList.add('on'); timer=setInterval(stepOnce, delay()); }
   function stop(){ if(timer){clearInterval(timer);timer=null;} var b=document.getElementById('play'); b.textContent='▶ 再生'; b.classList.remove('on'); }
   function resetStep(){ stop(); cur=0; subK=0; hlCell=-1; curRes=null; lastShow=null; lastJust=null; outDots=new Array(N*N).fill(null);
+    buildExtra();
     hcv.style.display=(kerId==='otsu')?'block':'none';
+    if(kerId==='reduce'){ redInit(); buildMat(); paintReduceMat(); drawCanvas(); setStatus();
+      document.getElementById('readout').innerHTML='<div class="kmean">「▶ 再生」か「1ステップ」で、K='+redK+' 個の代表色に各画素を割り当て → 平均色で更新、を繰り返して減色していくよ（k-means）。下の行列は「どの代表色グループに属すか（番号）」。「距離」を 知覚(Lab) と RGB で切り替えると、まとまり方の違いが見えるはず。</div>'; return; }
     if(kerId==='otsu'){ otsuK=0; otsuBestK=0; otsuBestV=-1; otsuH=otsuPrep(); buildMat();
       drawHist(-1,otsuH,N*N); drawCanvas(); setStatus();
       document.getElementById('readout').innerHTML='<div class="kmean">「▶ 再生」か「1ステップ」で、しきい値 k を 0→255 と動かしながら大津の方法で最適な境目をさがしていくよ。下のヒストグラム（'+chanName()+'）の橙の線が動き、緑の線（クラス間分散）が最大になる所が選ばれる。</div>'; return; }
-    document.getElementById('readout').innerHTML = (kerId==='none')
-      ? '<div class="kmean">「▶ 再生」か「1ステップ」で、写真を各ブロックの平均RGBで一マスずつドット絵にしていくよ（標本化）。出来たら「演算」でカーネルを選ぶと、そのドット絵に畳み込みをかけられる。</div>'
-      : '「▶ 再生」か「1ステップ」で、'+curKer().label+'を一マスずつ計算していくよ。';
+    if(kerId==='none'){
+      document.getElementById('readout').innerHTML='<div class="kmean">「▶ 再生」か「1ステップ」で、写真を各ブロックの平均RGBで一マスずつドット絵にしていくよ（標本化）。出来たら「演算」でカーネルを選ぶと、そのドット絵に畳み込みをかけられる。</div>';
+    } else {
+      var k=curKer(), dn=k.disp==='avg'?('÷'+k.div):k.disp==='abs'?'→|絶対値|':k.disp==='offset'?'+128':'→クランプ';
+      document.getElementById('readout').innerHTML='<div class="rhead">'+k.label+'　— どんな計算をするの？</div>'+
+        '<div class="kmean">'+k.mean+'</div>'+
+        '<div class="matview"><div class="mblock"><div class="mlab">カーネル h（3×3 の重み）</div>'+grid3(k.m,true,9,false)+'</div></div>'+
+        '<div class="klegend">この 3×3 を画像の各窓に重ねて「重み×値」を 9 個たし（'+dn+'）、1マスの出力にする＝畳み込み。<span class="lg-pos">緑＝足す側(+)</span>　<span class="lg-neg">赤＝引く側(−)</span>　<span class="lg-zero">灰＝0</span>。「▶ 再生」か「1ステップ」で一マスずつ計算していくよ。マスをクリックすればその場の計算も見れる。</div>';
+    }
     buildMat(); drawCanvas(); setStatus(); }
 
-  function finishAll(){ if(kerId==='otsu'){ otsuFinishK(); return; } stop(); var cellEm=N<=8?2.7:N<=16?2.2:N<=24?1.85:1.5;
+  function finishAll(){ if(kerId==='otsu'){ otsuFinishK(); return; }
+    if(kerId==='reduce'){ stop(); var guard=0; while(!redDone && guard++<40) redStep(); return; }
+    stop(); var cellEm=N<=8?2.7:N<=16?2.2:N<=24?1.85:1.5;
     while(cur<N*N){ var r=(cur/N|0),c=cur%N, res=(kerId==='none')?blockAvg(c,r):convCell(c,r); outDots[cur]=res.out;
       var d=ncells[cur]; if(d){ var v=selOf(res.out); d.style.background=chanBg(v); d.style.color=(v>140?'rgba(20,20,20,.8)':'rgba(255,255,255,.92)'); d.textContent=cellEm>=1.6?v:''; d.style.outline='none'; } cur++; }
     subK=0; curRes=null; hlCell=-1; lastJust=null; drawCanvas(); setStatus();
@@ -328,7 +350,7 @@
     if(col<0||col>=N||row<0||row>=N) return null; return {c:col,r:row};
   }
   function inspect(c,r){ stop(); hlCell=r*N+c;
-    if(kerId==='none') showPixReadout(r,c,blockAvg(c,r)); else if(kerId==='otsu') showOtsuPix(r,c); else showReadout(r,c,convCell(c,r),9);
+    if(kerId==='none') showPixReadout(r,c,blockAvg(c,r)); else if(kerId==='otsu') showOtsuPix(r,c); else if(kerId==='reduce') showRedPix(r,c); else showReadout(r,c,convCell(c,r),9);
     drawCanvas(); }
   function feedResult(){ finishAll(); dots=outDots.map(function(d){ return d?[d[0],d[1],d[2]]:[0,0,0]; }); resetStep();
     document.getElementById('readout').innerHTML='<div class="kmean">結果を新しい入力にしたよ。続けて別の演算をかけると"重ねがけ"になる（例：ぼかし→エッジ）。元写真に戻すには「最初の写真に戻す」。</div>'; }
@@ -392,10 +414,59 @@
     outDots=binAt(otsuFinalK); paintMat(); hlCell=-1; drawCanvas(); drawHist(otsuFinalK,otsuH,total);
     showOtsuReadout(otsuFinalK, betweenVar(otsuH,total,otsuFinalK), total, true); setStatus(); }
 
+  // ---- 知覚減色 (k-means, Lab vs RGB) ----
+  function redDist(i,c,clab){ if(redSpace==='lab'){ var a=redDotsLab[i],b=clab[c],x=a[0]-b[0],y=a[1]-b[1],z=a[2]-b[2]; return x*x+y*y+z*z; }
+    var p=dots[i],q=redCentroids[c],dr=p[0]-q[0],dg=p[1]-q[1],db=p[2]-q[2]; return dr*dr+dg*dg+db*db; }
+  function redInit(){
+    redDotsLab=(redSpace==='lab')?dots.map(rgb2lab):null;
+    var chosen=[0],clab=(redSpace==='lab')?[redDotsLab[0]]:null;
+    while(chosen.length<redK){ var bi=0,bd=-1;
+      for(var i=0;i<N*N;i++){ var md=1e18; for(var c=0;c<chosen.length;c++){ var dd=redSpace==='lab'?(function(){var a=redDotsLab[i],b=clab[c],x=a[0]-b[0],y=a[1]-b[1],z=a[2]-b[2];return x*x+y*y+z*z;})():(function(){var p=dots[i],q=dots[chosen[c]],dr=p[0]-q[0],dg=p[1]-q[1],db=p[2]-q[2];return dr*dr+dg*dg+db*db;})(); if(dd<md)md=dd; } if(md>bd){bd=md;bi=i;} }
+      chosen.push(bi); if(clab) clab.push(redDotsLab[bi]); }
+    redCentroids=chosen.map(function(i){ return [dots[i][0],dots[i][1],dots[i][2]]; });
+    redAssign=new Array(N*N).fill(-1); redIter=0; redDone=false;
+  }
+  function redStep(){ if(redDone){ stop(); return; }
+    var clab=(redSpace==='lab')?redCentroids.map(rgb2lab):null, changed=0, sums=[],c,i;
+    for(c=0;c<redK;c++) sums.push([0,0,0,0]);
+    for(i=0;i<N*N;i++){ var best=0,bd=1e18; for(c=0;c<redK;c++){ var dd=redDist(i,c,clab); if(dd<bd){bd=dd;best=c;} }
+      if(redAssign[i]!==best){ changed++; redAssign[i]=best; } var s=sums[best]; s[0]+=dots[i][0];s[1]+=dots[i][1];s[2]+=dots[i][2];s[3]++; }
+    for(c=0;c<redK;c++){ if(sums[c][3]>0) redCentroids[c]=[Math.round(sums[c][0]/sums[c][3]),Math.round(sums[c][1]/sums[c][3]),Math.round(sums[c][2]/sums[c][3])]; }
+    for(i=0;i<N*N;i++) outDots[i]=redCentroids[redAssign[i]].slice();
+    redIter++; paintReduceMat(); hlCell=-1; drawCanvas(); showRedReadout(changed);
+    if(changed===0){ redDone=true; stop(); } setStatus();
+  }
+  function paintReduceMat(){ var cell=N<=8?2.7:N<=16?2.2:N<=24?1.85:1.5;
+    for(var i=0;i<N*N;i++){ var d=ncells[i]; if(!d)continue; var a=redAssign[i];
+      if(a>=0){ var col=redCentroids[a]; d.style.background='rgb('+col[0]+','+col[1]+','+col[2]+')'; d.style.color=(lum(col)>140?'rgba(20,20,20,.8)':'rgba(255,255,255,.92)'); d.textContent=cell>=1.6?a:''; d.style.outline='none'; }
+      else { d.style.background='#fff'; d.style.color='#cfc9bf'; d.textContent=cell>=1.6?'·':''; } } }
+  function palSwatches(){ var sw=''; for(var c=0;c<redK;c++){ var col=redCentroids[c]; sw+='<span title="#'+c+'" style="display:inline-block;width:1.6em;height:1.6em;border-radius:5px;border:1px solid #ccc;margin:0 .25em .25em 0;vertical-align:middle;background:rgb('+col[0]+','+col[1]+','+col[2]+')"></span>'; } return sw; }
+  function showRedReadout(changed){
+    var head='<div class="rhead">知覚減色（K-means）　／　反復 '+redIter+' 回目　— '+(redSpace==='lab'?'知覚(Lab)距離':'RGB距離')+'</div>';
+    var mean='<div class="kmean">似た色どうしを K='+redK+' 個のグループにまとめ、各グループの平均色で塗り直す＝k-means による減色だよ。①各画素を一番"近い"代表色に割り当て → ②代表色をそのグループの平均色に更新、を繰り返す。「近い」を <b>'+(redSpace==='lab'?'知覚(Lab)空間で測っている（人の目の感じ方に近い距離 ΔE）':'RGB空間で測っている（数値そのままの距離）')+'</b>。Labだと暗部の微妙な差や肌色も自然に分かれやすい。RGBは計算は軽いけど、見た目が離れた色が同じグループに混じることがある。同じ初期値から始めているので、距離の測り方だけの違いが見えるよ。</div>';
+    var pal='<div class="msum">いまの代表色（パレット K='+redK+'）：<br>'+palSwatches()+'</div>';
+    var st='<div class="kbreak">割り当てが変わった画素：<span class="r">'+changed+'</span> 個'+(changed===0?'　→ 収束（これ以上は動かない）':'　→ まだ動くので続けて反復しよう')+'</div>';
+    document.getElementById('readout').innerHTML=head+mean+pal+st;
+  }
+  function showRedPix(r,c){ var i=r*N+c, a=redAssign[i], col=(a>=0)?redCentroids[a]:[0,0,0], o=dots[i];
+    var sw=function(d){ return '<span style="display:inline-block;width:1.3em;height:1.3em;border:1px solid #ccc;border-radius:4px;vertical-align:middle;margin:0 .2em;background:rgb('+d[0]+','+d[1]+','+d[2]+')"></span>'; };
+    document.getElementById('readout').innerHTML='<div class="rhead">知覚減色　／　画素 (x='+c+', y='+r+')</div>'+
+      '<div class="kmean">元の色 '+sw(o)+' (R'+o[0]+' G'+o[1]+' B'+o[2]+') は、K個の代表色のうち '+(redSpace==='lab'?'Lab':'RGB')+'距離が最も近い <b>#'+a+'</b> '+sw(col)+' に割り当てられて、その色で塗り直される。</div>'; }
+
+  function buildExtra(){ var row=document.getElementById('extrarow'), lab=document.getElementById('extralab'), ops=document.getElementById('extraops'); ops.innerHTML='';
+    function tag(t){ var s=document.createElement('span'); s.style.cssText='font-size:.7rem;color:var(--sub);font-family:var(--mono);margin:0 .15rem;'; s.textContent=t; return s; }
+    if(kerId==='reduce'){ row.style.display='flex'; lab.textContent='減色';
+      ops.appendChild(tag('色数K'));
+      [4,6,8,12].forEach(function(kk){ var b=document.createElement('div'); b.className='pill'+(kk===redK?' on':''); b.textContent=String(kk); b.onclick=function(){ redK=kk; resetStep(); }; ops.appendChild(b); });
+      ops.appendChild(tag('　距離'));
+      [['lab','知覚(Lab)'],['rgb','RGB']].forEach(function(m){ var b=document.createElement('div'); b.className='pill'+(m[0]===redSpace?' on':''); b.textContent=m[1]; b.onclick=function(){ redSpace=m[0]; resetStep(); }; ops.appendChild(b); });
+    } else { row.style.display='none'; }
+  }
+
   function render(){ pixelate(); resetStep(); }
 
   function setN(n){ N=n; sel('#grids',n,'data-n'); render(); }
-  function setChan(c){ chan=c; sel('#chans',c,'data-c'); if(kerId==='otsu'){ resetStep(); return; } buildMat(); drawCanvas(); if(lastShow&&kerId!=='none') showReadout(lastShow.r,lastShow.c,convCell(lastShow.c,lastShow.r),lastShow.rk); setStatus(); }
+  function setChan(c){ chan=c; sel('#chans',c,'data-c'); if(kerId==='otsu'){ resetStep(); return; } if(kerId==='reduce'){ return; } buildMat(); drawCanvas(); if(lastShow&&kerId!=='none') showReadout(lastShow.r,lastShow.c,convCell(lastShow.c,lastShow.r),lastShow.rk); setStatus(); }
   function setKer(id){ kerId=id; sel('#kers',id,'data-k'); resetStep(); }
   function setRepr(rp){ repr=rp; sel('#reprs',rp,'data-r'); if(lastShow) showReadout(lastShow.r,lastShow.c,lastShow.res,lastShow.rk); }
   function sel(wrap,val,attr){ document.querySelectorAll(wrap+' .pill').forEach(function(el){ var a=el.getAttribute(attr); el.classList.toggle('on', a===String(val)); }); }
@@ -404,12 +475,13 @@
   mkPills('grids',[[8,'8×8'],[16,'16×16'],[24,'24×24'],[32,'32×32']],'data-n',N,setN);
   mkPills('chans',[['R','赤 R'],['G','緑 G'],['B','青 B'],['L','明るさ L']],'data-c',chan,setChan);
   mkPills('kers',KER.map(function(k){return [k.id,k.label];}),'data-k',kerId,setKer);
+  document.querySelectorAll('#kers .pill').forEach(function(el,idx){ if(KER[idx]) el.title=KER[idx].mean; });
   mkPills('reprs',[['mat','行列 (⊙)'],['expr','式（和）']],'data-r',repr,setRepr);
   function mkRGB(wrapId,set){ var rs=document.getElementById(wrapId); [['R','赤 R'],['G','緑 G'],['B','青 B']].forEach(function(m){ var b=document.createElement('div'); b.className='pill on'; b.setAttribute('data-ch',m[0]); b.textContent=m[1]; b.onclick=function(){ set[m[0]]=!set[m[0]]; b.classList.toggle('on',set[m[0]]); drawCanvas(); }; rs.appendChild(b); }); }
   mkRGB('showL',showChL); mkRGB('showR',showChR);
   (function(){ var gr=document.getElementById('grayrow'); var b=document.createElement('div'); b.className='pill'; b.textContent='グレー（輝度）で見る'; b.onclick=function(){ grayView=!grayView; b.classList.toggle('on',grayView); drawCanvas(); }; gr.appendChild(b); })();
 
-  function isDone(){ return (kerId==='otsu') ? otsuK>255 : cur>=N*N; }
+  function isDone(){ if(kerId==='otsu') return otsuK>255; if(kerId==='reduce') return redDone; return cur>=N*N; }
   document.getElementById('play').onclick=function(){ if(timer) stop(); else { if(isDone()) resetStep(); play(); } };
   document.getElementById('step').onclick=function(){ stop(); if(isDone()) resetStep(); stepOnce(); };
   document.getElementById('substep').onclick=function(){ if(isDone()) resetStep(); subStep(); };
