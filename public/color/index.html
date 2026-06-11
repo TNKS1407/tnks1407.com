@@ -39,6 +39,13 @@
   .bgbtns button:hover{border-color:var(--accent);color:var(--accent);}
   .note{font-size:11px;color:var(--muted);line-height:1.65;margin-top:12px;border-top:1px solid var(--border);padding-top:10px;}
   .note b{color:var(--accent);}
+  .guide{margin-top:12px;border-top:1px solid var(--border);padding-top:10px;}
+  .guide summary{cursor:pointer;font-size:12px;color:var(--accent);font-weight:600;list-style:none;}
+  .guide summary::-webkit-details-marker{display:none;}
+  .guide summary::before{content:'▸ ';} .guide[open] summary::before{content:'▾ ';}
+  .guide[open] summary{margin-bottom:8px;}
+  .gbody{font-size:11.5px;color:var(--muted);line-height:1.7;}
+  .gbody p{margin:0 0 7px;} .gbody b{color:var(--text);}
   .hint{position:fixed;bottom:12px;right:14px;font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;background:var(--panel);padding:6px 10px;border-radius:8px;border:1px solid var(--border);}
   a.back{color:var(--accent);text-decoration:none;font-size:11px;font-family:'JetBrains Mono',monospace;}
 </style>
@@ -85,6 +92,18 @@
     </div>
   </div>
   <div class="note" id="note"></div>
+  <details class="guide">
+    <summary>色空間の見かた（解説）</summary>
+    <div class="gbody">
+      <p><b>色空間って？</b> 色は「色相・彩度・明度」の3つの数で決まる＝3次元空間の中の1点。これはその HSL 立体だよ。</p>
+      <p><b>読み方</b>：高さ＝明度（下が黒寄り、上が白寄り）／中心軸からの距離＝彩度（外ほど鮮やか）／軸まわりの角度＝色相（赤→黄→緑→青→紫…）。</p>
+      <p><b>中立軸</b>：彩度ゼロのグレーの芯。下が黒(L=0)→上が白(L=1)。すべての色の背骨。</p>
+      <p><b>色相環 S¹</b>：色相を一周すると輪になる。波長は赤→紫の一本道なのに、両端を混ぜた赤紫(マゼンタ)を自然に感じるから、端と端がつながって円に閉じる。</p>
+      <p><b>ねじれ（ベゾルト・ブリュッケ）</b>：同じ波長でも明るさが変わると色相が少しずれて見える現象。明度ごとに色相環が回る＝立体が螺旋にねじれる。スライダで再現できる。</p>
+      <p><b>ゆがみ</b>：中立軸を曲げると、立体が串刺しでついてくる。知覚的な色空間では、グレーの軸が幾何学的な中心と必ずしも一致しないことの戯画。</p>
+      <p><b>彩度・明度の限界</b>：上下の端（黒・白）に近いほど、置ける鮮やかな色が減る＝立体が尖る。だから球でなく双円錐（コマ型）になる。</p>
+    </div>
+  </details>
   <div class="note" style="border:0;padding-top:8px;"><a class="back" href="https://tnks1407.com">← tnks1407.com に戻る</a></div>
   </div>
 </div>
