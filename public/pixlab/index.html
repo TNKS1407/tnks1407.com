@@ -98,6 +98,7 @@
     <div class="row"><span class="rlab">見せ方</span><div class="ops" id="reprs"></div></div>
     <div class="row"><span class="rlab">元の色</span><div class="ops" id="showL"></div></div>
     <div class="row"><span class="rlab">結果の色</span><div class="ops" id="showR"></div><span class="status" style="margin:0 0 0 .3rem;">※ 左右それぞれ R/G/B を選べる（複数可）</span></div>
+    <div class="row"><span class="rlab">表示</span><div class="ops" id="grayrow"></div><span class="status" style="margin:0 0 0 .3rem;">※ エッジ・ラプラシアン系は「グレー（輝度）」だと境界の線がくっきり見える</span></div>
 
     <canvas id="cv" width="640" height="320"></canvas>
     <canvas id="hist" width="640" height="156" style="display:none;margin-top:.5rem;"></canvas>
@@ -134,7 +135,7 @@
   var SRC=256, SS=288, SX=18, SY=30, GX=334;
   var TEAL='#13897c', WARM='#df5e3c';
   var sc=document.createElement('canvas'); sc.width=sc.height=SRC; var sctx=sc.getContext('2d');
-  var srcData=null, N=16, chan='L', kerId='none', repr='mat', showChL={R:true,G:true,B:true}, showChR={R:true,G:true,B:true};
+  var srcData=null, N=16, chan='L', kerId='none', repr='mat', showChL={R:true,G:true,B:true}, showChR={R:true,G:true,B:true}, grayView=false;
   var dots=[], outDots=[], cur=0, subK=0, hlCell=-1, curRes=null, lastShow=null, lastJust=null, ncells=[], timer=null, speed=62;
   var otsuK=0, otsuBestK=0, otsuBestV=-1, otsuCurve=[], otsuMaxV=1, otsuFinalK=0, otsuH=null, otsuStepSize=3;
 
@@ -202,18 +203,22 @@
 
   // ---- canvas ----
   function maskCol(d,s){ return 'rgb('+(s.R?d[0]:0)+','+(s.G?d[1]:0)+','+(s.B?d[2]:0)+')'; }
+  function lum(d){ return Math.round(0.299*d[0]+0.587*d[1]+0.114*d[2]); }
+  function grayCol(d){ var v=lum(d); return 'rgb('+v+','+v+','+v+')'; }
+  function colL(d){ return grayView?grayCol(d):maskCol(d,showChL); }
+  function colR(d){ return grayView?grayCol(d):maskCol(d,showChR); }
   function label(t,x,y,c){ ctx.fillStyle=c; ctx.font='600 12px '+'"JetBrains Mono",monospace'; ctx.textAlign='left'; ctx.textBaseline='alphabetic'; ctx.fillText(t,x,y); }
   function drawCanvas(){
     ctx.clearRect(0,0,cv.width,cv.height);
     var none=(kerId==='none'), otsu=(kerId==='otsu'), ds=SS/N;
     label(otsu?('元（'+chanName()+'）'):none?'元の写真':'元のドット絵',SX,SY-10,'#7d7568'); label(otsu?'二値化（白黒）':none?'ドット絵':'結果',GX,SY-10,TEAL);
-    if(none){ ctx.imageSmoothingEnabled=true; ctx.drawImage(sc,SX,SY,SS,SS);
-      ctx.globalCompositeOperation='multiply'; ctx.fillStyle='rgb('+(showChL.R?255:0)+','+(showChL.G?255:0)+','+(showChL.B?255:0)+')'; ctx.fillRect(SX,SY,SS,SS); ctx.globalCompositeOperation='source-over'; }
+    if(none){ ctx.imageSmoothingEnabled=true; ctx.filter=grayView?'grayscale(1)':'none'; ctx.drawImage(sc,SX,SY,SS,SS); ctx.filter='none';
+      if(!grayView){ ctx.globalCompositeOperation='multiply'; ctx.fillStyle='rgb('+(showChL.R?255:0)+','+(showChL.G?255:0)+','+(showChL.B?255:0)+')'; ctx.fillRect(SX,SY,SS,SS); ctx.globalCompositeOperation='source-over'; } }
     else if(otsu){ for(var i=0;i<N*N;i++){ var d=dots[i],v=selOf(d),c=i%N,r=(i/N|0); ctx.fillStyle='rgb('+v+','+v+','+v+')'; ctx.fillRect(SX+c*ds,SY+r*ds,Math.ceil(ds),Math.ceil(ds)); } }
-    else { for(var i=0;i<N*N;i++){ var d=dots[i],c=i%N,r=(i/N|0); ctx.fillStyle=maskCol(d,showChL); ctx.fillRect(SX+c*ds,SY+r*ds,Math.ceil(ds),Math.ceil(ds)); } }
+    else { for(var i=0;i<N*N;i++){ var d=dots[i],c=i%N,r=(i/N|0); ctx.fillStyle=colL(d); ctx.fillRect(SX+c*ds,SY+r*ds,Math.ceil(ds),Math.ceil(ds)); } }
     ctx.strokeStyle='#e6e1d8'; ctx.lineWidth=1; ctx.strokeRect(SX+0.5,SY+0.5,SS,SS);
     ctx.fillStyle='#efeae1'; ctx.fillRect(GX,SY,SS,SS);
-    for(var i=0;i<N*N;i++){ var o=outDots[i]; if(o){ var c=i%N,r=(i/N|0); ctx.fillStyle=maskCol(o,showChR); ctx.fillRect(GX+c*ds,SY+r*ds,Math.ceil(ds),Math.ceil(ds)); } }
+    for(var i=0;i<N*N;i++){ var o=outDots[i]; if(o){ var c=i%N,r=(i/N|0); ctx.fillStyle=colR(o); ctx.fillRect(GX+c*ds,SY+r*ds,Math.ceil(ds),Math.ceil(ds)); } }
     ctx.strokeStyle='#e6e1d8'; ctx.strokeRect(GX+0.5,SY+0.5,SS,SS);
     if(hlCell>=0 && hlCell<N*N){
       var c=hlCell%N, r=(hlCell/N|0);
@@ -328,7 +333,7 @@
   function feedResult(){ finishAll(); dots=outDots.map(function(d){ return d?[d[0],d[1],d[2]]:[0,0,0]; }); resetStep();
     document.getElementById('readout').innerHTML='<div class="kmean">結果を新しい入力にしたよ。続けて別の演算をかけると"重ねがけ"になる（例：ぼかし→エッジ）。元写真に戻すには「最初の写真に戻す」。</div>'; }
   function downloadPNG(){ finishAll(); var sz=Math.max(384,N*16), tc=document.createElement('canvas'); tc.width=tc.height=sz; var tx=tc.getContext('2d'); tx.imageSmoothingEnabled=false; var ds=sz/N;
-    for(var i=0;i<N*N;i++){ var o=outDots[i]||[0,0,0],c=i%N,r=(i/N|0); tx.fillStyle=maskCol(o,showChR); tx.fillRect(c*ds,r*ds,Math.ceil(ds),Math.ceil(ds)); }
+    for(var i=0;i<N*N;i++){ var o=outDots[i]||[0,0,0],c=i%N,r=(i/N|0); tx.fillStyle=colR(o); tx.fillRect(c*ds,r*ds,Math.ceil(ds),Math.ceil(ds)); }
     tc.toBlob(function(b){ var a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='pixlab.png'; a.click(); }); }
   // ---- Otsu (大津のしきい値) ----
   function betweenVar(H,total,k){
@@ -402,6 +407,7 @@
   mkPills('reprs',[['mat','行列 (⊙)'],['expr','式（和）']],'data-r',repr,setRepr);
   function mkRGB(wrapId,set){ var rs=document.getElementById(wrapId); [['R','赤 R'],['G','緑 G'],['B','青 B']].forEach(function(m){ var b=document.createElement('div'); b.className='pill on'; b.setAttribute('data-ch',m[0]); b.textContent=m[1]; b.onclick=function(){ set[m[0]]=!set[m[0]]; b.classList.toggle('on',set[m[0]]); drawCanvas(); }; rs.appendChild(b); }); }
   mkRGB('showL',showChL); mkRGB('showR',showChR);
+  (function(){ var gr=document.getElementById('grayrow'); var b=document.createElement('div'); b.className='pill'; b.textContent='グレー（輝度）で見る'; b.onclick=function(){ grayView=!grayView; b.classList.toggle('on',grayView); drawCanvas(); }; gr.appendChild(b); })();
 
   function isDone(){ return (kerId==='otsu') ? otsuK>255 : cur>=N*N; }
   document.getElementById('play').onclick=function(){ if(timer) stop(); else { if(isDone()) resetStep(); play(); } };
