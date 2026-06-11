@@ -70,6 +70,13 @@
   .nc{display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:600;}
   .status{font-size:.72rem;font-family:var(--mono);color:var(--faint);margin-top:.7rem;}
   footer{text-align:center;color:var(--faint);font-size:11px;font-family:var(--mono);margin-top:10px;}
+  .coursebar{background:linear-gradient(180deg,#fff,#fbf9f4);border:1px solid var(--line);border-left:4px solid var(--teal);border-radius:12px;padding:14px 16px;margin-bottom:18px;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+  .coursebar .ch{font-family:var(--mono);font-size:.72rem;color:var(--warm);font-weight:700;margin-bottom:.3rem;}
+  .coursebar .ct{font-family:var(--round);font-weight:700;font-size:1.06rem;color:var(--ink);margin-bottom:.45rem;}
+  .coursebar .cx{font-size:.9rem;color:#33433f;line-height:1.78;} .coursebar .cx b{color:var(--teal-d);} .coursebar .cx a{color:var(--warm);text-decoration:none;} .coursebar .cx a:hover{text-decoration:underline;}
+  .coursebar .cnav{display:flex;gap:.5rem;align-items:center;margin-top:.8rem;flex-wrap:wrap;}
+  .coursebar .cnav .sp{margin-left:auto;font-family:var(--mono);font-size:.7rem;color:var(--faint);}
+  .startcourse{cursor:pointer;color:var(--teal-d)!important;font-weight:700;}
 </style>
 </head>
 <body>
@@ -82,9 +89,21 @@
 
   <div class="lead">
     <p>デジタル画像は、結局 <b>数字の格子（行列）</b>。写真をドット絵に分解して、その行列に画像処理を<b>一歩ずつ</b>かけて見るための場所だよ。<span class="v">v3</span></p>
-    <p style="font-size:11.5px;color:var(--sub);font-family:var(--mono);margin:-.3rem 0 .2rem;">学びの道：<a class="back" style="color:var(--warm);" href="/pixlab1d/">① 1次元の微分</a> → <b style="color:var(--teal-d);">② 標本化→畳み込み（いまここ）</b> → ③ 統計（大津）・色（減色/WB） → <a class="back" style="color:var(--warm);" href="https://gradus.tnks1407.com" target="_blank" rel="noopener">📖 詳しく（Gradus）</a></p>
+    <p style="font-size:11.5px;color:var(--sub);font-family:var(--mono);margin:-.3rem 0 .2rem;">学びの道：<a class="back" style="color:var(--warm);" href="/pixlab1d/">① 1次元の微分</a> → <b style="color:var(--teal-d);">② 標本化→畳み込み（いまここ）</b> → ③ 統計（大津）・色（減色/WB） → <a class="back" style="color:var(--warm);" href="https://gradus.tnks1407.com" target="_blank" rel="noopener">📖 詳しく（Gradus）</a>　　<a class="back startcourse" id="course-start">🧭 順番に読む</a></p>
     <p>「演算」でカーネル（ぼかし・エッジ等）を選ぶと、3×3 の窓が格子を舐めて畳み込みを計算していく。「見る面」で R・G・B・明るさ のどれを覗くか選べて、その面の計算を <b>行列(⊙)</b> でも <b>式（和）</b> でも見れる。エッジ系は「右−左の差＝傾き＝微分」が色で追える。出力はカラーで埋まる。「二値化（大津）」を選ぶと、明るさのヒストグラムを見ながら<b>最適なしきい値</b>を自動で探して白黒に分ける様子も追えるよ。</p>
     <p><a class="back" style="color:var(--teal);" href="/conv">▷ グレースケール版（畳み込みを一歩ずつ /conv）</a>　<a class="back" style="color:var(--warm);" href="https://gradus.tnks1407.com" target="_blank" rel="noopener">📖 各処理の理屈・数式をもっと詳しく → Gradus</a></p>
+  </div>
+
+  <div class="coursebar" id="coursebar" style="display:none;">
+    <div class="ch" id="course-ch"></div>
+    <div class="ct" id="course-title"></div>
+    <div class="cx" id="course-text"></div>
+    <div class="cnav">
+      <button class="btn" id="course-prev" type="button">← 前へ</button>
+      <button class="btn" id="course-next" type="button">次へ →</button>
+      <button class="btn" id="course-exit" type="button">✕ 閉じる</button>
+      <span class="sp" id="course-prog"></span>
+    </div>
   </div>
 
   <div class="card">
@@ -595,6 +614,40 @@
   document.getElementById('file').onchange=function(e){ var f=e.target.files[0]; if(!f)return; var im=new Image(); im.onload=function(){
     sctx.fillStyle='#fff'; sctx.fillRect(0,0,SRC,SRC); var s=Math.max(SRC/im.width,SRC/im.height),dw=im.width*s,dh=im.height*s;
     sctx.drawImage(im,(SRC-dw)/2,(SRC-dh)/2,dw,dh); srcData=sctx.getImageData(0,0,SRC,SRC).data; render(); }; im.src=URL.createObjectURL(f); };
+
+  // ---- コース（順番に読む） ----
+  var COURSE=[
+    {k:'none',  t:'第1章　標本化（写真→ドット絵）',
+      x:'まずは入口。目の前の連続した景色を、格子の上に点々と拾い直すのが<b>標本化</b>だよ。1マスの色は、その領域の平均。粗く拾えばドット絵、細かく拾えば写真に近づく。「▶ 再生」か「1ステップ」で、平均が一マスずつ埋まっていくのを見てみよう。ここから全部が始まる。'},
+    {k:'sobelx',t:'第2章　畳み込み＝2次元の微分（エッジ）',
+      x:'<a href="/pixlab1d/">1次元でやった「隣との差」</a>を覚えてる？ それを横と縦の両方向に広げたのが、この畳み込み（Sobel）。3×3の窓で「右の列−左の列」を取ると、明るさが急に変わる所＝<b>輪郭</b>だけが浮かび上がる。エッジ検出は、結局2次元の微分なんだ。「グレー（輝度）で見る」を押すと線がくっきりするよ。'},
+    {k:'gauss', t:'第3章　ならす・際立たせる（ぼかし／先鋭化）',
+      x:'差を取る代わりに「周りと混ぜて平均する」とぼける（ガウスぼかし）。逆に中心を強めて周りを引くと、輪郭が際立つ（先鋭化）。同じ3×3の重みでも、<b>足すか引くか</b>で真逆のことが起きる。「演算」で平均ぼかし・先鋭化・ラプラシアンも試してみよう。'},
+    {k:'otsu',  t:'第4章　分布で境目を決める（大津の二値化）',
+      x:'ここで少し毛色が変わる。微分でなく、明るさの<b>分布（ヒストグラム）</b>を見て、白と黒を分ける一本の線を自動で選ぶ。値そのものでなく「集まり方」から境目を決める＝統計の考え方だね。下のヒストグラムで、しきい値が分散最大の所に吸い寄せられるのを見て。'},
+    {k:'reduce',t:'第5章　色をまとめる（知覚減色）',
+      x:'今度は色。似た色どうしをいくつかの代表色にまとめる（k-means）。コツは「近さ」を<b>人の目の感じ方（Lab）</b>で測ること。数値の上で近くても、見た目が違う色は分けたいからね。「距離」を Lab と RGB で切り替えて、まとまり方の違いを見比べよう。'},
+    {k:'awb',   t:'第6章　色を直す（オートWB）',
+      x:'最後は照明の色を直す。写真に乗った色かぶりを、基準の画素から推定して割り戻す＝<b>ホワイトバランス</b>。光の色を引き算で打ち消す、という発想。「わざと色かぶりを付ける」をONにして、左の色かぶりが右でニュートラルに戻るのを見て。'},
+    {k:null,    t:'第7章　もっと深く（Gradus）',
+      x:'おつかれさま。ここまでで「<b>標本化 → 微分 → 統計 → 色</b>」の地図ができたね。一つ一つの理屈や数式をじっくり読みたくなったら、<a href="https://gradus.tnks1407.com" target="_blank" rel="noopener">Gradus</a> へ。触って掴んだものを、言葉と式で確かめにいこう。お疲れさま。'}
+  ];
+  var courseIdx=-1;
+  function renderCourse(){ var c=COURSE[courseIdx];
+    document.getElementById('course-ch').textContent='🧭 コース';
+    document.getElementById('course-title').textContent=c.t;
+    document.getElementById('course-text').innerHTML=c.x;
+    document.getElementById('course-prog').textContent='章 '+(courseIdx+1)+' / '+COURSE.length;
+    document.getElementById('course-prev').disabled=(courseIdx===0);
+    document.getElementById('course-next').textContent=(courseIdx===COURSE.length-1)?'最初へ ⟲':'次へ →';
+  }
+  function gotoChapter(i){ if(i<0)i=0; if(i>=COURSE.length)i=0; courseIdx=i; var c=COURSE[i]; if(c.k) setKer(c.k); renderCourse(); }
+  function enterCourse(){ document.getElementById('coursebar').style.display='block'; gotoChapter(0); }
+  function exitCourse(){ document.getElementById('coursebar').style.display='none'; courseIdx=-1; }
+  document.getElementById('course-start').onclick=enterCourse;
+  document.getElementById('course-prev').onclick=function(){ if(courseIdx>0) gotoChapter(courseIdx-1); };
+  document.getElementById('course-next').onclick=function(){ gotoChapter(courseIdx+1); };
+  document.getElementById('course-exit').onclick=exitCourse;
 
   applyLayout(); defaultScene(); render();
 })();
