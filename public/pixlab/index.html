@@ -83,7 +83,7 @@
   <div class="lead">
     <p>デジタル画像は、結局 <b>数字の格子（行列）</b>。写真をドット絵に分解して、その行列に画像処理を<b>一歩ずつ</b>かけて見るための場所だよ。<span class="v">v3</span></p>
     <p>「演算」でカーネル（ぼかし・エッジ等）を選ぶと、3×3 の窓が格子を舐めて畳み込みを計算していく。「見る面」で R・G・B・明るさ のどれを覗くか選べて、その面の計算を <b>行列(⊙)</b> でも <b>式（和）</b> でも見れる。エッジ系は「右−左の差＝傾き＝微分」が色で追える。出力はカラーで埋まる。「二値化（大津）」を選ぶと、明るさのヒストグラムを見ながら<b>最適なしきい値</b>を自動で探して白黒に分ける様子も追えるよ。</p>
-    <p><a class="back" style="color:var(--teal);" href="/conv">▷ グレースケール版（畳み込みを一歩ずつ /conv）</a></p>
+    <p><a class="back" style="color:var(--teal);" href="/conv">▷ グレースケール版（畳み込みを一歩ずつ /conv）</a>　<a class="back" style="color:var(--warm);" href="https://gradus.tnks1407.com" target="_blank" rel="noopener">📖 各処理の理屈・数式をもっと詳しく → Gradus</a></p>
   </div>
 
   <div class="card">
@@ -133,7 +133,12 @@
 (function(){
   var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
   var hcv=document.getElementById('hist'), hctx=hcv.getContext('2d');
-  var SRC=256, SS=288, SX=18, SY=30, GX=334;
+  var SRC=256, SS=288, SX=18, SY=30, GX=334, GY=30;
+  var mobile=(window.innerWidth||1000)<760;
+  function applyLayout(){
+    if(mobile){ SS=300; SX=12; SY=28; GX=12; GY=SY+SS+46; cv.width=SX+SS+12; cv.height=GY+SS+12; cv.style.maxWidth='430px'; cv.style.margin='0 auto'; hcv.style.maxWidth='430px'; hcv.style.margin='.5rem auto 0'; }
+    else { SS=288; SX=18; SY=30; GX=SX+SS+28; GY=SY; cv.width=GX+SS+18; cv.height=SY+SS+2; cv.style.maxWidth=''; cv.style.margin=''; hcv.style.maxWidth=''; hcv.style.margin='.5rem 0 0'; }
+  }
   var TEAL='#13897c', WARM='#df5e3c';
   var sc=document.createElement('canvas'); sc.width=sc.height=SRC; var sctx=sc.getContext('2d');
   var srcData=null, N=16, chan='L', kerId='none', repr='mat', showChL={R:true,G:true,B:true}, showChR={R:true,G:true,B:true}, grayView=false;
@@ -223,7 +228,7 @@
     ctx.clearRect(0,0,cv.width,cv.height);
     var none=(kerId==='none'), otsu=(kerId==='otsu'), ds=SS/N;
     var awb=(kerId==='awb');
-    label(awb?(awbCast?'元（色かぶり）':'元'):otsu?('元（'+chanName()+'）'):none?'元の写真':'元のドット絵',SX,SY-10,'#7d7568'); label(otsu?'二値化（白黒）':kerId==='reduce'?('減色（K='+redK+'）'):awb?'WB補正後':none?'ドット絵':'結果',GX,SY-10,TEAL);
+    label(awb?(awbCast?'元（色かぶり）':'元'):otsu?('元（'+chanName()+'）'):none?'元の写真':'元のドット絵',SX,SY-10,'#7d7568'); label(otsu?'二値化（白黒）':kerId==='reduce'?('減色（K='+redK+'）'):awb?'WB補正後':none?'ドット絵':'結果',GX,GY-10,TEAL);
     if(none){ ctx.imageSmoothingEnabled=true; ctx.filter=grayView?'grayscale(1)':'none'; ctx.drawImage(sc,SX,SY,SS,SS); ctx.filter='none';
       if(!grayView){ ctx.globalCompositeOperation='multiply'; ctx.fillStyle='rgb('+(showChL.R?255:0)+','+(showChL.G?255:0)+','+(showChL.B?255:0)+')'; ctx.fillRect(SX,SY,SS,SS); ctx.globalCompositeOperation='source-over'; } }
     else if(otsu){ for(var i=0;i<N*N;i++){ var d=dots[i],v=selOf(d),c=i%N,r=(i/N|0); ctx.fillStyle='rgb('+v+','+v+','+v+')'; ctx.fillRect(SX+c*ds,SY+r*ds,Math.ceil(ds),Math.ceil(ds)); } }
@@ -231,15 +236,15 @@
       if(awbStage>=1){ ctx.fillStyle='rgba(19,137,124,.92)'; for(var i=0;i<N*N;i++){ if(!awbBasis[i])continue; var c=i%N,r=(i/N|0); ctx.beginPath(); ctx.arc(SX+(c+0.5)*ds,SY+(r+0.5)*ds,Math.max(1.5,ds*0.17),0,7); ctx.fill(); } } }
     else { for(var i=0;i<N*N;i++){ var d=dots[i],c=i%N,r=(i/N|0); ctx.fillStyle=colL(d); ctx.fillRect(SX+c*ds,SY+r*ds,Math.ceil(ds),Math.ceil(ds)); } }
     ctx.strokeStyle='#e6e1d8'; ctx.lineWidth=1; ctx.strokeRect(SX+0.5,SY+0.5,SS,SS);
-    ctx.fillStyle='#efeae1'; ctx.fillRect(GX,SY,SS,SS);
-    for(var i=0;i<N*N;i++){ var o=outDots[i]; if(o){ var c=i%N,r=(i/N|0); ctx.fillStyle=colR(o); ctx.fillRect(GX+c*ds,SY+r*ds,Math.ceil(ds),Math.ceil(ds)); } }
-    ctx.strokeStyle='#e6e1d8'; ctx.strokeRect(GX+0.5,SY+0.5,SS,SS);
+    ctx.fillStyle='#efeae1'; ctx.fillRect(GX,GY,SS,SS);
+    for(var i=0;i<N*N;i++){ var o=outDots[i]; if(o){ var c=i%N,r=(i/N|0); ctx.fillStyle=colR(o); ctx.fillRect(GX+c*ds,GY+r*ds,Math.ceil(ds),Math.ceil(ds)); } }
+    ctx.strokeStyle='#e6e1d8'; ctx.strokeRect(GX+0.5,GY+0.5,SS,SS);
     if(hlCell>=0 && hlCell<N*N){
       var c=hlCell%N, r=(hlCell/N|0);
       if(none){ ctx.strokeStyle=TEAL; ctx.lineWidth=2.5; ctx.strokeRect(SX+c/N*SS-1,SY+r/N*SS-1,SS/N+2,SS/N+2); }
       else if(otsu||kerId==='reduce'||awb){ ctx.strokeStyle=TEAL; ctx.lineWidth=2.5; ctx.strokeRect(SX+c*ds-1,SY+r*ds-1,ds+2,ds+2); }
       else { var x0=Math.max(0,c-1),x1=Math.min(N-1,c+1),y0=Math.max(0,r-1),y1=Math.min(N-1,r+1); ctx.strokeStyle=TEAL; ctx.lineWidth=2.5; ctx.strokeRect(SX+x0*ds-1,SY+y0*ds-1,(x1-x0+1)*ds+2,(y1-y0+1)*ds+2); }
-      ctx.strokeStyle=WARM; ctx.lineWidth=2.5; ctx.strokeRect(GX+c*ds-1,SY+r*ds-1,ds+2,ds+2);
+      ctx.strokeStyle=WARM; ctx.lineWidth=2.5; ctx.strokeRect(GX+c*ds-1,GY+r*ds-1,ds+2,ds+2);
     }
   }
 
@@ -352,10 +357,11 @@
     document.getElementById('readout').innerHTML='<div class="kmean">'+(kerId==='none'?('全 '+(N*N)+' マスの平均が完成＝ドット絵のできあがり。'):('全 '+(N*N)+' マスに'+curKer().label+'をかけ終わった。'))+'</div>'; }
   function cellFromEvent(e){
     var rect=cv.getBoundingClientRect(), sx=cv.width/rect.width, sy=cv.height/rect.height;
-    var px=(e.clientX-rect.left)*sx, py=(e.clientY-rect.top)*sy, ds=SS/N, gx;
-    if(py<SY||py>=SY+SS) return null;
-    if(px>=SX&&px<SX+SS) gx=SX; else if(px>=GX&&px<GX+SS) gx=GX; else return null;
-    var col=Math.floor((px-gx)/ds), row=Math.floor((py-SY)/ds);
+    var px=(e.clientX-rect.left)*sx, py=(e.clientY-rect.top)*sy, ds=SS/N, ox,oy;
+    if(px>=SX&&px<SX+SS&&py>=SY&&py<SY+SS){ ox=SX; oy=SY; }
+    else if(px>=GX&&px<GX+SS&&py>=GY&&py<GY+SS){ ox=GX; oy=GY; }
+    else return null;
+    var col=Math.floor((px-ox)/ds), row=Math.floor((py-oy)/ds);
     if(col<0||col>=N||row<0||row>=N) return null; return {c:col,r:row};
   }
   function inspect(c,r){ stop(); hlCell=r*N+c;
@@ -528,7 +534,10 @@
   mkPills('reprs',[['mat','行列 (⊙)'],['expr','式（和）']],'data-r',repr,setRepr);
   function mkRGB(wrapId,set){ var rs=document.getElementById(wrapId); [['R','赤 R'],['G','緑 G'],['B','青 B']].forEach(function(m){ var b=document.createElement('div'); b.className='pill on'; b.setAttribute('data-ch',m[0]); b.textContent=m[1]; b.onclick=function(){ set[m[0]]=!set[m[0]]; b.classList.toggle('on',set[m[0]]); drawCanvas(); }; rs.appendChild(b); }); }
   mkRGB('showL',showChL); mkRGB('showR',showChR);
-  (function(){ var gr=document.getElementById('grayrow'); var b=document.createElement('div'); b.className='pill'; b.textContent='グレー（輝度）で見る'; b.onclick=function(){ grayView=!grayView; b.classList.toggle('on',grayView); drawCanvas(); }; gr.appendChild(b); })();
+  (function(){ var gr=document.getElementById('grayrow');
+    var b=document.createElement('div'); b.className='pill'; b.textContent='グレー（輝度）で見る'; b.onclick=function(){ grayView=!grayView; b.classList.toggle('on',grayView); drawCanvas(); }; gr.appendChild(b);
+    var lb=document.createElement('div'); lb.className='pill'+(mobile?' on':''); lb.textContent='📱 スマホ表示（縦並び）'; lb.onclick=function(){ mobile=!mobile; lb.classList.toggle('on',mobile); applyLayout(); drawCanvas(); }; gr.appendChild(lb);
+  })();
 
   function isDone(){ if(kerId==='otsu') return otsuK>255; if(kerId==='reduce') return redDone; if(kerId==='awb') return awbStage>=3; return cur>=N*N; }
   document.getElementById('play').onclick=function(){ if(timer) stop(); else { if(isDone()) resetStep(); play(); } };
@@ -545,7 +554,7 @@
     sctx.fillStyle='#fff'; sctx.fillRect(0,0,SRC,SRC); var s=Math.max(SRC/im.width,SRC/im.height),dw=im.width*s,dh=im.height*s;
     sctx.drawImage(im,(SRC-dw)/2,(SRC-dh)/2,dw,dh); srcData=sctx.getImageData(0,0,SRC,SRC).data; render(); }; im.src=URL.createObjectURL(f); };
 
-  defaultScene(); render();
+  applyLayout(); defaultScene(); render();
 })();
 </script>
 </body>
