@@ -88,8 +88,9 @@
 
   <div class="card">
     <div class="row"><span class="rlab">画像</span>
+      <div class="ops" id="scenes" style="margin-right:.4rem;"></div>
       <label class="btn" style="cursor:pointer;">画像を選ぶ<input type="file" id="file" accept="image/*" style="display:none;"></label>
-      <button class="btn" id="reimg" type="button">最初の写真に戻す</button>
+      <button class="btn" id="reimg" type="button">選んだ絵に戻す</button>
       <span class="status" id="imgnote" style="margin:0 0 0 .4rem;">※ 画像はこの端末の中だけで処理。送らないよ。</span>
     </div>
     <div class="row"><span class="rlab">ドット数</span><div class="ops" id="grids"></div></div>
@@ -185,6 +186,72 @@
     sctx.fillStyle='#7a342f'; sctx.beginPath(); sctx.moveTo(SRC*0.145,SRC*0.62); sctx.lineTo(SRC*0.225,SRC*0.55); sctx.lineTo(SRC*0.305,SRC*0.62); sctx.closePath(); sctx.fill();
     srcData=sctx.getImageData(0,0,SRC,SRC).data;
   }
+  function sceneBalloon(){
+    var g=sctx.createLinearGradient(0,0,0,SRC); g.addColorStop(0,'#6fb0e6'); g.addColorStop(0.55,'#bfe0f4'); g.addColorStop(1,'#eaf5fc');
+    sctx.fillStyle=g; sctx.fillRect(0,0,SRC,SRC);
+    var hz=SRC*0.63;
+    var gg=sctx.createLinearGradient(0,hz,0,SRC); gg.addColorStop(0,'#a3cf6e'); gg.addColorStop(1,'#5d9a3d');
+    sctx.fillStyle=gg; sctx.fillRect(0,hz,SRC,SRC-hz);
+    // 遠近のある道（消失点＝中央の地平線）
+    sctx.fillStyle='#d3c2a3'; sctx.beginPath(); sctx.moveTo(SRC*0.5-2,hz); sctx.lineTo(SRC*0.5+2,hz); sctx.lineTo(SRC*0.74,SRC); sctx.lineTo(SRC*0.26,SRC); sctx.closePath(); sctx.fill();
+    // 地平線近くの小さな農家
+    sctx.fillStyle='#efe7d8'; sctx.fillRect(SRC*0.40,hz-SRC*0.055,SRC*0.10,SRC*0.055);
+    sctx.fillStyle='#b65f4a'; sctx.beginPath(); sctx.moveTo(SRC*0.385,hz-SRC*0.055); sctx.lineTo(SRC*0.45,hz-SRC*0.10); sctx.lineTo(SRC*0.515,hz-SRC*0.055); sctx.closePath(); sctx.fill();
+    // 熱気球（中央上）
+    var bx=SRC*0.5, by=SRC*0.33, br=SRC*0.165;
+    sctx.beginPath(); sctx.moveTo(bx,by+br*1.28);
+    sctx.bezierCurveTo(bx-br*1.12,by+br*0.55,bx-br*1.04,by-br*0.95,bx,by-br);
+    sctx.bezierCurveTo(bx+br*1.04,by-br*0.95,bx+br*1.12,by+br*0.55,bx,by+br*1.28);
+    sctx.closePath(); sctx.fillStyle='#e23b3b'; sctx.fill();
+    sctx.save(); sctx.clip();
+    sctx.fillStyle='#f4c542'; sctx.fillRect(bx-br*0.16,by-br*1.3,br*0.32,br*2.7);
+    sctx.fillStyle='#f0f3f6'; sctx.fillRect(bx-br*0.62,by-br*1.3,br*0.18,br*2.7); sctx.fillRect(bx+br*0.44,by-br*1.3,br*0.18,br*2.7);
+    sctx.restore();
+    sctx.strokeStyle='#000'; sctx.globalAlpha=0.12; sctx.lineWidth=1; sctx.beginPath(); sctx.ellipse(bx,by,br,br*1.15,0,0,7); sctx.stroke(); sctx.globalAlpha=1;
+    // かご
+    sctx.strokeStyle='#7a5a36'; sctx.lineWidth=1.4; sctx.beginPath(); sctx.moveTo(bx-br*0.4,by+br*1.22); sctx.lineTo(bx-br*0.16,by+br*1.66); sctx.moveTo(bx+br*0.4,by+br*1.22); sctx.lineTo(bx+br*0.16,by+br*1.66); sctx.stroke();
+    sctx.fillStyle='#8a6238'; sctx.fillRect(bx-br*0.16,by+br*1.66,br*0.32,br*0.26);
+    srcData=sctx.getImageData(0,0,SRC,SRC).data;
+  }
+  function sceneFace(){
+    sctx.fillStyle='#e7ddcf'; sctx.fillRect(0,0,SRC,SRC);
+    var cx=SRC*0.5, cy=SRC*0.55;
+    // 髪（後ろ）
+    sctx.fillStyle='#c7b99c'; sctx.beginPath(); sctx.ellipse(cx,cy-SRC*0.05,SRC*0.345,SRC*0.42,0,0,7); sctx.fill();
+    // 首
+    sctx.fillStyle='#e6ba93'; sctx.fillRect(cx-SRC*0.10,cy+SRC*0.20,SRC*0.20,SRC*0.22);
+    // 顔
+    sctx.fillStyle='#f1cba8'; sctx.beginPath(); sctx.ellipse(cx,cy,SRC*0.255,SRC*0.31,0,0,7); sctx.fill();
+    // 耳
+    sctx.beginPath(); sctx.ellipse(cx-SRC*0.25,cy+SRC*0.01,SRC*0.035,SRC*0.05,0,0,7); sctx.ellipse(cx+SRC*0.25,cy+SRC*0.01,SRC*0.035,SRC*0.05,0,0,7); sctx.fill();
+    // 前髪
+    sctx.fillStyle='#cbbd9f'; sctx.beginPath();
+    sctx.moveTo(cx-SRC*0.27,cy-SRC*0.09);
+    sctx.quadraticCurveTo(cx-SRC*0.20,cy-SRC*0.34,cx,cy-SRC*0.33);
+    sctx.quadraticCurveTo(cx+SRC*0.20,cy-SRC*0.34,cx+SRC*0.27,cy-SRC*0.09);
+    sctx.quadraticCurveTo(cx+SRC*0.11,cy-SRC*0.19,cx,cy-SRC*0.17);
+    sctx.quadraticCurveTo(cx-SRC*0.11,cy-SRC*0.19,cx-SRC*0.27,cy-SRC*0.09);
+    sctx.closePath(); sctx.fill();
+    // 眉
+    sctx.strokeStyle='#a88f6c'; sctx.lineWidth=SRC*0.012; sctx.lineCap='round';
+    sctx.beginPath(); sctx.moveTo(cx-SRC*0.155,cy-SRC*0.035); sctx.quadraticCurveTo(cx-SRC*0.10,cy-SRC*0.065,cx-SRC*0.045,cy-SRC*0.04);
+    sctx.moveTo(cx+SRC*0.045,cy-SRC*0.04); sctx.quadraticCurveTo(cx+SRC*0.10,cy-SRC*0.065,cx+SRC*0.155,cy-SRC*0.035); sctx.stroke();
+    // 目（白）
+    sctx.fillStyle='#fbfaf7'; sctx.beginPath(); sctx.ellipse(cx-SRC*0.105,cy+SRC*0.015,SRC*0.055,SRC*0.038,0,0,7); sctx.ellipse(cx+SRC*0.105,cy+SRC*0.015,SRC*0.055,SRC*0.038,0,0,7); sctx.fill();
+    // 虹彩
+    sctx.fillStyle='#5b4a3a'; sctx.beginPath(); sctx.ellipse(cx-SRC*0.10,cy+SRC*0.017,SRC*0.029,SRC*0.031,0,0,7); sctx.ellipse(cx+SRC*0.10,cy+SRC*0.017,SRC*0.029,SRC*0.031,0,0,7); sctx.fill();
+    // ハイライト
+    sctx.fillStyle='#fff'; sctx.beginPath(); sctx.ellipse(cx-SRC*0.092,cy+SRC*0.007,SRC*0.009,SRC*0.009,0,0,7); sctx.ellipse(cx+SRC*0.108,cy+SRC*0.007,SRC*0.009,SRC*0.009,0,0,7); sctx.fill();
+    // 鼻
+    sctx.strokeStyle='#d9a87f'; sctx.lineWidth=SRC*0.01; sctx.lineCap='round'; sctx.beginPath(); sctx.moveTo(cx,cy+SRC*0.035); sctx.lineTo(cx-SRC*0.018,cy+SRC*0.078); sctx.lineTo(cx+SRC*0.012,cy+SRC*0.08); sctx.stroke();
+    // ほお
+    sctx.fillStyle='rgba(231,150,128,0.34)'; sctx.beginPath(); sctx.ellipse(cx-SRC*0.135,cy+SRC*0.085,SRC*0.042,SRC*0.026,0,0,7); sctx.ellipse(cx+SRC*0.135,cy+SRC*0.085,SRC*0.042,SRC*0.026,0,0,7); sctx.fill();
+    // 口
+    sctx.strokeStyle='#c5705a'; sctx.lineWidth=SRC*0.013; sctx.lineCap='round'; sctx.beginPath(); sctx.moveTo(cx-SRC*0.05,cy+SRC*0.135); sctx.quadraticCurveTo(cx,cy+SRC*0.162,cx+SRC*0.05,cy+SRC*0.135); sctx.stroke();
+    srcData=sctx.getImageData(0,0,SRC,SRC).data;
+  }
+  var curScene=defaultScene;
+  function setScene(id){ sel('#scenes',id,'data-s'); curScene=(id==='balloon')?sceneBalloon:(id==='face')?sceneFace:defaultScene; curScene(); render(); }
   function pixelate(){
     dots=new Array(N*N);
     for(var row=0;row<N;row++)for(var col=0;col<N;col++){
@@ -294,7 +361,7 @@
   // ---- number matrix (selected channel of the output) ----
   function buildMat(){
     var mg=document.getElementById('mgrid');
-    var cell=N<=8?2.7:N<=16?2.2:N<=24?1.85:1.5, fs=N<=16?0.6:N<=24?0.52:0.45;
+    var cell=N<=8?2.7:N<=16?2.2:N<=24?1.85:N<=32?1.5:0.95, fs=N<=16?0.6:N<=24?0.52:0.45;
     mg.style.gridTemplateColumns='repeat('+N+', '+cell+'em)'; mg.innerHTML=''; ncells=[];
     for(var i=0;i<N*N;i++){ var d=document.createElement('div'); d.className='nc';
       d.style.width=cell+'em'; d.style.height=(cell*0.78)+'em'; d.style.fontSize=fs+'rem';
@@ -306,7 +373,7 @@
     var what=(kerId==='none')?'ドット絵の値（標本化の結果）':(kerId==='otsu')?'二値化の結果（0=黒 / 255=白）':(kerId==='awb')?'WB補正後の値（'+chanName()+'面）':'演算の結果（'+chanName()+'面）';
     document.getElementById('matlab').innerHTML=what+'の行列（'+N+'×'+N+'）— <b>'+chanName()+'</b>';
   }
-  function fillMatCell(i,v){ var d=ncells[i]; if(!d)return; if(lastJust&&lastJust!==d){} d.style.background=chanBg(v); d.style.color=(v>140?'rgba(20,20,20,.8)':'rgba(255,255,255,.92)'); var cell=N<=8?2.7:N<=16?2.2:N<=24?1.85:1.5; d.textContent=cell>=1.6?v:''; d.style.outline='1.5px solid '+WARM; if(lastJust&&lastJust!==d) lastJust.style.outline='none'; lastJust=d; }
+  function fillMatCell(i,v){ var d=ncells[i]; if(!d)return; if(lastJust&&lastJust!==d){} d.style.background=chanBg(v); d.style.color=(v>140?'rgba(20,20,20,.8)':'rgba(255,255,255,.92)'); var cell=N<=8?2.7:N<=16?2.2:N<=24?1.85:N<=32?1.5:0.95; d.textContent=cell>=1.6?v:''; d.style.outline='1.5px solid '+WARM; if(lastJust&&lastJust!==d) lastJust.style.outline='none'; lastJust=d; }
 
   function setStatus(){ var k=curKer();
     if(kerId==='awb'){ document.getElementById('status').textContent='オートWB — 手順 '+awbStage+'/3（'+(awbMethod==='gray'?'グレーワールド':'白色点')+(awbCast?'、色かぶりあり':'')+'）'; return; }
@@ -350,7 +417,7 @@
   function finishAll(){ if(kerId==='otsu'){ otsuFinishK(); return; }
     if(kerId==='reduce'){ stop(); var guard=0; while(!redDone && guard++<40) redStep(); return; }
     if(kerId==='awb'){ stop(); while(awbStage<3) awbStep(); return; }
-    stop(); var cellEm=N<=8?2.7:N<=16?2.2:N<=24?1.85:1.5;
+    stop(); var cellEm=N<=8?2.7:N<=16?2.2:N<=24?1.85:N<=32?1.5:0.95;
     while(cur<N*N){ var r=(cur/N|0),c=cur%N, res=(kerId==='none')?blockAvg(c,r):convCell(c,r); outDots[cur]=res.out;
       var d=ncells[cur]; if(d){ var v=selOf(res.out); d.style.background=chanBg(v); d.style.color=(v>140?'rgba(20,20,20,.8)':'rgba(255,255,255,.92)'); d.textContent=cellEm>=1.6?v:''; d.style.outline='none'; } cur++; }
     subK=0; curRes=null; hlCell=-1; lastJust=null; drawCanvas(); setStatus();
@@ -387,7 +454,7 @@
     return H;
   }
   function binAt(k){ var out=new Array(N*N),i; for(i=0;i<N*N;i++) out[i]=(selOf(dots[i])>k)?[255,255,255]:[0,0,0]; return out; }
-  function paintMat(){ var cell=N<=8?2.7:N<=16?2.2:N<=24?1.85:1.5;
+  function paintMat(){ var cell=N<=8?2.7:N<=16?2.2:N<=24?1.85:N<=32?1.5:0.95;
     for(var i=0;i<N*N;i++){ var d=ncells[i]; if(!d)continue; var src=outDots[i];
       if(src){ var v=selOf(src); d.style.background=chanBg(v); d.style.color=(v>140?'rgba(20,20,20,.8)':'rgba(255,255,255,.92)'); d.textContent=cell>=1.6?v:''; d.style.outline='none'; }
       else { d.style.background='#fff'; d.style.color='#cfc9bf'; d.textContent=cell>=1.6?'·':''; } } }
@@ -451,7 +518,7 @@
     redIter++; paintReduceMat(); hlCell=-1; drawCanvas(); showRedReadout(changed);
     if(changed===0){ redDone=true; stop(); } setStatus();
   }
-  function paintReduceMat(){ var cell=N<=8?2.7:N<=16?2.2:N<=24?1.85:1.5;
+  function paintReduceMat(){ var cell=N<=8?2.7:N<=16?2.2:N<=24?1.85:N<=32?1.5:0.95;
     for(var i=0;i<N*N;i++){ var d=ncells[i]; if(!d)continue; var a=redAssign[i];
       if(a>=0){ var col=redCentroids[a]; d.style.background='rgb('+col[0]+','+col[1]+','+col[2]+')'; d.style.color=(lum(col)>140?'rgba(20,20,20,.8)':'rgba(255,255,255,.92)'); d.textContent=cell>=1.6?a:''; d.style.outline='none'; }
       else { d.style.background='#fff'; d.style.color='#cfc9bf'; d.textContent=cell>=1.6?'·':''; } } }
@@ -527,7 +594,8 @@
   function sel(wrap,val,attr){ document.querySelectorAll(wrap+' .pill').forEach(function(el){ var a=el.getAttribute(attr); el.classList.toggle('on', a===String(val)); }); }
 
   function mkPills(wrap,arr,attr,cur,fn){ var w=document.getElementById(wrap); arr.forEach(function(it){ var b=document.createElement('div'); b.className='pill'+(it[0]===cur?' on':''); b.setAttribute(attr,it[0]); b.textContent=it[1]; b.onclick=function(){ fn(it[0]); }; w.appendChild(b); }); }
-  mkPills('grids',[[8,'8×8'],[16,'16×16'],[24,'24×24'],[32,'32×32']],'data-n',N,setN);
+  mkPills('scenes',[['land','風景'],['balloon','気球'],['face','ランキン']],'data-s','land',setScene);
+  mkPills('grids',[[8,'8×8'],[16,'16×16'],[24,'24×24'],[32,'32×32'],[64,'64×64']],'data-n',N,setN);
   mkPills('chans',[['R','赤 R'],['G','緑 G'],['B','青 B'],['L','明るさ L']],'data-c',chan,setChan);
   mkPills('kers',KER.map(function(k){return [k.id,k.label];}),'data-k',kerId,setKer);
   document.querySelectorAll('#kers .pill').forEach(function(el,idx){ if(KER[idx]) el.title=KER[idx].mean; });
@@ -548,7 +616,7 @@
   document.getElementById('dl').onclick=downloadPNG;
   cv.addEventListener('click', function(e){ var p=cellFromEvent(e); if(p) inspect(p.c,p.r); });
   document.getElementById('reset').onclick=resetStep;
-  document.getElementById('reimg').onclick=function(){ defaultScene(); render(); };
+  document.getElementById('reimg').onclick=function(){ curScene(); render(); };
   var sp=document.getElementById('speed'); sp.oninput=function(){ speed=+sp.value; if(timer){ clearInterval(timer); timer=setInterval(stepOnce, delay()); } };
   document.getElementById('file').onchange=function(e){ var f=e.target.files[0]; if(!f)return; var im=new Image(); im.onload=function(){
     sctx.fillStyle='#fff'; sctx.fillRect(0,0,SRC,SRC); var s=Math.max(SRC/im.width,SRC/im.height),dw=im.width*s,dh=im.height*s;
