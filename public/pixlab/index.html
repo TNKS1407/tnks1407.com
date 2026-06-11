@@ -81,8 +81,8 @@
   </header>
 
   <div class="lead">
-    <p>デジタル画像は、結局 <b>数字の格子（行列）</b>。写真をドット絵に分解して、その行列に画像処理を<b>一歩ずつ</b>かけて見るための場所だよ。<span class="v">v2</span></p>
-    <p>「演算」でカーネル（ぼかし・エッジ等）を選ぶと、3×3 の窓が格子を舐めて畳み込みを計算していく。「見る面」で R・G・B・明るさ のどれを覗くか選べて、その面の計算を <b>行列(⊙)</b> でも <b>式（和）</b> でも見れる。エッジ系は「右−左の差＝傾き＝微分」が色で追える。出力はカラーで埋まる。</p>
+    <p>デジタル画像は、結局 <b>数字の格子（行列）</b>。写真をドット絵に分解して、その行列に画像処理を<b>一歩ずつ</b>かけて見るための場所だよ。<span class="v">v3</span></p>
+    <p>「演算」でカーネル（ぼかし・エッジ等）を選ぶと、3×3 の窓が格子を舐めて畳み込みを計算していく。「見る面」で R・G・B・明るさ のどれを覗くか選べて、その面の計算を <b>行列(⊙)</b> でも <b>式（和）</b> でも見れる。エッジ系は「右−左の差＝傾き＝微分」が色で追える。出力はカラーで埋まる。「二値化（大津）」を選ぶと、明るさのヒストグラムを見ながら<b>最適なしきい値</b>を自動で探して白黒に分ける様子も追えるよ。</p>
     <p><a class="back" style="color:var(--teal);" href="/conv">▷ グレースケール版（畳み込みを一歩ずつ /conv）</a></p>
   </div>
 
@@ -100,6 +100,7 @@
     <div class="row"><span class="rlab">結果の色</span><div class="ops" id="showR"></div><span class="status" style="margin:0 0 0 .3rem;">※ 左右それぞれ R/G/B を選べる（複数可）</span></div>
 
     <canvas id="cv" width="640" height="320"></canvas>
+    <canvas id="hist" width="640" height="156" style="display:none;margin-top:.5rem;"></canvas>
     <div class="controls">
       <div class="ctrl-group">
         <button class="btn" id="play" type="button">▶ 再生</button>
@@ -129,11 +130,13 @@
 <script>
 (function(){
   var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+  var hcv=document.getElementById('hist'), hctx=hcv.getContext('2d');
   var SRC=256, SS=288, SX=18, SY=30, GX=334;
   var TEAL='#13897c', WARM='#df5e3c';
   var sc=document.createElement('canvas'); sc.width=sc.height=SRC; var sctx=sc.getContext('2d');
   var srcData=null, N=16, chan='L', kerId='none', repr='mat', showChL={R:true,G:true,B:true}, showChR={R:true,G:true,B:true};
   var dots=[], outDots=[], cur=0, subK=0, hlCell=-1, curRes=null, lastShow=null, lastJust=null, ncells=[], timer=null, speed=62;
+  var otsuK=0, otsuBestK=0, otsuBestV=-1, otsuCurve=[], otsuMaxV=1, otsuFinalK=0, otsuH=null, otsuStepSize=3;
 
   var KER=[
     {id:'none',    label:'なし（元のまま）', mean:'演算を選ぶと、ドット絵に畳み込みを一歩ずつかけられるよ。下の行列は、いま「見る面」の値そのまま。'},
@@ -144,7 +147,8 @@
     {id:'sobely',  m:[-1,-2,-1,0,0,0,1,2,1],      div:1, disp:'abs',   label:'Sobel 縦',       mean:'下の行（＋）から上の行（−）を引く＝縦方向の傾き ∂/∂y＝横エッジ。'},
     {id:'prewitt', m:[-1,0,1,-1,0,1,-1,0,1],      div:1, disp:'abs',   label:'Prewitt 横',     mean:'Sobelと同じ「右−左」の差分。重みが均一なぶん素朴。横方向の傾き。'},
     {id:'lap',     m:[-1,-1,-1,-1,8,-1,-1,-1,-1], div:1, disp:'abs',   label:'ラプラシアン(輪郭)',mean:'中心を8倍して周り8マスを引く＝2階微分（曲がり具合）。エッジでゼロをまたぐ。'},
-    {id:'emboss',  m:[-2,-1,0,-1,1,1,0,1,2],      div:1, disp:'offset',label:'エンボス',        mean:'左上（−）から右下（＋）への斜めの差分＝斜めの傾き＝凹凸の陰影。'}
+    {id:'emboss',  m:[-2,-1,0,-1,1,1,0,1,2],      div:1, disp:'offset',label:'エンボス',        mean:'左上（−）から右下（＋）への斜めの差分＝斜めの傾き＝凹凸の陰影。'},
+    {id:'otsu',    label:'二値化（大津）', mean:'明るさのヒストグラムを2つの山に分ける一本のしきい値を、最適な位置に自動で選んで白黒に分ける。畳み込みではなく"統計"の処理。'}
   ];
   function curKer(){ for(var i=0;i<KER.length;i++) if(KER[i].id===kerId) return KER[i]; return KER[0]; }
   function chanName(){ return chan==='R'?'赤 R':chan==='G'?'緑 G':chan==='B'?'青 B':'明るさ L'; }
@@ -201,10 +205,11 @@
   function label(t,x,y,c){ ctx.fillStyle=c; ctx.font='600 12px '+'"JetBrains Mono",monospace'; ctx.textAlign='left'; ctx.textBaseline='alphabetic'; ctx.fillText(t,x,y); }
   function drawCanvas(){
     ctx.clearRect(0,0,cv.width,cv.height);
-    var none=(kerId==='none'), ds=SS/N;
-    label(none?'元の写真':'元のドット絵',SX,SY-10,'#7d7568'); label(none?'ドット絵':'結果',GX,SY-10,TEAL);
+    var none=(kerId==='none'), otsu=(kerId==='otsu'), ds=SS/N;
+    label(otsu?('元（'+chanName()+'）'):none?'元の写真':'元のドット絵',SX,SY-10,'#7d7568'); label(otsu?'二値化（白黒）':none?'ドット絵':'結果',GX,SY-10,TEAL);
     if(none){ ctx.imageSmoothingEnabled=true; ctx.drawImage(sc,SX,SY,SS,SS);
       ctx.globalCompositeOperation='multiply'; ctx.fillStyle='rgb('+(showChL.R?255:0)+','+(showChL.G?255:0)+','+(showChL.B?255:0)+')'; ctx.fillRect(SX,SY,SS,SS); ctx.globalCompositeOperation='source-over'; }
+    else if(otsu){ for(var i=0;i<N*N;i++){ var d=dots[i],v=selOf(d),c=i%N,r=(i/N|0); ctx.fillStyle='rgb('+v+','+v+','+v+')'; ctx.fillRect(SX+c*ds,SY+r*ds,Math.ceil(ds),Math.ceil(ds)); } }
     else { for(var i=0;i<N*N;i++){ var d=dots[i],c=i%N,r=(i/N|0); ctx.fillStyle=maskCol(d,showChL); ctx.fillRect(SX+c*ds,SY+r*ds,Math.ceil(ds),Math.ceil(ds)); } }
     ctx.strokeStyle='#e6e1d8'; ctx.lineWidth=1; ctx.strokeRect(SX+0.5,SY+0.5,SS,SS);
     ctx.fillStyle='#efeae1'; ctx.fillRect(GX,SY,SS,SS);
@@ -213,6 +218,7 @@
     if(hlCell>=0 && hlCell<N*N){
       var c=hlCell%N, r=(hlCell/N|0);
       if(none){ ctx.strokeStyle=TEAL; ctx.lineWidth=2.5; ctx.strokeRect(SX+c/N*SS-1,SY+r/N*SS-1,SS/N+2,SS/N+2); }
+      else if(otsu){ ctx.strokeStyle=TEAL; ctx.lineWidth=2.5; ctx.strokeRect(SX+c*ds-1,SY+r*ds-1,ds+2,ds+2); }
       else { var x0=Math.max(0,c-1),x1=Math.min(N-1,c+1),y0=Math.max(0,r-1),y1=Math.min(N-1,r+1); ctx.strokeStyle=TEAL; ctx.lineWidth=2.5; ctx.strokeRect(SX+x0*ds-1,SY+y0*ds-1,(x1-x0+1)*ds+2,(y1-y0+1)*ds+2); }
       ctx.strokeStyle=WARM; ctx.lineWidth=2.5; ctx.strokeRect(GX+c*ds-1,SY+r*ds-1,ds+2,ds+2);
     }
@@ -272,32 +278,38 @@
       if(src){ var v=selOf(src); d.style.background=chanBg(v); d.style.color=(v>140?'rgba(20,20,20,.8)':'rgba(255,255,255,.92)'); d.textContent=cell>=1.6?v:''; }
       else { d.style.background='#fff'; d.style.color='#cfc9bf'; d.textContent=cell>=1.6?'·':''; }
       mg.appendChild(d); ncells.push(d); }
-    var what=(kerId==='none')?'ドット絵の値（標本化の結果）':'演算の結果（'+chanName()+'面）';
+    var what=(kerId==='none')?'ドット絵の値（標本化の結果）':(kerId==='otsu')?'二値化の結果（0=黒 / 255=白）':'演算の結果（'+chanName()+'面）';
     document.getElementById('matlab').innerHTML=what+'の行列（'+N+'×'+N+'）— <b>'+chanName()+'</b>';
   }
   function fillMatCell(i,v){ var d=ncells[i]; if(!d)return; if(lastJust&&lastJust!==d){} d.style.background=chanBg(v); d.style.color=(v>140?'rgba(20,20,20,.8)':'rgba(255,255,255,.92)'); var cell=N<=8?2.7:N<=16?2.2:N<=24?1.85:1.5; d.textContent=cell>=1.6?v:''; d.style.outline='1.5px solid '+WARM; if(lastJust&&lastJust!==d) lastJust.style.outline='none'; lastJust=d; }
 
-  function setStatus(){ var k=curKer(); document.getElementById('status').textContent=(kerId==='none')?('ドット絵化 '+Math.min(cur,N*N)+' / '+(N*N)+'（'+N+'×'+N+'）'):('演算 '+Math.min(cur,N*N)+' / '+(N*N)+'（'+k.label+'、'+chanName()+'面）'); }
+  function setStatus(){ var k=curKer();
+    if(kerId==='otsu'){ document.getElementById('status').textContent='大津のしきい値さがし — k = '+Math.min(otsuK,255)+' / 255（'+chanName()+'面、ベスト k*='+otsuBestK+'）'; return; }
+    document.getElementById('status').textContent=(kerId==='none')?('ドット絵化 '+Math.min(cur,N*N)+' / '+(N*N)+'（'+N+'×'+N+'）'):('演算 '+Math.min(cur,N*N)+' / '+(N*N)+'（'+k.label+'、'+chanName()+'面）'); }
 
   function finalize(res){ outDots[cur]=res.out; fillMatCell(cur, selOf(res.out)); cur++; subK=0; curRes=null; }
   function endNote(){ if(cur>=N*N){ stop(); document.getElementById('readout').innerHTML+='<div class="msum">——完成！ '+(N*N)+' 個ぜんぶに'+curKer().label+'をかけた。</div>'; } }
-  function stepOnce(){ if(cur>=N*N){ stop(); return; }
+  function stepOnce(){ if(kerId==='otsu'){ otsuStep(); return; } if(cur>=N*N){ stop(); return; }
     var r=(cur/N|0),c=cur%N,res;
     if(kerId==='none'){ res=blockAvg(c,r); showPixReadout(r,c,res); } else { res=convCell(c,r); showReadout(r,c,res,9); }
     hlCell=cur; finalize(res); drawCanvas(); setStatus(); endNote(); }
-  function subStep(){ stop(); if(cur>=N*N) return; if(kerId==='none'){ stepOnce(); return; }
+  function subStep(){ if(kerId==='otsu'){ otsuStep(); return; } stop(); if(cur>=N*N) return; if(kerId==='none'){ stepOnce(); return; }
     var r=(cur/N|0),c=cur%N; hlCell=cur; if(subK===0) curRes=convCell(c,r); subK++;
     showReadout(r,c,curRes,subK); if(subK>=9){ finalize(curRes); } drawCanvas(); setStatus(); endNote(); }
   function delay(){ return Math.round(360 - speed*3.0); }
   function play(){ if(timer) return; var b=document.getElementById('play'); b.textContent='⏸ 停止'; b.classList.add('on'); timer=setInterval(stepOnce, delay()); }
   function stop(){ if(timer){clearInterval(timer);timer=null;} var b=document.getElementById('play'); b.textContent='▶ 再生'; b.classList.remove('on'); }
   function resetStep(){ stop(); cur=0; subK=0; hlCell=-1; curRes=null; lastShow=null; lastJust=null; outDots=new Array(N*N).fill(null);
+    hcv.style.display=(kerId==='otsu')?'block':'none';
+    if(kerId==='otsu'){ otsuK=0; otsuBestK=0; otsuBestV=-1; otsuH=otsuPrep(); buildMat();
+      drawHist(-1,otsuH,N*N); drawCanvas(); setStatus();
+      document.getElementById('readout').innerHTML='<div class="kmean">「▶ 再生」か「1ステップ」で、しきい値 k を 0→255 と動かしながら大津の方法で最適な境目をさがしていくよ。下のヒストグラム（'+chanName()+'）の橙の線が動き、緑の線（クラス間分散）が最大になる所が選ばれる。</div>'; return; }
     document.getElementById('readout').innerHTML = (kerId==='none')
       ? '<div class="kmean">「▶ 再生」か「1ステップ」で、写真を各ブロックの平均RGBで一マスずつドット絵にしていくよ（標本化）。出来たら「演算」でカーネルを選ぶと、そのドット絵に畳み込みをかけられる。</div>'
       : '「▶ 再生」か「1ステップ」で、'+curKer().label+'を一マスずつ計算していくよ。';
     buildMat(); drawCanvas(); setStatus(); }
 
-  function finishAll(){ stop(); var cellEm=N<=8?2.7:N<=16?2.2:N<=24?1.85:1.5;
+  function finishAll(){ if(kerId==='otsu'){ otsuFinishK(); return; } stop(); var cellEm=N<=8?2.7:N<=16?2.2:N<=24?1.85:1.5;
     while(cur<N*N){ var r=(cur/N|0),c=cur%N, res=(kerId==='none')?blockAvg(c,r):convCell(c,r); outDots[cur]=res.out;
       var d=ncells[cur]; if(d){ var v=selOf(res.out); d.style.background=chanBg(v); d.style.color=(v>140?'rgba(20,20,20,.8)':'rgba(255,255,255,.92)'); d.textContent=cellEm>=1.6?v:''; d.style.outline='none'; } cur++; }
     subK=0; curRes=null; hlCell=-1; lastJust=null; drawCanvas(); setStatus();
@@ -311,17 +323,74 @@
     if(col<0||col>=N||row<0||row>=N) return null; return {c:col,r:row};
   }
   function inspect(c,r){ stop(); hlCell=r*N+c;
-    if(kerId==='none') showPixReadout(r,c,blockAvg(c,r)); else showReadout(r,c,convCell(c,r),9);
+    if(kerId==='none') showPixReadout(r,c,blockAvg(c,r)); else if(kerId==='otsu') showOtsuPix(r,c); else showReadout(r,c,convCell(c,r),9);
     drawCanvas(); }
   function feedResult(){ finishAll(); dots=outDots.map(function(d){ return d?[d[0],d[1],d[2]]:[0,0,0]; }); resetStep();
     document.getElementById('readout').innerHTML='<div class="kmean">結果を新しい入力にしたよ。続けて別の演算をかけると"重ねがけ"になる（例：ぼかし→エッジ）。元写真に戻すには「最初の写真に戻す」。</div>'; }
   function downloadPNG(){ finishAll(); var sz=Math.max(384,N*16), tc=document.createElement('canvas'); tc.width=tc.height=sz; var tx=tc.getContext('2d'); tx.imageSmoothingEnabled=false; var ds=sz/N;
     for(var i=0;i<N*N;i++){ var o=outDots[i]||[0,0,0],c=i%N,r=(i/N|0); tx.fillStyle=maskCol(o,showChR); tx.fillRect(c*ds,r*ds,Math.ceil(ds),Math.ceil(ds)); }
     tc.toBlob(function(b){ var a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='pixlab.png'; a.click(); }); }
+  // ---- Otsu (大津のしきい値) ----
+  function betweenVar(H,total,k){
+    var w0=0,sum0=0,sumAll=0,t;
+    for(t=0;t<256;t++){ sumAll+=t*H[t]; if(t<=k){ w0+=H[t]; sum0+=t*H[t]; } }
+    var w1=total-w0; if(w0===0||w1===0) return {v:0,w0:w0,w1:w1,m0:0,m1:0};
+    var m0=sum0/w0, m1=(sumAll-sum0)/w1, p0=w0/total, p1=w1/total;
+    return {v:p0*p1*(m0-m1)*(m0-m1), w0:w0, w1:w1, m0:m0, m1:m1};
+  }
+  function otsuPrep(){
+    var H=new Array(256).fill(0),i; for(i=0;i<N*N;i++) H[selOf(dots[i])]++;
+    var total=N*N; otsuCurve=new Array(256); otsuMaxV=1; otsuFinalK=0;
+    for(var k=0;k<256;k++){ var v=betweenVar(H,total,k).v; otsuCurve[k]=v; if(v>otsuMaxV){ otsuMaxV=v; otsuFinalK=k; } }
+    return H;
+  }
+  function binAt(k){ var out=new Array(N*N),i; for(i=0;i<N*N;i++) out[i]=(selOf(dots[i])>k)?[255,255,255]:[0,0,0]; return out; }
+  function paintMat(){ var cell=N<=8?2.7:N<=16?2.2:N<=24?1.85:1.5;
+    for(var i=0;i<N*N;i++){ var d=ncells[i]; if(!d)continue; var src=outDots[i];
+      if(src){ var v=selOf(src); d.style.background=chanBg(v); d.style.color=(v>140?'rgba(20,20,20,.8)':'rgba(255,255,255,.92)'); d.textContent=cell>=1.6?v:''; d.style.outline='none'; }
+      else { d.style.background='#fff'; d.style.color='#cfc9bf'; d.textContent=cell>=1.6?'·':''; } } }
+  function drawHist(k,H,total){
+    var W=hcv.width, Hh=hcv.height, pl=10,pr=10,pt=12,pb=20, pw=W-pl-pr, ph=Hh-pt-pb;
+    hctx.clearRect(0,0,W,Hh); hctx.fillStyle='#faf8f4'; hctx.fillRect(0,0,W,Hh);
+    var mx=1,t; for(t=0;t<256;t++) if(H[t]>mx) mx=H[t];
+    var bw=pw/256;
+    for(t=0;t<256;t++){ if(!H[t]) continue; var x=pl+t/255*pw, bh=H[t]/mx*ph;
+      hctx.fillStyle=(k<0)?'#cfd6d2':(t<=k?'#79b3aa':'#eda988'); hctx.fillRect(x, pt+ph-bh, Math.max(1,bw), bh); }
+    if(k>=0){
+      hctx.strokeStyle=TEAL; hctx.lineWidth=1.6; hctx.beginPath(); var st=false;
+      for(t=0;t<=Math.min(k,255);t++){ var x=pl+t/255*pw, y=pt+ph-(otsuCurve[t]/otsuMaxV)*ph; if(!st){hctx.moveTo(x,y);st=true;} else hctx.lineTo(x,y); }
+      hctx.stroke();
+      var xb=pl+otsuBestK/255*pw; hctx.strokeStyle=TEAL; hctx.setLineDash([3,3]); hctx.lineWidth=1.4; hctx.beginPath(); hctx.moveTo(xb,pt-4); hctx.lineTo(xb,pt+ph); hctx.stroke(); hctx.setLineDash([]);
+      var xk=pl+k/255*pw; hctx.strokeStyle=WARM; hctx.lineWidth=2.2; hctx.beginPath(); hctx.moveTo(xk,pt-6); hctx.lineTo(xk,pt+ph); hctx.stroke();
+      hctx.fillStyle=WARM; hctx.beginPath(); hctx.moveTo(xk,pt-8); hctx.lineTo(xk-4,pt-2); hctx.lineTo(xk+4,pt-2); hctx.closePath(); hctx.fill();
+    }
+    hctx.fillStyle='#9aa3a8'; hctx.font='10px "JetBrains Mono",monospace';
+    hctx.textAlign='left'; hctx.fillText('暗 0',pl,Hh-6); hctx.textAlign='right'; hctx.fillText('255 明',W-pr,Hh-6);
+    hctx.textAlign='center'; hctx.fillStyle=TEAL; hctx.fillText('クラス間分散 σ²B（緑線）＝最大の所がしきい値', W/2, Hh-6);
+  }
+  function showOtsuReadout(k,b,total,done){
+    var head='<div class="rhead">二値化（大津の方法）　／　'+(done?('しきい値 k* = '+k+' に確定'):('しきい値 k = '+k+' を試している'))+'</div>';
+    var mean='<div class="kmean">'+chanName()+'のヒストグラムを、暗いグループと明るいグループに分ける一本の線 k を 0→255 と動かして探す。各 k で「2グループがどれだけ離れているか」＝<b>クラス間分散 σ²B = w₀·w₁·(μ₀−μ₁)²</b> を測り、これが最大になる k を選ぶ＝大津の方法だよ。k より明るい画素を白、暗い画素を黒にして二値化する。微分でも畳み込みでもなく、ヒストグラムの統計から「ちょうどいい境目」を見つける処理だね。</div>';
+    var stat='<div class="msum">暗 w₀=<b>'+b.w0+'</b>個・μ₀=<b>'+b.m0.toFixed(0)+'</b>　／　明 w₁=<b>'+b.w1+'</b>個・μ₁=<b>'+b.m1.toFixed(0)+'</b><br>σ²B = '+(b.w0/total).toFixed(2)+'×'+(b.w1/total).toFixed(2)+'×('+b.m0.toFixed(0)+'−'+b.m1.toFixed(0)+')² = <b>'+Math.round(b.v)+'</b></div>';
+    var best='<div class="kbreak">ここまでのベスト：k* = <span class="g">'+otsuBestK+'</span>（σ²B = '+Math.round(otsuBestV)+'）'+(done?'　← 大津のしきい値に確定':'')+'</div>';
+    document.getElementById('readout').innerHTML=head+mean+stat+best;
+  }
+  function showOtsuPix(r,c){ var v=selOf(dots[r*N+c]), kk=(otsuK>255)?otsuFinalK:otsuBestK, fg=v>kk;
+    document.getElementById('readout').innerHTML='<div class="rhead">二値化　／　画素 (x='+c+', y='+r+')</div>'+
+      '<div class="kmean">この画素の'+chanName()+'値は <b>'+v+'</b>。いまのしきい値 k*=<b>'+kk+'</b> と比べると '+v+(fg?' &gt; ':' ≤ ')+kk+' だから <b>'+(fg?'白（前景）':'黒（背景）')+'</b> になる。</div>'; }
+  function otsuStep(){ if(otsuK>255){ stop(); otsuFinishK(); return; }
+    var total=N*N, b=betweenVar(otsuH,total,otsuK);
+    if(b.v>otsuBestV){ otsuBestV=b.v; otsuBestK=otsuK; }
+    outDots=binAt(otsuK); paintMat(); hlCell=-1; drawCanvas(); drawHist(otsuK,otsuH,total); showOtsuReadout(otsuK,b,total,false);
+    otsuK+=otsuStepSize; setStatus(); }
+  function otsuFinishK(){ stop(); otsuBestK=otsuFinalK; otsuBestV=otsuMaxV; otsuK=256; var total=N*N;
+    outDots=binAt(otsuFinalK); paintMat(); hlCell=-1; drawCanvas(); drawHist(otsuFinalK,otsuH,total);
+    showOtsuReadout(otsuFinalK, betweenVar(otsuH,total,otsuFinalK), total, true); setStatus(); }
+
   function render(){ pixelate(); resetStep(); }
 
   function setN(n){ N=n; sel('#grids',n,'data-n'); render(); }
-  function setChan(c){ chan=c; sel('#chans',c,'data-c'); buildMat(); drawCanvas(); if(lastShow&&kerId!=='none') showReadout(lastShow.r,lastShow.c,convCell(lastShow.c,lastShow.r),lastShow.rk); setStatus(); }
+  function setChan(c){ chan=c; sel('#chans',c,'data-c'); if(kerId==='otsu'){ resetStep(); return; } buildMat(); drawCanvas(); if(lastShow&&kerId!=='none') showReadout(lastShow.r,lastShow.c,convCell(lastShow.c,lastShow.r),lastShow.rk); setStatus(); }
   function setKer(id){ kerId=id; sel('#kers',id,'data-k'); resetStep(); }
   function setRepr(rp){ repr=rp; sel('#reprs',rp,'data-r'); if(lastShow) showReadout(lastShow.r,lastShow.c,lastShow.res,lastShow.rk); }
   function sel(wrap,val,attr){ document.querySelectorAll(wrap+' .pill').forEach(function(el){ var a=el.getAttribute(attr); el.classList.toggle('on', a===String(val)); }); }
@@ -334,9 +403,10 @@
   function mkRGB(wrapId,set){ var rs=document.getElementById(wrapId); [['R','赤 R'],['G','緑 G'],['B','青 B']].forEach(function(m){ var b=document.createElement('div'); b.className='pill on'; b.setAttribute('data-ch',m[0]); b.textContent=m[1]; b.onclick=function(){ set[m[0]]=!set[m[0]]; b.classList.toggle('on',set[m[0]]); drawCanvas(); }; rs.appendChild(b); }); }
   mkRGB('showL',showChL); mkRGB('showR',showChR);
 
-  document.getElementById('play').onclick=function(){ if(timer) stop(); else { if(cur>=N*N) resetStep(); play(); } };
-  document.getElementById('step').onclick=function(){ stop(); if(cur>=N*N) resetStep(); stepOnce(); };
-  document.getElementById('substep').onclick=function(){ if(cur>=N*N) resetStep(); subStep(); };
+  function isDone(){ return (kerId==='otsu') ? otsuK>255 : cur>=N*N; }
+  document.getElementById('play').onclick=function(){ if(timer) stop(); else { if(isDone()) resetStep(); play(); } };
+  document.getElementById('step').onclick=function(){ stop(); if(isDone()) resetStep(); stepOnce(); };
+  document.getElementById('substep').onclick=function(){ if(isDone()) resetStep(); subStep(); };
   document.getElementById('finish').onclick=finishAll;
   document.getElementById('feed').onclick=feedResult;
   document.getElementById('dl').onclick=downloadPNG;
