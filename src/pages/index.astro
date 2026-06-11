@@ -80,10 +80,18 @@ const works: Work[] = [
   {
     title: "Stepper 選定シミュレータ",
     icon: "⚙",
-    description: "ステッピングモータ × ドライバIC（TMC2209/5160/2240・DRV8825/8434S・A4988・L6470 ほか多数）の相性チェックと選定支援。電流・VM・マイクロステップ・加速度・負荷から、速度/トルク/追従誤差/ドライバ温度の目安を概算する。詳細シミュレータと簡易相性チェックのタブ切替、計算モデルはアプリ内に明記。動的計算は参考値。",
+    description: "ステッピングモータ選定シミュレータ。速度-トルク曲線（JSON/CSV）を読み込み、指令速度でのトルク余裕・脱調・追従誤差・ドライバIC温度・時間応答を概算。負荷計算（ベルト/ねじ等）と代表値表つき。計算モデルはアプリ内に明記、結果は参考値。",
     url: "https://stepsim.tnks1407.com",
     tags: ["JavaScript", "Motor Selection", "Driver IC", "Power Electronics"],
     status: "Beta", section: "lab", group: "engineering",
+  },
+  {
+    title: "PixLab — 画像を数の格子として",
+    icon: "🖼️",
+    description: "写真をドット絵（数の格子）に分解して、畳み込み・エッジ（微分）・二値化（大津）・知覚減色・ホワイトバランスを一歩ずつ手で動かして見る画像処理ラボ。1次元の微分から色彩理論まで「学びの道」で辿れて、各処理の理屈は別ページの教科書（Gradus）へ繋がる。",
+    url: "/pixlab/",
+    tags: ["JavaScript", "Canvas", "画像処理", "可視化"],
+    status: "Beta", section: "lab", group: "data-lab",
   },
   {
     title: "Astro Tools — 天文シミュレーション",
