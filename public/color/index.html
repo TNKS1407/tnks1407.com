@@ -22,6 +22,11 @@
     font-size:13px;max-height:calc(100vh - 28px);overflow-y:auto;
   }
   .panel h1{font-size:15px;font-weight:700;margin-bottom:2px;}
+  .phead{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .pmin{flex:none;width:28px;height:26px;background:#2a2a33;color:var(--text);border:1px solid var(--border);border-radius:7px;cursor:pointer;font-size:13px;line-height:1;font-family:inherit;}
+  .pmin:hover{border-color:var(--accent);color:var(--accent);}
+  .panel.min{width:auto;}
+  .panel.min .pbody{display:none;}
   .panel .sub{font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:12px;}
   .row{margin:11px 0;}
   .row label{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:4px;}
@@ -46,8 +51,9 @@
 </head>
 <body>
 <div id="app"></div>
-<div class="panel">
-  <h1>色空間ビューア</h1>
+<div class="panel" id="panel">
+  <div class="phead"><h1>色空間ビューア</h1><button id="pmin" class="pmin" type="button" aria-label="パネルを折りたたむ">▾</button></div>
+  <div class="pbody">
   <div class="sub">HSL 色立体 / 中立軸 / 色相環 S¹</div>
 
   <div class="row">
@@ -80,6 +86,7 @@
   </div>
   <div class="note" id="note"></div>
   <div class="note" style="border:0;padding-top:8px;"><a class="back" href="https://tnks1407.com">← tnks1407.com に戻る</a></div>
+  </div>
 </div>
 <div class="hint">ドラッグ=回転 / ホイール=ズーム</div>
 
@@ -237,6 +244,12 @@ chk('cAxis', v=>{ showAxis=v; if(axisLine)axisLine.visible=v; if(axisDots)axisDo
 chk('cRing', v=>{ showRing=v; if(ring)ring.visible=v; });
 chk('cSlice', v=>{ showSlice=v; if(slice)slice.visible=v; });
 chk('cRound', v=>{ round=v; rebuildGeom(); rebuildSlice(); });
+
+// パネル折りたたみ（特にスマホでスライダ類が邪魔な時）。狭い画面は最初たたんでおく
+const panelEl=document.getElementById('panel'), pminBtn=document.getElementById('pmin');
+function setPanelMin(m){ panelEl.classList.toggle('min', m); pminBtn.textContent = m ? '▸' : '▾'; pminBtn.setAttribute('aria-label', m ? 'パネルを開く' : 'パネルを折りたたむ'); }
+pminBtn.addEventListener('click', ()=> setPanelMin(!panelEl.classList.contains('min')) );
+setPanelMin(innerWidth < 640);
 document.querySelectorAll('.bgbtns button').forEach(b=>{
   b.addEventListener('click', ()=>{ scene.background = new THREE.Color(parseInt(b.dataset.bg)); });
 });
