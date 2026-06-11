@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>PixLab — 写真を数の格子に</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f5f2ec; --card:#fff; --ink:#232a2e; --sub:#6c777d; --faint:#9aa3a8;
+    --line:#e6e1d8; --teal:#13897c; --teal-d:#0e6f64; --warm:#df5e3c; --surface:#faf8f4;
+    --mono:'JetBrains Mono',ui-monospace,monospace; --sans:'Zen Kaku Gothic New',system-ui,sans-serif; --round:'Zen Maru Gothic',var(--sans);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.6;
+    background-image:radial-gradient(circle at 1px 1px,#e9e4da 1px,transparent 0);background-size:22px 22px;}
+  .wrap{max-width:1000px;margin:0 auto;padding:24px 18px 60px;}
+  header{display:flex;align-items:flex-end;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+  .brand{font-family:var(--round);font-weight:700;font-size:27px;line-height:1;}
+  .brand .p{color:var(--teal);} .brand .dot{color:var(--warm);}
+  .tag{font-size:12px;color:var(--sub);padding-bottom:3px;}
+  .back{margin-left:auto;font-size:12px;color:var(--sub);font-family:var(--mono);text-decoration:none;}
+  .back:hover{color:var(--teal);}
+  .lead{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:22px;
+    font-size:13.5px;color:#3a444a;line-height:1.75;box-shadow:0 1px 0 #fff inset,0 6px 20px -16px rgba(20,40,40,.4);}
+  .lead b{color:var(--ink);font-family:var(--round);} .lead .v{font-family:var(--mono);font-size:11px;color:var(--faint);}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:22px;
+    box-shadow:0 1px 0 #fff inset,0 6px 20px -16px rgba(20,40,40,.4);}
+  .row{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;margin-bottom:.6rem;}
+  .rlab{font-size:.72rem;font-family:var(--mono);color:var(--sub);min-width:5em;}
+  .ops{display:flex;flex-wrap:wrap;gap:.45rem;}
+  .pill{padding:.35rem .85rem;border:1px solid var(--line);border-radius:999px;background:var(--surface);font-size:.76rem;
+    color:var(--sub);cursor:pointer;font-family:var(--mono);transition:all .12s;}
+  .pill:hover{border-color:var(--teal);color:var(--teal);}
+  .pill.on{background:var(--teal);color:#fff;border-color:var(--teal);font-weight:700;}
+  .btn{padding:.38rem .9rem;border:1px solid var(--line);border-radius:9px;background:none;font-family:inherit;
+    font-size:.78rem;color:var(--sub);cursor:pointer;transition:all .15s;}
+  .btn:hover{border-color:var(--teal);color:var(--teal);}
+  canvas{border:1px solid var(--line);border-radius:10px;display:block;background:var(--surface);width:100%;height:auto;}
+  .mwrap{margin-top:1.1rem;}
+  .mlab{font-size:.72rem;font-family:var(--mono);color:var(--sub);margin-bottom:.5rem;}
+  .mlab b{color:var(--teal);}
+  .matscroll{overflow:auto;max-height:62vh;border:1px solid var(--line);border-radius:10px;padding:3px;background:var(--line);}
+  .mgrid{display:grid;gap:1px;width:max-content;}
+  .mc{display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:600;}
+  .status{font-size:.72rem;font-family:var(--mono);color:var(--faint);margin-top:.7rem;}
+  footer{text-align:center;color:var(--faint);font-size:11px;font-family:var(--mono);margin-top:10px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><span class="p">Pix</span>Lab<span class="dot">.</span></div>
+    <div class="tag">写真を「数の格子」として見て、いじる</div>
+    <a class="back" href="/">← tnks1407</a>
+  </header>
+
+  <div class="lead">
+    <p>デジタル画像は、結局 <b>数字の格子（行列）</b>でしかない。このラボは、本物の写真をその姿に分解して見るための場所だよ。<span class="v">v1</span></p>
+    <p>写真を取り込むと、各ブロックの <b>平均RGB</b> でドット絵に縮める（＝ちゃんとした縮小＝面積平均）。そのドット絵は、R・G・B 3枚の数の行列が重なったもの。下で <b>チャンネルを選ぶ</b>と、その1枚を数の行列としてそのまま眺められる。<br>（この先 v2 で、この行列に対してぼかし・エッジ・減色…を一歩ずつ計算していけるようにする予定。）</p>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <span class="rlab">画像</span>
+      <label class="btn" style="cursor:pointer;">画像を選ぶ<input type="file" id="file" accept="image/*" style="display:none;"></label>
+      <button class="btn" id="reimg" type="button">最初の写真に戻す</button>
+      <span class="status" id="imgnote" style="margin:0 0 0 .4rem;">※ 画像はこの端末の中だけで処理。どこにも送らないよ。</span>
+    </div>
+    <div class="row">
+      <span class="rlab">ドット数</span>
+      <div class="ops" id="grids"></div>
+    </div>
+    <div class="row">
+      <span class="rlab">見る面</span>
+      <div class="ops" id="chans"></div>
+    </div>
+
+    <canvas id="cv" width="640" height="312"></canvas>
+
+    <div class="mwrap">
+      <div class="mlab" id="mlab"></div>
+      <div class="matscroll"><div class="mgrid" id="mgrid"></div></div>
+      <div class="status" id="status"></div>
+    </div>
+  </div>
+  <footer>PixLab — tnks1407 / 画像ラボ</footer>
+</div>
+
+<script>
+(function(){
+  var cv=document.getElementById('cv'); var ctx=cv.getContext('2d');
+  var SRC=256, SS=288, SX=18, SY=18, GX=334;
+  var TEAL='#13897c', WARM='#df5e3c';
+  var sc=document.createElement('canvas'); sc.width=sc.height=SRC; var sctx=sc.getContext('2d');
+  var srcData=null, N=16, chan='L', dots=[];
+
+  function defaultScene(){
+    var g=sctx.createLinearGradient(0,0,0,SRC); g.addColorStop(0,'#5b9bd5'); g.addColorStop(1,'#d7ecff');
+    sctx.fillStyle=g; sctx.fillRect(0,0,SRC,SRC);
+    sctx.fillStyle='#ffd24a'; sctx.beginPath(); sctx.arc(SRC*0.74,SRC*0.26,SRC*0.13,0,7); sctx.fill();
+    sctx.globalAlpha=0.55; sctx.fillStyle='#fff3c4'; sctx.beginPath(); sctx.arc(SRC*0.74,SRC*0.26,SRC*0.19,0,7); sctx.fill(); sctx.globalAlpha=1;
+    sctx.fillStyle='#7cbf6a'; sctx.beginPath(); sctx.moveTo(0,SRC); sctx.lineTo(0,SRC*0.66);
+    sctx.quadraticCurveTo(SRC*0.3,SRC*0.5,SRC*0.6,SRC*0.7); sctx.quadraticCurveTo(SRC*0.82,SRC*0.82,SRC,SRC*0.62); sctx.lineTo(SRC,SRC); sctx.closePath(); sctx.fill();
+    sctx.fillStyle='#4e9248'; sctx.beginPath(); sctx.moveTo(0,SRC); sctx.lineTo(0,SRC*0.84);
+    sctx.quadraticCurveTo(SRC*0.45,SRC*0.72,SRC,SRC*0.88); sctx.lineTo(SRC,SRC); sctx.closePath(); sctx.fill();
+    sctx.fillStyle='#d9544d'; sctx.fillRect(SRC*0.16,SRC*0.62,SRC*0.13,SRC*0.13);
+    sctx.fillStyle='#7a342f'; sctx.beginPath(); sctx.moveTo(SRC*0.145,SRC*0.62); sctx.lineTo(SRC*0.225,SRC*0.55); sctx.lineTo(SRC*0.305,SRC*0.62); sctx.closePath(); sctx.fill();
+    srcData=sctx.getImageData(0,0,SRC,SRC).data;
+  }
+
+  function pixelate(){
+    dots=new Array(N*N);
+    for(var row=0;row<N;row++)for(var col=0;col<N;col++){
+      var x0=Math.floor(col*SRC/N), x1=Math.floor((col+1)*SRC/N), y0=Math.floor(row*SRC/N), y1=Math.floor((row+1)*SRC/N);
+      var sr=0,sg=0,sb=0,cnt=0;
+      for(var yy=y0;yy<y1;yy++)for(var xx=x0;xx<x1;xx++){ var k=(yy*SRC+xx)*4; sr+=srcData[k];sg+=srcData[k+1];sb+=srcData[k+2];cnt++; }
+      cnt=cnt||1;
+      dots[row*N+col]=[Math.round(sr/cnt),Math.round(sg/cnt),Math.round(sb/cnt)];
+    }
+  }
+
+  function chanVal(d){ if(chan==='R')return d[0]; if(chan==='G')return d[1]; if(chan==='B')return d[2]; return Math.round(0.299*d[0]+0.587*d[1]+0.114*d[2]); }
+  function chanBg(v){ if(chan==='R')return 'rgb('+v+',28,28)'; if(chan==='G')return 'rgb(28,'+v+',28)'; if(chan==='B')return 'rgb(40,40,'+v+')'; return 'rgb('+v+','+v+','+v+')'; }
+  function chanName(){ return chan==='R'?'赤 R':chan==='G'?'緑 G':chan==='B'?'青 B':'明るさ L'; }
+
+  function drawCanvas(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    ctx.fillStyle='#7d7568'; ctx.font='600 12px '+'"JetBrains Mono",monospace'; ctx.textAlign='left';
+    ctx.fillText('元の写真',SX,SY-4); ctx.fillStyle=TEAL; ctx.fillText('ドット絵（平均RGB）',GX,SY-4);
+    ctx.imageSmoothingEnabled=true; ctx.drawImage(sc,SX,SY,SS,SS);
+    ctx.strokeStyle='#e6e1d8'; ctx.lineWidth=1; ctx.strokeRect(SX+0.5,SY+0.5,SS,SS);
+    var ds=SS/N;
+    for(var i=0;i<N*N;i++){ var d=dots[i],c=i%N,r=(i/N|0); ctx.fillStyle='rgb('+d[0]+','+d[1]+','+d[2]+')'; ctx.fillRect(GX+c*ds,SY+r*ds,Math.ceil(ds),Math.ceil(ds)); }
+    ctx.strokeStyle='#e6e1d8'; ctx.strokeRect(GX+0.5,SY+0.5,SS,SS);
+  }
+
+  function buildMatrix(){
+    var mg=document.getElementById('mgrid');
+    var cell = N<=8?2.7 : N<=16?2.3 : N<=24?1.9 : 1.55; // em
+    var fs = N<=16?0.62 : N<=24?0.54 : 0.46;
+    mg.style.gridTemplateColumns='repeat('+N+', '+cell+'em)';
+    mg.innerHTML='';
+    for(var i=0;i<N*N;i++){
+      var v=chanVal(dots[i]); var d=document.createElement('div'); d.className='mc';
+      d.style.width=cell+'em'; d.style.height=(cell*0.78)+'em'; d.style.fontSize=fs+'rem';
+      d.style.background=chanBg(v); d.style.color=(v>140?'rgba(20,20,20,.8)':'rgba(255,255,255,.92)');
+      d.textContent = cell>=1.6 ? v : '';
+      mg.appendChild(d);
+    }
+    document.getElementById('mlab').innerHTML='いま見ている面：<b>'+chanName()+'</b> の値の行列（'+N+'×'+N+'）— 各マスが元写真のブロックの平均'+(chan==='L'?'明るさ':chan)+'値';
+    document.getElementById('status').textContent=N*N+' 個の値（'+N+'×'+N+'）。チャンネルを切り替えると、同じドット絵の別の"面"が見える。';
+  }
+
+  function render(){ pixelate(); drawCanvas(); buildMatrix(); }
+
+  function setN(n){ N=n; document.querySelectorAll('#grids .pill').forEach(function(el){ el.classList.toggle('on', +el.getAttribute('data-n')===n); }); render(); }
+  function setChan(c){ chan=c; document.querySelectorAll('#chans .pill').forEach(function(el){ el.classList.toggle('on', el.getAttribute('data-c')===c); }); drawCanvas(); buildMatrix(); }
+
+  var gw=document.getElementById('grids');
+  [[8,'8×8'],[16,'16×16'],[24,'24×24'],[32,'32×32']].forEach(function(g){ var b=document.createElement('div'); b.className='pill'+(g[0]===N?' on':''); b.setAttribute('data-n',g[0]); b.textContent=g[1]; b.onclick=function(){ setN(g[0]); }; gw.appendChild(b); });
+  var cw=document.getElementById('chans');
+  [['R','赤 R'],['G','緑 G'],['B','青 B'],['L','明るさ L']].forEach(function(m){ var b=document.createElement('div'); b.className='pill'+(m[0]===chan?' on':''); b.setAttribute('data-c',m[0]); b.textContent=m[1]; b.onclick=function(){ setChan(m[0]); }; cw.appendChild(b); });
+
+  document.getElementById('reimg').onclick=function(){ defaultScene(); render(); };
+  document.getElementById('file').onchange=function(e){ var f=e.target.files[0]; if(!f)return; var im=new Image(); im.onload=function(){
+    sctx.fillStyle='#fff'; sctx.fillRect(0,0,SRC,SRC);
+    var s=Math.max(SRC/im.width,SRC/im.height), dw=im.width*s, dh=im.height*s;
+    sctx.drawImage(im,(SRC-dw)/2,(SRC-dh)/2,dw,dh);
+    srcData=sctx.getImageData(0,0,SRC,SRC).data; render();
+  }; im.src=URL.createObjectURL(f); };
+
+  defaultScene(); render();
+})();
+</script>
+</body>
+</html>
