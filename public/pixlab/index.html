@@ -213,41 +213,14 @@
     sctx.fillStyle='#8a6238'; sctx.fillRect(bx-br*0.16,by+br*1.66,br*0.32,br*0.26);
     srcData=sctx.getImageData(0,0,SRC,SRC).data;
   }
+  var rankinImg=new Image(); var rankinReady=false;
+  rankinImg.onload=function(){ rankinReady=true; if(curScene===sceneFace){ sceneFace(); render(); } };
+  rankinImg.onerror=function(){ rankinReady=false; };
+  rankinImg.src='rankin.png';
   function sceneFace(){
-    sctx.fillStyle='#e7ddcf'; sctx.fillRect(0,0,SRC,SRC);
-    var cx=SRC*0.5, cy=SRC*0.55;
-    // 髪（後ろ）
-    sctx.fillStyle='#c7b99c'; sctx.beginPath(); sctx.ellipse(cx,cy-SRC*0.05,SRC*0.345,SRC*0.42,0,0,7); sctx.fill();
-    // 首
-    sctx.fillStyle='#e6ba93'; sctx.fillRect(cx-SRC*0.10,cy+SRC*0.20,SRC*0.20,SRC*0.22);
-    // 顔
-    sctx.fillStyle='#f1cba8'; sctx.beginPath(); sctx.ellipse(cx,cy,SRC*0.255,SRC*0.31,0,0,7); sctx.fill();
-    // 耳
-    sctx.beginPath(); sctx.ellipse(cx-SRC*0.25,cy+SRC*0.01,SRC*0.035,SRC*0.05,0,0,7); sctx.ellipse(cx+SRC*0.25,cy+SRC*0.01,SRC*0.035,SRC*0.05,0,0,7); sctx.fill();
-    // 前髪
-    sctx.fillStyle='#cbbd9f'; sctx.beginPath();
-    sctx.moveTo(cx-SRC*0.27,cy-SRC*0.09);
-    sctx.quadraticCurveTo(cx-SRC*0.20,cy-SRC*0.34,cx,cy-SRC*0.33);
-    sctx.quadraticCurveTo(cx+SRC*0.20,cy-SRC*0.34,cx+SRC*0.27,cy-SRC*0.09);
-    sctx.quadraticCurveTo(cx+SRC*0.11,cy-SRC*0.19,cx,cy-SRC*0.17);
-    sctx.quadraticCurveTo(cx-SRC*0.11,cy-SRC*0.19,cx-SRC*0.27,cy-SRC*0.09);
-    sctx.closePath(); sctx.fill();
-    // 眉
-    sctx.strokeStyle='#a88f6c'; sctx.lineWidth=SRC*0.012; sctx.lineCap='round';
-    sctx.beginPath(); sctx.moveTo(cx-SRC*0.155,cy-SRC*0.035); sctx.quadraticCurveTo(cx-SRC*0.10,cy-SRC*0.065,cx-SRC*0.045,cy-SRC*0.04);
-    sctx.moveTo(cx+SRC*0.045,cy-SRC*0.04); sctx.quadraticCurveTo(cx+SRC*0.10,cy-SRC*0.065,cx+SRC*0.155,cy-SRC*0.035); sctx.stroke();
-    // 目（白）
-    sctx.fillStyle='#fbfaf7'; sctx.beginPath(); sctx.ellipse(cx-SRC*0.105,cy+SRC*0.015,SRC*0.055,SRC*0.038,0,0,7); sctx.ellipse(cx+SRC*0.105,cy+SRC*0.015,SRC*0.055,SRC*0.038,0,0,7); sctx.fill();
-    // 虹彩
-    sctx.fillStyle='#5b4a3a'; sctx.beginPath(); sctx.ellipse(cx-SRC*0.10,cy+SRC*0.017,SRC*0.029,SRC*0.031,0,0,7); sctx.ellipse(cx+SRC*0.10,cy+SRC*0.017,SRC*0.029,SRC*0.031,0,0,7); sctx.fill();
-    // ハイライト
-    sctx.fillStyle='#fff'; sctx.beginPath(); sctx.ellipse(cx-SRC*0.092,cy+SRC*0.007,SRC*0.009,SRC*0.009,0,0,7); sctx.ellipse(cx+SRC*0.108,cy+SRC*0.007,SRC*0.009,SRC*0.009,0,0,7); sctx.fill();
-    // 鼻
-    sctx.strokeStyle='#d9a87f'; sctx.lineWidth=SRC*0.01; sctx.lineCap='round'; sctx.beginPath(); sctx.moveTo(cx,cy+SRC*0.035); sctx.lineTo(cx-SRC*0.018,cy+SRC*0.078); sctx.lineTo(cx+SRC*0.012,cy+SRC*0.08); sctx.stroke();
-    // ほお
-    sctx.fillStyle='rgba(231,150,128,0.34)'; sctx.beginPath(); sctx.ellipse(cx-SRC*0.135,cy+SRC*0.085,SRC*0.042,SRC*0.026,0,0,7); sctx.ellipse(cx+SRC*0.135,cy+SRC*0.085,SRC*0.042,SRC*0.026,0,0,7); sctx.fill();
-    // 口
-    sctx.strokeStyle='#c5705a'; sctx.lineWidth=SRC*0.013; sctx.lineCap='round'; sctx.beginPath(); sctx.moveTo(cx-SRC*0.05,cy+SRC*0.135); sctx.quadraticCurveTo(cx,cy+SRC*0.162,cx+SRC*0.05,cy+SRC*0.135); sctx.stroke();
+    sctx.fillStyle='#ffffff'; sctx.fillRect(0,0,SRC,SRC);
+    if(rankinReady){ sctx.imageSmoothingEnabled=true; sctx.drawImage(rankinImg,0,0,SRC,SRC); }
+    else { sctx.fillStyle='#b9b1a4'; sctx.font='14px sans-serif'; sctx.textAlign='center'; sctx.fillText('ランキン 読み込み中…',SRC/2,SRC/2); sctx.textAlign='left'; }
     srcData=sctx.getImageData(0,0,SRC,SRC).data;
   }
   var curScene=defaultScene;
