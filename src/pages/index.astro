@@ -117,7 +117,7 @@ const works: Work[] = [
     description: "dB変換・RC時定数・LCR共振・抵抗分圧・LED抵抗・MOSFET損失・熱抵抗・Bode近似・AWGリファレンスを1ページに集めた工学計算カード集。入力するとリアルタイムで結果が更新される。",
     url: "https://eng.tnks1407.com",
     tags: ["JavaScript", "RF", "Power Electronics", "計算ツール"],
-    status: "Prototype", section: "works", group: "engineering",
+    status: "Beta", section: "works", group: "engineering",
     prompt: "よく使う工学計算を1ページにカード形式で集めたブラウザツールを作って。実験中・設計中にすぐ計算したいときに開くリファレンス計算機。外部ライブラリなし・単一HTMLファイルで動く。\n\n## 設計方針\n- 各カードは独立していて一つの計算に集中できる\n- 入力フィールドを変えた瞬間に結果が更新される（Enter不要）\n- 式を必ず表示する（「なぜこの値になるか」がわかるように）\n- 単位を明示（Ω、H、F、dB、°C 等）\n- NaN・Infinity になる入力には「—」を表示して壊れない\n\n## カード一覧\n### 1. dB 変換: 電圧比→dB: 20*log10(V2/V1) / 電力比→dB: 10*log10(P2/P1)\n### 2. RC 時定数: τ=RC / fc=1/(2πRC) / V(t)=Vs*(1-exp(-t/τ))\n### 3. LCR 共振: fr=1/(2π√(LC)) / Q（直列）=(1/R)*√(L/C) / BW=fr/Q\n### 4. 抵抗分圧: Vout=Vin*R2/(R1+R2) / R1またはR2の逆算\n### 5. LED 保護抵抗: R=(Vsupply-Vf)/If / Vf/Ifプリセット付き\n### 6. MOSFET 損失: Pon=Id²*RdsOn*D + Psw=0.5*Vds*Id*(tr+tf)*fs + Pg=Qg*Vgs*fs\n### 7. 熱抵抗: Tj=Ta+Ptot*(Rth_JC+Rth_CH+Rth_HA)\n### 8. Bode 近似（1次系）: LPF/HPF の折れ線 + Canvasグラフ（ゲイン+位相）\n### 9. AWG リファレンス表: AWG 10〜36、線径・断面積・抵抗・許容電流\n### 10. インピーダンス: XL=2πfL、XC=1/(2πfC)、Z=R+jX → |Z|、VSWR\n### 11. ノイズ指数 (NF): NF[dB]→F / Friis公式（2段）/ 等価雑音温度Te=T0*(F-1)\n\n## UI\n- ウォームクリーム背景（サイト統一テーマ）\n- カードグリッド（auto-fill, minmax 280px）\n- 各カードに式をグレーで表示\n- 注意書き: 「安全係数・マージンは設計者が判断すること」",
   },
   {
@@ -126,7 +126,7 @@ const works: Work[] = [
     description: "「パラメータを変えると何が起きるか」をスライダーで確認するインタラクティブ実験ツール。単回帰・多重共線性・JIT・グレーボックス・転移学習・生データ診断を、ノイズ量や共線性の強さを動かしながら体験できる。Study Guide 付き。",
     url: "https://effect.tnks1407.com",
     tags: ["Python", "PLS", "What-If分析"],
-    status: "Prototype", section: "lab", group: "data-lab",
+    status: "Beta", section: "lab", group: "data-lab",
     links: [{ label: "GitHub", url: "https://github.com/TNKS1407/process-effect-lab" }],
     prompt: "プロセスデータのモデリング手法を「パラメータを変えると何が起きるか」で体験する What-If 実験台を作って。\n\n## コンセプト\nProcess Modeling Lab（pml.tnks1407.com）は「実験ボタンを押してPNG結果を見る」形式。\nこの v2 は「スライダーを動かしながらリアルタイムに変化を観察する」形式にしたい。\n\n学習したい問いの例:\n- 「ノイズをどこまで増やしたら OLS が PLS に負け始めるか？」\n- 「共線性が強くなるほど OLS 係数はどう発散するか？」\n- 「JIT の局所窓サイズを小さくしすぎると何が起きるか？」\n\n## 技術スタック\n- Python 軽量 HTTP サーバー（server.py、外部フレームワークなし）\n- スライダー変更 → fetch POST /api/run → matplotlib PNG を base64 で返す\n- フロントエンド: 単一 index.html（バニラJS）/ タブ切替UI（6実験）\n\n## 実験タブ詳細\n### Tab 1: 単回帰 — スライダー: n, σ, β, 外れ値数\n### Tab 2: 多重共線性と PLS — スライダー: 共線性ρ, σ, PLS成分数\n### Tab 3: JIT ソフトセンサー — スライダー: 局所窓サイズk, ノイズ, モード変化量\n### Tab 4: グレーボックスモデル — スライダー: 物理モデル誤差%, 追加ノイズ\n### Tab 5: 転移学習（FEHDA）— スライダー: ターゲットサンプル数, 分布シフト量\n### Tab 6: 生データ診断 — スライダー: 外れ値率, ドリフト強度, ノイズ変化点\n\n## Study Guide\n各タブに「このアルゴリズムが何を解こうとしているか」を2〜3段落で説明するアコーディオンパネルを置く。数式はテキスト表記。「なぜ動くか」の物理的直感を重視。",
   },
@@ -227,7 +227,7 @@ const works: Work[] = [
     description: "Rect Vane・Delta Wedge形状のVG STLをCLIで生成するPythonライブラリ。plate配列モード対応。numpy・trimeshのみ。ブラウザ版VG Generatorのバックエンド相当。",
     url: "https://github.com/TNKS1407/vortex-generator-tools",
     tags: ["Python", "trimesh", "3D Print"],
-    status: "Lab", section: "lab", group: "engineering",
+    status: "Prototype", section: "lab", group: "engineering",
     prompt: "Python で VG（ボルテックスジェネレーター）の STL ファイルを生成する CLI ライブラリを作って。\n\n## 背景・動機\nブラウザ版 VG Generator（vg.tnks1407.com）の Python バックエンド相当。\nCAD 操作なしで形状パラメータ→STL を自動生成したい。\nバッチ処理や形状の組み合わせ試験を想定。numpy と trimesh のみ使用。\n\n## 対象形状\n### rect_vane（矩形ベーン）\n引数: --length L --width W --height H --angle θ\n矩形断面を取付角 θ だけ傾けて押し出した形状。θ=15〜20° が典型的。\n\n### delta_wedge（デルタウェッジ）\n引数: --base-width W --height H --tip-thickness t --length L\n平面視で三角形、先端に最小肉厚 t を持つ楔型。\n\n## plate モード\n--mode plate --count N --spacing S で N 個の VG を等間隔配置。\n配置パターン: aligned（全て同じ向き）/ alternating（交互に逆向き）/ half-and-half\n\n## 実装\n- numpy で頂点座標を計算\n- trimesh.Trimesh(vertices, faces) でメッシュ構築\n- trimesh.export() で STL 出力（バイナリ）\n- 法線ベクトルは trimesh が自動計算（is_watertight を確認）\n- 座標系: X=流れ方向、Y=幅方向、Z=高さ方向\n\n## コマンド例\npython vg.py rect_vane --length 30 --width 2 --height 8 --angle 15 -o vg.stl\npython vg.py --mode plate --count 6 --spacing 20 --pattern alternating rect_vane -o plate.stl\n\n## Python パッケージ化\n- pyproject.toml で pip install 可能にする",
   },
   {
@@ -245,7 +245,7 @@ const works: Work[] = [
     description: "AI実験ログ・雑メモをdropフォルダに置くだけでGitHub Issueに変換する個人用ワークフロー。PowerShell製UIランチャーで操作。GitHub CLI経由でIssue投稿。",
     url: "https://github.com/TNKS1407/tnks-lab",
     tags: ["PowerShell", "GitHub API", "CLI"],
-    status: "Lab", section: "lab", group: "utilities",
+    status: "Prototype", section: "lab", group: "utilities",
     prompt: "AI 実験ログ・雑メモを drop フォルダに置くだけで GitHub Issue に変換する個人用ワークフローツールを作って。\n\n## 背景・動機\nAI との実験や思いついたアイデアを「あとで見返せる形」で残したい。\nNotion は重く、Obsidian は別途開く手間がある。\n「ファイルを一つ放り込む → GitHub Issue に自動変換 → 全文検索できる」が理想。\nGitHub の Issue 検索・ラベル・マイルストーン機能をそのまま活用する。\n\n## ディレクトリ構成\ntnks-lab/ inbox/ drop/（ここに .md/.txt を置く） / processed/（処理済み移動先） / failed/（失敗した場合）\nscripts/ push-issues.ps1（メイン処理）/ config.json / launch.cmd / watch.ps1（フォルダ監視デーモン）\n\n## 処理フロー（push-issues.ps1）\n1. inbox/drop 内の .md/.txt をすべて取得\n2. ファイル名からタイトルを生成（YYYY-MM-DD_タイトル.md → タイトル）\n3. ファイル先頭の「# タイトル」があればそれを Issue タイトルに使用\n4. フロントマター（---）を解析: labels / milestone を GitHub に設定\n5. gh issue create --title ... --body ... --repo TNKS1407/tnks-lab で投稿\n6. 成功したら inbox/processed/ に移動（タイムスタンプ付きでリネーム）\n7. 失敗したらエラーログを出力して inbox/failed/ に移動\n\n## フォルダ監視デーモン（watch.ps1）\nFileSystemWatcher でフォルダを監視。新規ファイルが drop/ に置かれたら自動的に処理を実行。\n\n## launch.cmd（UIランチャー）\n「1: 今すぐ処理」「2: 監視デーモン起動」「3: 処理済み一覧」「4: 終了」のメニュー。\n\n## config.json\n{ defaultRepo, defaultLabel, watchDir, logFile, dryRun（実際に投稿しないテストモード） }\n\n## 制約・前提\n- GitHub CLI (gh) がインストール済み・認証済みであること前提\n- PowerShell 7+ 対応 / ファイルエンコーディングは UTF-8\n- GitHub の API レート制限（5000 req/h）に注意",
   },
 ];
@@ -415,8 +415,8 @@ const favKey = (w: Work) => {
       .tag{background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);padding:0.08rem 0.4rem;border-radius:4px;font-size:0.68rem;font-weight:500;font-family:'JetBrains Mono',monospace;}
       .status-badge{padding:0.08rem 0.4rem;border-radius:4px;font-size:0.66rem;font-weight:700;font-family:'JetBrains Mono',monospace;border:1px solid;}
       .status-Stable{background:#eaf7f4;color:#0d7f6e;border-color:#9de0cf;}
+      .status-Beta{background:#fdf4eb;color:#b45e1a;border-color:#f5cfaa;}
       .status-Prototype{background:#eef4ff;color:#3058b8;border-color:#c0d2f5;}
-      .status-Lab{background:#fdf4eb;color:#b45e1a;border-color:#f5cfaa;}
       .status-Toy{background:#f5f0fb;color:#6b34b0;border-color:#d8c4f3;}
       .work-footer{display:flex;gap:0.3rem;flex-wrap:wrap;padding:0.5rem 1.2rem 0.8rem;align-items:center;}
       .work-link{color:var(--accent);font-size:0.7rem;font-weight:600;text-decoration:none;font-family:'JetBrains Mono',monospace;padding:0.1rem 0.4rem;background:var(--accent-dim);border-radius:4px;border:1px solid rgba(60,120,118,0.18);transition:background 0.15s;}
