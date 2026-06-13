@@ -103,7 +103,7 @@
       <div class="cg"><label>右端</label><button class="btn" id="tb-right">閉</button></div>
       <div class="cg"><label>表示</label><button class="btn on" id="tb-mode">変位</button></div>
       <div class="cg"><label>倍音 n</label><input type="range" id="tb-n" min="1" max="5" step="1" value="1"><span class="v" id="tb-n-v">1</span></div>
-      <div class="cg"><label>管の長さ L</label><input type="range" id="tb-L" min="8" max="34" step="1" value="17"><span class="v" id="tb-L-v">17 cm</span></div>
+      <div class="cg"><label>管の長さ L</label><input type="range" id="tb-L" min="8" max="34" step="0.5" value="17.5"><span class="v" id="tb-L-v">17.5 cm</span></div>
     </div>
     <div class="readout" id="tb-read"></div>
   </section>
@@ -277,7 +277,7 @@
     var nEl=document.getElementById('tb-n'), nV=document.getElementById('tb-n-v');
     var LEl=document.getElementById('tb-L'), LV=document.getElementById('tb-L-v');
     var modeBtn=document.getElementById('tb-mode'), read=document.getElementById('tb-read');
-    var C=34000, leftOpen=true, rightOpen=false, mode=(new URLSearchParams(location.search).get('mode')==='press')?'press':'disp';
+    var C=35000, leftOpen=true, rightOpen=false, mode=(new URLSearchParams(location.search).get('mode')==='press')?'press':'disp';
     var PADX=46, A=40, phase=0, last=null;
     function setBtn(b,open){ b.textContent=open?'開':'閉'; b.classList.toggle('on',open); }
     leftBtn.onclick=function(){ leftOpen=!leftOpen; setBtn(leftBtn,leftOpen); frame(); };
@@ -316,7 +316,7 @@
       var el=function(open){ return mode==='disp'?(open?'開（変位の腹）':'閉（変位の節）'):(open?'開（圧力の節）':'閉（圧力の腹）'); };
       var note=(mode==='press')?'<br>声道ラボ /vowel はこの<b>圧力</b>で描いている（開いた唇＝圧力の節）。':'';
       read.innerHTML='端の条件：左 <b>'+el(leftOpen)+'</b>・右 <b>'+el(rightOpen)+'</b><br>'+
-        '倍音 <b>n='+sh.n+'</b>・管長 <b>L='+L+' cm</b> → 共鳴波長 <b>λ='+lam.toFixed(1)+' cm</b>、共鳴周波数 <b>f=c/λ≈'+Math.round(freq)+' Hz</b>（c=340 m/s）'+note;
+        '倍音 <b>n='+sh.n+'</b>・管長 <b>L='+L+' cm</b> → 共鳴波長 <b>λ='+lam.toFixed(1)+' cm</b>、共鳴周波数 <b>f=c/λ≈'+Math.round(freq)+' Hz</b>（c≈350 m/s）'+note;
       function drawEnd(x,yA,yB,open){
         if(open){ ctx.strokeStyle=AMBER; ctx.setLineDash([4,4]); ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(x,yA-6); ctx.lineTo(x,yB+6); ctx.stroke(); ctx.setLineDash([]); }
         else { ctx.strokeStyle='#8c8377'; ctx.lineWidth=6; ctx.beginPath(); ctx.moveTo(x,yA-2); ctx.lineTo(x,yB+2); ctx.stroke(); }
