@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>2次元の波 — 波紋・干渉・ホイヘンス</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
+    --accent:#3c7876;--amber:#c9761f;--text:#1d1b17;--text-muted:#7d7568;--text-faint:#aaa49b;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--text);
+    font-family:'Zen Kaku Gothic New','Hiragino Sans','Meiryo',system-ui,sans-serif;line-height:1.7;}
+  .wrap{max-width:760px;margin:0 auto;padding:14px 14px 22px;}
+  section{background:var(--card);border:1px solid var(--border);border-radius:14px;
+    padding:14px 16px 16px;box-shadow:0 1px 6px rgba(29,27,23,.05);}
+  .w-title{font-size:1rem;font-weight:700;margin:0 0 .2rem;}
+  .w-sub{font-size:.78rem;color:var(--text-muted);margin:0 0 .8rem;line-height:1.6;}
+  canvas{display:block;width:100%;border:1px solid var(--border);border-radius:10px;background:var(--surface);image-rendering:auto;}
+  .controls{display:flex;flex-wrap:wrap;gap:.5rem .9rem;align-items:center;margin-top:.9rem;}
+  .cg{display:flex;align-items:center;gap:.5rem;}
+  .cg label{font-size:.74rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted);white-space:nowrap;}
+  .cg input[type=range]{width:110px;accent-color:var(--accent);}
+  .cg .v{font-size:.74rem;font-family:'JetBrains Mono',monospace;color:var(--accent);font-weight:600;min-width:2.6ch;}
+  .btn{padding:.3rem .7rem;border:1px solid var(--border);border-radius:7px;background:none;
+    font-family:'JetBrains Mono',monospace;font-size:.74rem;color:var(--text-muted);cursor:pointer;transition:.15s;}
+  .btn:hover{border-color:var(--accent);color:var(--accent);}
+  .btn.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .readout{margin-top:.7rem;font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--text);
+    background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:.55rem .8rem;line-height:1.9;}
+  .readout b{color:var(--accent);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section>
+    <div class="w-title">2次元の波 — 波紋・干渉・ホイヘンス</div>
+    <p class="w-sub">水面に石を落とすと、丸い波が広がる。それが「点源の応答」。点源を2つにすると、山どうし・谷どうしが重なって強め合い、山と谷がぶつかると消し合う＝<b>干渉</b>。たくさん並べると、丸い波が足し合わさって<b>平面波</b>になる（ホイヘンス）。<span style="color:var(--accent)">青＝山</span>・<span style="color:var(--amber)">橙＝谷</span>。</p>
+    <canvas id="cv" width="460" height="300"></canvas>
+    <div class="controls">
+      <button class="btn on" id="m1">1つの波源</button>
+      <button class="btn" id="m2">2つ（干渉）</button>
+      <button class="btn" id="mh">ホイヘンス</button>
+      <div class="cg"><label>波長 λ</label><input type="range" id="lam" min="14" max="56" step="1" value="26"><span class="v" id="lam-v">26</span></div>
+      <div class="cg" id="dwrap" style="display:none;"><label>間隔 d</label><input type="range" id="dd" min="20" max="160" step="2" value="80"><span class="v" id="dd-v">80</span></div>
+    </div>
+    <div class="readout" id="read"></div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var cv=document.getElementById('cv'), ctx=cv.getContext('2d'), W=cv.width, H=cv.height;
+  var img=ctx.createImageData(W,H), buf=img.data;
+  var lamEl=document.getElementById('lam'), lamV=document.getElementById('lam-v');
+  var ddEl=document.getElementById('dd'), ddV=document.getElementById('dd-v'), dwrap=document.getElementById('dwrap');
+  var read=document.getElementById('read');
+  var qs=new URLSearchParams(location.search);
+  var SURF=[250,248,244], TEAL=[60,120,118], AMBER=[201,118,31];
+  var mode='1', phase=0, last=null, srcs=[], rtab=[];   // rtab[s] = Float32Array(W*H) 距離
+  var SX=Math.round(W*0.16);                            // 波源のx（左寄り）
+
+  function setSources(){
+    srcs=[];
+    var lam=+lamEl.value, d=+ddEl.value;
+    if(mode==='1'){ srcs=[{x:SX,y:H/2}]; }
+    else if(mode==='2'){ srcs=[{x:SX,y:H/2-d/2},{x:SX,y:H/2+d/2}]; }
+    else { for(var i=0;i<13;i++){ srcs.push({x:SX, y:H*0.16 + (H*0.68)*i/12}); } } // 横一列＝ホイヘンス
+    // 距離テーブルを事前計算（毎フレームの sqrt を消す）
+    rtab=srcs.map(function(s){
+      var a=new Float32Array(W*H), idx=0;
+      for(var y=0;y<H;y++){ var dy=y-s.y; for(var x=0;x<W;x++){ var dx=x-s.x; a[idx++]=Math.sqrt(dx*dx+dy*dy); } }
+      return a;
+    });
+  }
+  function frame(){
+    var lam=+lamEl.value, k=2*Math.PI/lam, ns=srcs.length, ph=phase;
+    var scale=(mode==='2')?2.0:(mode==='h'||mode==='huygens'?Math.min(ns,5):1.0);
+    if(mode!=='2'&&mode!=='1') scale=4.0;       // ホイヘンスは振幅が大きい
+    if(mode==='1') scale=1.0;
+    var p=0;
+    for(var i=0;i<W*H;i++){
+      var A=0;
+      for(var s=0;s<ns;s++){
+        var r=rtab[s][i];
+        var amp=1/Math.sqrt(0.6+r*k/6.283);     // 緩い距離減衰（見やすさ用）
+        A += amp*Math.cos(k*r - ph);
+      }
+      var t=A/scale; if(t>1)t=1; else if(t<-1)t=-1;
+      var c0,c1,m;
+      if(t>=0){ m=t; c1=TEAL; } else { m=-t; c1=AMBER; }
+      buf[p++]=SURF[0]+(c1[0]-SURF[0])*m;
+      buf[p++]=SURF[1]+(c1[1]-SURF[1])*m;
+      buf[p++]=SURF[2]+(c1[2]-SURF[2])*m;
+      buf[p++]=255;
+    }
+    ctx.putImageData(img,0,0);
+    // 波源の点
+    ctx.fillStyle='#1d1b17';
+    for(var q=0;q<srcs.length;q++){ ctx.beginPath(); ctx.arc(srcs[q].x,srcs[q].y,2.2,0,2*Math.PI); ctx.fill(); }
+    var note;
+    if(mode==='1') note='1つの波源から、丸い波（波紋）が等速で広がる。これが「点を一発叩いたときの返事」＝点源の応答だよ。';
+    else if(mode==='2') note='2つの波源。山と山・谷と谷が重なる線では強め合い、山と谷がぶつかる線では消し合う＝<b>干渉</b>。間隔 d や波長 λ を変えると縞が動く。波の足し算（重ね合わせ）が目に見える。';
+    else note='波源を横一列に並べると、丸い波が足し合わさって右に<b>平面波</b>が立つ。波面は「無数の点源が出す小さな波の足し算」でできている——これが<b>ホイヘンスの原理</b>。';
+    read.innerHTML=note;
+  }
+  function loop(){ if(cv.offsetParent!==null){ phase+=0.10; frame(); } requestAnimationFrame(loop); }
+
+  function setMode(mm,btn){
+    mode=mm; ['m1','m2','mh'].forEach(function(id){ document.getElementById(id).classList.remove('on'); });
+    if(btn) document.getElementById(btn).classList.add('on');
+    dwrap.style.display=(mm==='2')?'flex':'none';
+    setSources(); phase=0; frame();
+  }
+  lamEl.oninput=function(){ lamV.textContent=lamEl.value; setSources(); };
+  ddEl.oninput=function(){ ddV.textContent=ddEl.value; setSources(); };
+  document.getElementById('m1').onclick=function(){ setMode('1','m1'); };
+  document.getElementById('m2').onclick=function(){ setMode('2','m2'); };
+  document.getElementById('mh').onclick=function(){ setMode('h','mh'); };
+
+  // init（?mode=1|2|h で初期状態。記事から個別に埋め込み）
+  lamV.textContent=lamEl.value; ddV.textContent=ddEl.value;
+  var qm=qs.get('mode');
+  if(qm==='2'){ setMode('2','m2'); } else if(qm==='h'||qm==='huygens'){ setMode('h','mh'); } else { setMode('1','m1'); }
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
