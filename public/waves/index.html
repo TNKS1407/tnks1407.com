@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>波の遊び場 — 進む波・定在波・共鳴管</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
+    --accent:#3c7876;--accent-dim:rgba(60,120,118,.1);--amber:#c9761f;
+    --text:#1d1b17;--text-muted:#7d7568;--text-faint:#aaa49b;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--text);
+    font-family:'Zen Kaku Gothic New','Hiragino Sans','Meiryo',system-ui,sans-serif;line-height:1.7;}
+  .wrap{max-width:760px;margin:0 auto;padding:14px 14px 22px;}
+  section{background:var(--card);border:1px solid var(--border);border-radius:14px;
+    padding:14px 16px 16px;margin-bottom:18px;box-shadow:0 1px 6px rgba(29,27,23,.05);}
+  .w-title{font-size:1rem;font-weight:700;margin:0 0 .2rem;}
+  .w-sub{font-size:.78rem;color:var(--text-muted);margin:0 0 .8rem;line-height:1.6;}
+  canvas{display:block;width:100%;border:1px solid var(--border);border-radius:10px;background:var(--surface);touch-action:none;}
+  .controls{display:flex;flex-wrap:wrap;gap:.5rem 1.1rem;align-items:center;margin-top:.9rem;}
+  .cg{display:flex;align-items:center;gap:.5rem;}
+  .cg label{font-size:.74rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted);white-space:nowrap;}
+  .cg input[type=range]{width:120px;accent-color:var(--accent);}
+  .cg .v{font-size:.74rem;font-family:'JetBrains Mono',monospace;color:var(--accent);font-weight:600;min-width:3.4ch;}
+  .btn{padding:.3rem .7rem;border:1px solid var(--border);border-radius:7px;background:none;
+    font-family:'JetBrains Mono',monospace;font-size:.74rem;color:var(--text-muted);cursor:pointer;transition:.15s;}
+  .btn:hover{border-color:var(--accent);color:var(--accent);}
+  .btn.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .readout{margin-top:.7rem;font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--text);
+    background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:.55rem .8rem;line-height:1.9;}
+  .readout b{color:var(--accent);}
+  .chk{display:inline-flex;align-items:center;gap:.35rem;font-size:.74rem;color:var(--text-muted);cursor:pointer;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ════════ 進む波：v = fλ ════════ -->
+  <section data-widget="travel">
+    <div class="w-title">進む波 — <span style="font-family:'JetBrains Mono',monospace;">v = f λ</span></div>
+    <p class="w-sub">青い点は1つの山に乗って一緒に動く。振動数 f（1秒の振動回数）と波長 λ（山から山までの長さ）を変えると、波の速さ v が変わる。f を上げても λ を伸ばしても速くなる。</p>
+    <canvas id="cv-travel" width="720" height="200"></canvas>
+    <div class="controls">
+      <div class="cg"><label>振動数 f</label><input type="range" id="t-f" min="0.4" max="3" step="0.05" value="1"><span class="v" id="t-f-v">1.0 Hz</span></div>
+      <div class="cg"><label>波長 λ</label><input type="range" id="t-lam" min="2" max="10" step="0.1" value="5"><span class="v" id="t-lam-v">5.0 cm</span></div>
+      <button class="btn on" id="t-play">⏸ 一時停止</button>
+    </div>
+    <div class="readout" id="t-read"></div>
+  </section>
+
+  <!-- ════════ 定在波 ════════ -->
+  <section data-widget="standing">
+    <div class="w-title">定在波 — 右へ進む波 ＋ 左へ進む波</div>
+    <p class="w-sub">同じ波を逆向きに重ねると、進まない波ができる。緑（右行き）＋橙（左行き）の和が黒。黒い波は形のまま上下するだけで、横に動かない。ずっと止まっている点が「節（ふし）」、いちばん大きく揺れる点が「腹（はら）」。</p>
+    <canvas id="cv-standing" width="720" height="220"></canvas>
+    <div class="controls">
+      <div class="cg"><label>腹の数 n</label><input type="range" id="s-n" min="1" max="6" step="1" value="3"><span class="v" id="s-n-v">3</span></div>
+      <label class="chk"><input type="checkbox" id="s-comp" checked> 元の2つの波も表示</label>
+    </div>
+    <div class="readout" id="s-read"></div>
+  </section>
+
+  <!-- ════════ 共鳴管 ════════ -->
+  <section data-widget="tube">
+    <div class="w-title">共鳴管 — 管にぴったり収まる波だけが鳴る</div>
+    <p class="w-sub">管の中に作れる定在波は、両端の条件で決まる。<b style="color:var(--accent)">開いた端は「腹」</b>（空気が自由に動ける）、<b style="color:var(--amber)">閉じた端は「節」</b>（動けない）。その条件に「ぴったり収まる」波長だけが共鳴する。端を開け閉めし、倍音 n と管の長さ L を変えてみて。</p>
+    <canvas id="cv-tube" width="720" height="190"></canvas>
+    <div class="controls">
+      <div class="cg"><label>左端</label><button class="btn on" id="tb-left">開</button></div>
+      <div class="cg"><label>右端</label><button class="btn" id="tb-right">閉</button></div>
+      <div class="cg"><label>倍音 n</label><input type="range" id="tb-n" min="1" max="5" step="1" value="1"><span class="v" id="tb-n-v">1</span></div>
+      <div class="cg"><label>管の長さ L</label><input type="range" id="tb-L" min="8" max="34" step="1" value="17"><span class="v" id="tb-L-v">17 cm</span></div>
+    </div>
+    <div class="readout" id="tb-read"></div>
+  </section>
+
+</div>
+
+<script>
+(function(){
+  // ?only=travel|standing|tube → そのウィジェットだけ表示
+  var only = new URLSearchParams(location.search).get('only');
+  if(only){
+    document.querySelectorAll('[data-widget]').forEach(function(el){
+      if(el.dataset.widget !== only) el.remove();
+    });
+  }
+  var TEAL='#3c7876', AMBER='#c9761f', INK='#1d1b17', MUT='#7d7568', FAINT='#cfc9be', SURF='#faf8f4';
+  function visible(el){ return el && el.offsetParent !== null; }
+
+  /* ───────── 進む波 ───────── */
+  (function(){
+    var cv=document.getElementById('cv-travel'); if(!cv) return;
+    var ctx=cv.getContext('2d'), W=cv.width, H=cv.height, MID=H/2;
+    var fEl=document.getElementById('t-f'), lamEl=document.getElementById('t-lam');
+    var fV=document.getElementById('t-f-v'), lamV=document.getElementById('t-lam-v');
+    var read=document.getElementById('t-read'), playBtn=document.getElementById('t-play');
+    var CM_ACROSS=20;                  // 画面の横幅 = 20 cm
+    var pxPerCm=W/CM_ACROSS, A=58;
+    var phase=0, last=null, playing=true, marker=0; // markerは選んだ山のcm位置
+    fEl.oninput=function(){ fV.textContent=(+fEl.value).toFixed(1)+' Hz'; };
+    lamEl.oninput=function(){ lamV.textContent=(+lamEl.value).toFixed(1)+' cm'; };
+    playBtn.onclick=function(){ playing=!playing; playBtn.classList.toggle('on',playing);
+      playBtn.textContent=playing?'⏸ 一時停止':'▶ 再生'; if(playing){ last=null; requestAnimationFrame(loop);} };
+    function frame(){
+      var f=+fEl.value, lam=+lamEl.value, v=f*lam, T=1/f;
+      ctx.clearRect(0,0,W,H); ctx.fillStyle=SURF; ctx.fillRect(0,0,W,H);
+      // 中央線
+      ctx.strokeStyle='#ece6dc'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0,MID); ctx.lineTo(W,MID); ctx.stroke();
+      // 波 y = A sin(2π(x/λ − phase))
+      ctx.beginPath();
+      for(var px=0; px<=W; px++){
+        var xcm=px/pxPerCm;
+        var y=MID - A*Math.sin(2*Math.PI*(xcm/lam - phase));
+        if(px===0) ctx.moveTo(px,y); else ctx.lineTo(px,y);
+      }
+      ctx.strokeStyle=TEAL; ctx.lineWidth=2.4; ctx.stroke();
+      // 波長の目盛り（先頭の山〜次の山）: 山は xcm/λ − phase = 1/4 (mod 1)
+      var firstCrest=lam*(0.25 + phase - Math.floor(0.25+phase));
+      var c1=firstCrest, c2=firstCrest+lam;
+      if(c1>=0 && c2<=CM_ACROSS){
+        var x1=c1*pxPerCm, x2=c2*pxPerCm;
+        ctx.strokeStyle='rgba(125,117,104,.5)'; ctx.setLineDash([4,3]); ctx.lineWidth=1;
+        ctx.beginPath(); ctx.moveTo(x1,MID-A-12); ctx.lineTo(x1,H); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x2,MID-A-12); ctx.lineTo(x2,H); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.strokeStyle=MUT; ctx.beginPath(); ctx.moveTo(x1,MID-A-12); ctx.lineTo(x2,MID-A-12); ctx.stroke();
+        ctx.fillStyle=MUT; ctx.font="11px 'JetBrains Mono',monospace"; ctx.textAlign='center';
+        ctx.fillText('λ = '+lam.toFixed(1)+' cm', (x1+x2)/2, MID-A-18);
+        ctx.textAlign='left';
+      }
+      // 山に乗る点（先頭の山）
+      var mx=c1*pxPerCm, my=MID-A;
+      ctx.beginPath(); ctx.arc(mx,my,6,0,2*Math.PI); ctx.fillStyle=TEAL; ctx.fill();
+      ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke();
+      read.innerHTML='振動数 <b>f = '+f.toFixed(2)+' Hz</b>（周期 T = 1/f = '+T.toFixed(2)+' 秒）／ 波長 <b>λ = '+lam.toFixed(1)+' cm</b><br>'+
+        '速さ <b>v = f × λ = '+v.toFixed(1)+' cm/s</b>　← 1周期 T のあいだに、波はちょうど 1 波長 λ だけ進む';
+    }
+    function loop(ts){
+      if(!visible(cv)) { return; }
+      if(playing){
+        if(last==null) last=ts;
+        var dt=Math.min((ts-last)/1000,0.05); last=ts;
+        phase += (+fEl.value)*dt;            // 位相は f·t（1秒でf周）
+      }
+      frame();
+      if(playing) requestAnimationFrame(loop); else last=null;
+    }
+    fEl.oninput(); lamEl.oninput(); frame();
+    requestAnimationFrame(loop);
+  })();
+
+  /* ───────── 定在波 ───────── */
+  (function(){
+    var cv=document.getElementById('cv-standing'); if(!cv) return;
+    var ctx=cv.getContext('2d'), W=cv.width, H=cv.height, MID=H/2;
+    var nEl=document.getElementById('s-n'), nV=document.getElementById('s-n-v');
+    var compEl=document.getElementById('s-comp'), read=document.getElementById('s-read');
+    var A=42, phase=0, last=null;
+    nEl.oninput=function(){ nV.textContent=nEl.value; };
+    function frame(){
+      var n=+nEl.value;                 // 腹の数。区間[0,W]に n 個の腹。
+      var k=n*Math.PI/W;                // sin(kx): x=0,W が節
+      var t=phase;
+      ctx.clearRect(0,0,W,H); ctx.fillStyle=SURF; ctx.fillRect(0,0,W,H);
+      ctx.strokeStyle='#ece6dc'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0,MID); ctx.lineTo(W,MID); ctx.stroke();
+      // 元の2波
+      if(compEl.checked){
+        drawWave(function(x){ return 0.5*A*Math.sin(k*x - 2*Math.PI*t); }, 'rgba(60,120,118,.45)',1.4);
+        drawWave(function(x){ return 0.5*A*Math.sin(k*x + 2*Math.PI*t); }, 'rgba(201,118,31,.5)',1.4);
+      }
+      // 和（定在波）= A sin(kx) cos(2πt)
+      drawWave(function(x){ return A*Math.sin(k*x)*Math.cos(2*Math.PI*t); }, INK, 2.6);
+      // 節・腹マーク
+      for(var i=0;i<=n;i++){ var xn=i*W/n; dot(xn,MID,FAINT,'節'); }
+      for(var j=0;j<n;j++){ var xa=(j+0.5)*W/n; mark(xa); }
+      read.innerHTML='腹 <b>'+n+' 個</b>・節 <b>'+(n+1)+' 個</b>。和（黒）の節は動かない——左右の波がそこで必ず打ち消し合うから。腹は上下に最大で揺れる。<br>定在波 = <b>A·sin(kx)·cos(2πt)</b>：場所の形 sin(kx) と時間 cos(2πt) が分かれている＝形は固定で、振幅だけ時間で変わる。';
+      function drawWave(fn,col,lw){
+        ctx.beginPath();
+        for(var x=0;x<=W;x++){ var y=MID-fn(x); if(x===0)ctx.moveTo(x,y);else ctx.lineTo(x,y); }
+        ctx.strokeStyle=col; ctx.lineWidth=lw; ctx.stroke();
+      }
+      function dot(x,y,col,lab){ ctx.beginPath(); ctx.arc(x,y,3.5,0,2*Math.PI); ctx.fillStyle=col; ctx.fill(); }
+      function mark(x){ ctx.fillStyle='rgba(60,120,118,.16)'; ctx.fillRect(x-1,MID-A-6,2,2*A+12); }
+    }
+    function loop(ts){ if(!visible(cv)) return; if(last==null)last=ts; var dt=Math.min((ts-last)/1000,.05); last=ts; phase+=0.6*dt; frame(); requestAnimationFrame(loop); }
+    nEl.oninput(); frame(); requestAnimationFrame(loop);
+  })();
+
+  /* ───────── 共鳴管 ───────── */
+  (function(){
+    var cv=document.getElementById('cv-tube'); if(!cv) return;
+    var ctx=cv.getContext('2d'), W=cv.width, H=cv.height, MID=H/2;
+    var leftBtn=document.getElementById('tb-left'), rightBtn=document.getElementById('tb-right');
+    var nEl=document.getElementById('tb-n'), nV=document.getElementById('tb-n-v');
+    var LEl=document.getElementById('tb-L'), LV=document.getElementById('tb-L-v');
+    var read=document.getElementById('tb-read');
+    var C=34000;                        // 音速 ≒ 340 m/s = 34000 cm/s
+    var leftOpen=true, rightOpen=false; // 既定: 片側開（声道に近い）
+    var PADX=46, A=40, phase=0, last=null;
+    function setBtn(b,open){ b.textContent=open?'開':'閉'; b.classList.toggle('on',open); }
+    leftBtn.onclick=function(){ leftOpen=!leftOpen; setBtn(leftBtn,leftOpen); clampN(); frame(); };
+    rightBtn.onclick=function(){ rightOpen=!rightOpen; setBtn(rightBtn,rightOpen); clampN(); frame(); };
+    nEl.oninput=function(){ nV.textContent=nEl.value; frame(); };
+    LEl.oninput=function(){ LV.textContent=LEl.value+' cm'; frame(); };
+    function clampN(){ /* どの境界条件でも n は 1.. を許す */ }
+    // 端の条件から、変位の定在波 u(s)（s=0..1 は管に沿う正規化位置）と λ を返す
+    function shape(){
+      var n=+nEl.value, L=+LEl.value, lam, fn;
+      if(leftOpen===rightOpen){
+        // 両端同じ（開-開 or 閉-閉）: λ = 2L/n
+        lam=2*L/n;
+        if(leftOpen){ fn=function(s){ return Math.cos(n*Math.PI*s); }; }   // 開-開: 両端 腹
+        else        { fn=function(s){ return Math.sin(n*Math.PI*s); }; }   // 閉-閉: 両端 節
+      } else {
+        // 片側開・片側閉: λ = 4L/(2n−1)
+        var m=2*n-1; lam=4*L/m;
+        if(leftOpen) fn=function(s){ return Math.cos(m*Math.PI*s/2); };    // 左 腹・右 節
+        else         fn=function(s){ return Math.sin(m*Math.PI*s/2); };    // 左 節・右 腹
+      }
+      return {lam:lam, fn:fn, L:L, n:n};
+    }
+    function frame(){
+      var sh=shape(), lam=sh.lam, L=sh.L, freq=C/lam;
+      ctx.clearRect(0,0,W,H); ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
+      var x0=PADX, x1=W-PADX, tubeW=x1-x0, tubeH=120, ty0=MID-tubeH/2, ty1=MID+tubeH/2;
+      // 管の壁（上下）
+      ctx.strokeStyle='#b9b1a4'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.moveTo(x0,ty0); ctx.lineTo(x1,ty0); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x0,ty1); ctx.lineTo(x1,ty1); ctx.stroke();
+      // 端（開＝点線/腹色、閉＝太い壁）
+      drawEnd(x0,ty0,ty1,leftOpen);
+      drawEnd(x1,ty0,ty1,rightOpen);
+      // 定在波（変位包絡 ±、時間 cos）
+      var t=Math.cos(2*Math.PI*phase);
+      for(var sgn=-1; sgn<=1; sgn+=2){
+        ctx.beginPath();
+        for(var px=0;px<=tubeW;px++){
+          var s=px/tubeW; var u=sh.fn(s);
+          var y=MID - sgn*Math.abs(u)*A*1.0; // 包絡
+          if(px===0)ctx.moveTo(x0+px,y); else ctx.lineTo(x0+px,y);
+        }
+        ctx.strokeStyle='rgba(60,120,118,.28)'; ctx.lineWidth=1.3; ctx.stroke();
+      }
+      // 動いている瞬間の波形
+      ctx.beginPath();
+      for(var p=0;p<=tubeW;p++){ var ss=p/tubeW; var yy=MID - sh.fn(ss)*A*t; if(p===0)ctx.moveTo(x0+p,yy); else ctx.lineTo(x0+p,yy); }
+      ctx.strokeStyle=TEAL; ctx.lineWidth=2.6; ctx.stroke();
+      // 節・腹の点を検出して打つ
+      var prev=sh.fn(0), Npt=240;
+      for(var q=1;q<=Npt;q++){
+        var s2=q/Npt, val=sh.fn(s2);
+        if(prev*val<0){ // 符号反転＝節
+          var sx=x0 + (q-0.5)/Npt*tubeW;
+          ctx.beginPath(); ctx.arc(sx,MID,3.5,0,2*Math.PI); ctx.fillStyle='#cfc9be'; ctx.fill();
+        }
+        prev=val;
+      }
+      read.innerHTML='端の条件：左 <b>'+(leftOpen?'開（腹）':'閉（節）')+'</b>・右 <b>'+(rightOpen?'開（腹）':'閉（節）')+'</b><br>'+
+        '倍音 <b>n='+sh.n+'</b>・管長 <b>L='+L+' cm</b> → 共鳴波長 <b>λ = '+lam.toFixed(1)+' cm</b>、共鳴周波数 <b>f = c/λ ≈ '+Math.round(freq)+' Hz</b>（音速 c=340 m/s）';
+      function drawEnd(x,yA,yB,open){
+        if(open){ ctx.strokeStyle=AMBER; ctx.setLineDash([4,4]); ctx.lineWidth=2;
+          ctx.beginPath(); ctx.moveTo(x,yA-6); ctx.lineTo(x,yB+6); ctx.stroke(); ctx.setLineDash([]); }
+        else { ctx.strokeStyle='#8c8377'; ctx.lineWidth=6;
+          ctx.beginPath(); ctx.moveTo(x,yA-2); ctx.lineTo(x,yB+2); ctx.stroke(); }
+      }
+    }
+    function loop(ts){ if(!visible(cv)) return; if(last==null)last=ts; var dt=Math.min((ts-last)/1000,.05); last=ts; phase+=0.8*dt; frame(); requestAnimationFrame(loop); }
+    setBtn(leftBtn,leftOpen); setBtn(rightBtn,rightOpen);
+    nV.textContent=nEl.value; LV.textContent=LEl.value+' cm';
+    frame(); requestAnimationFrame(loop);
+  })();
+})();
+</script>
+</body>
+</html>
