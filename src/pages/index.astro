@@ -33,8 +33,6 @@ const quickLinks: QuickLink[] = [
   { label: "gradus.tnks1407.com", url: "https://gradus.tnks1407.com", icon: "🎨", cat: 'data' },
   { label: "effect.tnks1407.com", url: "https://effect.tnks1407.com", icon: "🔬", cat: 'data' },
   { label: "nico.tnks1407.com", url: "https://nico.tnks1407.com", icon: "💬", cat: 'other' },
-  { label: "events（幹事）", url: "https://events.tnks1407.com/admin", icon: "✏️", cat: 'other' },
-  { label: "events（参加者）", url: "https://events.tnks1407.com", icon: "📊", cat: 'other' },
   { label: "docs.tnks1407.com", url: "https://docs.tnks1407.com", icon: "📚", cat: 'other' },
   { label: "status（要認証）", url: "https://status.tnks1407.com", icon: "📈", cat: 'other' },
 ];
@@ -179,16 +177,6 @@ const works: Work[] = [
     tags: ["JavaScript", "3D Print", "STL"],
     status: "Stable", section: "works", group: "engineering",
     prompt: "ボルテックスジェネレーター（VG）の STL をブラウザだけで生成する Web アプリを作って。\n\n## 背景・動機\n市販 CAD なしで 3D プリンター用 VG を作りたい。\n物理的な VG は平板上の空力デバイスで、境界層の剥離制御に使う。\n寸法精度よりも「すぐ出力できる」ことを優先する。\nブラウザだけで完結し、サーバー不要の単一 HTML ファイルで動くこと。\n\n## 対象形状\n### Rect Vane（矩形ベーン）\n- L（長さ）・W（幅）・H（高さ）・θ（取付角）を入力\n- 断面は矩形。根元から先端まで同一断面をθだけ傾けて押し出した形状\n- θ=14〜20° が典型的\n\n### Delta Wedge（デルタ型）\n- W（根元幅）・H（高さ）・t（チップ厚: 0.4mm以上）・L（長さ）を入力\n- 平面視で三角形、先端に最小肉厚 t を持たせて印刷性を確保\n\n## ジオメトリ生成（JavaScript + ASCII STL）\n- 各形状を三角形ポリゴンに分解し、法線ベクトル（右手系）付きで ASCII STL 出力\n- 頂点座標は mm 単位、小数点以下4桁\n- 底面（Base プレート接触面）は平面を保証\n\n## 3D プレビュー\n- canvas 2D でペインターアルゴリズムによる擬似3D表示\n- 面を Zバッファでソートして奥から描画\n- 環境光 + 指向性ライト（法線ドット積）でシェーディング\n- 回転: elevation / azimuth スライダー\n- パラメータ変更時に即座に再描画（100ms 以内）\n\n## UX\n- スライダー + 数値入力フィールドの連動\n- 「STL をダウンロード」ボタン\n- ファイル名に形状・パラメータ概要を含める（例: rect-vane-L30-H8-A15.stl）\n- 印刷設定ガイド（推奨: 0.2mm レイヤー、20%インフィル、PLA）を注記",
-  },
-  {
-    title: "イベント会計",
-    icon: "📊",
-    description: "幹事が割り勘計算・回収状況を管理し参加者と公開URLで共有するツール。口数の重み付き按分・端数丸め設定・5秒自動更新。ExcelもPythonも不要。",
-    url: "https://events.tnks1407.com",
-    tags: ["Node.js", "JSON API"],
-    status: "Stable", section: "works", group: "utilities",
-    links: [{ label: "幹事ページ", url: "https://events.tnks1407.com/admin" }, { label: "参加者ページ", url: "https://events.tnks1407.com" }],
-    prompt: "幹事がイベントの割り勘計算・回収状況を管理し、参加者とURLで共有できるWebアプリを作って。\n\n## 背景・動機\n飲み会・合宿・BBQ で「Excel ファイルをグループに貼る」「あとで手計算で確認する」をなくしたい。\n幹事が入力 → 参加者が URL を開けばリアルタイムで自分の金額を確認できる。\n\n## 計算ロジック（重要）\n### 口数による重み付き按分\n参加者ごとに「口数（shares）」を設定できる。\n例: 幹事=2口（幹事特権費用込み）、学生=0.5口（割引）、大人=1口\n個人負担 = 合計額 × (自分の口数 / 全員の口数合計)\n\n### 端数処理\n- 丸め単位: 100円 / 500円 / 1000円から選択\n- 丸め方式: 切り上げ / 四捨五入 / 切り捨てから選択\n- 端数調整: 丸めた後の合計が実際の合計と合わない分を最初の参加者（幹事）に加算する\n\n### 不参加者の除外\n参加者ごとに「参加」フラグを持つ。不参加者は計算から除外する。\n当日の変更に対応できるようリアルタイムで参加フラグを切り替えられる。\n\n## エンドポイント\n- GET /admin → 幹事管理画面（URL 共有で保護）\n- GET / → 参加者画面（5秒ポーリングで自動更新）\n- POST /api/update → 幹事からのデータ更新\n- GET /api/data → 現在のイベントデータ JSON\n\n## データ構造\n{ name, total, rounding: {unit, method}, members: [{name, shares, attending, paid}] }\n\n## UI 要件\n### 幹事画面\n- イベント名・合計金額・端数設定の入力\n- 参加者の追加・削除・口数編集・参加フラグ切替・回収済みチェック\n- 全員の負担額をリアルタイム表示 / 端数調整額の明示\n\n### 参加者画面\n- 自分の名前・金額・回収状態をカード表示\n- 全員分の一覧も表示（誰がいくら・回収済みか）\n- スマホ横持ちで操作しやすい UI（max-width 480px）\n- 5秒ポーリング: 幹事が金額を変更したら自動更新",
   },
   {
     title: "電源制御ワークベンチ",
