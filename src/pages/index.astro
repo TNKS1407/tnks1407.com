@@ -9,23 +9,8 @@ type Work = {
   prompt?: string;
 };
 
+// 解説（Explainers）は専用のロードマップページ /docs/ に独立。トップでは件数だけ使う。
 const explainers = await getCollection('docs');
-// 「発展」タグの記事はトップでは控えめに（小さく）出す
-const isAdvanced = (doc: any) => (doc.data.tags ?? []).includes('発展');
-// 解説は日付順の平積みでなく、読む順の「コース」に章立てする
-const CHAPTERS = [
-  { key: 'mechanics',    label: '力学の基礎',                  desc: '世界を式に写し、時間で1コマずつ進め、帳尻で締める' },
-  { key: 'waves',        label: '声と共鳴 ── 波動の入口',       desc: 'v=fλ から定在波・共鳴管・フォルマントまで一本道で' },
-  { key: 'conservation', label: '見える物理で「保存則」を掴む',  desc: '波・場・力を貫く“足し算”と“湧かない・消えない”の修行' },
-] as const;
-const byOrder = (a: any, b: any) => (a.data.order ?? 99) - (b.data.order ?? 99);
-const chapters = CHAPTERS
-  .map(c => ({ ...c, docs: explainers.filter(d => d.data.series === c.key).sort(byOrder) }))
-  .filter(c => c.docs.length > 0);
-const groupedKeys = new Set(CHAPTERS.map(c => c.key));
-const ungroupedDocs = explainers
-  .filter(d => !d.data.series || !groupedKeys.has(d.data.series))
-  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 
 type QuickLink = { label: string; url: string; icon: string; featured?: boolean; cat?: 'eng' | 'data' | 'other' };
 const quickLinks: QuickLink[] = [
@@ -410,14 +395,18 @@ const favKey = (w: Work) => {
         padding:0.05rem 0.45rem;font-family:'JetBrains Mono',monospace;}
       .explainer-sub-title{font-weight:600;font-size:0.82rem;color:var(--text-muted);
         white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-      /* Course chapters（解説を読む順の章に畳む） */
-      .course-chapter{margin-bottom:1.5rem;}
-      .chapter-head{display:flex;align-items:baseline;gap:0.6rem;margin:0 0 0.7rem;flex-wrap:wrap;}
-      .chapter-label{font-family:'JetBrains Mono',monospace;font-size:0.8rem;font-weight:700;color:var(--accent);}
-      .chapter-label::before{content:'❖ ';opacity:0.55;}
-      .chapter-desc{font-size:0.75rem;color:var(--text-faint);}
-      .explainer-title{display:flex;align-items:center;}
-      .explainer-num{display:inline-flex;align-items:center;justify-content:center;width:1.3rem;height:1.3rem;margin-right:0.55rem;border-radius:50%;background:var(--accent-dim);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:0.7rem;font-weight:700;flex-shrink:0;}
+      /* Docs roadmap teaser（解説は専用ページ /docs/ へ） */
+      .docs-teaser{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;
+        background:linear-gradient(135deg,var(--accent-soft) 0%,var(--card) 72%);border:1px solid var(--border);border-radius:16px;
+        padding:1.2rem 1.4rem;margin-bottom:2rem;text-decoration:none;color:var(--text);box-shadow:0 1px 8px var(--shadow);
+        transition:border-color .2s,transform .2s,box-shadow .2s;}
+      .docs-teaser:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 6px 20px var(--shadow);}
+      .docs-teaser-text{display:flex;flex-direction:column;gap:.18rem;min-width:0;}
+      .docs-teaser-kicker{font-family:'JetBrains Mono',monospace;font-size:.68rem;font-weight:700;letter-spacing:.12em;color:var(--accent);}
+      .docs-teaser-title{font-size:1.05rem;font-weight:700;color:var(--text);}
+      .docs-teaser-desc{font-size:.82rem;color:var(--text-muted);line-height:1.6;}
+      .docs-teaser-go{flex-shrink:0;font-family:'JetBrains Mono',monospace;font-size:.8rem;font-weight:700;color:#fff;
+        background:var(--accent);border-radius:999px;padding:.5rem 1.1rem;white-space:nowrap;}
 
       /* Section headings */
       .section-title{font-size:0.72rem;font-weight:700;color:var(--text-faint);margin-bottom:0.85rem;letter-spacing:0.1em;display:flex;align-items:center;gap:0.6rem;font-family:'JetBrains Mono',monospace;}
@@ -571,7 +560,7 @@ const favKey = (w: Work) => {
       <div class="header-inner">
         <span class="logo">TNK<span>S</span>1407</span>
         <nav class="nav-links">
-          <a href="#docs">解説</a>
+          <a href="/docs/">解説</a>
           <a href="#works">Works</a>
           <a href="https://tnkblog.net" target="_blank" rel="noopener noreferrer">Blog ↗</a>
           <a href="https://github.com/TNKS1407" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
@@ -660,61 +649,16 @@ const favKey = (w: Work) => {
         </div>
       </div>
 
-      <!-- Explainers / 解説記事 -->
+      <!-- Explainers / 解説記事 → 専用ロードマップページへ -->
       {explainers.length > 0 && (
-        <section id="docs" class="explainers">
-          <div class="section-title">解説 — Explainers（読む順のコース）</div>
-          {chapters.map(c => {
-            const mainCs = c.docs.filter(d => !isAdvanced(d));
-            const subCs = c.docs.filter(isAdvanced);
-            return (
-              <div class="course-chapter">
-                <div class="chapter-head">
-                  <span class="chapter-label">{c.label}</span>
-                  <span class="chapter-desc">{c.desc}</span>
-                </div>
-                <div class="explainer-list">
-                  {mainCs.map((doc, i) => (
-                    <a class="explainer-card" href={`/docs/${doc.id}/`}>
-                      <div class="explainer-row">
-                        <span class="explainer-title"><span class="explainer-num">{i + 1}</span>{doc.data.title}</span>
-                        {doc.data.demo && <span class="explainer-tag">▶ デモ</span>}
-                      </div>
-                      <div class="explainer-desc">{doc.data.description}</div>
-                    </a>
-                  ))}
-                </div>
-                {subCs.length > 0 && (
-                  <div class="explainer-sub-list">
-                    {subCs.map(doc => (
-                      <a class="explainer-card explainer-sub" href={`/docs/${doc.id}/`}>
-                        <span class="explainer-sub-flag">発展</span>
-                        <span class="explainer-sub-title">{doc.data.title}</span>
-                        {doc.data.demo && <span class="explainer-tag">▶</span>}
-                      </a>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-          {ungroupedDocs.length > 0 && (
-            <div class="course-chapter">
-              <div class="chapter-head"><span class="chapter-label">そのほか</span></div>
-              <div class="explainer-list">
-                {ungroupedDocs.map(doc => (
-                  <a class="explainer-card" href={`/docs/${doc.id}/`}>
-                    <div class="explainer-row">
-                      <span class="explainer-title">{doc.data.title}</span>
-                      {doc.data.demo && <span class="explainer-tag">▶ デモ</span>}
-                    </div>
-                    <div class="explainer-desc">{doc.data.description}</div>
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
-        </section>
+        <a id="docs" class="docs-teaser" href="/docs/">
+          <div class="docs-teaser-text">
+            <span class="docs-teaser-kicker">解説 — ROADMAP</span>
+            <span class="docs-teaser-title">見える物理を、触りながら一歩ずつ</span>
+            <span class="docs-teaser-desc">力学の基礎 → 声と共鳴 → 保存則の修行。{explainers.length} 本の解説を、読む順に並べた“地図”。</span>
+          </div>
+          <span class="docs-teaser-go">ロードマップを開く →</span>
+        </a>
       )}
 
       <!-- Works by group -->

@@ -1,0 +1,173 @@
+---
+import { getCollection } from 'astro:content';
+
+const explainers = await getCollection('docs');
+const isAdvanced = (d: any) => (d.data.tags ?? []).includes('発展');
+
+// 読む順の「コース」。各記事の frontmatter の series/order でグルーピングする。
+const CHAPTERS = [
+  { key: 'mechanics',    label: '力学の基礎',                  desc: '世界を式に写し、時間で1コマずつ進め、帳尻で締める。運動方程式・数値積分・エネルギー。' },
+  { key: 'waves',        label: '声と共鳴 ── 波動の入口',       desc: 'v=fλ から定在波・共鳴管・フォルマントまで一本道で。「あいうえお」が鳴る仕組み。' },
+  { key: 'conservation', label: '見える物理で「保存則」を掴む',  desc: '波・場・力を貫く2つの素朴な動き ──「足し合わせる」と「湧かない・消えない」を、触れる物理で。' },
+] as const;
+const byOrder = (a: any, b: any) => (a.data.order ?? 99) - (b.data.order ?? 99);
+
+const chapters = CHAPTERS.map(c => {
+  const docs = explainers.filter(d => d.data.series === c.key).sort(byOrder);
+  let n = 0;
+  const steps = docs.map(doc => {
+    const adv = isAdvanced(doc);
+    if (!adv) n++;
+    return { doc, adv, num: adv ? null : n };
+  });
+  return { ...c, steps };
+}).filter(c => c.steps.length > 0);
+
+const groupedKeys = new Set(CHAPTERS.map(c => c.key));
+const ungrouped = explainers
+  .filter(d => !d.data.series || !groupedKeys.has(d.data.series))
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+
+const total = explainers.length;
+---
+
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="description" content="見える物理を、触りながら一歩ずつ。力学・波動・保存則の解説ロードマップ。" />
+    <link rel="icon" href="/favicon.ico" />
+    <title>解説ロードマップ — TNKS1407</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+    <style>
+      :root{
+        --bg:#f5f2ec;--surface:#faf8f4;--surface2:#f0ece6;--card:#fff;--border:#e3dbd0;--border-dim:#ede8e0;
+        --accent:#3c7876;--accent-dim:rgba(60,120,118,0.09);--accent-soft:#e6f0ef;
+        --text:#1d1b17;--text-muted:#7d7568;--text-faint:#aaa49b;--shadow:rgba(29,27,23,0.06);--dot:#cfc9be;
+      }
+      *{margin:0;padding:0;box-sizing:border-box;}
+      html{scroll-behavior:smooth;}
+      body{font-family:'Zen Kaku Gothic New',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;
+        background-image:radial-gradient(circle,var(--dot) 1px,transparent 0);background-size:20px 20px;line-height:1.7;}
+      header{position:sticky;top:0;z-index:100;background:rgba(245,242,236,0.9);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);}
+      .header-inner{max-width:820px;margin:0 auto;height:50px;display:flex;align-items:center;justify-content:space-between;padding:0 1.3rem;}
+      .logo{font-size:1rem;font-weight:700;color:var(--text);letter-spacing:.03em;font-family:'JetBrains Mono',monospace;text-decoration:none;}
+      .logo span{color:var(--accent);}
+      .nav-links{display:flex;gap:.15rem;}
+      .nav-links a{padding:.3rem .65rem;color:var(--text-muted);text-decoration:none;font-size:.8rem;font-weight:500;border-radius:6px;transition:.15s;}
+      .nav-links a:hover{color:var(--accent);background:var(--accent-dim);}
+      main{max-width:820px;margin:0 auto;padding:2.4rem 1.3rem 5rem;}
+
+      .intro{margin-bottom:2.4rem;}
+      .intro .kicker{font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;letter-spacing:.12em;color:var(--accent);}
+      .intro h1{font-size:clamp(1.5rem,4.5vw,2rem);font-weight:700;line-height:1.2;margin:.35rem 0 .5rem;letter-spacing:-.01em;}
+      .intro p{font-size:.9rem;color:var(--text-muted);line-height:1.85;max-width:60ch;}
+      .intro .meta{margin-top:.7rem;font-family:'JetBrains Mono',monospace;font-size:.74rem;color:var(--text-faint);}
+
+      .chapter{margin-bottom:2.4rem;}
+      .chapter-head{margin-bottom:1rem;}
+      .chapter-label{font-size:1.05rem;font-weight:700;color:var(--text);display:flex;align-items:center;gap:.5rem;}
+      .chapter-label::before{content:'❖';color:var(--accent);font-size:.9rem;}
+      .chapter-desc{font-size:.83rem;color:var(--text-muted);margin-top:.3rem;line-height:1.7;max-width:62ch;}
+
+      .track{padding-left:.2rem;}
+      .step{display:flex;gap:1rem;position:relative;padding-bottom:.85rem;text-decoration:none;color:inherit;}
+      .step:not(:last-child)::before{content:'';position:absolute;left:16px;top:36px;bottom:-2px;width:2px;background:var(--border);}
+      .step-node{flex-shrink:0;width:34px;display:flex;justify-content:center;}
+      .step-num{width:34px;height:34px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;
+        font-family:'JetBrains Mono',monospace;font-weight:700;font-size:.92rem;box-shadow:0 2px 6px var(--shadow);position:relative;z-index:1;}
+      .step-flag{margin-top:5px;padding:.18rem .5rem;border-radius:999px;background:var(--surface2);border:1px solid var(--border);
+        color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-weight:700;font-size:.58rem;position:relative;z-index:1;}
+      .step-card{flex:1;min-width:0;background:var(--card);border:1px solid var(--border);border-radius:13px;padding:.8rem 1.05rem;
+        box-shadow:0 1px 6px var(--shadow);transition:border-color .2s,transform .2s,box-shadow .2s;}
+      .step:hover .step-card{border-color:var(--accent);transform:translateX(3px);box-shadow:0 4px 14px var(--shadow);}
+      .step-adv .step-card{background:var(--surface);}
+      .step-title-row{display:flex;align-items:center;gap:.5rem;justify-content:space-between;}
+      .step-title{font-weight:700;font-size:.95rem;color:var(--text);}
+      .step-adv .step-title{font-size:.88rem;color:var(--text-muted);}
+      .step-demo{flex-shrink:0;font-size:.64rem;font-weight:700;color:var(--accent);background:var(--accent-dim);
+        border:1px solid rgba(60,120,118,.25);border-radius:999px;padding:.08rem .5rem;font-family:'JetBrains Mono',monospace;}
+      .step-desc{font-size:.82rem;color:var(--text-muted);line-height:1.6;margin-top:.32rem;}
+      .step-adv .step-desc{font-size:.78rem;}
+
+      footer{max-width:820px;margin:0 auto;padding:1.5rem 1.3rem 3rem;font-size:.78rem;color:var(--text-faint);
+        font-family:'JetBrains Mono',monospace;border-top:1px solid var(--border);}
+      footer a{color:var(--accent);text-decoration:none;}
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="header-inner">
+        <a href="/" class="logo">TNK<span>S</span>1407</a>
+        <nav class="nav-links">
+          <a href="/">ホーム</a>
+          <a href="https://tnkblog.net" target="_blank" rel="noopener noreferrer">Blog ↗</a>
+          <a href="https://github.com/TNKS1407" target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <div class="intro">
+        <span class="kicker">解説 — ROADMAP</span>
+        <h1>見える物理を、触りながら一歩ずつ</h1>
+        <p>読むだけで終わらないように、ほとんどの記事に「動かせる遊び場」を添えてある。下の順番に辿ると、力学の基礎から始まって、波と共鳴を抜け、最後は「足し合わせ」と「保存」で場までを、一本の道として掴めるようにしてあるよ。もちろん、気になった所からつまんでも大丈夫。</p>
+        <div class="meta">{total} 本 ・ {chapters.length} 章</div>
+      </div>
+
+      {chapters.map(c => (
+        <section class="chapter">
+          <div class="chapter-head">
+            <div class="chapter-label">{c.label}</div>
+            <div class="chapter-desc">{c.desc}</div>
+          </div>
+          <div class="track">
+            {c.steps.map(({ doc, adv, num }) => (
+              <a class={`step${adv ? ' step-adv' : ''}`} href={`/docs/${doc.id}/`}>
+                <div class="step-node">
+                  {adv ? <span class="step-flag">発展</span> : <span class="step-num">{num}</span>}
+                </div>
+                <div class="step-card">
+                  <div class="step-title-row">
+                    <span class="step-title">{doc.data.title}</span>
+                    {doc.data.demo && <span class="step-demo">▶ デモ</span>}
+                  </div>
+                  <div class="step-desc">{doc.data.description}</div>
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      ))}
+
+      {ungrouped.length > 0 && (
+        <section class="chapter">
+          <div class="chapter-head">
+            <div class="chapter-label">そのほか</div>
+          </div>
+          <div class="track">
+            {ungrouped.map(doc => (
+              <a class="step step-adv" href={`/docs/${doc.id}/`}>
+                <div class="step-node"><span class="step-flag">記事</span></div>
+                <div class="step-card">
+                  <div class="step-title-row">
+                    <span class="step-title">{doc.data.title}</span>
+                    {doc.data.demo && <span class="step-demo">▶ デモ</span>}
+                  </div>
+                  <div class="step-desc">{doc.data.description}</div>
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+    </main>
+
+    <footer>
+      ← <a href="/">TNKS1407 ホームへ</a> ・ <a href="https://tnkblog.net" target="_blank" rel="noopener noreferrer">tnkblog.net</a>
+    </footer>
+  </body>
+</html>
