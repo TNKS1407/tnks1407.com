@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>1/r² は保存から — 点源・フラックス・球面</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
+    --accent:#3c7876;--amber:#c9761f;--red:#c2543d;--text:#1d1b17;--text-muted:#7d7568;--text-faint:#aaa49b;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--text);
+    font-family:'Zen Kaku Gothic New','Hiragino Sans','Meiryo',system-ui,sans-serif;line-height:1.7;}
+  .wrap{max-width:760px;margin:0 auto;padding:14px 14px 22px;}
+  section{background:var(--card);border:1px solid var(--border);border-radius:14px;
+    padding:14px 16px 16px;box-shadow:0 1px 6px rgba(29,27,23,.05);}
+  .w-title{font-size:1rem;font-weight:700;margin:0 0 .2rem;}
+  .w-sub{font-size:.78rem;color:var(--text-muted);margin:0 0 .8rem;line-height:1.6;}
+  canvas{display:block;width:100%;max-width:460px;margin:0 auto;border:1px solid var(--border);border-radius:10px;background:var(--surface);}
+  .controls{display:flex;flex-wrap:wrap;gap:.5rem 1rem;align-items:center;margin-top:.9rem;justify-content:center;}
+  .cg{display:flex;align-items:center;gap:.5rem;}
+  .cg label{font-size:.74rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted);white-space:nowrap;}
+  .cg input[type=range]{width:150px;accent-color:var(--accent);}
+  .cg .v{font-size:.74rem;font-family:'JetBrains Mono',monospace;color:var(--accent);font-weight:600;min-width:3.4ch;}
+  .btn{padding:.3rem .7rem;border:1px solid var(--border);border-radius:7px;background:none;
+    font-family:'JetBrains Mono',monospace;font-size:.74rem;color:var(--text-muted);cursor:pointer;transition:.15s;}
+  .btn:hover{border-color:var(--accent);color:var(--accent);}
+  .btn.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .readout{margin-top:.7rem;font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--text);
+    background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:.55rem .8rem;line-height:1.9;}
+  .readout b{color:var(--accent);} .readout .r{color:var(--red);font-weight:700;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section>
+    <div class="w-title">1/r² は、保存から生まれる — 点源・フラックス・球面</div>
+    <p class="w-sub">真ん中の点源から、線（＝エネルギーの“筋”）が四方八方へ伸びる。線は途中で増えも消えもしない ── これが <b>保存</b>。だから、半径 r の球面を貫く線の <b>本数（フラックス）は、r によらずいつも同じ</b>。でも球面は遠いほど広い（面積 4πr²）から、<b style="color:var(--red)">線の混み具合（密度）は薄まる</b>。半径 r を動かして、同じ本数が広い面にばらける＝1/r² を見て。</p>
+    <canvas id="cv" width="440" height="380"></canvas>
+    <div class="controls">
+      <div class="cg"><label>半径 r</label><input type="range" id="r" min="50" max="180" step="1" value="80"><span class="v" id="r-v">80</span></div>
+      <div class="cg"><label>次元</label><button class="btn on" id="d3">3D 球面 (1/r²)</button><button class="btn" id="d2">2D 円 (1/r)</button></div>
+    </div>
+    <div class="readout" id="read"></div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var cv=document.getElementById('cv'), ctx=cv.getContext('2d'), W=cv.width, H=cv.height;
+  var cx=W/2, cy=H/2, R=Math.min(W,H)/2-8;
+  var rEl=document.getElementById('r'), rV=document.getElementById('r-v'), read=document.getElementById('read');
+  var TEAL='#3c7876', AMBER='#c9761f', RED='#c2543d', INK='#1d1b17', FAINT='#cfc9be', SURF='#faf8f4';
+  var N=28, dim=3, r0=50;                 // N本の線、r0=基準半径（密度1の所）
+
+  function draw(){
+    var r=+rEl.value;
+    ctx.clearRect(0,0,W,H); ctx.fillStyle=SURF; ctx.fillRect(0,0,W,H);
+    // 線（フラックス）: 中心から端まで。途中で増減しない＝保存
+    ctx.strokeStyle='rgba(60,120,118,.5)'; ctx.lineWidth=1;
+    for(var i=0;i<N;i++){ var a=2*Math.PI*i/N; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+R*Math.cos(a), cy+R*Math.sin(a)); ctx.stroke(); }
+    // 基準球面 r0（薄く）
+    ctx.strokeStyle='rgba(170,164,155,.5)'; ctx.setLineDash([2,3]); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.arc(cx,cy,r0,0,2*Math.PI); ctx.stroke(); ctx.setLineDash([]);
+    // 測る球面 r（オレンジ）＋ 貫く点
+    ctx.strokeStyle=AMBER; ctx.setLineDash([5,4]); ctx.lineWidth=1.8;
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,2*Math.PI); ctx.stroke(); ctx.setLineDash([]);
+    for(var j=0;j<N;j++){ var a2=2*Math.PI*j/N; ctx.beginPath(); ctx.arc(cx+r*Math.cos(a2), cy+r*Math.sin(a2), 3, 0, 2*Math.PI); ctx.fillStyle=AMBER; ctx.fill(); }
+    // 源
+    ctx.beginPath(); ctx.arc(cx,cy,5,0,2*Math.PI); ctx.fillStyle=INK; ctx.fill();
+    // ラベル
+    ctx.fillStyle=AMBER; ctx.font="11px 'JetBrains Mono',monospace"; ctx.fillText('半径 r の球面', cx+r*0.707+4, cy-r*0.707-4);
+    ctx.fillStyle='#9aa3a8'; ctx.fillText('r₀', cx+r0+3, cy-3);
+    // 読み出し
+    var ratio=r/r0;
+    var dens = dim===3 ? 1/(ratio*ratio) : 1/ratio;
+    var areaStr = dim===3 ? '4πr²' : '2πr';
+    var law = dim===3 ? '1/r²' : '1/r';
+    read.innerHTML='貫く線の本数（フラックス）＝ <b>'+N+'（r によらず一定）</b>。'+
+      '球面の面積 ＝ '+areaStr+'。<br>'+
+      '密度 ＝ 本数 ÷ 面積 ＝ '+N+' / '+areaStr+' ∝ <span class="r">'+law+'</span>。'+
+      'いまの密度 ≈ <b>'+dens.toFixed(2)+'</b>（r₀ のとき 1）── r を '+ratio.toFixed(1)+' 倍にすると密度は '+dens.toFixed(2)+' 倍。';
+  }
+  rEl.oninput=function(){ rV.textContent=rEl.value; draw(); };
+  document.getElementById('d3').onclick=function(){ dim=3; this.classList.add('on'); document.getElementById('d2').classList.remove('on'); draw(); };
+  document.getElementById('d2').onclick=function(){ dim=2; this.classList.add('on'); document.getElementById('d3').classList.remove('on'); draw(); };
+  var qd=new URLSearchParams(location.search).get('dim'); if(qd==='2'){ dim=2; document.getElementById('d2').classList.add('on'); document.getElementById('d3').classList.remove('on'); }
+  rV.textContent=rEl.value; draw();
+})();
+</script>
+</body>
+</html>
