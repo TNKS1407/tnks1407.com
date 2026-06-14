@@ -31,6 +31,27 @@ order: 1
 
 どうやって式になるのか、糸でやってみよう。「糸が伸びない」とは、要するに **両端のあいだの長さが一定** ということ。長さが変わらない、を時間で1回微分すると、両端の **速度** のあいだの関係が出る。もう1回微分すると、こんどは **加速度** のあいだの関係になる ── これがそのまま運動方程式に差し込める1本だ。だから束縛条件は、「形の約束」を時間で微分して、運動の言葉（加速度）に翻訳したもの、と言える。具体的には、糸が動滑車をはさめば $a = 2A$、面から離れないなら面に垂直な加速度が $a_n = 0$、動く台の斜面に乗っていれば $a_y = -\tan\theta\,(a_x - A_x)$ ── どれも、力のつり合いをいくら睨んでも出てこない。形を見て、初めて書ける式なんだ。でもこれを足して、ようやく式の本数が未知数の数に追いつく。
 
+<figure style="margin:1.6rem 0;text-align:center;">
+<svg viewBox="0 0 460 220" width="460" style="max-width:100%;height:auto;font-family:'JetBrains Mono',monospace;">
+  <rect x="120" y="20" width="220" height="42" rx="9" fill="#faf8f4" stroke="#cfc9be"/>
+  <text x="230" y="39" font-size="11.5" fill="#1d1b17" text-anchor="middle">形の約束：糸の長さ ℓ ＝ 一定</text>
+  <text x="230" y="54" font-size="9.5" fill="#7d7568" text-anchor="middle">（伸びない・たるまない）</text>
+  <line x1="230" y1="62" x2="230" y2="90" stroke="#3c7876" stroke-width="1.4"/>
+  <polygon points="230,93 225,84 235,84" fill="#3c7876"/>
+  <text x="242" y="80" font-size="10" fill="#3c7876">時間で1回 微分</text>
+  <rect x="120" y="95" width="220" height="40" rx="9" fill="#faf8f4" stroke="#cfc9be"/>
+  <text x="230" y="113" font-size="11" fill="#1d1b17" text-anchor="middle">速度どうしの関係</text>
+  <text x="230" y="128" font-size="10" fill="#7d7568" text-anchor="middle">dℓ/dt = 0</text>
+  <line x1="230" y1="135" x2="230" y2="162" stroke="#3c7876" stroke-width="1.4"/>
+  <polygon points="230,165 225,156 235,156" fill="#3c7876"/>
+  <text x="242" y="152" font-size="10" fill="#3c7876">もう1回 微分</text>
+  <rect x="120" y="167" width="220" height="42" rx="9" fill="#e6f0ef" stroke="#3c7876"/>
+  <text x="230" y="185" font-size="11" fill="#3c7876" text-anchor="middle">加速度どうしの関係 ＝ 束縛条件</text>
+  <text x="230" y="200" font-size="10" fill="#3c7876" text-anchor="middle">d²ℓ/dt² = 0  →  a の関係</text>
+</svg>
+<figcaption style="font-size:.8rem;color:#aaa49b;margin-top:.3rem;">「長さが一定」という形の約束を、時間で2回微分すると、加速度どうしの関係になる ── これが運動方程式に差し込める束縛条件。</figcaption>
+</figure>
+
 ## 式が揃うと、運動が一意に決まる
 
 未知数の数と、独立な式の数。その差が **自由度** だ。
@@ -38,6 +59,25 @@ order: 1
 $$\text{自由度} = (\text{未知数の数}) - (\text{独立な式の数})$$
 
 式が足りないあいだ（自由度 > 0）は、運動は一つに決まらない。決まらない量は「自由なパラメータ」として宙ぶらりんのまま残る。束縛条件まで含めて式が必要な数だけ揃うと、自由度がゼロになり、運動がただ一通りに確定する。（厳密には、力学でいう自由度は「物体の配置を決めるのに最低限いる独立な座標の数」のことでもある。でもここではまず、**まだ勝手に選べてしまう量の数** と思っておけばいい。）
+
+<figure style="margin:1.6rem 0;text-align:center;">
+<svg viewBox="0 0 470 200" width="470" style="max-width:100%;height:auto;font-family:'JetBrains Mono',monospace;">
+  <text x="100" y="32" font-size="11" fill="#7d7568" text-anchor="middle">未知数（3つ）</text>
+  <text x="335" y="32" font-size="11" fill="#7d7568" text-anchor="middle">式</text>
+  <rect x="74" y="46" width="52" height="26" rx="7" fill="#faf8f4" stroke="#cfc9be"/><text x="100" y="63" font-size="12" fill="#1d1b17" text-anchor="middle">a</text>
+  <rect x="74" y="86" width="52" height="26" rx="7" fill="#faf8f4" stroke="#cfc9be"/><text x="100" y="103" font-size="12" fill="#1d1b17" text-anchor="middle">A</text>
+  <rect x="74" y="126" width="52" height="26" rx="7" fill="#faf8f4" stroke="#cfc9be"/><text x="100" y="143" font-size="12" fill="#1d1b17" text-anchor="middle">T</text>
+  <rect x="250" y="46" width="170" height="26" rx="7" fill="#faf8f4" stroke="#cfc9be"/><text x="335" y="63" font-size="11" fill="#1d1b17" text-anchor="middle">運動方程式 ①</text>
+  <rect x="250" y="86" width="170" height="26" rx="7" fill="#faf8f4" stroke="#cfc9be"/><text x="335" y="103" font-size="11" fill="#1d1b17" text-anchor="middle">運動方程式 ②</text>
+  <rect x="250" y="126" width="170" height="26" rx="7" fill="#e6f0ef" stroke="#3c7876"/><text x="335" y="143" font-size="11" fill="#3c7876" text-anchor="middle">束縛条件（形の約束）</text>
+  <line x1="126" y1="59" x2="250" y2="59" stroke="#1d1b17" stroke-width="1.3"/>
+  <line x1="126" y1="99" x2="250" y2="99" stroke="#1d1b17" stroke-width="1.3"/>
+  <line x1="126" y1="139" x2="250" y2="139" stroke="#3c7876" stroke-width="1.6"/>
+  <text x="188" y="134" font-size="9.5" fill="#3c7876" text-anchor="middle">＋1本で閉じる</text>
+  <text x="235" y="182" font-size="10.5" fill="#1d1b17" text-anchor="middle">力の式は2本だけ → T の相手が足りない。形の式を1本足して、3 ＝ 3（自由度0）。</text>
+</svg>
+<figcaption style="font-size:.8rem;color:#aaa49b;margin-top:.3rem;">未知数は加速度 a・A と張力 T の3つ。でも運動方程式は2本で、T の相手が足りない。「形の約束」＝束縛条件を1本足すと、未知数3 ＝ 式3 でぴたりと閉じる（自由度0）。</figcaption>
+</figure>
 
 ただ、ひとつ気をつけたい。式が揃って決まるのは、**その瞬間の** 未知の力や加速度のほうだ。実際の軌道を一本に引くには、もうひとつ要る ── **最初にどこにいて、どんな速度を持っていたか**（初期条件）。同じ運動方程式でも、そっと置くのと、勢いをつけて放すのとでは、描かれる運動はまるで違う。式が“動ける形”を決め、初期条件が“そのうちのどの一本か”を選ぶ、という分担だね。
 

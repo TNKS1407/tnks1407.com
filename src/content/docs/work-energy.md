@@ -37,6 +37,28 @@ $$W = \tfrac12 m v_1^{\,2} - \tfrac12 m v_0^{\,2}, \qquad\text{つまり}\quad \
 
 これが **仕事・エネルギー定理**。$\tfrac12 mv^2$ は、運動方程式を1回積分したときに出てくる「速さで決まる量」として定義された、ただそれだけのものなんだ。
 
+<figure style="margin:1.6rem 0;text-align:center;">
+<svg viewBox="0 0 470 210" width="470" style="max-width:100%;height:auto;font-family:'JetBrains Mono',monospace;">
+  <text x="34" y="28" font-size="11.5" fill="#1d1b17">同じ運動を、2つのものさしで測る</text>
+  <line x1="218" y1="74" x2="272" y2="140" stroke="#cfc9be" stroke-width="1" stroke-dasharray="3 3"/>
+  <line x1="278" y1="74" x2="354" y2="140" stroke="#cfc9be" stroke-width="1" stroke-dasharray="3 3"/>
+  <text x="34" y="78" font-size="10.5" fill="#7d7568">時間 t</text>
+  <line x1="80" y1="74" x2="430" y2="74" stroke="#3c7876" stroke-width="1.6"/>
+  <g stroke="#3c7876" stroke-width="1.4">
+    <line x1="98" y1="68" x2="98" y2="80"/><line x1="158" y1="68" x2="158" y2="80"/><line x1="218" y1="68" x2="218" y2="80"/><line x1="278" y1="68" x2="278" y2="80"/><line x1="338" y1="68" x2="338" y2="80"/><line x1="398" y1="68" x2="398" y2="80"/>
+  </g>
+  <text x="248" y="58" font-size="11" fill="#3c7876" text-anchor="middle">dt（等間隔）</text>
+  <text x="34" y="146" font-size="10.5" fill="#7d7568">位置 x</text>
+  <line x1="80" y1="142" x2="430" y2="142" stroke="#c9761f" stroke-width="1.6"/>
+  <g stroke="#c9761f" stroke-width="1.4">
+    <line x1="98" y1="136" x2="98" y2="148"/><line x1="144" y1="136" x2="144" y2="148"/><line x1="202" y1="136" x2="202" y2="148"/><line x1="272" y1="136" x2="272" y2="148"/><line x1="354" y1="136" x2="354" y2="148"/>
+  </g>
+  <text x="313" y="164" font-size="11" fill="#c9761f" text-anchor="middle">dx = v·dt（速いほど広い）</text>
+  <text x="235" y="196" font-size="12.5" fill="#1d1b17" text-anchor="middle">a·dx = (dv/dt)·dx = v·dv　→　½mv²</text>
+</svg>
+<figcaption style="font-size:.8rem;color:#aaa49b;margin-top:.3rem;">加速度は「時間あたり」の速度変化。でも仕事で見たいのは「距離あたり」だ。ものさしを t から x へ持ち替えると、dx = v·dt で時間が消えて a dx = v dv ── 足し合わせれば ½mv² が出てくる。</figcaption>
+</figure>
+
 仕事を一般に
 
 $$W = \int_{x_0}^{x_1} \vec{F}\cdot d\vec{x} = \int_{x_0}^{x_1} F\cos\theta\,dx$$
@@ -116,6 +138,33 @@ $$\tfrac12 mv^2 + U = \text{一定}$$
 $$\text{力学的エネルギーの変化} = (\text{非保存力のした仕事})$$
 
 となって、和は保たれない。でも、ここで「失われた」と言うときは、少し気をつけたい。エネルギーが世界から消えたわけじゃないんだ。消えたのは、$K$ と $U$ **だけ** で閉じていた、小さな帳簿のほう。摩擦があると、物体のそろった運動のエネルギーが、たくさんの分子のバラバラな運動 ── つまり **熱** ── へと散っていく。力学的エネルギーという欄の数字は、確かに減る。けれど、もっと大きな帳簿で見れば、それは **別の欄へ移った** だけなんだ。── [干渉で“消えた”波のエネルギーはどこへ行ったのか](/docs/two-dimensional-waves/) を考えたときと、じつは同じ話をしている。消えたように見えても、台帳を広げれば、ちゃんと釣り合っている。
+
+<figure style="margin:1.6rem 0;text-align:center;">
+<svg viewBox="0 0 470 220" width="470" style="max-width:100%;height:auto;font-family:'JetBrains Mono',monospace;">
+  <line x1="50" y1="60" x2="430" y2="60" stroke="#7d7568" stroke-width="1.2" stroke-dasharray="5 3"/>
+  <text x="436" y="63" font-size="10.5" fill="#7d7568">E</text>
+  <line x1="50" y1="180" x2="430" y2="180" stroke="#cfc9be" stroke-width="1.2"/>
+  <rect x="70" y="130" width="60" height="50" fill="rgba(60,120,118,0.7)"/>
+  <rect x="70" y="60" width="60" height="70" fill="rgba(201,118,31,0.55)"/>
+  <text x="100" y="159" font-size="11" fill="#fff" text-anchor="middle">K</text>
+  <text x="100" y="100" font-size="11" fill="#1d1b17" text-anchor="middle">U</text>
+  <text x="100" y="196" font-size="10" fill="#7d7568" text-anchor="middle">摩擦なし</text>
+  <rect x="200" y="140" width="60" height="40" fill="rgba(60,120,118,0.7)"/>
+  <rect x="200" y="95" width="60" height="45" fill="rgba(201,118,31,0.55)"/>
+  <line x1="230" y1="95" x2="230" y2="62" stroke="#c2543d" stroke-width="1" stroke-dasharray="2 2"/>
+  <text x="230" y="196" font-size="10" fill="#7d7568" text-anchor="middle">摩擦あり</text>
+  <text x="289" y="84" font-size="9.5" fill="#c2543d" text-anchor="middle">減った分</text>
+  <path d="M262 80 Q298 80 316 80" fill="none" stroke="#c2543d" stroke-width="1.4"/>
+  <polygon points="318,80 310,76 310,84" fill="#c2543d"/>
+  <text x="290" y="70" font-size="9.5" fill="#c2543d" text-anchor="middle">どこへ？</text>
+  <rect x="340" y="140" width="60" height="40" fill="rgba(60,120,118,0.7)"/>
+  <rect x="340" y="95" width="60" height="45" fill="rgba(201,118,31,0.55)"/>
+  <rect x="340" y="60" width="60" height="35" fill="rgba(194,84,61,0.5)"/>
+  <text x="370" y="82" font-size="11" fill="#1d1b17" text-anchor="middle">熱</text>
+  <text x="370" y="196" font-size="10" fill="#7d7568" text-anchor="middle">大きな帳簿</text>
+</svg>
+<figcaption style="font-size:.8rem;color:#aaa49b;margin-top:.3rem;">摩擦があると、K＋U（力学的エネルギー）は E に届かなくなる ── 減ったように見える。でも消えたわけじゃなく、その分は「熱」という別の欄へ移っただけ。大きな帳簿で見れば、合計はちゃんと E のまま。</figcaption>
+</figure>
 
 > 高校範囲では、保存力は重力・万有引力・ばね・電荷にかかる電場の4つだけと思っておいて差し支えないよ。摩擦のように熱を伴う力は、仕事が経路に依存するので非保存力だ。
 

@@ -44,6 +44,33 @@ $$x_{n+1} = x_n + v_n\,\Delta t$$
 
 このループは近似だ。どこで近似しているのか、を言葉にしておきたい。本当は、$\Delta t$ のあいだにも速度は少しずつ増えている。でもオイラー法は、その区間を「**はじめの速度 $v_n$ のまま進んだ**」とみなして位置を出す。ここに、小さな嘘がある。自由落下なら、区間の途中で本当はもう少し速くなっているのに、はじめの遅い速度で進んだことにするので、**1コマごとに移動距離をちょっとだけ小さく見積もる**。その小さな嘘が積もって、折れ線が厳密解から少しずつずれていくんだ。だから $\Delta t$ を小さくすると、一回ぶんの“嘘をつく時間”が短くなって、ずれも小さくなる ── $\Delta t$ が大きいとカクカクした折れ線になり、小さくすると点の列がなめらかになって本当の答えに寄っていくのは、これが理由だよ。
 
+<figure style="margin:1.6rem 0;text-align:center;">
+<svg viewBox="0 0 460 250" width="460" style="max-width:100%;height:auto;font-family:'JetBrains Mono',monospace;">
+  <line x1="60" y1="40" x2="60" y2="190" stroke="#cfc9be" stroke-width="1.2"/>
+  <line x1="60" y1="190" x2="425" y2="190" stroke="#cfc9be" stroke-width="1.2"/>
+  <text x="48" y="46" font-size="11" fill="#7d7568" text-anchor="end">速度 v</text>
+  <text x="424" y="205" font-size="11" fill="#7d7568" text-anchor="end">時間 t</text>
+  <polygon points="140,190 140,146 300,146 300,190" fill="rgba(201,118,31,0.16)"/>
+  <polygon points="140,146 300,146 300,97" fill="rgba(194,84,61,0.22)"/>
+  <polygon points="140,190 140,146 300,97 300,190" fill="none" stroke="#3c7876" stroke-width="1.4"/>
+  <line x1="60" y1="170" x2="420" y2="60" stroke="#1d1b17" stroke-width="2"/>
+  <line x1="140" y1="146" x2="140" y2="190" stroke="#7d7568" stroke-width="1" stroke-dasharray="3 2"/>
+  <line x1="300" y1="97" x2="300" y2="190" stroke="#7d7568" stroke-width="1" stroke-dasharray="3 2"/>
+  <circle cx="140" cy="146" r="3" fill="#1d1b17"/>
+  <circle cx="300" cy="97" r="3" fill="#1d1b17"/>
+  <text x="133" y="140" font-size="11" fill="#1d1b17" text-anchor="end">vₙ</text>
+  <text x="308" y="92" font-size="11" fill="#1d1b17">vₙ₊₁</text>
+  <text x="220" y="205" font-size="11" fill="#7d7568" text-anchor="middle">Δt</text>
+  <rect x="60" y="219" width="11" height="9" fill="rgba(201,118,31,0.5)"/>
+  <text x="75" y="227" font-size="10.5" fill="#1d1b17">オイラー＝vₙの長方形</text>
+  <rect x="232" y="219" width="11" height="9" fill="rgba(194,84,61,0.55)"/>
+  <text x="247" y="227" font-size="10.5" fill="#1d1b17">足りない＝誤差</text>
+  <line x1="352" y1="224" x2="364" y2="224" stroke="#3c7876" stroke-width="1.6"/>
+  <text x="368" y="227" font-size="10.5" fill="#1d1b17">本当＝台形</text>
+</svg>
+<figcaption style="font-size:.8rem;color:#aaa49b;margin-top:.3rem;">本当の移動距離は、速度カーブの下＝台形の面積。でもオイラー法は古い速度 vₙ の長方形で進むから、上の三角形のぶんだけ足りない ── これが1コマぶんの誤差。Δt を小さくすると、この三角形も小さくなる。</figcaption>
+</figure>
+
 自由落下の厳密解は
 
 $$x(t) = \tfrac12 g t^2$$
