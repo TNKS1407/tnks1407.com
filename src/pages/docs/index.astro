@@ -8,7 +8,7 @@ const isAdvanced = (d: any) => (d.data.tags ?? []).includes('発展');
 const CHAPTERS = [
   { key: 'mechanics',    label: '力学の基礎',                  desc: '世界を式に写し、時間で1コマずつ進め、帳尻で締める。運動方程式・数値積分・エネルギー。' },
   { key: 'waves',        label: '声と共鳴 ── 波動の入口',       desc: 'v=fλ から定在波・共鳴管・フォルマントまで一本道で。「あいうえお」が鳴る仕組み。' },
-  { key: 'conservation', label: '見える物理で「保存則」を掴む',  desc: '波・場・力を貫く2つの素朴な動き ──「足し合わせる」と「湧かない・消えない」を、触れる物理で。' },
+  { key: 'conservation', label: '見える物理で「保存する量」を掴む',  desc: '波・場・力を貫く2つの素朴な動き ──「足し合わせる」と「湧かない・消えない」を、触れる物理で。（エネルギー保存“則”に限らない、もっと広い“保存”の話）' },
 ] as const;
 const byOrder = (a: any, b: any) => (a.data.order ?? 99) - (b.data.order ?? 99);
 
