@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>源を足して、場を作る — 重ね合わせとポテンシャル</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
+    --accent:#3c7876;--amber:#c9761f;--red:#c2543d;--text:#1d1b17;--text-muted:#7d7568;--text-faint:#aaa49b;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--text);
+    font-family:'Zen Kaku Gothic New','Hiragino Sans','Meiryo',system-ui,sans-serif;line-height:1.7;}
+  .wrap{max-width:760px;margin:0 auto;padding:14px 14px 22px;}
+  section{background:var(--card);border:1px solid var(--border);border-radius:14px;
+    padding:14px 16px 16px;box-shadow:0 1px 6px rgba(29,27,23,.05);}
+  .w-title{font-size:1rem;font-weight:700;margin:0 0 .2rem;}
+  .w-sub{font-size:.78rem;color:var(--text-muted);margin:0 0 .8rem;line-height:1.6;}
+  canvas{display:block;width:100%;max-width:520px;margin:0 auto;border:1px solid var(--border);border-radius:10px;background:var(--surface);cursor:crosshair;touch-action:manipulation;}
+  .controls{display:flex;flex-wrap:wrap;gap:.5rem .9rem;align-items:center;margin-top:.9rem;justify-content:center;}
+  .cg{display:flex;align-items:center;gap:.45rem;}
+  .cg label{font-size:.74rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted);white-space:nowrap;}
+  .btn{padding:.3rem .7rem;border:1px solid var(--border);border-radius:7px;background:none;
+    font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--text-muted);cursor:pointer;transition:.15s;}
+  .btn:hover{border-color:var(--accent);color:var(--accent);}
+  .btn.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .btn.red.on{background:var(--red);border-color:var(--red);}
+  .readout{margin-top:.7rem;font-family:'JetBrains Mono',monospace;font-size:.76rem;color:var(--text);
+    background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:.55rem .8rem;line-height:1.85;}
+  .readout b{color:var(--accent);} .readout .r{color:var(--red);font-weight:700;} .readout .t{color:var(--accent);font-weight:700;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section>
+    <div class="w-title">源を足して、場を作る — 重ね合わせ × ポテンシャル</div>
+    <p class="w-sub">源をひとつ置くと、まわりに <b>1/r</b> のすり鉢（ポテンシャル）ができる。源を増やすと、そのすり鉢がただ <b>足し算</b> される ── でこぼこの地形になるんだ。場（力の向き）は、その地形の <b>坂</b>。ボールが転がり落ちる向きで、急なほど強い。<b>キャンバスをクリックで源を追加</b>。＋（赤）と −（青）を混ぜると双極子になるよ。</p>
+    <canvas id="cv" width="520" height="360"></canvas>
+    <div class="controls">
+      <div class="cg"><label>見せ方</label><button class="btn on" id="vpot">ポテンシャル地形</button><button class="btn" id="vfld">場（坂の向き）</button></div>
+      <div class="cg"><label>置く源</label><button class="btn red on" id="sp">＋</button><button class="btn" id="sm">−</button></div>
+    </div>
+    <div class="controls" style="margin-top:.5rem;">
+      <div class="cg"><label>例</label><button class="btn" id="e1">1つ</button><button class="btn on" id="e2">2つ（同符号）</button><button class="btn" id="ed">双極子 ＋−</button><button class="btn" id="e3">3つ</button></div>
+      <div class="cg"><button class="btn" id="clr">クリア</button></div>
+    </div>
+    <div class="readout" id="read"></div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var cv=document.getElementById('cv'), ctx=cv.getContext('2d'), W=cv.width, H=cv.height;
+  var read=document.getElementById('read');
+  var RED=[194,84,61], TEAL=[60,120,118], SURF=[250,248,244], INK='#1d1b17';
+  var SOFT=15, K=26;          // 地形の正則化と色のスケール
+  var srcs=[], view='pot', sign=+1;
+
+  function phi(x,y){ var s=0; for(var i=0;i<srcs.length;i++){ var dx=x-srcs[i].x,dy=y-srcs[i].y; s+=srcs[i].q/Math.sqrt(dx*dx+dy*dy+SOFT*SOFT); } return s; }
+  function field(x,y){ var ex=0,ey=0; for(var i=0;i<srcs.length;i++){ var dx=x-srcs[i].x,dy=y-srcs[i].y,r2=dx*dx+dy*dy+SOFT*SOFT,r=Math.sqrt(r2),inv=srcs[i].q/(r2*r); ex+=dx*inv; ey+=dy*inv; } return {x:ex,y:ey}; }
+  function colmap(s){ s=Math.max(-1,Math.min(1,s)); var c=Math.abs(s),t=s>=0?RED:TEAL;
+    return [Math.round(SURF[0]+(t[0]-SURF[0])*c),Math.round(SURF[1]+(t[1]-SURF[1])*c),Math.round(SURF[2]+(t[2]-SURF[2])*c)]; }
+
+  /* ── ポテンシャル地形：ヒートマップ＋等高線 ── */
+  function drawPotential(){
+    var img=ctx.createImageData(W,H), d=img.data;
+    for(var y=0;y<H;y++){ for(var x=0;x<W;x++){ var s=Math.tanh(phi(x,y)*K), c=colmap(s), o=(y*W+x)*4; d[o]=c[0];d[o+1]=c[1];d[o+2]=c[2];d[o+3]=255; } }
+    ctx.putImageData(img,0,0);
+    // 等高線（squash した s 上で等間隔）
+    var cell=8, gw=Math.floor(W/cell)+1, gh=Math.floor(H/cell)+1, g=new Float32Array(gw*gh);
+    for(var j=0;j<gh;j++){ for(var i=0;i<gw;i++){ g[j*gw+i]=Math.tanh(phi(i*cell,j*cell)*K); } }
+    ctx.lineWidth=1; ctx.strokeStyle='rgba(29,27,23,.22)';
+    var levels=[-0.8,-0.6,-0.4,-0.2,0.2,0.4,0.6,0.8];
+    for(var L=0;L<levels.length;L++){ var lv=levels[L]; ctx.beginPath();
+      for(var jj=0;jj<gh-1;jj++){ for(var ii=0;ii<gw-1;ii++){ isoCell(ii*cell,jj*cell,cell,g[jj*gw+ii],g[jj*gw+ii+1],g[(jj+1)*gw+ii+1],g[(jj+1)*gw+ii],lv); } }
+      ctx.stroke(); }
+    drawSources();
+    var np=0,nm=0; for(var k=0;k<srcs.length;k++){ if(srcs[k].q>0)np++; else nm++; }
+    read.innerHTML='いま源は <b>'+srcs.length+'個</b>（＋'+np+'・−'+nm+'）。地形 ＝ 各源の 1/r を <b>そのまま足した</b>もの ── φ(P) = Σ q/r。<br>'+
+      '<span class="r">赤</span>＝高い（＋源のまわり）、<span class="t">青</span>＝低い（−源のまわり）、等高線が混むほど坂が急＝場が強い。源を足すだけで、入り組んだ地形ができていくね。';
+  }
+  function isoCell(x,y,c,a,b,cc,dd,L){
+    var idx=(a>=L?8:0)|(b>=L?4:0)|(cc>=L?2:0)|(dd>=L?1:0);
+    if(idx===0||idx===15)return;
+    function ip(va,vb){ return (L-va)/(vb-va); }
+    var T={x:x+c*ip(a,b),y:y}, R={x:x+c,y:y+c*ip(b,cc)}, B={x:x+c*ip(dd,cc),y:y+c}, Lf={x:x,y:y+c*ip(a,dd)};
+    var tab={1:[Lf,B],2:[B,R],3:[Lf,R],4:[T,R],5:[T,Lf,B,R],6:[T,B],7:[T,Lf],8:[T,Lf],9:[T,B],10:[T,R,B,Lf],11:[T,R],12:[Lf,R],13:[B,R],14:[Lf,B]};
+    var pr=tab[idx]; if(!pr)return;
+    for(var s=0;s<pr.length;s+=2){ ctx.moveTo(pr[s].x,pr[s].y); ctx.lineTo(pr[s+1].x,pr[s+1].y); }
+  }
+
+  /* ── 場：坂の向き（矢印グリッド） ── */
+  function drawField(){
+    ctx.fillStyle='#faf8f4'; ctx.fillRect(0,0,W,H);
+    var step=34;
+    for(var y=step/2;y<H;y+=step){ for(var x=step/2;x<W;x+=step){
+      var e=field(x,y), mag=Math.sqrt(e.x*e.x+e.y*e.y); if(mag<1e-9)continue;
+      var ux=e.x/mag, uy=e.y/mag, L=10+18*Math.tanh(mag*4200), a=0.25+0.6*Math.tanh(mag*3200);
+      var x2=x+ux*L, y2=y+uy*L;
+      ctx.strokeStyle='rgba(60,120,118,'+a.toFixed(3)+')'; ctx.lineWidth=1.6;
+      ctx.beginPath(); ctx.moveTo(x-ux*L*0.4,y-uy*L*0.4); ctx.lineTo(x2,y2); ctx.stroke();
+      var pa=Math.atan2(uy,ux);
+      ctx.beginPath(); ctx.moveTo(x2,y2);
+      ctx.lineTo(x2-5*Math.cos(pa-0.4),y2-5*Math.sin(pa-0.4));
+      ctx.lineTo(x2-5*Math.cos(pa+0.4),y2-5*Math.sin(pa+0.4));
+      ctx.closePath(); ctx.fillStyle='rgba(60,120,118,'+a.toFixed(3)+')'; ctx.fill();
+    }}
+    drawSources();
+    read.innerHTML='いま源は <b>'+srcs.length+'個</b>。矢印 ＝ 各源の場（1/r²・向きつき）を <b>ベクトルで足した</b>もの。<br>'+
+      '＋から湧き出して −へ吸い込まれる。向きが逆の所では打ち消し合って弱くなる ── これが「ベクトルを足す」。地形の坂と、同じものを別の見方で見ているよ。';
+  }
+
+  function drawSources(){
+    for(var i=0;i<srcs.length;i++){ var s=srcs[i];
+      ctx.beginPath(); ctx.arc(s.x,s.y,8,0,2*Math.PI);
+      ctx.fillStyle=s.q>0?'#c2543d':'#3c7876'; ctx.fill();
+      ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke();
+      ctx.fillStyle='#fff'; ctx.font="bold 12px 'JetBrains Mono',monospace"; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(s.q>0?'+':'−',s.x,s.y+0.5); ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+    }
+    if(srcs.length===0){ ctx.fillStyle='#aaa49b'; ctx.font="13px 'Zen Kaku Gothic New',sans-serif"; ctx.textAlign='center';
+      ctx.fillText('クリックで源を置いてみて', W/2, H/2); ctx.textAlign='left'; }
+  }
+
+  function draw(){ if(view==='pot') drawPotential(); else drawField(); }
+
+  /* presets */
+  function preset(name){
+    var cx=W/2, cy=H/2;
+    if(name==='1') srcs=[{x:cx,y:cy,q:1}];
+    else if(name==='2') srcs=[{x:cx-80,y:cy,q:1},{x:cx+80,y:cy,q:1}];
+    else if(name==='d') srcs=[{x:cx-80,y:cy,q:1},{x:cx+80,y:cy,q:-1}];
+    else if(name==='3') srcs=[{x:cx,y:cy-70,q:1},{x:cx-85,y:cy+55,q:1},{x:cx+85,y:cy+55,q:-1}];
+    draw();
+  }
+  function setPresetBtn(id){ ['e1','e2','ed','e3'].forEach(function(b){ document.getElementById(b).classList.toggle('on',b===id); }); }
+
+  cv.addEventListener('click',function(ev){
+    var rect=cv.getBoundingClientRect(), sx=cv.width/rect.width, sy=cv.height/rect.height;
+    var x=(ev.clientX-rect.left)*sx, y=(ev.clientY-rect.top)*sy;
+    srcs.push({x:x,y:y,q:sign}); setPresetBtn(''); draw();
+  });
+
+  document.getElementById('vpot').onclick=function(){ view='pot'; this.classList.add('on'); document.getElementById('vfld').classList.remove('on'); draw(); };
+  document.getElementById('vfld').onclick=function(){ view='fld'; this.classList.add('on'); document.getElementById('vpot').classList.remove('on'); draw(); };
+  document.getElementById('sp').onclick=function(){ sign=+1; this.classList.add('on'); document.getElementById('sm').classList.remove('on'); };
+  document.getElementById('sm').onclick=function(){ sign=-1; this.classList.add('on'); document.getElementById('sp').classList.remove('on'); };
+  document.getElementById('e1').onclick=function(){ setPresetBtn('e1'); preset('1'); };
+  document.getElementById('e2').onclick=function(){ setPresetBtn('e2'); preset('2'); };
+  document.getElementById('ed').onclick=function(){ setPresetBtn('ed'); preset('d'); };
+  document.getElementById('e3').onclick=function(){ setPresetBtn('e3'); preset('3'); };
+  document.getElementById('clr').onclick=function(){ srcs=[]; setPresetBtn(''); draw(); };
+
+  var qs=new URLSearchParams(location.search);
+  if(qs.get('view')==='field'){ view='fld'; document.getElementById('vfld').classList.add('on'); document.getElementById('vpot').classList.remove('on'); }
+  var pz=qs.get('preset');
+  if(pz==='1'){ setPresetBtn('e1'); preset('1'); }
+  else if(pz==='dipole'){ setPresetBtn('ed'); preset('d'); }
+  else if(pz==='3'){ setPresetBtn('e3'); preset('3'); }
+  else preset('2');
+})();
+</script>
+</body>
+</html>

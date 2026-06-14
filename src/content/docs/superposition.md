@@ -153,5 +153,5 @@ $$y(t) = \int x(\tau)\,h(t-\tau)\,d\tau$$
   <span style="color:#cfc9be;">/</span>
   <span>今回 <b style="color:#3c7876;">重ね合わせ</b></span>
   <span style="color:#cfc9be;">/</span>
-  <span>次回 場・保存（準備中）</span>
+  <span>次回 <a href="/docs/inverse-square/">1/r²は保存から</a></span>
 </nav>
