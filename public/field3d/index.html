@@ -135,12 +135,20 @@ function rebuild(){
   geom.attributes.position.needsUpdate=true;
   geom.attributes.color.needsUpdate=true;
   geom.computeVertexNormals();
-  // source markers
+  // source markers ── 源は平面（地面）上のその位置に置く。地形に隠れないよう常に手前に描き、生じた丘/井戸へ細い柱でつなぐ
   srcGroup.clear();
   for(const o of srcs){
-    const m=new THREE.Mesh(sphGeo, new THREE.MeshStandardMaterial({ color:o.q>0?0xc2543d:0x3c7876, roughness:.5 }));
-    m.position.set(o.x, heightAt(o.x,o.y)+0.05*Math.sign(o.q||1), o.y);
+    const colr = o.q>0?0xc2543d:0x3c7876, h=heightAt(o.x,o.y);
+    const m=new THREE.Mesh(sphGeo, new THREE.MeshBasicMaterial({ color:colr, depthTest:false }));
+    m.position.set(o.x, 0, o.y); m.renderOrder=3;
     srcGroup.add(m);
+    const sh=Math.abs(h);
+    if(sh>0.02){
+      const cyl=new THREE.Mesh(new THREE.CylinderGeometry(0.005,0.005,sh,8),
+        new THREE.MeshBasicMaterial({ color:colr, transparent:true, opacity:0.55, depthTest:false }));
+      cyl.position.set(o.x, h/2, o.y); cyl.renderOrder=2;
+      srcGroup.add(cyl);
+    }
   }
   let np=0,nm=0; for(const o of srcs){ o.q>0?np++:nm++; }
   read.innerHTML = srcs.length? (
