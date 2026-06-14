@@ -11,11 +11,7 @@ const CHAPTERS = [
   { key: 'conservation', label: '足し合わせと保存で、場を掴む',  desc: '波・場・力を貫く2つの素朴な動き ──「足し合わせる」と「湧かない・消えない（保存する量）」。後半は、掴んだ骨に名前をつけて、少しずつ抽象的になっていく。' },
 ] as const;
 
-// 第3章の後半（発展・これから）── まだ記事はないので、ロードマップには“準備中”として並べる
-const UPCOMING = [
-  { num: 8, title: '一発の返事で、方程式を解く ── グリーン関数', desc: '一点源への返事を覚えて、任意の源分布への答えを作る。④の“中から積む扉”の正体。' },
-  { num: 9, title: '遅れて届く返事 ── 波動方程式のグリーン関数', desc: 'いつどこで叩いた影響が、いつどこへ届くか。静かな場から、時間のある波へ。' },
-];
+// 第3章後半（⑥〜⑨＝発展）も全て公開済み。⑤と⑥のあいだに「ここから発展」の区切りを置く。
 const byOrder = (a: any, b: any) => (a.data.order ?? 99) - (b.data.order ?? 99);
 
 const chapters = CHAPTERS.map(c => {
@@ -133,7 +129,7 @@ const total = explainers.length;
         <span class="kicker">解説 — ROADMAP</span>
         <h1>見える物理を、触りながら一歩ずつ</h1>
         <p>読むだけで終わらないように、ほとんどの記事に「動かせる遊び場」を添えてある。下の順番に辿ると、力学の基礎から始まって、波と共鳴を抜け、「足し合わせ」と「保存」で場までを、一本の道として掴めるようにしてあるよ。そして第3章の後半からは、掴んだ骨に名前をつけて、少しずつ発展的・抽象的になっていく（発散・ガウスの法則・ポアソン方程式・グリーン関数へ）。もちろん、気になった所からつまんでも大丈夫。</p>
-        <div class="meta">{total} 本（＋これから {UPCOMING.length} 本）・ {chapters.length} 章</div>
+        <div class="meta">{total} 本 ・ {chapters.length} 章 ── 第3章まで完結</div>
       </div>
 
       {chapters.map(c => (
@@ -144,36 +140,24 @@ const total = explainers.length;
           </div>
           <div class="track">
             {c.steps.map(({ doc, adv, num }) => (
-              <a class={`step${adv ? ' step-adv' : ''}`} href={`/docs/${doc.id}/`}>
-                <div class="step-node">
-                  {adv ? <span class="step-flag">発展</span> : <span class="step-num">{num}</span>}
-                </div>
-                <div class="step-card">
-                  <div class="step-title-row">
-                    <span class="step-title">{doc.data.title}</span>
-                    {doc.data.demo && <span class="step-demo">▶ デモ</span>}
-                  </div>
-                  <div class="step-desc">{doc.data.description}</div>
-                </div>
-              </a>
-            ))}
-            {c.key === 'conservation' && (
               <Fragment>
-                <div class="upcoming-divider"><span>ここから発展 ── 掴んだ骨に、名前をつけていく</span></div>
-                {UPCOMING.map(u => (
-                  <div class="step step-upcoming">
-                    <div class="step-node"><span class="step-soon">{u.num}</span></div>
-                    <div class="step-card">
-                      <div class="step-title-row">
-                        <span class="step-title">{u.title}</span>
-                        <span class="step-soon-flag">準備中</span>
-                      </div>
-                      <div class="step-desc">{u.desc}</div>
-                    </div>
+                {c.key === 'conservation' && num === 6 && (
+                  <div class="upcoming-divider"><span>ここから発展 ── 掴んだ骨に、名前をつけていく</span></div>
+                )}
+                <a class={`step${adv ? ' step-adv' : ''}`} href={`/docs/${doc.id}/`}>
+                  <div class="step-node">
+                    {adv ? <span class="step-flag">発展</span> : <span class="step-num">{num}</span>}
                   </div>
-                ))}
+                  <div class="step-card">
+                    <div class="step-title-row">
+                      <span class="step-title">{doc.data.title}</span>
+                      {doc.data.demo && <span class="step-demo">▶ デモ</span>}
+                    </div>
+                    <div class="step-desc">{doc.data.description}</div>
+                  </div>
+                </a>
               </Fragment>
-            )}
+            ))}
           </div>
         </section>
       ))}

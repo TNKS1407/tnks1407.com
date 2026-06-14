@@ -137,5 +137,5 @@ $$\nabla^2\phi = -(\text{源})$$
   <span style="color:#cfc9be;">/</span>
   <span>今回 <b style="color:#3c7876;">源はポテンシャルを曲げる</b></span>
   <span style="color:#cfc9be;">/</span>
-  <span>次回 一発の返事で、方程式を解く（準備中）</span>
+  <span>次回 <a href="/docs/green-function/">一発の返事で、方程式を解く</a></span>
 </nav>

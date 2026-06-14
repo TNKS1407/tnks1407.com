@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>遅れて届く返事 — 遅れて届くラボ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
+    --accent:#3c7876;--amber:#c9761f;--red:#c2543d;--text:#1d1b17;--text-muted:#7d7568;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--text);
+    font-family:'Zen Kaku Gothic New','Hiragino Sans','Meiryo',system-ui,sans-serif;line-height:1.7;}
+  .wrap{max-width:760px;margin:0 auto;padding:14px 14px 22px;}
+  section{background:var(--card);border:1px solid var(--border);border-radius:14px;
+    padding:14px 16px 16px;box-shadow:0 1px 6px rgba(29,27,23,.05);}
+  .w-title{font-size:1rem;font-weight:700;margin:0 0 .2rem;}
+  .w-sub{font-size:.78rem;color:var(--text-muted);margin:0 0 .8rem;line-height:1.6;}
+  canvas{display:block;width:100%;max-width:520px;margin:0 auto;border:1px solid var(--border);border-radius:10px;background:#0e1a1c;cursor:crosshair;touch-action:none;}
+  .controls{display:flex;flex-wrap:wrap;gap:.5rem .9rem;align-items:center;margin-top:.9rem;justify-content:center;}
+  .cg{display:flex;align-items:center;gap:.45rem;}
+  .cg label{font-size:.74rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted);white-space:nowrap;}
+  .cg input[type=range]{width:110px;accent-color:var(--accent);}
+  .cg .v{font-size:.74rem;font-family:'JetBrains Mono',monospace;color:var(--accent);font-weight:600;min-width:2.5ch;}
+  .btn{padding:.32rem .75rem;border:1px solid var(--border);border-radius:7px;background:none;
+    font-family:'JetBrains Mono',monospace;font-size:.74rem;color:var(--text-muted);cursor:pointer;transition:.15s;}
+  .btn:hover{border-color:var(--accent);color:var(--accent);}
+  .btn.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .btn.pri{background:var(--red);color:#fff;border-color:var(--red);}
+  .readout{margin-top:.7rem;font-family:'JetBrains Mono',monospace;font-size:.76rem;color:var(--text);
+    background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:.6rem .85rem;line-height:1.9;}
+  .readout b{color:var(--accent);} .readout .r{color:var(--red);font-weight:700;} .readout .a{color:var(--amber);font-weight:700;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section>
+    <div class="w-title">遅れて届く返事 — 遅れて届くラボ</div>
+    <p class="w-sub">ある一点（赤い源）を <b>一瞬ポンと叩く</b> と、その影響は <b>速さ c で外へ広がる輪</b> になって伝わる。距離 r の <b>観測点（◎）</b> に届くのは、叩いた瞬間ではなく <b>r/c だけ遅れて</b>。いま観測点が感じているのは、<b>r/c 前に源で起きたこと</b>だ ── これが波動方程式のグリーン関数（遅れて届く一発の返事）。<b>「ポンと叩く」</b>で1発、<b>源と観測点はドラッグで移動</b>、<b>速さ c</b> を変えると遅れも変わる。</p>
+    <canvas id="cv" width="520" height="360"></canvas>
+    <div class="controls">
+      <button class="btn pri" id="tap">ポンと叩く ◉</button>
+      <button class="btn" id="cont">連続で叩く ⟳</button>
+      <button class="btn" id="rst">リセット</button>
+      <div class="cg"><label>速さ c</label><input type="range" id="cc" min="50" max="220" step="1" value="110"><span class="v" id="cv2">110</span></div>
+    </div>
+    <div class="readout" id="read"></div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var cv=document.getElementById('cv'), ctx=cv.getContext('2d'), W=cv.width, H=cv.height;
+  var read=document.getElementById('read'), ccEl=document.getElementById('cc'), cvEl=document.getElementById('cv2');
+  var src={x:150,y:180}, obs={x:390,y:180};
+  var c=110, t=0, pulses=[], obsFlash=0, lastRecv=-1, cont=false, contTimer=0, drag=null;
+
+  function dist(){ return Math.hypot(obs.x-src.x, obs.y-src.y); }
+  function tap(){ pulses.push({t0:t, recv:false}); }
+
+  function step(dt){
+    t+=dt;
+    if(cont){ contTimer-=dt; if(contTimer<=0){ tap(); contTimer=1.1; } }
+    var r=dist();
+    for(var i=pulses.length-1;i>=0;i--){ var p=pulses[i], R=c*(t-p.t0);
+      // 観測点への到達
+      if(!p.recv && R>=r){ p.recv=true; obsFlash=1; lastRecv=t; }
+      if(R> Math.hypot(W,H)+40) pulses.splice(i,1);
+    }
+    if(obsFlash>0) obsFlash=Math.max(0,obsFlash-dt*1.6);
+  }
+  function draw(){
+    ctx.fillStyle='#0e1a1c'; ctx.fillRect(0,0,W,H);
+    var r=dist();
+    // line source→obs
+    ctx.strokeStyle='rgba(255,255,255,.10)'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.moveTo(src.x,src.y); ctx.lineTo(obs.x,obs.y); ctx.stroke(); ctx.setLineDash([]);
+    // expanding wavefronts
+    for(var i=0;i<pulses.length;i++){ var R=c*(t-pulses[i].t0); if(R<1) continue;
+      var a=Math.max(0, 0.7 - R/Math.hypot(W,H)*0.7);
+      ctx.strokeStyle='rgba(110,200,196,'+a.toFixed(3)+')'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.arc(src.x,src.y,R,0,2*Math.PI); ctx.stroke();
+    }
+    // observer received-glow
+    if(obsFlash>0){ ctx.beginPath(); ctx.arc(obs.x,obs.y, 10+22*(1-obsFlash), 0, 2*Math.PI);
+      ctx.strokeStyle='rgba(201,118,31,'+(obsFlash*0.9)+')'; ctx.lineWidth=3; ctx.stroke(); }
+    // source
+    ctx.beginPath(); ctx.arc(src.x,src.y,8,0,2*Math.PI); ctx.fillStyle='#c2543d'; ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.fillStyle='#fff'; ctx.font="10px 'JetBrains Mono',monospace"; ctx.textAlign='center'; ctx.fillText('源', src.x, src.y-13);
+    // observer
+    ctx.beginPath(); ctx.arc(obs.x,obs.y,7,0,2*Math.PI); ctx.fillStyle= obsFlash>0?'#c9761f':'#2a3c3e'; ctx.fill();
+    ctx.strokeStyle='#e9e3d8'; ctx.lineWidth=2; ctx.stroke();
+    ctx.beginPath(); ctx.arc(obs.x,obs.y,3,0,2*Math.PI); ctx.strokeStyle='#e9e3d8'; ctx.lineWidth=1; ctx.stroke();
+    ctx.fillStyle='#e9e3d8'; ctx.fillText('観測点', obs.x, obs.y-13); ctx.textAlign='left';
+    // mid label r
+    ctx.fillStyle='rgba(233,227,216,.5)'; ctx.fillText('r', (src.x+obs.x)/2, (src.y+obs.y)/2-6);
+    var delay=r/c;
+    read.innerHTML='距離 r ＝ <b>'+r.toFixed(0)+'</b>　／　速さ c ＝ <b>'+c+'</b>　→　遅れ <b class="a">r/c ＝ '+delay.toFixed(2)+'</b>（時間の単位）。<br>'+
+      (lastRecv<0 ? '「ポンと叩く」を押すと、輪が広がって、r/c 後に観測点が <span class="a">点く</span>。いま観測点が感じるのは、r/c 前の源だ。' :
+       '直近の受信：叩いてから <b class="a">'+delay.toFixed(2)+'</b> 後に届いた。源を動かすと r が変わり、遅れも変わる。c を上げると速く届く（遅れが縮む）。');
+  }
+  var last=performance.now();
+  function loop(now){ var dt=Math.min(0.05,(now-last)/1000); last=now; step(dt); draw(); requestAnimationFrame(loop); }
+
+  function P(ev){ var rc=cv.getBoundingClientRect(); return {x:(ev.clientX-rc.left)*cv.width/rc.width, y:(ev.clientY-rc.top)*cv.height/rc.height}; }
+  cv.addEventListener('pointerdown',function(ev){ var p=P(ev);
+    if(Math.hypot(p.x-src.x,p.y-src.y)<16) drag='src';
+    else if(Math.hypot(p.x-obs.x,p.y-obs.y)<16) drag='obs';
+    else { src.x=p.x; src.y=p.y; tap(); }   // 空クリックで源を移して1発
+  });
+  cv.addEventListener('pointermove',function(ev){ if(!drag)return; var p=P(ev);
+    p.x=Math.max(10,Math.min(W-10,p.x)); p.y=Math.max(10,Math.min(H-10,p.y));
+    if(drag==='src'){src.x=p.x;src.y=p.y;} else {obs.x=p.x;obs.y=p.y;} });
+  cv.addEventListener('pointerup',function(){ drag=null; });
+
+  document.getElementById('tap').onclick=function(){ tap(); };
+  document.getElementById('cont').onclick=function(){ cont=!cont; this.classList.toggle('on',cont); contTimer=0; };
+  document.getElementById('rst').onclick=function(){ pulses=[]; obsFlash=0; lastRecv=-1; cont=false; document.getElementById('cont').classList.remove('on'); };
+  ccEl.oninput=function(){ c=+this.value; cvEl.textContent=c; };
+  var qs=new URLSearchParams(location.search);
+  if(qs.get('cont')==='1'){ cont=true; document.getElementById('cont').classList.add('on'); }
+  if(qs.get('tap')==='1'){ tap(); }
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
