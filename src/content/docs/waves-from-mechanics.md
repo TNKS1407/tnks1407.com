@@ -44,6 +44,11 @@ $$\frac{\partial^2 y}{\partial t^2} = c^2\,\frac{\partial^2 y}{\partial x^2}, \q
 
 $c$ が波の速さ。張った弦で言えば $c=\sqrt{T/\mu}$（$T$ は張力、$\mu$ は線密度）── 同じ形だ。**「波動」という分野は、ばねと玉という純・力学から、二階微分を一つ経由しただけで出てきた**。鎖の遊び場で $N$ を増やすほど、つぶつぶの跳ね返りがなめらかな波に近づくのは、この極限を目で見ているんだよ。
 
+<figure style="margin:1.6rem 0;text-align:center;">
+  <img src="/docs/discrete-to-continuous.svg" alt="玉を細かくすると、とびとびの鎖がなめらかなひもになる" style="max-width:100%;border-radius:10px;border:1px solid #e3dbd0;" />
+  <figcaption style="font-size:.8rem;color:#aaa49b;margin-top:.3rem;">玉を細かくしていくと、とびとびの鎖がなめらかなひもに ── 離散の「差」（$y_{n+1}-2y_n+y_{n-1}$）が、連続の「微分」（$\partial^2 y/\partial x^2$）に化ける。畳み込みの「和→積分」と、同じ“刻み→0”の手だよ。</figcaption>
+</figure>
+
 ## ③ 鎖の固有の揺れ ＝ あの定在波
 
 もう一つ、繋がる所がある。鎖を「弾く」のではなく、特別な形に整えて離すと、**形を保ったまま、その場で上下に揺れるだけ** の運動になる。これが鎖の **基準振動（ノーマルモード）**。遊び場の「基準モード 1／2／3」がそれだ。

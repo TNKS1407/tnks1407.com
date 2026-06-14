@@ -87,7 +87,7 @@ $$\cos(kr_1-\omega t) + \cos(kr_2-\omega t) = \underbrace{2\cos\!\frac{k(r_1-r_2
   <a href="https://tnkblog.net/zoneplate" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:.4rem;background:#3c7876;color:#fff;border-radius:999px;padding:.55rem 1.2rem;font-weight:700;font-size:.9rem;">▶ ゾーンプレートでエイリアシングを見る ↗</a>
 </p>
 
-…と、同心円ひとつから、ずいぶん遠くまで来てしまった。ちょっと脱線しすぎたかな。波に戻ろう。
+…と、同心円ひとつから、ずいぶん遠くまで来てしまった。ちょっと脱線しすぎたかな。本筋に戻ろう ── 私たちは「**点源の応答を並べて足すと、干渉やホイヘンスになる**」を見てきた。その『足す』こそ、これからの主役だ。
 
 ## 消えた波は、どこへ行ったのか
 
@@ -95,4 +95,12 @@ $$\cos(kr_1-\omega t) + \cos(kr_2-\omega t) = \underbrace{2\cos\!\frac{k(r_1-r_2
 
 消えてはいない。消し合いの線で失われたぶんは、ちょうど **強め合いの線に寄せられている**。全体をならして数えれば、エネルギーの総量は、波源が出したぶんのまま、変わらない。**足し算（重ね合わせ）は、何かを新しく生みもしないし、消しもしない。** ただ、置き場所を変えているだけなんだ。
 
-これは、当たり前のようでいて、物理のいちばん深い骨の一つに繋がっている ── 「湧きも消えもしない量がある」。次からはこの **保存** の方を、見える物理でゆっくり掴んでいく。波が消えたように見えた所で「で、エネルギーは？」と問える人は、もう半分その骨に触れているよ。
+これは、当たり前のようでいて、物理のいちばん深い骨の一つ ── 「湧きも消えもしない量がある」＝**保存** への、静かな伏線だ。ただ、その骨に進む前に、もう一段ある。次は、今日の『点源の返事を並べて足す』を一般化して、**インパルス応答・畳み込み・フーリエ** へ。一発の返事さえ分かれば何でも組み立てられる、という手を掴む。「で、エネルギーは？」の問いには、そのあと戻ってくるよ。
+
+<nav style="margin-top:2.2rem;padding-top:1rem;border-top:1px solid #e3dbd0;font-family:'JetBrains Mono',monospace;font-size:.82rem;color:#7d7568;display:flex;gap:.4rem .9rem;flex-wrap:wrap;align-items:center;">
+  <span>← 前回 <a href="/docs/waves-from-mechanics/">波は運動方程式から</a></span>
+  <span style="color:#cfc9be;">/</span>
+  <span>今回 <b style="color:#3c7876;">2次元の波</b></span>
+  <span style="color:#cfc9be;">/</span>
+  <span>次回 <a href="/docs/superposition/">重ね合わせ</a></span>
+</nav>

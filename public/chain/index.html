@@ -70,8 +70,8 @@
   function rest(){ alloc(); state='静止'; curMode=0; }
   function pluck(){
     alloc(); state='弾いた（波が走る）'; curMode=0;
-    var c=(N+1)/2, wdt=Math.max(1.5,(N+1)*0.12);
-    for(var i=1;i<=N;i++){ y[i]=1.0*Math.max(0, 1-Math.abs(i-c)/wdt); }
+    var c=(N+1)/2, wdt=Math.max(2.4,(N+1)*0.15);
+    for(var i=1;i<=N;i++){ var u=(i-c)/wdt; y[i]=Math.exp(-u*u); }   // なめらかな山。鋭い角を避けて分散のギザギザ(発散した感じ)を抑える
   }
   function mode(mm){
     alloc(); state='基準モード m='+mm; curMode=mm;
