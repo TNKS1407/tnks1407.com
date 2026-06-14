@@ -1,0 +1,85 @@
+---
+// 改善・間違いの指摘を送るフローティングボタン＋モーダル。
+// 送信は母艦 feedback.tnks1407.com/improve に、見ているページのURLを自動添付して「非公開」で送る。
+// 内容はオーナー(ランキン)だけが見る（公開はされない）。トップ・各解説に <ImproveButton /> で置く。
+---
+<button class="imp-btn" id="imp-open" aria-haspopup="dialog">💡 改善を送る</button>
+<div class="imp-overlay" id="imp-overlay" role="dialog" aria-modal="true" aria-label="改善を送る">
+  <div class="imp-modal" onclick="event.stopPropagation()">
+    <div class="imp-head">
+      <span class="imp-title">💡 改善・間違いを教える</span>
+      <button class="imp-close" id="imp-close" aria-label="閉じる">✕</button>
+    </div>
+    <div class="imp-body" id="imp-form">
+      <p class="imp-lead">このページの間違いや改善案を教えてね。<span class="imp-sub">見ているページのURLは自動で添えるよ。</span></p>
+      <textarea class="imp-textarea" id="imp-msg" maxlength="1000" placeholder="気づいたこと（例: この式の符号、逆じゃない？）"></textarea>
+      <input class="imp-input" id="imp-contact" type="text" maxlength="100" placeholder="連絡先（任意・返信が要るときだけ）" />
+      <button class="imp-submit" id="imp-send">送る →</button>
+    </div>
+    <div class="imp-thanks" id="imp-thanks" style="display:none">
+      <div class="imp-thanks-icon">✅</div>
+      <div class="imp-thanks-msg">ありがとう、届いたよ。</div>
+      <div class="imp-thanks-sub">いいものは直しておくね。</div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .imp-btn{position:fixed;bottom:1.75rem;right:1.5rem;z-index:998;background:var(--accent,#3c7876);color:#fff;border:none;border-radius:999px;padding:0.55rem 1.15rem;font-size:0.82rem;font-weight:700;font-family:'Zen Kaku Gothic New',sans-serif;cursor:pointer;box-shadow:0 4px 16px rgba(60,120,118,0.32);transition:transform 0.15s,box-shadow 0.15s;display:flex;align-items:center;gap:0.35rem;}
+  .imp-btn:hover{transform:translateY(-2px);box-shadow:0 6px 22px rgba(60,120,118,0.42);}
+  .imp-overlay{position:fixed;inset:0;background:rgba(29,27,23,0.45);z-index:1001;display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;pointer-events:none;transition:opacity 0.2s;}
+  .imp-overlay.open{opacity:1;pointer-events:all;}
+  .imp-modal{background:var(--card,#fff);border:1px solid var(--border,#e3dbd0);border-radius:18px;max-width:440px;width:100%;box-shadow:0 20px 56px rgba(29,27,23,0.18);max-height:90vh;display:flex;flex-direction:column;}
+  .imp-head{padding:1rem 1.25rem;border-bottom:1px solid var(--border,#e3dbd0);display:flex;align-items:center;justify-content:space-between;}
+  .imp-title{font-size:0.9rem;font-weight:700;color:var(--text,#1d1b17);}
+  .imp-close{background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--text-muted,#7d7568);line-height:1;}
+  .imp-body{padding:1.25rem;display:flex;flex-direction:column;gap:0.8rem;}
+  .imp-lead{font-size:0.82rem;color:var(--text-muted,#7d7568);line-height:1.65;margin:0;}
+  .imp-sub{color:var(--text-faint,#aaa49b);font-size:0.76rem;}
+  .imp-textarea{width:100%;border:1px solid var(--border,#e3dbd0);border-radius:10px;padding:0.65rem 0.85rem;font-family:'Zen Kaku Gothic New',sans-serif;font-size:0.85rem;resize:vertical;min-height:96px;color:var(--text,#1d1b17);background:var(--surface,#faf8f4);outline:none;transition:border-color 0.15s;}
+  .imp-textarea:focus{border-color:var(--accent,#3c7876);}
+  .imp-input{width:100%;border:1px solid var(--border,#e3dbd0);border-radius:10px;padding:0.5rem 0.85rem;font-family:'Zen Kaku Gothic New',sans-serif;font-size:0.84rem;color:var(--text,#1d1b17);background:var(--surface,#faf8f4);outline:none;transition:border-color 0.15s;}
+  .imp-input:focus{border-color:var(--accent,#3c7876);}
+  .imp-submit{background:var(--accent,#3c7876);color:#fff;border:none;border-radius:10px;padding:0.6rem 1.25rem;font-size:0.86rem;font-weight:700;cursor:pointer;font-family:'Zen Kaku Gothic New',sans-serif;align-self:flex-end;transition:opacity 0.15s;}
+  .imp-submit:hover{opacity:0.88;}
+  .imp-submit:disabled{opacity:0.5;cursor:default;}
+  .imp-thanks{padding:2rem 1.25rem;text-align:center;}
+  .imp-thanks-icon{font-size:2rem;margin-bottom:0.5rem;}
+  .imp-thanks-msg{font-size:0.9rem;font-weight:700;color:var(--accent,#3c7876);margin-bottom:0.35rem;}
+  .imp-thanks-sub{font-size:0.78rem;color:var(--text-muted,#7d7568);}
+  @media(max-width:480px){ .imp-btn{bottom:1rem;right:1rem;} }
+</style>
+
+<script is:inline>
+  (function(){
+    var overlay = document.getElementById('imp-overlay');
+    if (!overlay) return;
+    var openBtn = document.getElementById('imp-open');
+    var closeBtn = document.getElementById('imp-close');
+    var send = document.getElementById('imp-send');
+    var msg = document.getElementById('imp-msg');
+    var contact = document.getElementById('imp-contact');
+    var form = document.getElementById('imp-form');
+    var thanks = document.getElementById('imp-thanks');
+    function open(){ form.style.display=''; thanks.style.display='none'; send.disabled=false; overlay.classList.add('open'); setTimeout(function(){ msg.focus(); }, 50); }
+    function close(){ overlay.classList.remove('open'); }
+    openBtn.addEventListener('click', open);
+    closeBtn.addEventListener('click', close);
+    overlay.addEventListener('click', function(e){ if (e.target === overlay) close(); });
+    document.addEventListener('keydown', function(e){ if (e.key === 'Escape') close(); });
+    send.addEventListener('click', function(){
+      var text = (msg.value || '').trim();
+      if (!text) { msg.focus(); return; }
+      send.disabled = true;
+      fetch('https://feedback.tnks1407.com/improve', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ page: location.href, message: text, contact: (contact.value || '').trim() })
+      }).then(function(r){ if (r.status === 429) throw new Error('rate'); return r.json().catch(function(){ return {}; }); })
+        .then(function(d){
+          if (d && d.ok) { msg.value=''; contact.value=''; form.style.display='none'; thanks.style.display=''; setTimeout(close, 2600); }
+          else throw new Error();
+        })
+        .catch(function(e){ send.disabled=false; alert(e && e.message === 'rate' ? 'しばらく間を置いてから送ってね（10分あたり3件まで）。' : '送れなかったみたい。少し待ってもう一度試してね。'); });
+    });
+  })();
+</script>

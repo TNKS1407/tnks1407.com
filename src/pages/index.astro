@@ -1,5 +1,6 @@
 ---
 import { getCollection } from 'astro:content';
+import ImproveButton from '../components/ImproveButton.astro';
 
 type Work = {
   title: string; description: string; url: string;
@@ -479,42 +480,7 @@ const favKey = (w: Work) => {
       .filter-clear:hover{border-color:var(--accent);color:var(--accent);}
       .filter-count{margin-left:auto;font-size:0.7rem;color:var(--text-faint);font-family:'JetBrains Mono',monospace;}
 
-      /* Feedback */
-      .feedback-btn{position:fixed;bottom:1.75rem;right:1.5rem;z-index:998;background:var(--accent);color:#fff;border:none;border-radius:999px;padding:0.5rem 1rem;font-size:0.8rem;font-weight:700;font-family:'Zen Kaku Gothic New',sans-serif;cursor:pointer;box-shadow:0 4px 16px rgba(60,120,118,0.3);transition:transform 0.15s,box-shadow 0.15s;display:flex;align-items:center;gap:0.35rem;}
-      .feedback-btn:hover{transform:translateY(-2px);box-shadow:0 6px 22px rgba(60,120,118,0.4);}
-      .fb-overlay{position:fixed;inset:0;background:rgba(29,27,23,0.45);z-index:1001;display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;pointer-events:none;transition:opacity 0.2s;}
-      .fb-overlay.open{opacity:1;pointer-events:all;}
-      .fb-modal{background:var(--card);border:1px solid var(--border);border-radius:18px;max-width:460px;width:100%;box-shadow:0 20px 56px var(--shadow-md);}
-      .fb-header{padding:1rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
-      .fb-title{font-size:0.88rem;font-weight:700;color:var(--text);}
-      .fb-close{background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--text-muted);line-height:1;}
-      .fb-body{padding:1.25rem;display:flex;flex-direction:column;gap:1rem;}
-      .fb-label{font-size:0.77rem;font-weight:700;color:var(--text);margin-bottom:0.35rem;display:block;}
-      .fb-types{display:flex;gap:0.4rem;flex-wrap:wrap;}
-      .fb-type-btn{padding:0.3rem 0.8rem;border-radius:999px;border:1.5px solid var(--border);background:var(--surface2);color:var(--text-muted);font-size:0.77rem;font-weight:600;cursor:pointer;transition:all 0.15s;font-family:'Zen Kaku Gothic New',sans-serif;}
-      .fb-type-btn.sel{background:var(--accent);color:#fff;border-color:var(--accent);}
-      .fb-textarea{width:100%;border:1px solid var(--border);border-radius:10px;padding:0.65rem 0.85rem;font-family:'Zen Kaku Gothic New',sans-serif;font-size:0.85rem;resize:vertical;min-height:100px;color:var(--text);background:var(--surface);outline:none;transition:border-color 0.15s;}
-      .fb-textarea:focus{border-color:var(--accent);}
-      .fb-input{width:100%;border:1px solid var(--border);border-radius:10px;padding:0.5rem 0.85rem;font-family:'Zen Kaku Gothic New',sans-serif;font-size:0.85rem;color:var(--text);background:var(--surface);outline:none;transition:border-color 0.15s;}
-      .fb-input:focus{border-color:var(--accent);}
-      .fb-submit{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:0.6rem 1.25rem;font-size:0.86rem;font-weight:700;cursor:pointer;font-family:'Zen Kaku Gothic New',sans-serif;align-self:flex-end;transition:opacity 0.15s;}
-      .fb-submit:hover{opacity:0.88;}
-      .fb-thanks{padding:2rem 1.25rem;text-align:center;}
-      .fb-thanks-icon{font-size:2rem;margin-bottom:0.5rem;}
-      .fb-thanks-msg{font-size:0.9rem;font-weight:700;color:var(--accent);margin-bottom:0.35rem;}
-      .fb-thanks-sub{font-size:0.77rem;color:var(--text-muted);}
-      .fb-modal{max-height:90vh;display:flex;flex-direction:column;}
-      .fb-scroll{overflow-y:auto;flex:1;}
-      .fb-comments{border-top:1px solid var(--border);padding:1rem 1.25rem;display:flex;flex-direction:column;gap:0.5rem;}
-      .fb-comments-label{font-size:0.7rem;font-weight:700;color:var(--text-faint);margin-bottom:0.25rem;letter-spacing:0.06em;font-family:'JetBrains Mono',monospace;}
-      .fb-comment-card{background:var(--surface2);border-radius:8px;padding:0.5rem 0.65rem;}
-      .fb-comment-top{display:flex;align-items:center;gap:0.4rem;margin-bottom:0.2rem;}
-      .fb-comment-badge{font-size:0.62rem;font-weight:700;padding:0.1rem 0.4rem;border-radius:3px;}
-      .fb-comment-badge.bug{background:#fce8ee;color:#c23a5e;}
-      .fb-comment-badge.feat{background:#e6f7f4;color:#0d7f6e;}
-      .fb-comment-badge.other{background:#eef2fb;color:#3a5a9e;}
-      .fb-comment-ts{font-size:0.62rem;color:var(--text-faint);margin-left:auto;font-family:'JetBrains Mono',monospace;}
-      .fb-comment-msg{font-size:0.8rem;color:var(--text);line-height:1.55;}
+      /* 改善を送るボタンは src/components/ImproveButton.astro（scoped）に分離 */
 
       /* Group headers */
       .group-header{display:flex;align-items:baseline;gap:0.75rem;margin:2.25rem 0 0.9rem;}
@@ -749,46 +715,8 @@ const favKey = (w: Work) => {
       </div>
     </div>
 
-    <!-- Feedback button + modal -->
-    <button class="feedback-btn" id="fb-open-btn">💬 フィードバック</button>
-    <div class="fb-overlay" id="fb-overlay">
-      <div class="fb-modal" onclick="event.stopPropagation()">
-        <div class="fb-header">
-          <span class="fb-title">フィードバック</span>
-          <button class="fb-close" id="fb-close-btn">✕</button>
-        </div>
-        <div class="fb-scroll">
-          <div id="fb-form-wrap" class="fb-body">
-            <div>
-              <span class="fb-label">種類</span>
-              <div class="fb-types">
-                <button class="fb-type-btn sel" data-type="バグ報告">🐛 バグ報告</button>
-                <button class="fb-type-btn" data-type="機能の要望">✨ 機能の要望</button>
-                <button class="fb-type-btn" data-type="その他">💬 その他</button>
-              </div>
-            </div>
-            <div>
-              <span class="fb-label">内容 <span style="color:var(--accent2)">*</span></span>
-              <textarea class="fb-textarea" id="fb-msg" placeholder="気になったことや欲しい機能を書いてね"></textarea>
-            </div>
-            <div>
-              <span class="fb-label">連絡先（任意）</span>
-              <input class="fb-input" id="fb-contact" type="text" placeholder="メールアドレス や Twitter/X など" />
-            </div>
-            <button class="fb-submit" id="fb-submit">送信 →</button>
-          </div>
-          <div id="fb-thanks-wrap" class="fb-thanks" style="display:none">
-            <div class="fb-thanks-icon">✅</div>
-            <div class="fb-thanks-msg">送信しました、ありがとう！</div>
-            <div class="fb-thanks-sub">コメントは公開されます</div>
-          </div>
-          <div class="fb-comments" id="fb-comments" style="display:none">
-            <div class="fb-comments-label">みんなのコメント</div>
-            <div id="fb-comment-list"></div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- 改善を送る（非公開・ページURL自動添付） -->
+    <ImproveButton />
 
     <!-- Tinks roaming sprite -->
     <canvas id="tinks" style="position:fixed;bottom:0;left:0;pointer-events:none;z-index:999;image-rendering:pixelated;image-rendering:crisp-edges;"></canvas>
@@ -1193,98 +1121,6 @@ const favKey = (w: Work) => {
       document.addEventListener('keydown',e=>{
         if(e.code===KONAMI[kIdx]){kIdx++;if(kIdx===KONAMI.length){kIdx=0;let n=0;const t=setInterval(()=>{const ss=['runR','runL','jump','wave'];state=ss[n%ss.length];velX=state==='runR'?3.5:state==='runL'?-3.5:0;frame=0;stateTimer=18;showBubble('コナミコマンド！');if(++n>18)clearInterval(t);},280);}}else{kIdx=0;}
       });
-    })();
-    </script>
-    <script>
-    (() => {
-      const API = 'https://feedback.tnks1407.com';
-      const overlay = document.getElementById('fb-overlay');
-      let selectedType = 'バグ報告';
-
-      function relTime(iso) {
-        const d = (Date.now() - new Date(iso)) / 1000;
-        if (d < 60) return 'たった今';
-        if (d < 3600) return Math.floor(d/60) + '分前';
-        if (d < 86400) return Math.floor(d/3600) + '時間前';
-        return Math.floor(d/86400) + '日前';
-      }
-
-      function badgeClass(type) {
-        if (type === 'バグ報告') return 'bug';
-        if (type === '機能の要望') return 'feat';
-        return 'other';
-      }
-      function escapeHtml(s) {
-        return String(s == null ? '' : s)
-          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-      }
-
-      function loadComments() {
-        fetch(API + '/list')
-          .then(r => r.json())
-          .then(list => {
-            const wrap = document.getElementById('fb-comments');
-            const el = document.getElementById('fb-comment-list');
-            if (!list.length) { wrap.style.display = 'none'; return; }
-            el.innerHTML = list.map(c => `
-              <div class="fb-comment-card">
-                <div class="fb-comment-top">
-                  <span class="fb-comment-badge ${badgeClass(c.type)}">${escapeHtml(c.type)}</span>
-                  <span class="fb-comment-ts">${relTime(c.ts)}</span>
-                </div>
-                <div class="fb-comment-msg">${escapeHtml(c.message)}</div>
-              </div>`).join('');
-            wrap.style.display = '';
-          })
-          .catch(() => {});
-      }
-
-      function openFb() {
-        document.getElementById('fb-form-wrap').style.display = '';
-        document.getElementById('fb-thanks-wrap').style.display = 'none';
-        overlay.classList.add('open');
-        loadComments();
-      }
-      function closeFb() { overlay.classList.remove('open'); }
-      document.getElementById('fb-open-btn').addEventListener('click', openFb);
-      document.getElementById('fb-close-btn').addEventListener('click', closeFb);
-      overlay.addEventListener('click', e => { if (e.target === overlay) closeFb(); });
-      document.querySelectorAll('.fb-type-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          document.querySelectorAll('.fb-type-btn').forEach(b => b.classList.remove('sel'));
-          btn.classList.add('sel');
-          selectedType = btn.dataset.type;
-        });
-      });
-      document.getElementById('fb-submit').addEventListener('click', () => {
-        const msg = document.getElementById('fb-msg').value.trim();
-        if (!msg) { document.getElementById('fb-msg').focus(); return; }
-        const contact = document.getElementById('fb-contact').value.trim();
-        const btn = document.getElementById('fb-submit');
-        btn.disabled = true;
-        fetch(API + '/submit', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: selectedType, message: msg, contact }),
-        })
-          .then(r => { if (r.status === 429) throw new Error('rate'); if (!r.ok) throw new Error(); })
-          .then(() => {
-            document.getElementById('fb-msg').value = '';
-            document.getElementById('fb-contact').value = '';
-            document.getElementById('fb-form-wrap').style.display = 'none';
-            document.getElementById('fb-thanks-wrap').style.display = '';
-            loadComments();
-            setTimeout(closeFb, 3000);
-          })
-          .catch(e => {
-            btn.disabled = false;
-            alert(e.message === 'rate'
-              ? 'しばらく間を置いてから送ってね（10分あたり3件まで）。'
-              : '送信に失敗しました。もう一度試してね。');
-          });
-      });
-      document.addEventListener('keydown', e => { if (e.key === 'Escape') closeFb(); });
     })();
     </script>
     <script>
