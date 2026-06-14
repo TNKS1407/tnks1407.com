@@ -7,6 +7,9 @@
 <title>フラックスを一歩ずつ足す — フラックス step ラボ</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" crossorigin="anonymous" />
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" crossorigin="anonymous"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" crossorigin="anonymous" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],throwOnError:false});"></script>
 <style>
   :root{
     --bg:#f5f2ec;--surface:#faf8f4;--surface2:#f0ece6;--card:#fff;--border:#e3dbd0;
@@ -57,6 +60,15 @@
   .legend .li{display:flex;align-items:center;gap:.5rem;margin:.2rem 0;}
   .legend .sw{width:18px;height:11px;border-radius:3px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700;color:#fff;font-family:'JetBrains Mono',monospace;}
   @media (max-width:560px){ .steps3{grid-template-columns:1fr;} }
+  /* theory */
+  .theory{margin-top:1rem;}
+  .theory p{font-size:.86rem;margin:.65rem 0;color:var(--ink);}
+  .theory ul{margin:.5rem 0 .8rem;padding-left:1.3rem;font-size:.85rem;}
+  .theory li{margin:.28rem 0;}
+  .theory h3{font-size:.86rem;font-weight:700;margin:1.3rem 0 .4rem;color:var(--accent);}
+  .theory .eq{margin:.7rem 0;overflow-x:auto;overflow-y:hidden;padding:.15rem 0;}
+  .theory .katex-display{margin:.45rem 0;}
+  .theory .mono{font-size:.82em;color:var(--amber);}
 </style>
 </head>
 <body>
@@ -112,6 +124,39 @@
         <div class="li"><span class="sw" style="background:#bdb6a9;color:#1d1b17;">0</span><span><b>E·n ≈ 0</b>：接線方向、寄与なし</span></div>
       </div>
     </div>
+  </section>
+
+  <section class="theory">
+    <div class="w-title">理論 — 何を Σ していくのか</div>
+
+    <p><b>Φ（フラックス）</b>は、境界から場がどれだけ「外へ出ているか」の合計だ。連続な式では、閉じた曲線 $C$ に沿ってぐるりと一周ぶん積分する：</p>
+    <div class="eq">$$\Phi=\oint_C \mathbf{E}\cdot\mathbf{n}\,dl$$</div>
+
+    <p>でも一周を一気に積分するのは難しい。そこで <b>境界を $N$ 個の小区間に刻んで、一つずつ足す</b>。区切り $i$ では、つぎの4つが手に入る：</p>
+    <ul>
+      <li>境界点 $\mathbf{x}_i$（このラボでは単位円の上の点）</li>
+      <li>そこでの場 $\mathbf{E}_i$</li>
+      <li>外向きの法線 $\mathbf{n}_i$（円の中心から外を向く向き）</li>
+      <li>小区間の長さ $\Delta l_i = \dfrac{2\pi}{N}$</li>
+    </ul>
+
+    <p>この区切りから外へ出ていく量は、<b>場の外向き成分 × 長さ</b>：</p>
+    <div class="eq">$$\Delta\Phi_i=(\mathbf{E}_i\cdot\mathbf{n}_i)\,\Delta l_i$$</div>
+    <p>内積 $\mathbf{E}_i\cdot\mathbf{n}_i$ は、場 $\mathbf{E}_i$ のうち「法線方向＝まっすぐ外へ向かう成分」だけを取り出す。横にかすめる接線方向のぶんは境界を通り抜けないから、寄与は $0$ になる。</p>
+
+    <p>そして、<b>これを $N$ 個ぜんぶ足したものが $\Phi$</b>。これが、君がボタンで一歩ずつやっている Σ だ：</p>
+    <div class="eq">$$\Phi=\sum_{i=1}^{N}\Delta\Phi_i=\sum_{i=1}^{N}(\mathbf{E}_i\cdot\mathbf{n}_i)\,\Delta l_i\;\xrightarrow[\;N\to\infty\;]{}\;\oint_C \mathbf{E}\cdot\mathbf{n}\,dl$$</div>
+    <p>$N$ を増やすほど、この足し算は本物の積分 $\oint$ に近づく（下の収束グラフがそれ）。── そして大事なこと：計算パネルに並んでいる <span class="mono">xᵢ, Eᵢ, nᵢ, Eᵢ·nᵢ, ΔΦᵢ</span> は、まさに <b>この Σ の“中身の一項”</b> なんだ。一歩進めるたびに、和に $\Delta\Phi_i$ が一つ足されていく。</p>
+
+    <h3>場はどこから来る？ — 点源の場</h3>
+    <p>源 $\mathbf{s}$ にある点源が作る場は、源から境界点へ向かうベクトル $\boldsymbol{\rho}_i=\mathbf{x}_i-\mathbf{s}$ を使って、</p>
+    <div class="eq">$$\mathbf{E}_i=q\,\frac{\boldsymbol{\rho}_i}{|\boldsymbol{\rho}_i|^{2}}\qquad\left(\text{大きさ }\frac{q}{|\boldsymbol{\rho}_i|},\ \ \text{向きは源から外向き}\right)$$</div>
+    <p>これは <b>2次元の $1/r$ 場</b> ── 3次元の点電荷なら $1/r^2$ だけど、2次元（＝無限に長い線源を真横から見た図）では $1/r$ になる。$\boldsymbol{\rho}_i$ がパネルの <span class="mono">相対 ρᵢ＝xᵢ−s</span>、$\mathbf{E}_i$ が <span class="mono">場 Eᵢ</span> だよ。</p>
+
+    <h3>なぜ Φ/2π が「中の源の数」になるのか — ガウスの法則</h3>
+    <p>ぜんぶ足すと、形によらないきれいな答えが出る：</p>
+    <div class="eq">$$\oint_C \mathbf{E}\cdot\mathbf{n}\,dl=2\pi\,q_{\text{enc}}\qquad\Longrightarrow\qquad \frac{\Phi}{2\pi}=q_{\text{enc}}$$</div>
+    <p>$q_{\text{enc}}$ は <b>曲線の内側にある源の合計</b>。源が内側なら $1$、外側なら $0$（入ってくる flux と出ていく flux が完全に打ち消し合う）。和の答えは <b>境界の形にも、$N$ にも（極限では）一切よらない</b> ── 中に何があるかだけで決まる。これがガウスの法則の心臓部で、君が源の位置や $N$ を変えながら確かめているのは、まさにこの一行なんだ。</p>
   </section>
 </div>
 
