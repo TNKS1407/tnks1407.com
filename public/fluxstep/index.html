@@ -153,10 +153,25 @@
     <div class="eq">$$\mathbf{E}_i=q\,\frac{\boldsymbol{\rho}_i}{|\boldsymbol{\rho}_i|^{2}}\qquad\left(\text{大きさ }\frac{q}{|\boldsymbol{\rho}_i|},\ \ \text{向きは源から外向き}\right)$$</div>
     <p>これは <b>2次元の $1/r$ 場</b> ── 3次元の点電荷なら $1/r^2$ だけど、2次元（＝無限に長い線源を真横から見た図）では $1/r$ になる。$\boldsymbol{\rho}_i$ がパネルの <span class="mono">相対 ρᵢ＝xᵢ−s</span>、$\mathbf{E}_i$ が <span class="mono">場 Eᵢ</span> だよ。</p>
 
-    <h3>なぜ Φ/2π が「中の源の数」になるのか — ガウスの法則</h3>
-    <p>ぜんぶ足すと、形によらないきれいな答えが出る：</p>
-    <div class="eq">$$\oint_C \mathbf{E}\cdot\mathbf{n}\,dl=2\pi\,q_{\text{enc}}\qquad\Longrightarrow\qquad \frac{\Phi}{2\pi}=q_{\text{enc}}$$</div>
-    <p>$q_{\text{enc}}$ は <b>曲線の内側にある源の合計</b>。源が内側なら $1$、外側なら $0$（入ってくる flux と出ていく flux が完全に打ち消し合う）。和の答えは <b>境界の形にも、$N$ にも（極限では）一切よらない</b> ── 中に何があるかだけで決まる。これがガウスの法則の心臓部で、君が源の位置や $N$ を変えながら確かめているのは、まさにこの一行なんだ。</p>
+    <h3>なぜ Φ/2π が「中の源の数」になるのか — ガウスの法則を導く</h3>
+
+    <p><b>① まず、源を輪の真ん中に置いてみる（いちばん簡単な場合）。</b> 半径 $R$ の円の上では、源からの距離はどこも $|\boldsymbol{\rho}|=R$ で一定。場は外向き（$\mathbf{n}$ と同じ向き）だから、内積は一定値になる：</p>
+    <div class="eq">$$\mathbf{E}\cdot\mathbf{n}=\frac{q}{R}\quad(\text{円上のどこでも同じ})$$</div>
+    <p>あとは一周ぶん足す＝円周 $2\pi R$ を掛けるだけ：</p>
+    <div class="eq">$$\oint \mathbf{E}\cdot\mathbf{n}\,dl=\frac{q}{R}\times\underbrace{2\pi R}_{\text{円周}}=2\pi q$$</div>
+    <p>ここで <b>$R$ がきれいに消える</b>のが気持ちいい。場は $1/R$ で弱くなるのに、足す境界（円周）は $R$ で長くなる ── ちょうど打ち消し合う。だから半径によらず答えは $2\pi q$。これが $1/r$ 場の“仕掛け”だよ。</p>
+
+    <p><b>② 形が変わっても、源が中にある限り同じ。</b> ここが効くところ。一区切りの寄与は、じつは <b>その区切りを源の位置から見込む角度</b> $d\varphi$ だけで書ける：</p>
+    <div class="eq">$$\mathbf{E}\cdot\mathbf{n}\,dl=\frac{q}{|\boldsymbol{\rho}|}\,(\hat{\boldsymbol{\rho}}\cdot\mathbf{n})\,dl=q\,d\varphi$$</div>
+    <p>（$(\hat{\boldsymbol{\rho}}\cdot\mathbf{n})\,dl/|\boldsymbol{\rho}|$ が、その小区間を源から見込む角度 $d\varphi$。同じ長さでも、遠いほど小さい角度に見える、というだけのこと。）だから一周の合計は、角度を一周ぶん集めたものになる：</p>
+    <div class="eq">$$\oint \mathbf{E}\cdot\mathbf{n}\,dl=q\oint d\varphi=q\times(\text{源から見て、輪を一周する間に回った角度})$$</div>
+    <p>源が <b>内側</b>なら、輪を一周する間に源のまわりをちょうど一回り＝ $\oint d\varphi=2\pi$ → 答えは $2\pi q$。源が <b>外側</b>なら、行きで増えた角度が帰りで戻って $\oint d\varphi=0$ → 答えは $0$。<b>境界の形にはいっさいよらず、源が中か外かだけで決まる</b> ── これが、君が源を内・外に動かして見ている「囲めば 1、囲まなければ 0」の正体だ。外の源で $\mathbf{E}\!\cdot\!\mathbf{n}$ の符号が行き帰りで反転して打ち消すのも、この $d\varphi$ の符号が反転してるんだよ。</p>
+
+    <p>源が複数あっても、場は重ね合わせなので、それぞれの寄与を足すだけ。だから一般に：</p>
+    <div class="eq">$$\frac{\Phi}{2\pi}=q_{\text{enc}}=(\text{内側にある源の合計})$$</div>
+
+    <h3>離散の足し算は、なぜ ∮ に近づくのか</h3>
+    <p>このラボの $\displaystyle\sum_{i=1}^{N}(\mathbf{E}_i\cdot\mathbf{n}_i)\,\Delta l_i$ は、なめらかな関数を $N$ 本の短冊で近似する <b>リーマン和</b>だ。$N$ を増やすと短冊が細くなって、和は積分 $\oint$ に近づく（その様子が下の収束グラフ）。源が境界から遠いと被積分関数はなだらかで、少ない $N$ でもすぐ合う。逆に <b>源を境界ギリギリまで寄せる</b>と、その近くで $\mathbf{E}$ が鋭く尖るから、合わせるのに $N$ がたくさん要る ── 収束の速さが目に見えて変わるはず。源をドラッグして、輪のすぐそばまで近づけて試してみて。</p>
   </section>
 </div>
 
