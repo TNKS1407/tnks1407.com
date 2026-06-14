@@ -39,11 +39,11 @@
 <div class="wrap">
   <section>
     <div class="w-title">源を足して、場を作る — 重ね合わせ × ポテンシャル</div>
-    <p class="w-sub">源をひとつ置くと、まわりに <b>1/r</b> のすり鉢（ポテンシャル）ができる。源を増やすと、そのすり鉢がただ <b>足し算</b> される ── でこぼこの地形になるんだ。場（力の向き）は、その地形の <b>坂</b>。ボールが転がり落ちる向きで、急なほど強い。<b>キャンバスをクリックで源を追加</b>。＋（赤）と −（青）を混ぜると双極子になるよ。</p>
+    <p class="w-sub">源をひとつ置くと、まわりに <b>1/r</b> のすり鉢（ポテンシャル）ができる。源を増やすと、そのすり鉢がただ <b>足し算</b> される ── でこぼこの地形になるんだ。場（力の向き）は、その地形の <b>坂</b>。ボールが転がり落ちる向きで、急なほど強い。<b>空いた所をクリックで源を追加／置いた源をクリックすると ＋⇄− が反転</b>する（場が即変わる）。＋（赤）と −（青）を混ぜると双極子になるよ。</p>
     <canvas id="cv" width="520" height="360"></canvas>
     <div class="controls">
       <div class="cg"><label>見せ方</label><button class="btn on" id="vpot">ポテンシャル地形</button><button class="btn" id="vfld">場（坂の向き）</button></div>
-      <div class="cg"><label>置く源</label><button class="btn red on" id="sp">＋</button><button class="btn" id="sm">−</button></div>
+      <div class="cg"><label>次に置く源</label><button class="btn red on" id="sp">＋</button><button class="btn" id="sm">−</button></div>
     </div>
     <div class="controls" style="margin-top:.5rem;">
       <div class="cg"><label>例</label><button class="btn" id="e1">1つ</button><button class="btn on" id="e2">2つ（同符号）</button><button class="btn" id="ed">双極子 ＋−</button><button class="btn" id="e3">3つ</button></div>
@@ -143,6 +143,8 @@
   cv.addEventListener('click',function(ev){
     var rect=cv.getBoundingClientRect(), sx=cv.width/rect.width, sy=cv.height/rect.height;
     var x=(ev.clientX-rect.left)*sx, y=(ev.clientY-rect.top)*sy;
+    // 既に置いた源をクリックしたら符号を反転（＋⇄−）。空いた所なら新しい源を置く。
+    for(var i=0;i<srcs.length;i++){ var dx=x-srcs[i].x, dy=y-srcs[i].y; if(dx*dx+dy*dy<=17*17){ srcs[i].q=-srcs[i].q; setPresetBtn(''); draw(); return; } }
     srcs.push({x:x,y:y,q:sign}); setPresetBtn(''); draw();
   });
 
