@@ -79,6 +79,7 @@ $$\phi(P) = \sum_i \frac{q_i}{r_i}\qquad(\text{源 } i \text{ から } P \text{ 
 
 <p style="margin:1.4rem 0;display:flex;gap:.6rem;flex-wrap:wrap;">
   <a href="/field/" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:.4rem;background:#3c7876;color:#fff;border-radius:999px;padding:.55rem 1.2rem;font-weight:700;font-size:.9rem;">▶ 地形と坂を、両方の見方で触る ↗</a>
+  <a href="/field3d/" target="_blank" rel="noopener noreferrer" style="display:inline-flex;align-items:center;gap:.4rem;background:none;color:#3c7876;border:1px solid #3c7876;border-radius:999px;padding:.55rem 1.2rem;font-weight:700;font-size:.9rem;">▶ 3D地形を回して見る ↗</a>
 </p>
 
 ## 源を、たくさん ── 和が積分になる
