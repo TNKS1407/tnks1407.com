@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>源はポテンシャルを曲げる — 緩和ラボ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
+    --accent:#3c7876;--amber:#c9761f;--red:#c2543d;--text:#1d1b17;--text-muted:#7d7568;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--text);
+    font-family:'Zen Kaku Gothic New','Hiragino Sans','Meiryo',system-ui,sans-serif;line-height:1.7;}
+  .wrap{max-width:760px;margin:0 auto;padding:14px 14px 22px;}
+  section{background:var(--card);border:1px solid var(--border);border-radius:14px;
+    padding:14px 16px 16px;box-shadow:0 1px 6px rgba(29,27,23,.05);}
+  .w-title{font-size:1rem;font-weight:700;margin:0 0 .2rem;}
+  .w-sub{font-size:.78rem;color:var(--text-muted);margin:0 0 .8rem;line-height:1.6;}
+  canvas{display:block;width:100%;max-width:520px;margin:0 auto;border:1px solid var(--border);border-radius:10px;background:var(--surface);cursor:crosshair;touch-action:none;image-rendering:auto;}
+  .controls{display:flex;flex-wrap:wrap;gap:.5rem .9rem;align-items:center;margin-top:.9rem;justify-content:center;}
+  .cg{display:flex;align-items:center;gap:.45rem;}
+  .cg label{font-size:.74rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted);white-space:nowrap;}
+  .btn{padding:.3rem .7rem;border:1px solid var(--border);border-radius:7px;background:none;
+    font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--text-muted);cursor:pointer;transition:.15s;}
+  .btn:hover{border-color:var(--accent);color:var(--accent);}
+  .btn.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .btn.red.on{background:var(--red);border-color:var(--red);}
+  .readout{margin-top:.7rem;font-family:'JetBrains Mono',monospace;font-size:.76rem;color:var(--text);
+    background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:.55rem .8rem;line-height:1.85;}
+  .readout b{color:var(--accent);} .readout .r{color:var(--red);font-weight:700;} .readout .t{color:var(--accent);font-weight:700;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section>
+    <div class="w-title">源はポテンシャルを曲げる — 緩和ラボ</div>
+    <p class="w-sub">ポテンシャルの地形は、各点が「<b>まわり4方向の平均</b>」に落ち着こうとして決まる。<b>源のある所だけ</b>、その平均からずれて盛り上がる（＋＝赤い丘）／へこむ（−＝青い井戸）。<b>源のない所</b>は、まわりの平均そのもの ── いちばん滑らかな膜（ラプラス）。<b>枠（境界）の値</b>を変えると、答えも変わる。<b>クリックで源を置く／源クリックで±反転</b>。地形が刻一刻“落ち着いて”いくのを見て。</p>
+    <canvas id="cv" width="520" height="360"></canvas>
+    <div class="controls">
+      <div class="cg"><label>次に置く源</label><button class="btn red on" id="sp">＋</button><button class="btn" id="sm">−</button></div>
+      <div class="cg"><label>枠（境界）</label><button class="btn on" id="bz">ぜろ</button><button class="btn" id="br">左右に傾き</button></div>
+    </div>
+    <div class="controls" style="margin-top:.5rem;">
+      <button class="btn" id="clr">源をクリア</button>
+      <button class="btn" id="rst">地形をならす（リセット）</button>
+    </div>
+    <div class="readout" id="read"></div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var cv=document.getElementById('cv'), ctx=cv.getContext('2d'), W=cv.width, H=cv.height;
+  var read=document.getElementById('read');
+  var NX=130, NY=90;                 // 緩和する格子
+  var phi=new Float32Array(NX*NY), src=new Float32Array(NX*NY), fixed=new Uint8Array(NX*NY);
+  var srcs=[], sign=+1, boundary='zero';
+  var SRC=0.5, CS=1.25, iter=0;
+  var off=document.createElement('canvas'); off.width=NX; off.height=NY; var octx=off.getContext('2d');
+  var img=octx.createImageData(NX,NY);
+
+  function idx(i,j){ return j*NX+i; }
+
+  function setBoundary(){
+    for(var k=0;k<NX*NY;k++) fixed[k]=0;
+    for(var i=0;i<NX;i++){ fixed[idx(i,0)]=1; fixed[idx(i,NY-1)]=1; }
+    for(var j=0;j<NY;j++){ fixed[idx(0,j)]=1; fixed[idx(NX-1,j)]=1; }
+    for(var j2=0;j2<NY;j2++){ for(var i2=0;i2<NX;i2++){ if(fixed[idx(i2,j2)]){
+      var v=0;
+      if(boundary==='ramp'){ v=0.85*(1-2*i2/(NX-1)); }   // 左=+0.85 → 右=−0.85
+      phi[idx(i2,j2)]=v;
+    }}}
+  }
+  function rebuildSrc(){
+    for(var k=0;k<NX*NY;k++) src[k]=0;
+    for(var s=0;s<srcs.length;s++){ var o=srcs[s];
+      for(var dj=-1;dj<=1;dj++){ for(var di=-1;di<=1;di++){ var i=o.gx+di, j=o.gy+dj;
+        if(i>1&&i<NX-2&&j>1&&j<NY-2) src[idx(i,j)] += o.q*SRC*(di===0&&dj===0?1:0.35);
+      }}
+    }
+  }
+  function relax(sweeps){
+    for(var s=0;s<sweeps;s++){
+      for(var j=1;j<NY-1;j++){ for(var i=1;i<NX-1;i++){ var k=idx(i,j); if(fixed[k]) continue;
+        phi[k]=0.25*(phi[k-1]+phi[k+1]+phi[k-NX]+phi[k+NX] + src[k]);
+      }}
+      iter++;
+    }
+  }
+  function colmap(s){ // s in [-1,1] → diverging  red(+)/teal(−) over surface
+    var c=Math.min(1,Math.abs(s)), R,G,B;
+    if(s>=0){ R=250+(194-250)*c; G=248+(84-248)*c; B=244+(61-244)*c; }
+    else    { R=250+(60-250)*c;  G=248+(120-248)*c; B=244+(118-244)*c; }
+    return [R,G,B];
+  }
+  function render(){
+    var d=img.data;
+    for(var j=0;j<NY;j++){ for(var i=0;i<NX;i++){ var k=idx(i,j), s=Math.tanh(phi[k]*CS), c=colmap(s), o=k*4;
+      d[o]=c[0]; d[o+1]=c[1]; d[o+2]=c[2]; d[o+3]=255;
+    }}
+    octx.putImageData(img,0,0);
+    ctx.imageSmoothingEnabled=true; ctx.drawImage(off,0,0,W,H);
+    // contour-ish: faint grid? skip. draw sources
+    for(var s2=0;s2<srcs.length;s2++){ var o2=srcs[s2], px=o2.gx/(NX-1)*W, py=o2.gy/(NY-1)*H;
+      ctx.beginPath(); ctx.arc(px,py,7,0,2*Math.PI); ctx.fillStyle=o2.q>0?'#c2543d':'#3c7876'; ctx.fill();
+      ctx.strokeStyle='#fff'; ctx.lineWidth=1.4; ctx.stroke();
+      ctx.fillStyle='#fff'; ctx.font="bold 11px 'JetBrains Mono',monospace"; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(o2.q>0?'+':'−',px,py+0.5); ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+    }
+    if(srcs.length===0){ ctx.fillStyle='#aaa49b'; ctx.font="13px 'Zen Kaku Gothic New',sans-serif"; ctx.textAlign='center';
+      ctx.fillText('クリックで源を置いてみて', W/2, 26); ctx.textAlign='left'; }
+    var np=0,nm=0; for(var t=0;t<srcs.length;t++){ srcs[t].q>0?np++:nm++; }
+    read.innerHTML='源 <b>'+srcs.length+'個</b>（＋'+np+'・−'+nm+'）・緩和 <b>'+iter+'</b> 回。<br>'+
+      '各点は <b>まわり4方向の平均</b> に落ち着く（∇²φ=0）。源のある所だけ平均からずれて <span class="r">丘</span>／<span class="t">井戸</span>になる（∇²φ=−源）。源を置くと、地形がじわっと曲がり直すのが見えるはず。';
+  }
+  function loop(){ relax(6); render(); requestAnimationFrame(loop); }
+
+  // interaction
+  function cell(ev){ var rc=cv.getBoundingClientRect(); return { gx:Math.round((ev.clientX-rc.left)/rc.width*(NX-1)), gy:Math.round((ev.clientY-rc.top)/rc.height*(NY-1)) }; }
+  cv.addEventListener('pointerdown',function(ev){ var c=cell(ev);
+    for(var s=0;s<srcs.length;s++){ if(Math.abs(srcs[s].gx-c.gx)<=3 && Math.abs(srcs[s].gy-c.gy)<=3){ srcs[s].q=-srcs[s].q; rebuildSrc(); return; } }
+    if(c.gx>2&&c.gx<NX-3&&c.gy>2&&c.gy<NY-3){ srcs.push({gx:c.gx,gy:c.gy,q:sign}); rebuildSrc(); }
+  });
+  document.getElementById('sp').onclick=function(){ sign=1; this.classList.add('on'); document.getElementById('sm').classList.remove('on'); };
+  document.getElementById('sm').onclick=function(){ sign=-1; this.classList.add('on'); document.getElementById('sp').classList.remove('on'); };
+  document.getElementById('bz').onclick=function(){ boundary='zero'; this.classList.add('on'); document.getElementById('br').classList.remove('on'); resetField(); };
+  document.getElementById('br').onclick=function(){ boundary='ramp'; this.classList.add('on'); document.getElementById('bz').classList.remove('on'); resetField(); };
+  document.getElementById('clr').onclick=function(){ srcs=[]; rebuildSrc(); };
+  document.getElementById('rst').onclick=function(){ resetField(); };
+  function resetField(){ phi.fill(0); setBoundary(); iter=0; }
+
+  setBoundary(); rebuildSrc();
+  var qs=new URLSearchParams(location.search);
+  if(qs.get('bc')==='ramp'){ boundary='ramp'; document.getElementById('br').classList.add('on'); document.getElementById('bz').classList.remove('on'); setBoundary(); }
+  if(qs.get('demo')==='dipole'){ srcs=[{gx:Math.round(NX*0.38),gy:Math.round(NY/2),q:1},{gx:Math.round(NX*0.62),gy:Math.round(NY/2),q:-1}]; rebuildSrc(); }
+  else if(qs.get('demo')!=='empty'){ srcs=[{gx:Math.round(NX/2),gy:Math.round(NY/2),q:1}]; rebuildSrc(); }
+  loop();
+})();
+</script>
+</body>
+</html>

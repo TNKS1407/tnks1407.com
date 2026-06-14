@@ -147,5 +147,5 @@ $$\nabla^2\phi = -(\text{源})$$
   <span style="color:#cfc9be;">/</span>
   <span>今回 <b style="color:#3c7876;">場の湧き出しを数える</b></span>
   <span style="color:#cfc9be;">/</span>
-  <span>次回 源はポテンシャルを曲げる（準備中）</span>
+  <span>次回 <a href="/docs/source-bends-potential/">源はポテンシャルを曲げる</a></span>
 </nav>
