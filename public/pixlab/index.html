@@ -88,10 +88,10 @@
   </header>
 
   <div class="lead">
-    <p>デジタル画像は、結局 <b>数字の格子（行列）</b>。写真をドット絵に分解して、その行列に画像処理を<b>一歩ずつ</b>かけて見るための場所だよ。<span class="v">v3</span></p>
-    <p style="font-size:11.5px;color:var(--sub);font-family:var(--mono);margin:-.3rem 0 .2rem;">学びの道：<a class="back" style="color:var(--warm);" href="/pixlab1d/">① 1次元の微分</a> → <b style="color:var(--teal-d);">② 標本化→畳み込み（いまここ）</b> → ③ 統計（大津）・色（減色/WB） → <a class="back" style="color:var(--warm);" href="https://gradus.tnks1407.com/textbook.html" target="_blank" rel="noopener">📖 詳しく（Gradus）</a>　　<a class="back startcourse" id="course-start">🧭 順番に読む</a></p>
-    <p>「演算」でカーネル（ぼかし・エッジ等）を選ぶと、3×3 の窓が格子を舐めて畳み込みを計算していく。「見る面」で R・G・B・明るさ のどれを覗くか選べて、その面の計算を <b>行列(⊙)</b> でも <b>式（和）</b> でも見れる。エッジ系は「右−左の差＝傾き＝微分」が色で追える。出力はカラーで埋まる。「二値化（大津）」を選ぶと、明るさのヒストグラムを見ながら<b>最適なしきい値</b>を自動で探して白黒に分ける様子も追えるよ。</p>
-    <p><a class="back" style="color:var(--teal);" href="/conv">▷ グレースケール版（畳み込みを一歩ずつ /conv）</a>　<a class="back" style="color:var(--warm);" href="https://gradus.tnks1407.com/textbook.html" target="_blank" rel="noopener">📖 各処理の理屈・数式をもっと詳しく → Gradus</a></p>
+    <p>デジタル画像は、結局 <b>数字の格子（行列）</b>。写真をドット絵に分解して、その行列に画像処理を<b>一歩ずつ</b>かけて見るための場所だよ。</p>
+    <p style="font-size:12px;color:var(--sub);font-family:var(--mono);margin:-.1rem 0 .3rem;">学びの道：<a class="back" style="color:var(--warm);font-weight:700;" href="/pixlab1d/">① 1次元の微分（隣との差・まずここから）</a> → <b style="color:var(--teal-d);">② 標本化→畳み込み（いまここ）</b> → ③ 統計（大津）・色（減色/WB） → <a class="back" style="color:var(--warm);" href="https://gradus.tnks1407.com/textbook.html" target="_blank" rel="noopener">📖 詳しく（Gradus）</a>　　<a class="back startcourse" id="course-start">🧭 順番に読む</a></p>
+    <p>「演算」でカーネル（ぼかし・エッジ等）を選ぶと、3×3 の窓が格子の上を<b>1マスずつ動いて</b>計算していく。「見る面」で R・G・B・明るさ のどれを覗くか選べて、その面の計算を <b>3×3の画素値とカーネル重みを場所ごとに掛け合わせる表（⊙）</b> でも <b>式（和）</b> でも見られる。エッジ系は「右と左の差＝明るさの傾き＝<b>微分に近い量</b>」が色で追える。R・G・B それぞれに同じ計算をするので、結果もカラー画像になる。「二値化（大津）」を選ぶと、明るさのヒストグラムを見ながら<b>暗い組と明るい組が最も分かれやすくなるしきい値</b>を自動で探して白黒に分ける様子も追えるよ。計算の細かいルール（境界・丸め・式）は、ページ下の <a class="back" style="color:var(--teal-d);font-weight:700;" href="#rules" onclick="var r=document.getElementById('rules');if(r)r.open=true;">「PixLab の計算ルール」</a> にまとめてある。</p>
+    <p><a class="back" style="color:var(--teal);" href="https://tnkblog.net/conv" target="_blank" rel="noopener">▷ グレースケール版（畳み込みを一歩ずつ /conv）</a>　<a class="back" style="color:var(--warm);" href="https://gradus.tnks1407.com/textbook.html" target="_blank" rel="noopener">📖 各処理の理屈・数式をもっと詳しく → Gradus</a></p>
   </div>
 
   <div class="coursebar" id="coursebar" style="display:none;">
@@ -147,6 +147,25 @@
       <div class="status" id="status"></div>
     </div>
   </div>
+  <details class="card" id="rules">
+    <summary style="cursor:pointer;font-family:var(--round);font-weight:700;font-size:1.02rem;list-style:none;">📐 PixLab の計算ルール（境界・丸め・式）<span style="font-size:.74rem;color:var(--sub);font-family:var(--mono);font-weight:400;">　▸ 開く</span></summary>
+    <div style="font-size:13px;color:#3a444a;line-height:1.9;margin-top:.8rem;">
+      <p style="margin:0 0 .5rem;">このラボが実際にやっている計算を、コードどおりにまとめたもの（推測ではなく実装ベース）。</p>
+      <ul style="padding-left:1.25em;margin:0;">
+        <li>画像は <b>R・G・B の数（0〜255）の格子</b>として扱う。</li>
+        <li><b>明るさ L</b> は <span class="mono" style="color:var(--teal-d);">L = round(0.299·R + 0.587·G + 0.114·B)</span>（Rec.601 の輝度。単純平均ではなく、緑を重く見る人の目に近い重み）。色の違いを見るなら R・G・B、輪郭や二値化を見るなら明るさ L が分かりやすい。</li>
+        <li>カーネル処理は、中心マスの<b>周囲 3×3</b> に重み（カーネル）を当てて「重み×値」を9個たす。</li>
+        <li>厳密には、カーネルを<b>反転して</b>当てるのが「畳み込み」、<b>反転せず</b>そのまま当てるのが「相関」。このラボの実装は<b>相関</b>（反転なし）で、画面の式表示と同じ向き。ぼかしのような左右対称カーネルではどちらも同じ結果だけど、Sobel のような非対称カーネルでは反転すると符号が変わる。教育用に、まとめて「畳み込み」と呼んでいる。</li>
+        <li><b>画像の端・角</b>では 3×3 の窓が画像の外にはみ出す。このラボは、はみ出したマスを<b>いちばん近い端の画素で埋める（端の値を複製）</b>。そのため角や端では、外側がコピーされたぶん中央とは少し違う計算になる（一様な画像なら端でも 0 のまま）。</li>
+        <li>小数は <b>四捨五入（round）</b> で整数化する。</li>
+        <li>最後に <b>0 未満は 0、255 超えは 255</b> に丸める（クランプ）。</li>
+        <li>エッジ系（Sobel・Prewitt・ラプラシアン）の<b>負の値は絶対値</b>にして表示（＋も−も明るく光る）。エンボスだけは <b>+128</b> して灰色を基準に凹凸を出す。ぼかし系は <b>÷（重みの合計）</b>。</li>
+        <li>二値化は <b>しきい値 k より明るい画素を白、k 以下を黒</b>。</li>
+        <li>大津法は、明るさのヒストグラムを2グループに分け、<b>クラス間分散 σ²B = w₀·w₁·(μ₀−μ₁)²</b> が最大になる k を選ぶ（同点のときは低い方の k）。</li>
+      </ul>
+      <p style="font-size:11.5px;color:var(--sub);margin:.6rem 0 0;">※ 選んだ画像はこの端末の中だけで処理し、外へは送らない。ページ表示のための静的ファイル（Web フォントなど）だけは読み込む。</p>
+    </div>
+  </details>
   <footer>PixLab — tnks1407 / 画像ラボ</footer>
 </div>
 
@@ -173,10 +192,10 @@
     {id:'blur',    m:[1,1,1,1,1,1,1,1,1],         div:9, disp:'avg',   label:'平均ぼかし',      mean:'9マスを同じ重みで平均＝なめらかに。全部「足す側」だから微分ではなく"ならし"。'},
     {id:'gauss',   m:[1,2,1,2,4,2,1,2,1],         div:16,disp:'avg',   label:'ガウスぼかし',    mean:'中心ほど重い平均（1:2:4）÷16＝より自然なぼかし。'},
     {id:'sharpen', m:[0,-1,0,-1,5,-1,0,-1,0],     div:1, disp:'clamp', label:'先鋭化(シャープ)', mean:'中心を5倍、上下左右を引く＝「元＋(元−ぼかし)」で輪郭を強調。'},
-    {id:'sobelx',  m:[-1,0,1,-2,0,2,-1,0,1],      div:1, disp:'abs',   label:'Sobel 横',       mean:'右の列（＋）から左の列（−）を引く＝横方向の傾き ∂/∂x＝縦エッジ。これがまさに微分（差分）。'},
+    {id:'sobelx',  m:[-1,0,1,-2,0,2,-1,0,1],      div:1, disp:'abs',   label:'Sobel 横',       mean:'右の列（＋）から左の列（−）を引く＝横方向の傾き ∂/∂x＝縦エッジ。中央の行を重め（×2）にして上下を軽く均すので、単純な差分より少しなめらかにエッジを拾う。連続な微分そのものではなく、ピクセル同士の差による近似（差分）。'},
     {id:'sobely',  m:[-1,-2,-1,0,0,0,1,2,1],      div:1, disp:'abs',   label:'Sobel 縦',       mean:'下の行（＋）から上の行（−）を引く＝縦方向の傾き ∂/∂y＝横エッジ。'},
     {id:'prewitt', m:[-1,0,1,-1,0,1,-1,0,1],      div:1, disp:'abs',   label:'Prewitt 横',     mean:'Sobelと同じ「右−左」の差分。重みが均一なぶん素朴。横方向の傾き。'},
-    {id:'lap',     m:[-1,-1,-1,-1,8,-1,-1,-1,-1], div:1, disp:'abs',   label:'ラプラシアン(輪郭)',mean:'中心を8倍して周り8マスを引く＝2階微分（曲がり具合）。エッジでゼロをまたぐ。'},
+    {id:'lap',     m:[-1,-1,-1,-1,8,-1,-1,-1,-1], div:1, disp:'abs',   label:'ラプラシアン(輪郭)',mean:'中心を8倍して周り8マス（8近傍）を引く＝2階微分（曲がり具合）に近い量。エッジで符号がゼロをまたぐ。細い線や急な変化に反応するが、ノイズにも反応しやすいので、実務では先にぼかすことがある。'},
     {id:'emboss',  m:[-2,-1,0,-1,1,1,0,1,2],      div:1, disp:'offset',label:'エンボス',        mean:'左上（−）から右下（＋）への斜めの差分＝斜めの傾き＝凹凸の陰影。'},
     {id:'grad',    label:'勾配の大きさ（横²+縦²）', mean:'横の差Gxと縦の差Gyを両方とって長さ√(Gx²+Gy²)に。向き問わず輪郭が出る＝Gradusの輪郭抽出と同じ。出力はグレー。'},
     {id:'otsu',    label:'二値化（大津）', mean:'明るさのヒストグラムを2つの山に分ける一本のしきい値を、最適な位置に自動で選んで白黒に分ける。畳み込みではなく"統計"の処理。'},
@@ -419,7 +438,7 @@
       document.getElementById('readout').innerHTML='<div class="kmean">「▶ 再生」か「1ステップ」で、写真を各ブロックの平均RGBで一マスずつドット絵にしていくよ（標本化）。出来たら「演算」でカーネルを選ぶと、そのドット絵に畳み込みをかけられる。</div>';
     } else if(kerId==='grad'){
       document.getElementById('readout').innerHTML='<div class="rhead">勾配の大きさ（横²+縦²）　— どんな計算？</div>'+
-        '<div class="kmean">横の差 <b>Gx</b>（Sobel横）と縦の差 <b>Gy</b>（Sobel縦）を両方とって、ベクトル (Gx, Gy) の<b>長さ √(Gx²+Gy²)</b> を「輪郭の強さ」にする。向きを問わず輪郭が出る、明るさ面の1枚計算。「▶ 再生」か「1ステップ」で一マスずつ。マスをクリックすればその場の Gx・Gy・合成も見れる。</div>'+
+        '<div class="kmean">横の差 <b>Gx</b>（Sobel横）と縦の差 <b>Gy</b>（Sobel縦）を両方とって、ベクトル (Gx, Gy) の<b>長さ √(Gx²+Gy²)</b> を「輪郭の強さ」にする。向きを問わず輪郭が出る、明るさ面の1枚計算。「▶ 再生」か「1ステップ」で一マスずつ。マスをクリックすればその場の Gx・Gy・合成も見られる。</div>'+
         '<div class="matview"><div class="mblock"><div class="mlab">Sobel 横 Gx</div>'+grid3([-1,0,1,-2,0,2,-1,0,1],true,9,false)+'</div><div class="mop">＋</div><div class="mblock"><div class="mlab">Sobel 縦 Gy</div>'+grid3([-1,-2,-1,0,0,0,1,2,1],true,9,false)+'</div></div>'+
         '<div class="klegend">この2枚を両方かけて、出力 = √(Gx²+Gy²)。Sobel横だけより輪郭がきれいに出るよ（＝Gradusの輪郭抽出と同じ）。</div>';
     } else {
@@ -427,7 +446,7 @@
       document.getElementById('readout').innerHTML='<div class="rhead">'+k.label+'　— どんな計算をするの？</div>'+
         '<div class="kmean">'+k.mean+'</div>'+
         '<div class="matview"><div class="mblock"><div class="mlab">カーネル h（3×3 の重み）</div>'+grid3(k.m,true,9,false)+'</div></div>'+
-        '<div class="klegend">この 3×3 を画像の各窓に重ねて「重み×値」を 9 個たし（'+dn+'）、1マスの出力にする＝畳み込み。<span class="lg-pos">緑＝足す側(+)</span>　<span class="lg-neg">赤＝引く側(−)</span>　<span class="lg-zero">灰＝0</span>。「▶ 再生」か「1ステップ」で一マスずつ計算していくよ。マスをクリックすればその場の計算も見れる。</div>';
+        '<div class="klegend">この 3×3 を画像の各窓に重ねて「重み×値」を 9 個たし（'+dn+'）、1マスの出力にする＝畳み込み。<span class="lg-pos">緑＝足す側(+)</span>　<span class="lg-neg">赤＝引く側(−)</span>　<span class="lg-zero">灰＝0</span>。「▶ 再生」か「1ステップ」で一マスずつ計算していくよ。マスをクリックすればその場の計算も見られる。</div>';
     }
     buildMat(); drawCanvas(); setStatus(); }
 
@@ -452,7 +471,7 @@
     if(kerId==='none') showPixReadout(r,c,blockAvg(c,r)); else if(kerId==='otsu') showOtsuPix(r,c); else if(kerId==='reduce') showRedPix(r,c); else if(kerId==='awb') showAwbPix(r,c); else if(kerId==='grad') showGradReadout(r,c,gradCell(c,r)); else showReadout(r,c,convCell(c,r),9);
     drawCanvas(); }
   function feedResult(){ finishAll(); dots=outDots.map(function(d){ return d?[d[0],d[1],d[2]]:[0,0,0]; }); resetStep();
-    document.getElementById('readout').innerHTML='<div class="kmean">結果を新しい入力にしたよ。続けて別の演算をかけると"重ねがけ"になる（例：ぼかし→エッジ）。元写真に戻すには「最初の写真に戻す」。</div>'; }
+    document.getElementById('readout').innerHTML='<div class="kmean">結果を新しい入力にしたよ。続けて別の演算をかけると"重ねがけ"になる（例：ぼかし→エッジ）。元写真に戻すには「選んだ絵に戻す」。</div>'; }
   function downloadPNG(){ finishAll(); var sz=Math.max(384,N*16), tc=document.createElement('canvas'); tc.width=tc.height=sz; var tx=tc.getContext('2d'); tx.imageSmoothingEnabled=false; var ds=sz/N;
     for(var i=0;i<N*N;i++){ var o=outDots[i]||[0,0,0],c=i%N,r=(i/N|0); tx.fillStyle=colR(o); tx.fillRect(c*ds,r*ds,Math.ceil(ds),Math.ceil(ds)); }
     tc.toBlob(function(b){ var a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download='pixlab.png'; a.click(); }); }
@@ -542,7 +561,7 @@
   function palSwatches(){ var sw=''; for(var c=0;c<redK;c++){ var col=redCentroids[c]; sw+='<span title="#'+c+'" style="display:inline-block;width:1.6em;height:1.6em;border-radius:5px;border:1px solid #ccc;margin:0 .25em .25em 0;vertical-align:middle;background:rgb('+col[0]+','+col[1]+','+col[2]+')"></span>'; } return sw; }
   function showRedReadout(changed){
     var head='<div class="rhead">知覚減色（K-means）　／　反復 '+redIter+' 回目　— '+(redSpace==='lab'?'知覚(Lab)距離':'RGB距離')+'</div>';
-    var mean='<div class="kmean">似た色どうしを K='+redK+' 個のグループにまとめ、各グループの平均色で塗り直す＝k-means による減色だよ。①各画素を一番"近い"代表色に割り当て → ②代表色をそのグループの平均色に更新、を繰り返す。「近い」を <b>'+(redSpace==='lab'?'知覚(Lab)空間で測っている（人の目の感じ方に近い距離 ΔE）':'RGB空間で測っている（数値そのままの距離）')+'</b>。Labだと暗部の微妙な差や肌色も自然に分かれやすい。RGBは計算は軽いけど、見た目が離れた色が同じグループに混じることがある。同じ初期値から始めているので、距離の測り方だけの違いが見えるよ。</div>';
+    var mean='<div class="kmean">似た色どうしを K='+redK+' 個のグループにまとめ、各グループの平均色で塗り直す＝k-means による減色だよ。①各画素を一番"近い"代表色に割り当て → ②代表色をそのグループの平均色に更新、を繰り返す。「近い」を <b>'+(redSpace==='lab'?'知覚(Lab)空間で測っている（人の目の感じ方に近い距離 ΔE）':'RGB空間で測っている（数値そのままの距離）')+'</b>。Labだと暗部の微妙な差や肌色も自然に分かれやすい。RGBは計算は軽いけど、見た目が離れた色が同じグループに混じることがある。初期化のやり方は同じ（離れた色から順に代表色を選ぶ）で、あとは距離の測り方だけが違うよ。</div>';
     var pal='<div class="msum">いまの代表色（パレット K='+redK+'）：<br>'+palSwatches()+'</div>';
     var st='<div class="kbreak">割り当てが変わった画素：<span class="r">'+changed+'</span> 個'+(changed===0?'　→ 収束（これ以上は動かない）':'　→ まだ動くので続けて反復しよう')+'</div>';
     document.getElementById('readout').innerHTML=head+mean+pal+st;
@@ -643,8 +662,8 @@
   var COURSE=[
     {k:'none',  t:'第1章　標本化（写真→ドット絵）',
       x:'まずは入口。目の前の連続した景色を、格子の上に点々と拾い直すのが<b>標本化</b>だよ。1マスの色は、その領域の平均。粗く拾えばドット絵、細かく拾えば写真に近づく。「▶ 再生」か「1ステップ」で、平均が一マスずつ埋まっていくのを見てみよう。ここから全部が始まる。'},
-    {k:'sobelx',t:'第2章　畳み込み＝2次元の微分（エッジ）',
-      x:'<a href="/pixlab1d/">1次元でやった「隣との差」</a>を覚えてる？ それを横と縦の両方向に広げたのが、この畳み込み（Sobel）。3×3の窓で「右の列−左の列」を取ると、明るさが急に変わる所＝<b>輪郭</b>だけが浮かび上がる。エッジ検出は、結局2次元の微分なんだ。「グレー（輝度）で見る」を押すと線がくっきりするよ。'},
+    {k:'sobelx',t:'第2章　畳み込み＝2次元の差分（エッジ）',
+      x:'<a href="/pixlab1d/">1次元でやった「隣との差」</a>を覚えてる？ それを横と縦の両方向に広げたのが、この畳み込み（Sobel）。3×3の窓で「右の列−左の列」を取ると、明るさが急に変わる所＝<b>輪郭</b>だけが浮かび上がる。エッジ検出は、結局2次元の差分（連続な微分そのものではなく、ピクセル同士の差による近似）なんだ。「グレー（輝度）で見る」を押すと線がくっきりするよ。'},
     {k:'gauss', t:'第3章　ならす・際立たせる（ぼかし／先鋭化）',
       x:'差を取る代わりに「周りと混ぜて平均する」とぼける（ガウスぼかし）。逆に中心を強めて周りを引くと、輪郭が際立つ（先鋭化）。同じ3×3の重みでも、<b>足すか引くか</b>で真逆のことが起きる。「演算」で平均ぼかし・先鋭化・ラプラシアンも試してみよう。'},
     {k:'otsu',  t:'第4章　分布で境目を決める（大津の二値化）',
