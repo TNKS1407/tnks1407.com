@@ -30,7 +30,7 @@ demoLabel: "波の遊び場（3つ）を全画面で開く"
   <div class="cap"><span>waves/travel</span><a href="/waves/?only=travel" target="_blank" rel="noopener noreferrer">全画面で開く ↗</a></div>
 </div>
 
-静止画だと $v=f\lambda$ はピンと来にくいけれど、動かすと一目でわかる。**1回の振動（周期 $T=1/f$ 秒）のあいだに、波はちょうど1波長 $\lambda$ だけ進む**。だから
+動かすと一目でわかる。**1回の振動（周期 $T=1/f$ 秒）のあいだに、波はちょうど1波長 $\lambda$ だけ進む**。だから
 
 $$v = \frac{\text{進んだ距離}}{\text{かかった時間}} = \frac{\lambda}{T} = \frac{\lambda}{1/f} = f\lambda$$
 
@@ -132,7 +132,7 @@ $$L = (2n-1)\,\frac{\lambda}{4} \quad\Rightarrow\quad f_n = (2n-1)\,\frac{c}{4L}
   <div class="cap"><span>waves/tube（圧力）</span><a href="/waves/?only=tube&amp;mode=press" target="_blank" rel="noopener noreferrer">全画面で開く ↗</a></div>
 </div>
 
-> このあと繋ぐ **声道ラボ** も、管の中の共鳴を **圧力** で描いている。だから唇の側（開いた端）が圧力の節（谷）になっていても驚かないで ── 変位ではなく圧力を見ているからだよ。
+> このあと繋ぐ **声道ラボ** も、管の中の共鳴を **圧力** で描いている。だから唇の側（開いた端）が圧力の節（谷）になっている ── 変位ではなく圧力を見ているからで、矛盾じゃないよ。
 
 母音の違いは、ここで決まる。**舌や顎を動かすと、声道という管の「太さ」が場所ごとに変わる**。一様な太さの管なら（このモデルでは）$500/1500/2500$ あたりだけれど、どこかにくびれを作ると、その位置に応じて $F_1$ や $F_2$ が上下にずれる。
 
