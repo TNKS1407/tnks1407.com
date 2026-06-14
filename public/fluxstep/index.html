@@ -122,7 +122,7 @@
   var conv=document.getElementById('conv'), cctx=conv.getContext('2d'), CW=conv.width, CH=conv.height;
   var panel=document.getElementById('panel'), ctxBox=document.getElementById('ctx');
   var nnEl=document.getElementById('nn'), nvEl=document.getElementById('nv'), spdEl=document.getElementById('spd');
-  var CX=W*0.46, CY=H*0.5, R=Math.min(W,H)*0.34;   // 輪（ピクセル）
+  var CX=W*0.40, CY=H*0.5, R=Math.min(W,H)*0.30;   // 輪（ピクセル、外の源とラベルの余白を右に確保）
   var COL={teal:'#3c7876',red:'#c2543d',amber:'#c9761f',ink:'#1d1b17',muted:'#7d7568',faint:'#bdb6a9'};
 
   // ---- 状態 ----
@@ -145,7 +145,8 @@
   // ---- 描画ヘルパ ----
   function arrow(x1,y1,x2,y2,col,w,dash){ ctx.strokeStyle=col; ctx.lineWidth=w||2; if(dash){ctx.setLineDash(dash);} ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); ctx.setLineDash([]);
     var pa=Math.atan2(y2-y1,x2-x1); ctx.fillStyle=col; ctx.beginPath(); ctx.moveTo(x2,y2); ctx.lineTo(x2-7*Math.cos(pa-0.42),y2-7*Math.sin(pa-0.42)); ctx.lineTo(x2-7*Math.cos(pa+0.42),y2-7*Math.sin(pa+0.42)); ctx.closePath(); ctx.fill(); }
-  function label(t,x,y,col,sz,al){ ctx.fillStyle=col; ctx.font=(sz||11)+"px 'JetBrains Mono',monospace"; ctx.textAlign=al||'left'; ctx.fillText(t,x,y); ctx.textAlign='left'; }
+  function label(t,x,y,col,sz,al){ ctx.font=(sz||11)+"px 'JetBrains Mono',monospace"; ctx.textAlign=al||'left'; ctx.lineJoin='round'; ctx.lineWidth=3.5; ctx.strokeStyle='rgba(250,248,244,.92)'; ctx.strokeText(t,x,y); ctx.fillStyle=col; ctx.fillText(t,x,y); ctx.textAlign='left'; }
+  function perpLabel(t,A,B,col,off){ var mx=(A[0]+B[0])/2,my=(A[1]+B[1])/2,dx=B[0]-A[0],dy=B[1]-A[1],L=Math.hypot(dx,dy)||1; label(t, mx-dy/L*off, my+dx/L*off+3, col,11,'center'); }
   function signCol(en,em){ if(em>1e-9 && Math.abs(en/em)<0.18) return COL.faint; return en>=0?COL.teal:COL.red; }
 
   // ---- メイン描画 ----
@@ -175,14 +176,14 @@
       // Δl セグメント（境界の微小弧をハイライト）
       var da=2*Math.PI/S.N; ctx.strokeStyle=COL.amber; ctx.lineWidth=4; ctx.beginPath(); ctx.arc(CX,CY,R,g.a-da/2,g.a+da/2); ctx.stroke();
 
-      if(S.mode===2){ // ベクトル全部：x, s, ρ
-        arrow(O[0],O[1],xp[0],xp[1], 'rgba(125,117,104,.8)',1.6); label('xᵢ',(O[0]+xp[0])/2+4,(O[1]+xp[1])/2,COL.muted,10);
-        arrow(O[0],O[1],sp[0],sp[1], 'rgba(194,84,61,.6)',1.6); label('s',(O[0]+sp[0])/2-8,(O[1]+sp[1])/2,COL.red,10);
-        arrow(sp[0],sp[1],xp[0],xp[1], COL.amber,1.8); label('ρᵢ=xᵢ−s',(sp[0]+xp[0])/2,(sp[1]+xp[1])/2-5,COL.amber,10);
-        ctx.fillStyle=COL.muted; ctx.beginPath(); ctx.arc(O[0],O[1],3,0,2*Math.PI); ctx.fill(); label('O',O[0]+4,O[1]+14,COL.muted,10);
+      if(S.mode===2){ // ベクトル全部：x, s, ρ（図は単文字、詳しい式は計算パネルへ）
+        arrow(O[0],O[1],xp[0],xp[1], 'rgba(125,117,104,.85)',1.6); perpLabel('x',O,xp,COL.muted,15);
+        arrow(O[0],O[1],sp[0],sp[1], 'rgba(194,84,61,.65)',1.6); perpLabel('s',O,sp,COL.red,-15);
+        arrow(sp[0],sp[1],xp[0],xp[1], COL.amber,2); perpLabel('ρ',sp,xp,COL.amber,17);
+        ctx.fillStyle=COL.muted; ctx.beginPath(); ctx.arc(O[0],O[1],3,0,2*Math.PI); ctx.fill(); label('O',O[0]-13,O[1]+4,COL.muted,10);
       }
       // n（外向き法線）
-      arrow(xp[0],xp[1], xp[0]+g.nu[0]*32, xp[1]+g.nu[1]*32, COL.muted, 1.6, [4,2]); label('n',xp[0]+g.nu[0]*40,xp[1]+g.nu[1]*40,COL.muted,10);
+      arrow(xp[0],xp[1], xp[0]+g.nu[0]*32, xp[1]+g.nu[1]*32, COL.muted, 1.6, [4,2]); label('n',xp[0]+g.nu[0]*38-g.nu[1]*11, xp[1]+g.nu[1]*38+g.nu[0]*11, COL.muted,10,'center');
       // E（場）
       if(g.Em>1e-9){ var uE=[g.E[0]/g.Em,g.E[1]/g.Em], LE=20+30*Math.tanh(g.Em*0.4);
         var ex=xp[0]+uE[0]*LE, ey=xp[1]+uE[1]*LE; arrow(xp[0],xp[1],ex,ey, COL.ink,2.2); label('E',ex+4,ey+3,COL.ink,11);
