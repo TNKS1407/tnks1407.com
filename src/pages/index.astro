@@ -9,13 +9,23 @@ type Work = {
   prompt?: string;
 };
 
-const explainers = (await getCollection('docs')).sort(
-  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
-);
+const explainers = await getCollection('docs');
 // 「発展」タグの記事はトップでは控えめに（小さく）出す
 const isAdvanced = (doc: any) => (doc.data.tags ?? []).includes('発展');
-const mainDocs = explainers.filter(d => !isAdvanced(d));
-const subDocs  = explainers.filter(d => isAdvanced(d));
+// 解説は日付順の平積みでなく、読む順の「コース」に章立てする
+const CHAPTERS = [
+  { key: 'mechanics',    label: '力学の基礎',                  desc: '世界を式に写し、時間で1コマずつ進め、帳尻で締める' },
+  { key: 'waves',        label: '声と共鳴 ── 波動の入口',       desc: 'v=fλ から定在波・共鳴管・フォルマントまで一本道で' },
+  { key: 'conservation', label: '見える物理で「保存則」を掴む',  desc: '波・場・力を貫く“足し算”と“湧かない・消えない”の修行' },
+] as const;
+const byOrder = (a: any, b: any) => (a.data.order ?? 99) - (b.data.order ?? 99);
+const chapters = CHAPTERS
+  .map(c => ({ ...c, docs: explainers.filter(d => d.data.series === c.key).sort(byOrder) }))
+  .filter(c => c.docs.length > 0);
+const groupedKeys = new Set(CHAPTERS.map(c => c.key));
+const ungroupedDocs = explainers
+  .filter(d => !d.data.series || !groupedKeys.has(d.data.series))
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 
 type QuickLink = { label: string; url: string; icon: string; featured?: boolean; cat?: 'eng' | 'data' | 'other' };
 const quickLinks: QuickLink[] = [
@@ -258,6 +268,9 @@ const GROUPS = [
   { key: 'utilities',   label: 'Utilities',   desc: 'プレゼン・イベント・ワークフロー管理の実用ツール' },
 ] as const;
 
+// 各グループはこの数まで初期表示し、残りは「もっと見る」で展開する
+const WORK_LIMIT = 6;
+
 const grouped = Object.fromEntries(
   GROUPS.map(g => [g.key, works.filter(w => w.group === g.key)])
 );
@@ -397,6 +410,14 @@ const favKey = (w: Work) => {
         padding:0.05rem 0.45rem;font-family:'JetBrains Mono',monospace;}
       .explainer-sub-title{font-weight:600;font-size:0.82rem;color:var(--text-muted);
         white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+      /* Course chapters（解説を読む順の章に畳む） */
+      .course-chapter{margin-bottom:1.5rem;}
+      .chapter-head{display:flex;align-items:baseline;gap:0.6rem;margin:0 0 0.7rem;flex-wrap:wrap;}
+      .chapter-label{font-family:'JetBrains Mono',monospace;font-size:0.8rem;font-weight:700;color:var(--accent);}
+      .chapter-label::before{content:'❖ ';opacity:0.55;}
+      .chapter-desc{font-size:0.75rem;color:var(--text-faint);}
+      .explainer-title{display:flex;align-items:center;}
+      .explainer-num{display:inline-flex;align-items:center;justify-content:center;width:1.3rem;height:1.3rem;margin-right:0.55rem;border-radius:50%;background:var(--accent-dim);color:var(--accent);font-family:'JetBrains Mono',monospace;font-size:0.7rem;font-weight:700;flex-shrink:0;}
 
       /* Section headings */
       .section-title{font-size:0.72rem;font-weight:700;color:var(--text-faint);margin-bottom:0.85rem;letter-spacing:0.1em;display:flex;align-items:center;gap:0.6rem;font-family:'JetBrains Mono',monospace;}
@@ -513,6 +534,13 @@ const favKey = (w: Work) => {
       .group-label::before{content:'// ';color:var(--accent);opacity:.6;}
       .group-desc{font-size:.78rem;color:var(--text-faint);}
       .group-header::after{content:'';flex:1;height:1px;background:var(--border);}
+      /* Works: 初期は WORK_LIMIT 件、残りは「もっと見る」で展開（フィルタ時は自動展開） */
+      .group-wrap{position:relative;}
+      .work-extra{display:none;}
+      .group-wrap.expanded .work-extra,.group-wrap.filtering .work-extra{display:block;}
+      .more-btn{display:block;margin:1rem auto 0;font-family:'JetBrains Mono',monospace;font-size:0.74rem;font-weight:600;color:var(--text-muted);background:var(--card);border:1px solid var(--border);border-radius:999px;padding:0.4rem 1.15rem;cursor:pointer;transition:border-color 0.15s,color 0.15s;}
+      .more-btn:hover{border-color:var(--accent);color:var(--accent);}
+      .group-wrap.expanded .more-btn,.group-wrap.filtering .more-btn{display:none;}
 
       /* Recent blog posts */
       .blog-strip{background:var(--card);border:1px solid var(--border);border-radius:14px;
@@ -635,27 +663,55 @@ const favKey = (w: Work) => {
       <!-- Explainers / 解説記事 -->
       {explainers.length > 0 && (
         <section id="docs" class="explainers">
-          <div class="section-title">解説 — Explainers</div>
-          <div class="explainer-list">
-            {mainDocs.map(doc => (
-              <a class="explainer-card" href={`/docs/${doc.id}/`}>
-                <div class="explainer-row">
-                  <span class="explainer-title">{doc.data.title}</span>
-                  {doc.data.demo && <span class="explainer-tag">▶ デモ</span>}
+          <div class="section-title">解説 — Explainers（読む順のコース）</div>
+          {chapters.map(c => {
+            const mainCs = c.docs.filter(d => !isAdvanced(d));
+            const subCs = c.docs.filter(isAdvanced);
+            return (
+              <div class="course-chapter">
+                <div class="chapter-head">
+                  <span class="chapter-label">{c.label}</span>
+                  <span class="chapter-desc">{c.desc}</span>
                 </div>
-                <div class="explainer-desc">{doc.data.description}</div>
-              </a>
-            ))}
-          </div>
-          {subDocs.length > 0 && (
-            <div class="explainer-sub-list">
-              {subDocs.map(doc => (
-                <a class="explainer-card explainer-sub" href={`/docs/${doc.id}/`}>
-                  <span class="explainer-sub-flag">発展</span>
-                  <span class="explainer-sub-title">{doc.data.title}</span>
-                  {doc.data.demo && <span class="explainer-tag">▶</span>}
-                </a>
-              ))}
+                <div class="explainer-list">
+                  {mainCs.map((doc, i) => (
+                    <a class="explainer-card" href={`/docs/${doc.id}/`}>
+                      <div class="explainer-row">
+                        <span class="explainer-title"><span class="explainer-num">{i + 1}</span>{doc.data.title}</span>
+                        {doc.data.demo && <span class="explainer-tag">▶ デモ</span>}
+                      </div>
+                      <div class="explainer-desc">{doc.data.description}</div>
+                    </a>
+                  ))}
+                </div>
+                {subCs.length > 0 && (
+                  <div class="explainer-sub-list">
+                    {subCs.map(doc => (
+                      <a class="explainer-card explainer-sub" href={`/docs/${doc.id}/`}>
+                        <span class="explainer-sub-flag">発展</span>
+                        <span class="explainer-sub-title">{doc.data.title}</span>
+                        {doc.data.demo && <span class="explainer-tag">▶</span>}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {ungroupedDocs.length > 0 && (
+            <div class="course-chapter">
+              <div class="chapter-head"><span class="chapter-label">そのほか</span></div>
+              <div class="explainer-list">
+                {ungroupedDocs.map(doc => (
+                  <a class="explainer-card" href={`/docs/${doc.id}/`}>
+                    <div class="explainer-row">
+                      <span class="explainer-title">{doc.data.title}</span>
+                      {doc.data.demo && <span class="explainer-tag">▶ デモ</span>}
+                    </div>
+                    <div class="explainer-desc">{doc.data.description}</div>
+                  </a>
+                ))}
+              </div>
             </div>
           )}
         </section>
@@ -666,14 +722,14 @@ const favKey = (w: Work) => {
         <div class="filter-bar" id="filter-bar"></div>
         {GROUPS.map(g => (
           grouped[g.key].length > 0 && (
-            <div>
+            <div class="group-wrap" data-group={g.key}>
               <div class="group-header">
                 <span class="group-label">{g.label}</span>
                 <span class="group-desc">{g.desc}</span>
               </div>
               <div class="works-grid">
-                {grouped[g.key].map((w) => (
-                  <div class="work-card" data-tags={w.tags.join(',')}>
+                {grouped[g.key].map((w, i) => (
+                  <div class={`work-card${i >= WORK_LIMIT ? ' work-extra' : ''}`} data-tags={w.tags.join(',')}>
                     <a href={w.url} class="work-main" target="_blank" rel="noopener noreferrer">
                       <div class="work-icon-title">
                         <span class="work-icon">{w.icon}</span>
@@ -704,6 +760,9 @@ const favKey = (w: Work) => {
                   </div>
                 ))}
               </div>
+              {grouped[g.key].length > WORK_LIMIT && (
+                <button class="more-btn" type="button">もっと見る (+{grouped[g.key].length - WORK_LIMIT})</button>
+              )}
             </div>
           )
         ))}
@@ -1290,6 +1349,8 @@ const favKey = (w: Work) => {
       function updateFilter() {
         const cards = document.querySelectorAll('.work-card');
         const filterBar = document.getElementById('filter-bar');
+        // フィルタ中は各グループを自動展開して、隠れた候補も対象にする
+        document.querySelectorAll('.group-wrap').forEach(g => g.classList.toggle('filtering', activeTags.size > 0));
         cards.forEach(card => {
           if (activeTags.size === 0) {
             card.classList.remove('dimmed');
@@ -1330,6 +1391,10 @@ const favKey = (w: Work) => {
           activeTags.has(t) ? activeTags.delete(t) : activeTags.add(t);
           updateFilter();
         });
+      });
+      // 「もっと見る」でそのグループの残りを展開
+      document.querySelectorAll('.more-btn').forEach(b => {
+        b.addEventListener('click', () => { b.closest('.group-wrap').classList.add('expanded'); });
       });
     })();
     </script>

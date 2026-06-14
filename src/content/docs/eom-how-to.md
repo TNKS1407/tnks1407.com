@@ -5,6 +5,8 @@ pubDate: 2026-06-07
 demo: 'https://eom.tnks1407.com'
 demoLabel: '運動方程式ラボを開く'
 tags: ['古典力学', '運動方程式', '束縛条件', '発展']
+series: "mechanics"
+order: 4
 ---
 
 これは [運動方程式と束縛条件](/docs/equations-of-motion-constraints/) の発展編。あちらで述べた「物理を解く＝モデルを数式に写すこと」を、実際の問題で最後まで通せるように、手順と例題でまとめておくよ。少し長いけれど、ここを越えると力学の問題で迷わなくなると思う。

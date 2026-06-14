@@ -5,6 +5,8 @@ pubDate: 2026-06-14
 tags: ["場", "保存", "逆二乗", "フラックス"]
 demo: "/flux/"
 demoLabel: "点源・フラックス・球面を全画面で開く"
+series: "conservation"
+order: 4
 ---
 
 [前回](/docs/superposition/) は「点源の返事を足し合わせる」を掴んだ。今日はその一歩手前 ── **点源ひとつ** が、まわりにどんな“場”を作るかを見る。

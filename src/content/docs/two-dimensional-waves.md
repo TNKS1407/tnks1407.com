@@ -5,6 +5,8 @@ pubDate: 2026-06-14
 tags: ["波動", "干渉", "ホイヘンス", "可視化"]
 demo: "/ripple/"
 demoLabel: "2次元の波（波紋・干渉・ホイヘンス）を全画面で開く"
+series: "conservation"
+order: 2
 ---
 
 [これまで](/docs/waves-from-mechanics/) 波を1次元（弦や管）で見てきた。今度は、水面のように2次元へ広げる。

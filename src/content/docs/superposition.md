@@ -5,6 +5,8 @@ pubDate: 2026-06-14
 tags: ["波動", "重ね合わせ", "畳み込み", "線形"]
 demo: "https://tnkblog.net/play/signal"
 demoLabel: "畳み込みスライダ／フーリエ スケッチブックで遊ぶ"
+series: "conservation"
+order: 3
 ---
 
 [前回](/docs/two-dimensional-waves/) は、点をひとつ叩くと丸い波が広がること（点源の応答）、そしてそれを並べて足すと干渉・ホイヘンス・ビームフォーミングになることを見た。今日は、その「足す」を、もっと素朴で、もっと強力な道具として正面から掴む。

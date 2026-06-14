@@ -11,6 +11,8 @@ const docs = defineCollection({
     tags: z.array(z.string()).optional(),
     demo: z.string().optional(),        // 関連デモのURL（任意）
     demoLabel: z.string().optional(),
+    series: z.string().optional(),      // トップで章立てするコースのキー
+    order: z.number().optional(),       // コース内の読む順
   }),
 });
 

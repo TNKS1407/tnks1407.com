@@ -5,6 +5,8 @@ pubDate: 2026-06-07
 demo: 'https://energy.tnks1407.com'
 demoLabel: 'エネルギー地形ラボを全画面で開く'
 tags: ['古典力学', 'エネルギー', '保存則']
+series: "mechanics"
+order: 3
 ---
 
 [運動方程式と束縛条件](/docs/equations-of-motion-constraints/) で「何が運動を決めるか」を、[数値積分とは何か](/docs/numerical-integration/) で「それを時間で追って解く」話を書いた。今日はその先 ── **時間を追わなくても、始点と終点だけで答えが出ることがある** という近道の話。それが「エネルギー」という考え方だよ。
