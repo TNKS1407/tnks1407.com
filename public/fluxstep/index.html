@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>フラックスを一歩ずつ足す — フラックス step ラボ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
+    --accent:#3c7876;--amber:#c9761f;--red:#c2543d;--text:#1d1b17;--text-muted:#7d7568;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--text);
+    font-family:'Zen Kaku Gothic New','Hiragino Sans','Meiryo',system-ui,sans-serif;line-height:1.7;}
+  .wrap{max-width:760px;margin:0 auto;padding:14px 14px 22px;}
+  section{background:var(--card);border:1px solid var(--border);border-radius:14px;
+    padding:14px 16px 16px;box-shadow:0 1px 6px rgba(29,27,23,.05);}
+  .w-title{font-size:1rem;font-weight:700;margin:0 0 .2rem;}
+  .w-sub{font-size:.78rem;color:var(--text-muted);margin:0 0 .8rem;line-height:1.6;}
+  canvas{display:block;width:100%;max-width:480px;margin:0 auto;border:1px solid var(--border);border-radius:10px;background:var(--surface);}
+  .controls{display:flex;flex-wrap:wrap;gap:.5rem .9rem;align-items:center;margin-top:.9rem;justify-content:center;}
+  .cg{display:flex;align-items:center;gap:.45rem;}
+  .cg label{font-size:.74rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted);white-space:nowrap;}
+  .cg input[type=range]{width:120px;accent-color:var(--accent);}
+  .cg .v{font-size:.74rem;font-family:'JetBrains Mono',monospace;color:var(--accent);font-weight:600;min-width:2.5ch;}
+  .btn{padding:.32rem .75rem;border:1px solid var(--border);border-radius:7px;background:none;
+    font-family:'JetBrains Mono',monospace;font-size:.74rem;color:var(--text-muted);cursor:pointer;transition:.15s;}
+  .btn:hover{border-color:var(--accent);color:var(--accent);}
+  .btn.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .btn.pri{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .panel{margin-top:.75rem;font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--text);
+    background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:.7rem .85rem;line-height:1.95;}
+  .panel .lbl{color:var(--text-muted);} .panel b{color:var(--accent);} .panel .r{color:var(--red);font-weight:700;} .panel .t{color:var(--accent);font-weight:700;}
+  .panel .phi{font-size:1.05rem;font-weight:700;}
+  .panel hr{border:none;border-top:1px dashed var(--border);margin:.45rem 0;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <section>
+    <div class="w-title">フラックスを、一歩ずつ足す — フラックス step ラボ</div>
+    <p class="w-sub">「閉じた面を貫く正味フラックス ∮E·dA」を、輪を <b>N個の点</b>に区切って、<b>1点ずつ手で足して</b>みる。各点で：場ベクトル <b>E</b> を計算 → 外向きの法線 <b>n</b> に射影（<b>E·n</b>、外向きなら＋・内向きなら−）→ 長さ <b>dl</b> を掛けて、<b>走る合計 Φ</b> に積む。一周すると <b>Φ ÷ 2π ＝ 囲んだ源</b>。<b>点数 N を小さくするとズレ、大きくすると収束</b> ── ∮ が結局「ものすごく細かい足し算」だと、目と数字で分かる。</p>
+    <canvas id="cv" width="480" height="360"></canvas>
+    <div class="controls">
+      <div class="cg"><label>例</label><button class="btn on" id="ein">源は中</button><button class="btn" id="eout">源は外</button></div>
+      <div class="cg"><label>点数 N</label><input type="range" id="nn" min="6" max="160" step="1" value="10"><span class="v" id="nv">10</span></div>
+    </div>
+    <div class="controls" style="margin-top:.5rem;">
+      <button class="btn pri" id="step">次の点へ ▸</button>
+      <button class="btn" id="auto">一周（自動）⟳</button>
+      <button class="btn" id="rst">リセット</button>
+    </div>
+    <div class="panel" id="panel"></div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var cv=document.getElementById('cv'), ctx=cv.getContext('2d'), W=cv.width, H=cv.height;
+  var panel=document.getElementById('panel'), nnEl=document.getElementById('nn'), nvEl=document.getElementById('nv');
+  var CX=236, CY=180, R=130;             // 輪（ピクセル）
+  var src={x:-0.82,y:0,q:1}, preset='in'; // 源（単位座標、輪の半径=1）
+  var N=10, i=0, Phi=0, lastEn=0, timer=null;
+
+  function toPx(u){ return {x:CX+u.x*R, y:CY+u.y*R}; }
+  function fieldU(u){ var dx=u.x-src.x, dy=u.y-src.y, r2=dx*dx+dy*dy; return {x:src.q*dx/r2, y:src.q*dy/r2}; }
+  function qEnc(){ return (src.x*src.x+src.y*src.y < 1) ? src.q : 0; }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H); ctx.fillStyle='#faf8f4'; ctx.fillRect(0,0,W,H);
+    // loop
+    ctx.strokeStyle='#cfc9be'; ctx.lineWidth=1.4; ctx.beginPath(); ctx.arc(CX,CY,R,0,2*Math.PI); ctx.stroke();
+    // all sample points + processed coloring
+    for(var k=0;k<N;k++){ var a=2*Math.PI*k/N, px=CX+R*Math.cos(a), py=CY+R*Math.sin(a);
+      if(k<i){ var nx=Math.cos(a),ny=Math.sin(a),e=fieldU({x:nx,y:ny}),en=e.x*nx+e.y*ny;
+        ctx.beginPath(); ctx.arc(px,py,3.4,0,2*Math.PI); ctx.fillStyle= en>=0?'#3c7876':'#c2543d'; ctx.fill();
+      } else { ctx.beginPath(); ctx.arc(px,py,2,0,2*Math.PI); ctx.fillStyle='#d8d1c5'; ctx.fill(); }
+    }
+    // progress arc (covered)
+    if(i>0){ ctx.strokeStyle='rgba(60,120,118,.4)'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(CX,CY,R,0,2*Math.PI*i/N); ctx.stroke(); }
+    // current point arrows
+    if(i<N){ var a=2*Math.PI*i/N, nx=Math.cos(a), ny=Math.sin(a), px=CX+R*nx, py=CY+R*ny;
+      var e=fieldU({x:nx,y:ny}), em=Math.hypot(e.x,e.y), en=e.x*nx+e.y*ny;
+      // outward normal n (dashed gray)
+      ctx.strokeStyle='#9c948a'; ctx.lineWidth=1.2; ctx.setLineDash([3,2]);
+      ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px+nx*26,py+ny*26); ctx.stroke(); ctx.setLineDash([]);
+      // field E (teal arrow)
+      var ux=e.x/em, uy=e.y/em, L=18+22*Math.tanh(em*0.5);
+      var x2=px+ux*L, y2=py+uy*L, pa=Math.atan2(uy,ux);
+      ctx.strokeStyle='#1d1b17'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(x2,y2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x2,y2); ctx.lineTo(x2-6*Math.cos(pa-0.4),y2-6*Math.sin(pa-0.4)); ctx.lineTo(x2-6*Math.cos(pa+0.4),y2-6*Math.sin(pa+0.4)); ctx.closePath(); ctx.fillStyle='#1d1b17'; ctx.fill();
+      // current point dot
+      ctx.beginPath(); ctx.arc(px,py,5,0,2*Math.PI); ctx.fillStyle= en>=0?'#3c7876':'#c2543d'; ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke();
+      ctx.fillStyle='#1d1b17'; ctx.font="11px 'JetBrains Mono',monospace";
+      ctx.fillText('E', x2+4, y2+3); ctx.fillStyle='#9c948a'; ctx.fillText('n', px+nx*30, py+ny*30+3);
+    }
+    // source
+    var sp=toPx(src); ctx.beginPath(); ctx.arc(sp.x,sp.y,8,0,2*Math.PI); ctx.fillStyle=src.q>0?'#c2543d':'#3c7876'; ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.fillStyle='#fff'; ctx.font="bold 12px 'JetBrains Mono',monospace"; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(src.q>0?'+':'−',sp.x,sp.y+0.5); ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+    updatePanel();
+  }
+
+  function updatePanel(){
+    var dl=2*Math.PI/N, q=qEnc();
+    var cur='';
+    if(i<N){ var a=2*Math.PI*i/N, nx=Math.cos(a), ny=Math.sin(a), e=fieldU({x:nx,y:ny}), en=e.x*nx+e.y*ny;
+      cur='<span class="lbl">いまの点 '+(i+1)+'/'+N+'</span>：E=('+e.x.toFixed(2)+', '+e.y.toFixed(2)+')　法線 n=('+nx.toFixed(2)+', '+ny.toFixed(2)+')<br>'+
+          'E·n ＝ <b class="'+(en>=0?'t':'r')+'">'+(en>=0?'+':'')+en.toFixed(3)+'</b>（'+(en>=0?'外へ出る':'中へ入る')+'）　×dl('+dl.toFixed(3)+') ＝ この点の寄与 '+(en*dl>=0?'+':'')+(en*dl).toFixed(3);
+    } else {
+      var norm=Phi/(2*Math.PI), err=norm-q;
+      cur='<span class="t">一周おわり。</span> Φ÷2π ＝ <b>'+norm.toFixed(3)+'</b>　／　囲んだ源 ＝ <b>'+q.toFixed(0)+'</b>　／　誤差 ＝ <span class="'+(Math.abs(err)<0.02?'t':'r')+'">'+(err>=0?'+':'')+err.toFixed(3)+'</span><br>'+
+          '<span class="lbl">点数 N を増やすと、この誤差は →0。∮ は「N→∞ の、この足し算」だ。</span>';
+    }
+    panel.innerHTML =
+      '<span class="phi">走る合計 Φ ＝ <b>'+(Phi>=0?'+':'')+Phi.toFixed(3)+'</b></span>　<span class="lbl">（一周で Φ÷2π ＝ 囲んだ源 になる）</span><hr>'+cur;
+  }
+
+  function step(){ if(i<N){ var a=2*Math.PI*i/N, nx=Math.cos(a), ny=Math.sin(a), e=fieldU({x:nx,y:ny}); lastEn=e.x*nx+e.y*ny; Phi+=lastEn*(2*Math.PI/N); i++; draw(); } else { stopAuto(); } }
+  function reset(){ stopAuto(); i=0; Phi=0; draw(); }
+  function stopAuto(){ if(timer){ clearInterval(timer); timer=null; document.getElementById('auto').classList.remove('on'); } }
+
+  document.getElementById('step').onclick=function(){ stopAuto(); step(); };
+  document.getElementById('auto').onclick=function(){ if(timer){ stopAuto(); return; } if(i>=N) reset(); this.classList.add('on'); timer=setInterval(function(){ step(); if(i>=N) stopAuto(); }, Math.max(40, 900/N)); };
+  document.getElementById('rst').onclick=reset;
+  nnEl.oninput=function(){ N=+this.value; nvEl.textContent=N; reset(); };
+  function setPreset(id){ document.getElementById('ein').classList.toggle('on',id==='ein'); document.getElementById('eout').classList.toggle('on',id==='eout'); }
+  document.getElementById('ein').onclick=function(){ src={x:-0.82,y:0,q:1}; setPreset('ein'); reset(); };
+  document.getElementById('eout').onclick=function(){ src={x:1.25,y:0,q:1}; setPreset('eout'); reset(); };
+
+  var qs=new URLSearchParams(location.search);
+  if(qs.get('preset')==='out'){ src={x:1.25,y:0,q:1}; setPreset('eout'); }
+  if(qs.get('n')){ N=Math.max(6,Math.min(160,+qs.get('n')||16)); nnEl.value=N; nvEl.textContent=N; }
+  reset();
+  var pre=qs.get('step')==='all'?N:(+qs.get('step')||0); for(var z=0;z<pre && i<N;z++) step();
+})();
+</script>
+</body>
+</html>
