@@ -19,6 +19,29 @@ $n$ 番目の玉に働く力を考える。右の隣 $y_{n+1}$ との段差で $
 
 $$m\,\ddot{y}_n = k(y_{n+1}-y_n) - k(y_n-y_{n-1}) = k\,(y_{n+1} - 2y_n + y_{n-1})$$
 
+<figure style="margin:1.6rem 0;text-align:center;">
+<svg viewBox="0 0 480 200" width="480" style="max-width:100%;height:auto;font-family:'JetBrains Mono',monospace;">
+  <line x1="95" y1="148" x2="385" y2="140" stroke="#cfc9be" stroke-width="1.2" stroke-dasharray="4 3"/>
+  <line x1="95" y1="148" x2="240" y2="86" stroke="#3c7876" stroke-width="2"/>
+  <line x1="240" y1="86" x2="385" y2="140" stroke="#3c7876" stroke-width="2"/>
+  <line x1="240" y1="86" x2="240" y2="144" stroke="#c2543d" stroke-width="1" stroke-dasharray="3 2"/>
+  <circle cx="240" cy="144" r="2.5" fill="#cfc9be"/>
+  <line x1="240" y1="92" x2="240" y2="122" stroke="#c2543d" stroke-width="2.6"/>
+  <polygon points="240,130 235,120 245,120" fill="#c2543d"/>
+  <circle cx="95" cy="148" r="6" fill="#3c7876"/>
+  <circle cx="240" cy="86" r="7" fill="#1d1b17"/>
+  <circle cx="385" cy="140" r="6" fill="#3c7876"/>
+  <text x="95" y="170" font-size="12" fill="#1d1b17" text-anchor="middle">yₙ₋₁</text>
+  <text x="240" y="74" font-size="12.5" font-weight="700" fill="#1d1b17" text-anchor="middle">yₙ</text>
+  <text x="385" y="162" font-size="12" fill="#1d1b17" text-anchor="middle">yₙ₊₁</text>
+  <text x="118" y="104" font-size="9.5" fill="#3c7876">k(yₙ−yₙ₋₁)</text>
+  <text x="298" y="104" font-size="9.5" fill="#3c7876">k(yₙ₊₁−yₙ)</text>
+  <text x="256" y="118" font-size="10" fill="#c2543d">引き戻し</text>
+  <text x="248" y="160" font-size="9.5" fill="#7d7568">← 隣の平均</text>
+</svg>
+<figcaption style="font-size:.8rem;color:#aaa49b;margin-top:.3rem;">玉 n が左右の隣を結ぶ線（＝隣の平均）からはみ出すほど、平均へ引き戻される。正味の力 ＝ k(yₙ₊₁−2yₙ+yₙ₋₁)。</figcaption>
+</figure>
+
 それだけ。特別なことは何もない、ただの $F=ma$ を玉の数だけ並べただけだ。右辺の $y_{n+1}-2y_n+y_{n-1}$ は「自分が、左右の平均からどれだけ出っ張っているか」を測っている。出っ張っていれば引き戻される ── ごく素朴な話。
 
 下で「弾く」を押すと、真ん中の玉をつまんで離す。あとは各玉が上の式に従うだけ。なのに、**全体としては波が左右に走って、壁で跳ね返る**。誰も「波になれ」とは言っていないのに、$F=ma$ の集まりが勝手に波として振る舞う。
