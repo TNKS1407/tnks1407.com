@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex, nofollow" />
-<title>1/r² は保存から — 点源・フラックス・球面</title>
+<title>1/r² は保存から — 広がる正方形</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
@@ -21,12 +21,12 @@
     padding:14px 16px 16px;box-shadow:0 1px 6px rgba(29,27,23,.05);}
   .w-title{font-size:1rem;font-weight:700;margin:0 0 .2rem;}
   .w-sub{font-size:.78rem;color:var(--text-muted);margin:0 0 .8rem;line-height:1.6;}
-  canvas{display:block;width:100%;max-width:440px;margin:0 auto;border:1px solid var(--border);border-radius:10px;background:var(--surface);}
+  canvas{display:block;width:100%;max-width:520px;margin:0 auto;border:1px solid var(--border);border-radius:10px;background:var(--surface);}
   .controls{display:flex;flex-wrap:wrap;gap:.5rem 1rem;align-items:center;margin-top:.9rem;justify-content:center;}
   .cg{display:flex;align-items:center;gap:.5rem;}
   .cg label{font-size:.74rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted);white-space:nowrap;}
-  .cg input[type=range]{width:150px;accent-color:var(--accent);}
-  .cg .v{font-size:.74rem;font-family:'JetBrains Mono',monospace;color:var(--accent);font-weight:600;min-width:3.4ch;}
+  .cg input[type=range]{width:120px;accent-color:var(--accent);}
+  .cg .v{font-size:.74rem;font-family:'JetBrains Mono',monospace;color:var(--accent);font-weight:600;min-width:2ch;}
   .btn{padding:.3rem .7rem;border:1px solid var(--border);border-radius:7px;background:none;
     font-family:'JetBrains Mono',monospace;font-size:.74rem;color:var(--text-muted);cursor:pointer;transition:.15s;}
   .btn:hover{border-color:var(--accent);color:var(--accent);}
@@ -39,12 +39,12 @@
 <body>
 <div class="wrap">
   <section>
-    <div class="w-title">1/r² は、保存から生まれる — 点源・フラックス・球面</div>
-    <p class="w-sub">真ん中の点源から、線（＝エネルギーの“筋”）が伸びる。線は途中で増えも消えもしない＝<b>保存</b>。だから線の <b>本数（フラックス）は一定</b>。でも遠いほど、その本数が広い所にばらける ── <b style="color:var(--red)">密度は薄まる</b>。<b>2D</b> では線は <b>円周（縁）</b>に並ぶ（広さ ∝ r → 1/r）。<b>3D</b> では <b>球面（面）</b>を埋める（広さ ∝ r² → 1/r²）。次元を切り替えて、絵がどう変わるか見て。</p>
-    <canvas id="cv" width="440" height="380"></canvas>
+    <div class="w-title">1/r² は、保存から生まれる — 広がる正方形</div>
+    <p class="w-sub">点源から出た同じ量の“光（フラックス）”が、遠ざかるほど広い面にばらける。<b>3D</b>では、距離 1・2・3 で面が <b>1 → 2×2=4 → 3×3=9 マス</b>に広がる。光の総量は同じだから、1マスあたりの明るさは <b style="color:var(--red)">1 → 1/4 → 1/9 ＝ 1/r²</b>。遠い正方形ほど大きく、そして暗い。<b>2D</b> では縦の帯（1・2・3マス ＝ 1/r）。これが逆二乗の正体だよ。</p>
+    <canvas id="cv" width="520" height="340"></canvas>
     <div class="controls">
-      <div class="cg"><label>半径 r</label><input type="range" id="r" min="55" max="175" step="1" value="90"><span class="v" id="r-v">90</span></div>
-      <div class="cg"><label>次元</label><button class="btn on" id="d3">3D 球面 (1/r²)</button><button class="btn" id="d2">2D 円 (1/r)</button></div>
+      <div class="cg"><label>いくつまで</label><input type="range" id="n" min="2" max="4" step="1" value="3"><span class="v" id="n-v">3</span></div>
+      <div class="cg"><label>次元</label><button class="btn on" id="d3">3D (1/r²)</button><button class="btn" id="d2">2D (1/r)</button></div>
     </div>
     <div class="readout" id="read"></div>
   </section>
@@ -53,60 +53,66 @@
 <script>
 (function(){
   var cv=document.getElementById('cv'), ctx=cv.getContext('2d'), W=cv.width, H=cv.height;
-  var cx=W/2, cy=H/2;
-  var rEl=document.getElementById('r'), rV=document.getElementById('r-v'), read=document.getElementById('read');
-  var TEAL='#3c7876', AMBER='#c9761f', RED='#c2543d', INK='#1d1b17', FAINT='#cfc9be', SURF='#faf8f4';
-  var dim=3, r0=55;
-  // 2D: 円周にN本。3D: 球面（円盤）をM本で埋める（ひまわり配置で均等）
-  var N2=30, ring=[]; for(var i=0;i<N2;i++){ var a=2*Math.PI*i/N2; ring.push([Math.cos(a),Math.sin(a)]); }
-  var M3=120, disk=[]; for(var k=0;k<M3;k++){ var rr=Math.sqrt((k+0.5)/M3), ang=k*2.39996323; disk.push([rr*Math.cos(ang), rr*Math.sin(ang)]); }
+  var nEl=document.getElementById('n'), nV=document.getElementById('n-v'), read=document.getElementById('read');
+  var TEAL=[60,120,118], AMBER='#c9761f', RED='#c2543d', INK='#1d1b17', FAINT='#cfc9be';
+  var dim=3;
+  var S={x:52, y:H*0.60};               // 点源
+  var ax={x:0.95, y:-0.30};             // 軸（右上へ）
+  var fU={x:0.52, y:0.32};              // 面の“奥行き”方向（右下＝3Dの傾き）
+  var fV={x:0.0, y:-1.0};               // 面の縦方向
+  var DSTEP=92, HU=26;                  // 距離1あたりの前進量・半サイズ
+  function P(c,su,sv){ return {x:c.x+su*fU.x+sv*fV.x, y:c.y+su*fU.y+sv*fV.y}; }
+  function teal(a){ return 'rgba('+TEAL[0]+','+TEAL[1]+','+TEAL[2]+','+a+')'; }
 
   function draw(){
-    var r=+rEl.value;
-    ctx.clearRect(0,0,W,H); ctx.fillStyle=SURF; ctx.fillRect(0,0,W,H);
-    var pts = (dim===3)?disk:ring;
-    // 3D は球面（円盤）を薄く塗って“面”らしく
-    if(dim===3){
-      var g=ctx.createRadialGradient(cx,cy,2,cx,cy,r);
-      g.addColorStop(0,'rgba(60,120,118,.10)'); g.addColorStop(1,'rgba(60,120,118,.02)');
-      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,r,0,2*Math.PI); ctx.fill();
-      // 赤道っぽい楕円（球の気配）
-      ctx.strokeStyle='rgba(60,120,118,.18)'; ctx.lineWidth=1;
-      ctx.beginPath(); ctx.ellipse(cx,cy,r,r*0.34,0,0,2*Math.PI); ctx.stroke();
+    var maxN=+nEl.value;
+    ctx.clearRect(0,0,W,H); ctx.fillStyle='#faf8f4'; ctx.fillRect(0,0,W,H);
+    // 円錐（光の縁）: 源 → 最遠スクリーンの角
+    var cMax={x:S.x+maxN*DSTEP*ax.x, y:S.y+maxN*DSTEP*ax.y}, hMax=maxN*HU;
+    ctx.strokeStyle='rgba(201,118,31,.30)'; ctx.lineWidth=1; ctx.setLineDash([4,3]);
+    var corners = dim===3 ? [[1,1],[1,-1],[-1,-1],[-1,1]] : [[0,1],[0,-1]];
+    for(var ci=0;ci<corners.length;ci++){ var pc=P(cMax,corners[ci][0]*hMax,corners[ci][1]*hMax); ctx.beginPath(); ctx.moveTo(S.x,S.y); ctx.lineTo(pc.x,pc.y); ctx.stroke(); }
+    ctx.setLineDash([]);
+    // スクリーン k=1..maxN
+    for(var k=1;k<=maxN;k++){
+      var c={x:S.x+k*DSTEP*ax.x, y:S.y+k*DSTEP*ax.y}, h=k*HU;
+      var bright = dim===3 ? 1/(k*k) : 1/k;
+      var nx = dim===3 ? k : 1;          // 横方向のマス数（2Dは1）
+      var ny = k;                        // 縦方向のマス数
+      var halfU = dim===3 ? h : 7;       // 2Dは細い帯（固定幅）
+      // セルを明るさで塗る
+      for(var ix=0;ix<nx;ix++){ for(var iy=0;iy<ny;iy++){
+        var u0=-halfU+2*halfU*ix/nx, u1=-halfU+2*halfU*(ix+1)/nx;
+        var v0=-h+2*h*iy/ny, v1=-h+2*h*(iy+1)/ny;
+        var a=P(c,u0,v0), b=P(c,u1,v0), cc=P(c,u1,v1), d=P(c,u0,v1);
+        ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.lineTo(cc.x,cc.y); ctx.lineTo(d.x,d.y); ctx.closePath();
+        ctx.fillStyle=teal(0.16+0.78*bright); ctx.fill();
+      }}
+      // グリッド線
+      ctx.strokeStyle=teal(0.55); ctx.lineWidth=1;
+      for(var gx=0;gx<=nx;gx++){ var u=-halfU+2*halfU*gx/nx; var p1=P(c,u,-h),p2=P(c,u,h); ctx.beginPath(); ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y); ctx.stroke(); }
+      for(var gy=0;gy<=ny;gy++){ var v=-h+2*h*gy/ny; var q1=P(c,-halfU,v),q2=P(c,halfU,v); ctx.beginPath(); ctx.moveTo(q1.x,q1.y); ctx.lineTo(q2.x,q2.y); ctx.stroke(); }
+      // ラベル（距離・マス数・明るさ）── 上に2段で重ならないように
+      var top=P(c,0,h), cells = dim===3 ? (k*k) : k;
+      ctx.textAlign='center'; ctx.font="11px 'JetBrains Mono',monospace";
+      ctx.fillStyle=RED; ctx.fillText('明るさ 1/'+cells, top.x, top.y-25);
+      ctx.fillStyle=INK; ctx.fillText('r='+k+'・'+cells+'マス', top.x, top.y-11);
+      ctx.textAlign='left';
     }
-    // フラックス線（薄く）＋ 貫く点
-    for(var i=0;i<pts.length;i++){
-      var px=cx+r*pts[i][0], py=cy+r*pts[i][1];
-      ctx.strokeStyle='rgba(60,120,118,'+(dim===3?0.10:0.45)+')'; ctx.lineWidth=1;
-      ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(px,py); ctx.stroke();
-      ctx.beginPath(); ctx.arc(px,py, dim===3?2.2:3, 0, 2*Math.PI); ctx.fillStyle=AMBER; ctx.fill();
-    }
-    // 測る境界（円＝球面の輪郭）
-    ctx.strokeStyle=AMBER; ctx.setLineDash([5,4]); ctx.lineWidth=1.8;
-    ctx.beginPath(); ctx.arc(cx,cy,r,0,2*Math.PI); ctx.stroke(); ctx.setLineDash([]);
-    // 基準 r0
-    ctx.strokeStyle='rgba(170,164,155,.5)'; ctx.setLineDash([2,3]); ctx.lineWidth=1;
-    ctx.beginPath(); ctx.arc(cx,cy,r0,0,2*Math.PI); ctx.stroke(); ctx.setLineDash([]);
     // 源
-    ctx.beginPath(); ctx.arc(cx,cy,5,0,2*Math.PI); ctx.fillStyle=INK; ctx.fill();
-    // ラベル
-    ctx.fillStyle=AMBER; ctx.font="11px 'JetBrains Mono',monospace";
-    ctx.fillText(dim===3?'球面（面）':'円周（縁）', cx+r*0.66+4, cy-r*0.66-4);
-    ctx.fillStyle='#9aa3a8'; ctx.fillText('r₀', cx+r0+3, cy-3);
+    ctx.beginPath(); ctx.arc(S.x,S.y,5,0,2*Math.PI); ctx.fillStyle=INK; ctx.fill();
+    ctx.fillStyle=INK; ctx.font="11px 'JetBrains Mono',monospace"; ctx.fillText('源', S.x-6, S.y+18);
     // 読み出し
-    var ratio=r/r0, dens=(dim===3)?1/(ratio*ratio):1/ratio;
-    var n = (dim===3)?M3:N2;
-    var areaStr=(dim===3)?'球面 4πr²（面 ∝ r²）':'円周 2πr（縁 ∝ r）';
-    var law=(dim===3)?'1/r²':'1/r';
-    read.innerHTML='線（フラックス）の本数 ＝ <b>'+n+'（r によらず一定）</b>。広がる先は '+areaStr+'。<br>'+
-      '密度 ＝ 本数 ÷ '+(dim===3?'面積':'長さ')+' ∝ <span class="r">'+law+'</span>。'+
-      'いまの密度 ≈ <b>'+dens.toFixed(2)+'</b>（r₀ のとき 1）── r を '+ratio.toFixed(1)+' 倍 → 密度 '+dens.toFixed(2)+' 倍。';
+    var law = dim===3?'1/r²':'1/r';
+    var prog = []; for(var kk=1;kk<=maxN;kk++){ prog.push(dim===3?(kk*kk):kk); }
+    read.innerHTML='光の総量（フラックス）は <b>一定</b>。距離 r で広がる面は '+(dim===3?'r×r ＝ r² マス':'r マス')+'（'+prog.join(' → ')+'）。<br>'+
+      '1マスあたりの明るさ ＝ 総量 ÷ マス数 ＝ <span class="r">'+law+'</span>（'+prog.map(function(p){return '1/'+p;}).join(' → ')+'）。同じ光が、広い面に薄まっていく。';
   }
-  rEl.oninput=function(){ rV.textContent=rEl.value; draw(); };
+  nEl.oninput=function(){ nV.textContent=nEl.value; draw(); };
   document.getElementById('d3').onclick=function(){ dim=3; this.classList.add('on'); document.getElementById('d2').classList.remove('on'); draw(); };
   document.getElementById('d2').onclick=function(){ dim=2; this.classList.add('on'); document.getElementById('d3').classList.remove('on'); draw(); };
   var qd=new URLSearchParams(location.search).get('dim'); if(qd==='2'){ dim=2; document.getElementById('d2').classList.add('on'); document.getElementById('d3').classList.remove('on'); }
-  rV.textContent=rEl.value; draw();
+  nV.textContent=nEl.value; draw();
 })();
 </script>
 </body>
