@@ -8,8 +8,16 @@ const isAdvanced = (d: any) => (d.data.tags ?? []).includes('発展');
 const CHAPTERS = [
   { key: 'mechanics',    label: '力学の基礎',                  desc: '世界を式に写し、時間で1コマずつ進め、帳尻で締める。運動方程式・数値積分・エネルギー。' },
   { key: 'waves',        label: '声と共鳴 ── 波動の入口',       desc: 'v=fλ から定在波・共鳴管・フォルマントまで一本道で。「あいうえお」が鳴る仕組み。' },
-  { key: 'conservation', label: '見える物理で「保存する量」を掴む',  desc: '波・場・力を貫く2つの素朴な動き ──「足し合わせる」と「湧かない・消えない」を、触れる物理で。（エネルギー保存“則”に限らない、もっと広い“保存”の話）' },
+  { key: 'conservation', label: '足し合わせと保存で、場を掴む',  desc: '波・場・力を貫く2つの素朴な動き ──「足し合わせる」と「湧かない・消えない（保存する量）」。後半は、掴んだ骨に名前をつけて、少しずつ抽象的になっていく。' },
 ] as const;
+
+// 第3章の後半（発展・これから）── まだ記事はないので、ロードマップには“準備中”として並べる
+const UPCOMING = [
+  { num: 6, title: '場の湧き出しを数える ── 発散とガウスの法則', desc: '閉じた面で囲うと、中の源が見える。フラックス・発散・ガウスの法則を、「場がどこで湧いているか」を測る道具として。' },
+  { num: 7, title: '源はポテンシャルを曲げる ── ポアソン方程式とラプラス方程式', desc: '場の湧き出し（∇·E）と、ポテンシャルの曲がり（∇²φ）がつながる。源 ＝ 地形の曲がり。' },
+  { num: 8, title: '一発の返事で、方程式を解く ── グリーン関数', desc: '一点源への返事を覚えて、任意の源分布への答えを作る。④の“中から積む扉”の正体。' },
+  { num: 9, title: '遅れて届く返事 ── 波動方程式のグリーン関数', desc: 'いつどこで叩いた影響が、いつどこへ届くか。静かな場から、時間のある波へ。' },
+];
 const byOrder = (a: any, b: any) => (a.data.order ?? 99) - (b.data.order ?? 99);
 
 const chapters = CHAPTERS.map(c => {
@@ -92,6 +100,18 @@ const total = explainers.length;
         border:1px solid rgba(60,120,118,.25);border-radius:999px;padding:.08rem .5rem;font-family:'JetBrains Mono',monospace;}
       .step-desc{font-size:.82rem;color:var(--text-muted);line-height:1.6;margin-top:.32rem;}
       .step-adv .step-desc{font-size:.78rem;}
+      /* 第3章 後半（発展・これから） */
+      .upcoming-divider{display:flex;align-items:center;gap:.7rem;margin:.2rem 0 1rem;}
+      .upcoming-divider::before,.upcoming-divider::after{content:'';flex:1;border-top:1px dashed var(--border);}
+      .upcoming-divider span{font-family:'JetBrains Mono',monospace;font-size:.71rem;font-weight:700;color:#c9761f;white-space:nowrap;}
+      .step-upcoming{opacity:.85;}
+      .step-upcoming:not(:last-child)::before{background:none;border-left:2px dashed rgba(201,118,31,.45);width:0;}
+      .step-upcoming .step-card{background:var(--surface);border-style:dashed;}
+      .step-upcoming .step-title{color:var(--text-muted);font-size:.9rem;}
+      .step-soon{width:34px;height:34px;border-radius:50%;background:none;border:2px dashed #c9761f;color:#c9761f;
+        display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:.9rem;position:relative;z-index:1;}
+      .step-soon-flag{flex-shrink:0;font-size:.62rem;font-weight:700;color:#c9761f;background:rgba(201,118,31,.1);
+        border:1px solid rgba(201,118,31,.3);border-radius:999px;padding:.08rem .5rem;font-family:'JetBrains Mono',monospace;}
 
       footer{max-width:820px;margin:0 auto;padding:1.5rem 1.3rem 3rem;font-size:.78rem;color:var(--text-faint);
         font-family:'JetBrains Mono',monospace;border-top:1px solid var(--border);}
@@ -114,8 +134,8 @@ const total = explainers.length;
       <div class="intro">
         <span class="kicker">解説 — ROADMAP</span>
         <h1>見える物理を、触りながら一歩ずつ</h1>
-        <p>読むだけで終わらないように、ほとんどの記事に「動かせる遊び場」を添えてある。下の順番に辿ると、力学の基礎から始まって、波と共鳴を抜け、最後は「足し合わせ」と「保存」で場までを、一本の道として掴めるようにしてあるよ。もちろん、気になった所からつまんでも大丈夫。</p>
-        <div class="meta">{total} 本 ・ {chapters.length} 章</div>
+        <p>読むだけで終わらないように、ほとんどの記事に「動かせる遊び場」を添えてある。下の順番に辿ると、力学の基礎から始まって、波と共鳴を抜け、「足し合わせ」と「保存」で場までを、一本の道として掴めるようにしてあるよ。そして第3章の後半からは、掴んだ骨に名前をつけて、少しずつ発展的・抽象的になっていく（発散・ガウスの法則・ポアソン方程式・グリーン関数へ）。もちろん、気になった所からつまんでも大丈夫。</p>
+        <div class="meta">{total} 本（＋これから {UPCOMING.length} 本）・ {chapters.length} 章</div>
       </div>
 
       {chapters.map(c => (
@@ -139,6 +159,23 @@ const total = explainers.length;
                 </div>
               </a>
             ))}
+            {c.key === 'conservation' && (
+              <Fragment>
+                <div class="upcoming-divider"><span>ここから発展 ── 掴んだ骨に、名前をつけていく</span></div>
+                {UPCOMING.map(u => (
+                  <div class="step step-upcoming">
+                    <div class="step-node"><span class="step-soon">{u.num}</span></div>
+                    <div class="step-card">
+                      <div class="step-title-row">
+                        <span class="step-title">{u.title}</span>
+                        <span class="step-soon-flag">準備中</span>
+                      </div>
+                      <div class="step-desc">{u.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </Fragment>
+            )}
           </div>
         </section>
       ))}
