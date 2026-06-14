@@ -151,5 +151,5 @@ $$\phi(P) = \int \frac{\rho(\vec{r}')}{|\vec{P}-\vec{r}'|}\,dV'$$
   <span style="color:#cfc9be;">/</span>
   <span>今回 <b style="color:#3c7876;">源を足して、場を作る</b></span>
   <span style="color:#cfc9be;">/</span>
-  <span>次回 （準備中）</span>
+  <span>次回 <a href="/docs/divergence-and-gauss/">場の湧き出しを数える</a></span>
 </nav>
