@@ -223,15 +223,6 @@ const works: Work[] = [
     status: "Single Crystal", section: "works", group: "engineering",
     prompt: "パワー MOSFET のスイッチング用途向け技術リファレンスを、実務で使える辞書的文書としてまとめてほしい。\n\n## 対象読者\n電子回路の基礎知識（Vgs, Id, RdsOn の意味は分かる）はあるが、\nスイッチング電源・モータードライバ・インバータでの MOSFET 設計に初めて踏み込む人。\n「データシートを見て何を確認すべきか」「なぜ壊れるか」が分かることがゴール。\n\n## ドキュメント構成\n### 1. MOSFET の選定フロー\n電圧マージン: Vds_max ≥ Vbus × 1.5 / 電流マージン: Id_max ≥ Ipeak × 1.3\nRdsOn（Tj=125°C）は温度で 2〜3 倍になることに注意\n\n### 2. 損失計算\n- P_on = Id² × RdsOn(Tj) × D（温度補正付き）\n- P_sw = 0.5 × Vds × Id × (tr+tf) × fs\n- P_g = Qg × Vgs × fs\n- ボディダイオード損失: V_f × I_d × (1-D)（同期整流使用時）\n\n### 3. ゲート駆動設計\n- ゲート抵抗 Rg の決め方: dV/dt ≈ (Vgs-Vth) / (Rg × Cgd)\n- ブートストラップ回路: 最大 Duty は 99% 程度（100%連続では Cboot が充電できない）\n- 絶縁ドライバ: フォトカプラ（低速）/ パルストランス（中速）/ 専用IC（高速・小型）\n\n### 4. 熱設計\nTj = Tamb + Ptot × (Rth_JC + Rth_CH + Rth_HA)\n過渡熱インピーダンス曲線の読み方（パルス動作での許容損失）\n\n### 5. SOA（安全動作領域）\nDC/Pulse/Safe-Operating-Area 図の読み方\n誘導性負荷スイッチオフ時の Vds スパイク: V = L × dI/dt\n\n### 6. アバランシェ耐量\nEAS = 0.5 × L × I_peak² × Vbr/(Vbr - Vdc)\nインダクタンスエネルギー 0.5LI² との比較で壊れるかを判定\n\n### 7. よくある故障モードと対策\n- ゲート酸化膜破壊: Vgs_max（通常 ±20V）を超えないこと\n- 過電流による熱暴走: デレーティングと保護回路\n- dV/dt 誤作動: Rg の増大・Cgd に対する Vgs の影響\n\n### 8. 参考文献\nInfineon AN2020 / Infineon EiceDRIVER AN2019 / IRF Design Tip 94-1\n\n## スタイル指針\n- 式はテキスト表記（LaTeX 不要、プレーン HTML で表示できる）\n- 数値例は実際に使いそうな値（100V/10A、fs=100kHz）\n- 「なぜそうなるか」の物理的直感を必ず添える\n- 実務でよく見る間違い・落とし穴を「注意」として明示する",
   },
-  {
-    title: "tnks-lab",
-    icon: "🧪",
-    description: "AI実験ログ・雑メモをdropフォルダに置くだけでGitHub Issueに変換する個人用ワークフロー。PowerShell製UIランチャーで操作。GitHub CLI経由でIssue投稿。",
-    url: "https://github.com/TNKS1407/tnks-lab",
-    tags: ["PowerShell", "GitHub API", "CLI"],
-    status: "Melt", section: "lab", group: "utilities",
-    prompt: "AI 実験ログ・雑メモを drop フォルダに置くだけで GitHub Issue に変換する個人用ワークフローツールを作って。\n\n## 背景・動機\nAI との実験や思いついたアイデアを「あとで見返せる形」で残したい。\nNotion は重く、Obsidian は別途開く手間がある。\n「ファイルを一つ放り込む → GitHub Issue に自動変換 → 全文検索できる」が理想。\nGitHub の Issue 検索・ラベル・マイルストーン機能をそのまま活用する。\n\n## ディレクトリ構成\ntnks-lab/ inbox/ drop/（ここに .md/.txt を置く） / processed/（処理済み移動先） / failed/（失敗した場合）\nscripts/ push-issues.ps1（メイン処理）/ config.json / launch.cmd / watch.ps1（フォルダ監視デーモン）\n\n## 処理フロー（push-issues.ps1）\n1. inbox/drop 内の .md/.txt をすべて取得\n2. ファイル名からタイトルを生成（YYYY-MM-DD_タイトル.md → タイトル）\n3. ファイル先頭の「# タイトル」があればそれを Issue タイトルに使用\n4. フロントマター（---）を解析: labels / milestone を GitHub に設定\n5. gh issue create --title ... --body ... --repo TNKS1407/tnks-lab で投稿\n6. 成功したら inbox/processed/ に移動（タイムスタンプ付きでリネーム）\n7. 失敗したらエラーログを出力して inbox/failed/ に移動\n\n## フォルダ監視デーモン（watch.ps1）\nFileSystemWatcher でフォルダを監視。新規ファイルが drop/ に置かれたら自動的に処理を実行。\n\n## launch.cmd（UIランチャー）\n「1: 今すぐ処理」「2: 監視デーモン起動」「3: 処理済み一覧」「4: 終了」のメニュー。\n\n## config.json\n{ defaultRepo, defaultLabel, watchDir, logFile, dryRun（実際に投稿しないテストモード） }\n\n## 制約・前提\n- GitHub CLI (gh) がインストール済み・認証済みであること前提\n- PowerShell 7+ 対応 / ファイルエンコーディングは UTF-8\n- GitHub の API レート制限（5000 req/h）に注意",
-  },
 ];
 
 const uniqueTags = [...new Set(works.flatMap(w => w.tags))];
