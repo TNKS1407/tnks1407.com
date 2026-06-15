@@ -51,8 +51,8 @@
     <b>第1種と第2種</b><br>
     操作は行列 W で書ける。<b>det(W)=+1</b> なら向き（手の系）はそのまま＝<b class="keep">第1種</b>（回転・並進）。<b>det(W)=−1</b> なら右手系↔左手系が入れ替わる＝<b class="flip">第2種</b>（鏡・反転・回反）。<br>
     三脚の「赤→緑の回り向き」が逆になったら、それが handedness の反転＝第2種だよ。F が裏返るのと同じこと。<br><br>
-    本物の3Dエクスプローラーでも、各等価点に三脚が付いてる。<em>三脚が左右に反転して見えたら、その操作は第2種</em>── それを2Dで先に体に入れる回。<br><br>
-    つながる先 → <a href="https://tnks1407.com/nfold/">回すと、増える（5回だけ閉じない）</a> ／ <a href="https://sg.tnks1407.com/">本物の空間群エクスプローラー（230群・3D）</a>
+    教材用の3Dエクスプローラーでも、各等価点に三脚が付いてる。<em>三脚が左右に反転して見えたら、その操作は第2種</em>── それを2Dで先に体に入れる回。<br><br>
+    つながる先 → <a href="https://tnks1407.com/nfold/">回すと、増える（5回だけ閉じない）</a> ／ <a href="https://sg.tnks1407.com/">空間群エクスプローラー（教材用・230群・3D）</a>
   </div>
 </div>
 
@@ -117,12 +117,12 @@ function draw(){
   ctx.fillStyle='#1d1b17';ctx.fillText('もと',Po.x,Po.y+Lpx+18);
   // verdict
   const ans=document.getElementById('ans'), say=document.getElementById('say');
-  if(op==='mirror'){ ans.innerHTML='det(W) = −1 ・ <span class="flip">手の系が反転（第2種）</span>';
-    say.innerHTML='鏡に映すと、赤→緑の回り向きが逆になり、F が裏返る。<b class="flip">右手系↔左手系が入れ替わる＝第2種の対称操作</b>（鏡・反転・回反の仲間）。'; }
-  else if(op==='rot'){ ans.innerHTML='det(W) = +1 ・ <span class="keep">手の系はそのまま（第1種）</span>';
-    say.innerHTML='180°回しても、F は裏返らない（回っただけ）。赤→緑の回り向きも同じ。<b class="keep">向きは保たれる＝第1種</b>（回転・並進の仲間）。'; }
-  else { ans.innerHTML='det(W) = +1（2D）／ −1（3D）';
-    say.innerHTML='点対称（反転中心）は、2D では 180°回転と<b>同じ写像</b>になってしまう（だから 2D では det=+1）。本当に「反転」が第2種になるのは <b>3D の反転中心</b>。次元で顔が変わる、面白い所だよ。'; }
+  if(op==='mirror'){ ans.innerHTML='W = [ −1, 0 ; 0, 1 ]　det(W) = −1　<span class="flip">手の系が反転（第2種）</span>';
+    say.innerHTML='鏡（左右反転）に映すと、x→−x、y→y。赤→緑の回り向きが逆になり、F が裏返る。<b class="flip">右手系↔左手系が入れ替わる＝第2種の対称操作</b>（鏡映・3Dの中心反転・回反の仲間）。'; }
+  else if(op==='rot'){ ans.innerHTML='W = [ −1, 0 ; 0, −1 ]　det(W) = +1　<span class="keep">手の系はそのまま（第1種）</span>';
+    say.innerHTML='180°回すと x→−x、y→−y。F は裏返らない（回っただけ）。赤→緑の回り向きも同じ。<b class="keep">向きは保たれる＝第1種</b>（回転・並進の仲間）。'; }
+  else { ans.innerHTML='W = [ −1, 0 ; 0, −1 ]（2D）　det(W) = +1（2D）／ −1（3D）';
+    say.innerHTML='点対称（反転中心）は、2D では 180°回転と<b>同じ写像</b>（x→−x, y→−y）になる。行列も同じ、だから <b>2D では det=+1 の第1種</b>。「反転」が第2種（det=−1）になるのは <b>3D の中心反転</b>（x,y,z）→（−x,−y,−z）から。次元で顔が変わる、面白い所だよ。'; }
 }
 // drag
 let drag=false;

@@ -30,14 +30,14 @@
 <div class="wrap">
   <h1>心（centering）── 胞の中の、もう一組の格子点</h1>
   <p class="lead">格子点は、単位胞の<b>角</b>だけにあるとは限らない。<b>面の真ん中</b>や<b>立方体のど真ん中</b>にも、もう一組が隠れていることがある。<br>
-  それを足すと「辺より短い並進」が増えて、模様の数が一気に2倍・4倍になる。P→C→I→F と切り替えて、点が増えていくのを見て。</p>
+  それを足すと「中心化並進（胞の中の分数並進）」が増えて、単位胞あたりの格子点が2倍・4倍になる。P→C→I→F と切り替えて、点が増えていくのを見て。</p>
 
   <div class="card">
     <canvas id="cv" width="720" height="430"></canvas>
     <div class="ctrl">
       <span class="lbl">格子の心：</span>
       <button class="op on" data-op="P">素な格子<span class="k">P</span></button>
-      <button class="op" data-op="C">片面心<span class="k">C</span></button>
+      <button class="op" data-op="C">底心<span class="k">C</span></button>
       <button class="op" data-op="I">体心<span class="k">I</span></button>
       <button class="op" data-op="F">面心<span class="k">F</span></button>
     </div>
@@ -46,11 +46,11 @@
   </div>
 
   <div class="card foot">
-    <b>なぜ Fm-3m は 192 点になるのか</b><br>
-    対称操作の数は、こう決まる ── <b>点群の操作の数 × 心のかけ算（P=1, C/I=2, F=4）</b>。<br>
-    立方晶のいちばん豪華な点群 m-3m は、回転・鏡・反転を全部数えると <b>48 個</b>。岩塩や銅のような<b>面心（F）</b>の結晶では、ここに ×4 がかかって <b>48 × 4 = 192</b>。空間群エクスプローラーで Fm-3m を開くと等価点が 192 個ずらりと出るのは、この「角＋3つの面心」のぶんなんだ。<br><br>
-    心の正体は、<b>辺より短い並進</b>。たとえば体心の (½,½,½) は、胞をまたがずに格子点へ届く“近道”の並進だ。近道が一本増えるたび、すべての操作にその近道を足した相棒が生まれて、点が倍々に増える。<br><br>
-    つながる先 → <a href="https://tnks1407.com/nfold/">回すと、増える</a> ／ <a href="https://sg.tnks1407.com/">本物の空間群エクスプローラー（Fm-3m を開いてみて）</a>
+    <b>なぜ Fm-3m の一般位置は 192 になるのか</b><br>
+    単位胞の中で区別される<b>一般位置の等価点</b>の数は、こう決まる ── <b>点群の操作の数 × 心のかけ算（P=1, C/I=2, F=4）</b>。（空間群そのものの操作は、格子並進を全部含むので無限にあるよ。192 はそれを同一視した代表の数だ。）<br>
+    立方晶のいちばん豪華な点群 m-3m は、回転・鏡・反転を全部数えると <b>48 個</b>。岩塩や銅のような<b>面心（F）</b>の結晶では、ここに ×4 がかかって <b>48 × 4 = 192</b>。<br><br>
+    心の正体は、<b>中心化並進</b>（慣用胞の中に現れる分数の並進）。たとえば体心の (½,½,½)。一本増えるたび、すべての操作にそれを足した相棒が生まれて、等価点が倍々に増える。<br><br>
+    つながる先 → <a href="https://tnks1407.com/nfold/">回すと、増える</a> ／ <a href="https://sg.tnks1407.com/">空間群エクスプローラー（教材用・Fm-3m を開いてみて）</a>
   </div>
 </div>
 
@@ -117,7 +117,7 @@ function draw(){
     ctx.fillStyle='#a86a22'; ctx.font='600 12px "JetBrains Mono",monospace'; ctx.textAlign='left';
     ctx.fillText(lab, t[0]+11, t[1]+4);
     ctx.fillStyle='#a86a22'; ctx.font='11px "JetBrains Mono",monospace';
-    ctx.fillText('辺より短い並進', t[0]+11, t[1]+19);
+    ctx.fillText('中心化並進', t[0]+11, t[1]+19);
   }
   // axis hint
   ctx.fillStyle='#b7af9f'; ctx.font='11px "JetBrains Mono",monospace'; ctx.textAlign='left';
@@ -126,13 +126,14 @@ function draw(){
   // text
   const say=document.getElementById('say'), cnt=document.getElementById('count');
   const msg={
-    P:'角だけに格子点（<b>P</b>＝素な格子）。8つの角は隣の胞と分け合うから、単位胞あたりはきっちり <b>1 点</b>。並進は、胞の辺ぶんだけ。',
-    C:'上下の面の中心に、もう1点ずつ（<b>C</b>＝片面心）。<span class="amb">(½,½,0)</span> という<b>辺より短い並進</b>が増えた。単位胞あたり <b>2 点</b> ── 点が2倍だ。',
-    I:'立方体のど真ん中に1点（<b>I</b>＝体心）。<span class="amb">(½,½,½)</span> が新しい並進。これも辺より短い近道で、単位胞あたり <b>2 点</b>。',
-    F:'6つの面ぜんぶの中心に（<b>F</b>＝面心）。岩塩や銅がこれ。<span class="amb">(½,½,0)(½,0,½)(0,½,½)</span>…と近道が3本。単位胞あたり <b>1+3 = 4 点</b> ── 点が4倍。',
+    P:'角だけに格子点（<b>P</b>＝素な格子）。8つの角は隣の胞と分け合うから、単位胞あたりはきっちり <b>1 点</b>。中心化並進は、無し。',
+    C:'一組の向かい合う面の中心に、もう1点ずつ（<b>C</b>＝底心）。<span class="amb">(½,½,0)</span> という<b>中心化並進</b>が1つ増えた。単位胞あたり <b>2 点</b> ── 点が2倍だ。',
+    I:'立方体のど真ん中に1点（<b>I</b>＝体心）。<span class="amb">(½,½,½)</span> という中心化並進が1つ。単位胞あたり <b>2 点</b>。',
+    F:'6つの面ぜんぶの中心に（<b>F</b>＝面心）。岩塩や銅がこれ。非ゼロの中心化ベクトルが <span class="amb">(½,½,0)(½,0,½)(0,½,½)</span> の<b>3つ</b>（足さない場合を含めて4通り）。単位胞あたり <b>1+3 = 4 点</b> ── 点が4倍。',
   };
   say.innerHTML=msg[op];
-  cnt.innerHTML='単位胞あたりの格子点：<b>'+PERCELL[op]+'</b> 点　／　対称操作のかけ算：<b>×'+FACTOR[op]+'</b>'+(op==='F'?'　→　48×4 = <b>192</b>（Fm-3m）':'');
+  const calc={P:'角 8×⅛ = 1', C:'角 8×⅛ ＋ 底心 2×½ = 1+1 = 2', I:'角 8×⅛ ＋ 体心 1×1 = 1+1 = 2', F:'角 8×⅛ ＋ 面心 6×½ = 1+3 = 4'};
+  cnt.innerHTML='共有で数える：'+calc[op]+'　→　単位胞あたり <b>'+PERCELL[op]+'</b> 点　／　等価点のかけ算：<b>×'+FACTOR[op]+'</b>'+(op==='F'?'　→　48×4 = <b>192</b>（Fm-3m 一般位置）':'');
 }
 document.querySelectorAll('button.op').forEach(b=>b.onclick=()=>{op=b.dataset.op;
   document.querySelectorAll('button.op').forEach(c=>c.classList.toggle('on',c===b)); draw();});

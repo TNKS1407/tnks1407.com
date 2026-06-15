@@ -32,7 +32,7 @@
 <body>
 <div class="wrap">
   <h1>回すと、増える ── n回対称はどこまで許される？</h1>
-  <p class="lead">結晶とは、同じ模様が<b>並進（くり返し）</b>で無限に続くもの。下の灰色の点が、その「くり返しの足場」＝格子だよ。<br>
+  <p class="lead">周期結晶とは、同じ模様が<b>並進（くり返し）</b>で無限に続くもの。下の灰色の点が、その「くり返しの足場」＝格子だよ。<br>
   そこへ <b>n回対称</b>（360°/n ずつ回すと重なる）を持ち込めるかを、回して試してみよう。問いはいつも一つ：<b>回した矢印は、格子の上にちゃんと戻ってくる？</b></p>
 
   <div class="card">
@@ -51,10 +51,10 @@
 
   <div class="card foot">
     <b>なぜ「格子点に乗る／乗らない」が効くの？</b><br>
-    矢印 <span class="pill">a</span> を +θ と −θ に回した二本（<span class="pill" style="color:var(--amber)">a′</span>・<span class="pill" style="color:var(--amber)">a″</span>）を足すと、ちょうど横向きの <span class="pill">2cosθ · a</span> になる。これも格子の並進＝<b>整数 × a</b> でないといけない。だから <b>2cosθ が整数</b>になる n だけが、結晶の並進と握手できる。<br>
+    矢印 <span class="pill">a</span> を +θ と −θ に回した二本（<span class="pill" style="color:var(--amber)">a′</span>・<span class="pill" style="color:var(--amber)">a″</span>）を足すと、ベクトルとして <span class="pill">a′+a″ = (2cosθ)·a</span> ── a に平行になる。これも格子の並進＝<b>整数 × a</b> でないといけない。だから <b>2cosθ が整数</b>になる n だけが、周期結晶の並進と握手できる。<br>
     それが <b>n = 1, 2, 3, 4, 6</b>。5 や 7 以上は、矢印の和が格子点の<em>あいだ</em>に落ちてしまう。これが「結晶に五角形がない理由」だよ。<br><br>
     …でも「並進を捨てたら？」という続きがある。準結晶は、周期性を手放すことで 5 回対称を堂々と持つ。それはこの道の最後で。<br><br>
-    つながる先 → <a href="https://tnkblog.net/blog/2026-06-04-crystallographic-restriction/">結晶に五角形がない理由（読みもの）</a> ／ <a href="https://sg.tnks1407.com/">本物の空間群エクスプローラー（230群・3D）</a>
+    つながる先 → <a href="https://tnkblog.net/blog/2026-06-04-crystallographic-restriction/">結晶に五角形がない理由（読みもの）</a> ／ <a href="https://sg.tnks1407.com/">空間群エクスプローラー（教材用・230群・3D）</a>
   </div>
 </div>
 
@@ -112,11 +112,11 @@ function draw(){
   else { ans.textContent='✗ 間に落ちる'; ans.className='ng'; }
   const say=document.getElementById('say');
   if(onLattice){
-    say.innerHTML='<span class="ok">2cosθ が整数（'+nearest+'）。a′+a″ がちょうど格子点に戻る＝<b>'+n+'回対称は並進と握手できる＝結晶で許される。</b></span>';
+    say.innerHTML='<span class="ok">2cosθ が整数（'+nearest+'）。a′+a″ がちょうど格子点に戻る＝<b>'+n+'回対称は並進と握手できる＝周期結晶で許される候補。</b></span>（この回転を実際に持つ格子があるかは、格子の形による。）';
   } else if(n===5){
-    say.innerHTML='<span class="ng">2cos72°≈0.618 は整数じゃない。a′+a″ が格子点の<em>あいだ</em>に落ちる＝<b>5回対称の結晶は存在しない。</b></span> いちばん小さく、いちばん有名な禁制。';
+    say.innerHTML='<span class="ng">2cos72°≈0.618 は整数じゃない。a′+a″ が格子点の<em>あいだ</em>に落ちる＝<b>5回対称の周期結晶は存在しない。</b></span> いちばん小さく、いちばん有名な禁制。';
   } else {
-    say.innerHTML='<span class="ng">2cosθ が整数にならない＝a′+a″ が格子点に戻らない＝<b>'+n+'回対称の結晶は存在しない。</b></span>';
+    say.innerHTML='<span class="ng">2cosθ が整数にならない＝a′+a″ が格子点に戻らない＝<b>'+n+'回対称の周期結晶は存在しない。</b></span>';
   }
 }
 // n buttons
