@@ -39,9 +39,9 @@
     <div class="hint">点（と三脚）はドラッグで動かせる。</div>
     <div class="ctrl">
       <span class="lbl">操作：</span>
-      <button class="op on" data-op="mirror">鏡（反転）</button>
-      <button class="op" data-op="rot">回転 180°</button>
-      <button class="op" data-op="inv">点対称（反転中心）</button>
+      <button class="op on" data-op="mirror">鏡映（左右反転, det=−1）</button>
+      <button class="op" data-op="rot">180°回転（2D点対称, det=+1）</button>
+      <button class="op" data-op="inv">中心反転（3Dは det=−1）</button>
     </div>
     <div class="verdict big" id="ans"></div>
     <div class="say" id="say"></div>
@@ -101,7 +101,7 @@ function draw(){
   if(op==='mirror'){ ctx.beginPath(); ctx.moveTo(CX,8); ctx.lineTo(CX,h-8); ctx.stroke();
     ctx.fillStyle='#c9761f';ctx.font='600 12px "JetBrains Mono",monospace';ctx.textAlign='left';ctx.fillText('鏡 m',CX+6,18); }
   else { ctx.fillStyle='#c9761f';ctx.beginPath();ctx.arc(CX,CY,4,0,7);ctx.fill();
-    ctx.font='600 12px "JetBrains Mono",monospace';ctx.textAlign='left';ctx.fillText(op==='rot'?'2回軸 / 中心':'反転中心 −1',CX+8,CY-8); }
+    ctx.font='600 12px "JetBrains Mono",monospace';ctx.textAlign='left';ctx.fillText(op==='rot'?'2回軸 / 中心':'反転中心',CX+8,CY-8); }
   ctx.setLineDash([]);
   // original frame: ex along +x, ey along +y (screen px)
   const Lpx=34; const ex={x:Lpx,y:0}, ey={x:0,y:-Lpx};
