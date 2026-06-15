@@ -1,16 +1,16 @@
 ---
 // 段落フィードバック：記事の段落ごとに「ここで詰まった / 気になった」を匿名ワンタップ。
 // 押すと任意で“理由”を一言送れる。カウントは著者だけが見る（読者には数を返さない＝誘導を避ける）。
-// 送信は母艦 feedback.tnks1407.com/para へ。今は ALLOWED の記事だけで有効（プロトタイプ）。
-// 増やすときは下の ALLOWED に slug を足すだけ。
+// 送信は母艦 feedback.tnks1407.com/para へ。全ての解説記事で有効。
+// 特定の記事で外したいときは下の EXCLUDE に slug を足す。
 ---
 <script is:inline>
 (function () {
-  var ALLOWED = ['crystal-translation-symmetry'];
+  var EXCLUDE = [];   // 段落フィードバックを出したくない解説があればここに slug を入れる
   var API = 'https://feedback.tnks1407.com';
   var m = location.pathname.match(/\/docs\/([a-z0-9-]+)/);
   var slug = m ? m[1] : '';
-  if (!slug || ALLOWED.indexOf(slug) < 0) return;
+  if (!slug || EXCLUDE.indexOf(slug) >= 0) return;
   var prose = document.querySelector('article.prose');
   if (!prose) return;
 
