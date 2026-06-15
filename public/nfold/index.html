@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>回すと、増える ── n回対称はどこまで許される？</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#f5f2ec;--card:#fff;--border:#e3dbd0;--ink:#1d1b17;--mut:#7d7568;--accent:#3c7876;--amber:#c9761f;--ok:#3c7876;--ng:#c0392b;}
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'Zen Kaku Gothic New',system-ui,sans-serif;}
+  .wrap{max-width:760px;margin:0 auto;padding:1.4rem 1.1rem 3rem;}
+  h1{font-size:1.32rem;margin:.2rem 0 .5rem;line-height:1.35;}
+  .lead{color:var(--mut);font-size:.96rem;line-height:1.7;margin:0 0 1.1rem;}
+  .lead b{color:var(--accent);}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 1px 6px rgba(29,27,23,.05);padding:1rem 1.1rem;margin-bottom:1.1rem;}
+  canvas{width:100%;height:auto;display:block;border-radius:10px;background:#fbf9f5;border:1px solid var(--border);touch-action:none;}
+  .ctrl{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center;margin:.9rem 0 .2rem;}
+  .ctrl .lbl{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--mut);margin-right:.2rem;}
+  button.n{font-family:'JetBrains Mono',monospace;font-size:.95rem;font-weight:600;border:1px solid var(--border);background:#fff;color:var(--ink);border-radius:9px;padding:.42rem .7rem;cursor:pointer;transition:.12s;min-width:2.6rem;}
+  button.n:hover{border-color:var(--accent);}
+  button.n.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .verdict{display:flex;flex-wrap:wrap;gap:.6rem 1.2rem;align-items:baseline;margin-top:.7rem;font-family:'JetBrains Mono',monospace;font-size:.86rem;}
+  .verdict .k{color:var(--mut);}
+  .big{font-size:1.05rem;font-weight:700;}
+  .ok{color:var(--ok);} .ng{color:var(--ng);}
+  .say{margin-top:.7rem;font-size:.94rem;line-height:1.7;}
+  .foot{font-size:.9rem;color:var(--mut);line-height:1.7;}
+  .foot a{color:var(--accent);text-decoration:none;font-weight:600;} .foot a:hover{text-decoration:underline;}
+  .pill{display:inline-block;background:#f0ece6;border:1px solid var(--border);border-radius:999px;padding:.06rem .5rem;font-family:'JetBrains Mono',monospace;font-size:.8rem;}
+</style></head>
+<body>
+<div class="wrap">
+  <h1>回すと、増える ── n回対称はどこまで許される？</h1>
+  <p class="lead">結晶とは、同じ模様が<b>並進（くり返し）</b>で無限に続くもの。下の灰色の点が、その「くり返しの足場」＝格子だよ。<br>
+  そこへ <b>n回対称</b>（360°/n ずつ回すと重なる）を持ち込めるかを、回して試してみよう。問いはいつも一つ：<b>回した矢印は、格子の上にちゃんと戻ってくる？</b></p>
+
+  <div class="card">
+    <canvas id="cv" width="720" height="360"></canvas>
+    <div class="ctrl">
+      <span class="lbl">n 回対称：</span>
+      <span id="nbtns"></span>
+    </div>
+    <div class="verdict">
+      <span><span class="k">θ = 360°/n =</span> <b id="theta"></b></span>
+      <span><span class="k">2·cosθ =</span> <b id="twocos"></b></span>
+      <span class="big"><span class="k">格子点に乗る？</span> <span id="ans"></span></span>
+    </div>
+    <div class="say" id="say"></div>
+  </div>
+
+  <div class="card foot">
+    <b>なぜ「格子点に乗る／乗らない」が効くの？</b><br>
+    矢印 <span class="pill">a</span> を +θ と −θ に回した二本（<span class="pill" style="color:var(--amber)">a′</span>・<span class="pill" style="color:var(--amber)">a″</span>）を足すと、ちょうど横向きの <span class="pill">2cosθ · a</span> になる。これも格子の並進＝<b>整数 × a</b> でないといけない。だから <b>2cosθ が整数</b>になる n だけが、結晶の並進と握手できる。<br>
+    それが <b>n = 1, 2, 3, 4, 6</b>。5 や 7 以上は、矢印の和が格子点の<em>あいだ</em>に落ちてしまう。これが「結晶に五角形がない理由」だよ。<br><br>
+    …でも「並進を捨てたら？」という続きがある。準結晶は、周期性を手放すことで 5 回対称を堂々と持つ。それはこの道の最後で。<br><br>
+    つながる先 → <a href="https://tnkblog.net/blog/2026-06-04-crystallographic-restriction/">結晶に五角形がない理由（読みもの）</a> ／ <a href="https://sg.tnks1407.com/">本物の空間群エクスプローラー（230群・3D）</a>
+  </div>
+</div>
+
+<script>
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+let n=6;
+{const q=+new URLSearchParams(location.search).get('n'); if(q>=1&&q<=8)n=q;}
+function dpi(){ const r=cv.getBoundingClientRect(); const s=Math.min(2,devicePixelRatio||1);
+  cv.width=Math.round(r.width*s); cv.height=Math.round(r.width*0.5*s); ctx.setTransform(s,0,0,s,0,0); return {w:r.width,h:r.width*0.5}; }
+const A=70; // lattice spacing px
+function draw(){
+  const {w,h}=dpi();
+  ctx.clearRect(0,0,w,h);
+  const cx=w*0.5, cy=h*0.62;
+  // --- lattice line (translation) ---
+  ctx.strokeStyle='#e3dbd0'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0,cy); ctx.lineTo(w,cy); ctx.stroke();
+  const maxk=Math.ceil(cx/A)+1;
+  for(let k=-maxk;k<=maxk;k++){ const x=cx+k*A;
+    ctx.beginPath(); ctx.arc(x,cy,k===0?5:4,0,7); ctx.fillStyle=(k===0)?'#8a8275':'#cfc6b8'; ctx.fill();
+    if(k===1){ ctx.fillStyle='#7d7568'; ctx.font='600 12px "JetBrains Mono",monospace'; ctx.textAlign='center'; ctx.fillText('a',x,cy+20); }
+    if(k===0){ ctx.fillStyle='#7d7568'; ctx.font='600 12px "JetBrains Mono",monospace'; ctx.textAlign='center'; ctx.fillText('0',x,cy+20); }
+  }
+  ctx.fillStyle='#a59c8c'; ctx.font='11px "JetBrains Mono",monospace'; ctx.textAlign='left';
+  ctx.fillText('格子＝並進（…, -a, 0, a, 2a, …）', 8, cy+38);
+  const th=2*Math.PI/n;
+  const arrow=(x0,y0,x1,y1,col,wd)=>{ ctx.strokeStyle=col; ctx.lineWidth=wd; ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
+    const ang=Math.atan2(y1-y0,x1-x0); const hs=8;
+    ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x1-hs*Math.cos(ang-0.4),y1-hs*Math.sin(ang-0.4)); ctx.lineTo(x1-hs*Math.cos(ang+0.4),y1-hs*Math.sin(ang+0.4)); ctx.closePath(); ctx.fillStyle=col; ctx.fill(); };
+  // a (base lattice vector)
+  arrow(cx,cy,cx+A,cy,'#3c7876',2.5);
+  // a' = +θ , a'' = -θ  (note canvas y is down, so use -sin for "up")
+  const ax1=cx+A*Math.cos(th), ay1=cy-A*Math.sin(th);
+  const ax2=cx+A*Math.cos(th), ay2=cy+A*Math.sin(th);
+  arrow(cx,cy,ax1,ay1,'#c9761f',2);
+  arrow(cx,cy,ax2,ay2,'#c9761f',2);
+  ctx.fillStyle='#c9761f'; ctx.font='600 12px "JetBrains Mono",monospace'; ctx.textAlign='left';
+  ctx.fillText("a′ (+θ)",ax1+6,ay1); ctx.fillText("a″ (−θ)",ax2+6,ay2+4);
+  // a' + a''  = (2cosθ) a  along x
+  const s=2*Math.cos(th); const sx=cx+s*A;
+  // faint guide: parallelogram-ish from a' to tip
+  ctx.strokeStyle='rgba(201,118,31,.35)'; ctx.setLineDash([4,4]); ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(ax1,ay1); ctx.lineTo(sx,cy); ctx.moveTo(ax2,ay2); ctx.lineTo(sx,cy); ctx.stroke(); ctx.setLineDash([]);
+  arrow(cx,cy-0,sx,cy,'#1d1b17',2.5);
+  // does the tip land on a lattice point?
+  const nearest=Math.round(s); const onLattice=Math.abs(s-nearest)<1e-6;
+  ctx.beginPath(); ctx.arc(sx,cy,7,0,7); ctx.fillStyle= onLattice? 'rgba(60,120,118,.9)':'rgba(192,57,43,.92)'; ctx.fill();
+  ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke();
+  ctx.fillStyle= onLattice? '#3c7876':'#c0392b'; ctx.font='700 12px "JetBrains Mono",monospace'; ctx.textAlign='center';
+  ctx.fillText("a′+a″ = 2cosθ·a", sx, cy-14);
+  // readouts
+  document.getElementById('theta').textContent=(360/n).toFixed(n===3||n===6?0:2).replace(/\.00$/,'')+'°';
+  document.getElementById('twocos').textContent=s.toFixed(3).replace(/\.000$/,'').replace(/0+$/,'').replace(/\.$/,'');
+  const ans=document.getElementById('ans');
+  if(onLattice){ ans.textContent='◯ 乗る'; ans.className='ok'; }
+  else { ans.textContent='✗ 間に落ちる'; ans.className='ng'; }
+  const say=document.getElementById('say');
+  if(onLattice){
+    say.innerHTML='<span class="ok">2cosθ が整数（'+nearest+'）。a′+a″ がちょうど格子点に戻る＝<b>'+n+'回対称は並進と握手できる＝結晶で許される。</b></span>';
+  } else if(n===5){
+    say.innerHTML='<span class="ng">2cos72°≈0.618 は整数じゃない。a′+a″ が格子点の<em>あいだ</em>に落ちる＝<b>5回対称の結晶は存在しない。</b></span> いちばん小さく、いちばん有名な禁制。';
+  } else {
+    say.innerHTML='<span class="ng">2cosθ が整数にならない＝a′+a″ が格子点に戻らない＝<b>'+n+'回対称の結晶は存在しない。</b></span>';
+  }
+}
+// n buttons
+const allowed=new Set([1,2,3,4,6]);
+const box=document.getElementById('nbtns');
+[1,2,3,4,5,6,7,8].forEach(k=>{ const b=document.createElement('button'); b.className='n'+(k===n?' on':''); b.textContent=k; b.dataset.k=k;
+  b.onclick=()=>{ n=k; [...box.children].forEach(c=>c.classList.toggle('on',+c.dataset.k===n)); draw(); }; box.appendChild(b); });
+addEventListener('resize',draw);
+draw();
+</script>
+</body></html>
