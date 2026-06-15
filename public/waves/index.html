@@ -96,7 +96,7 @@
   <!-- ════════ 共鳴管 ════════ -->
   <section data-widget="tube">
     <div class="w-title">共鳴管 — 管にぴったり収まる波だけが鳴る</div>
-    <p class="w-sub">管の中に作れる定在波は、両端の条件で決まる。<b style="color:var(--accent)">開いた端は空気が自由に動ける</b>、<b style="color:var(--amber)">閉じた端は動けない</b>。その条件に「ぴったり収まる」波長だけが共鳴する。端を開け閉めし、倍音 n と管の長さ L を変えてみて。「変位／圧力」で切り替えると、同じ管でも腹と節が入れ替わる。</p>
+    <p class="w-sub">管の中に作れる定在波は、両端の条件で決まる。<b style="color:var(--accent)">開いた端は空気が自由に動ける</b>、<b style="color:var(--amber)">閉じた端は動けない</b>。その条件に「ぴったり収まる」波長だけが共鳴する。端を開け閉めし、倍音 n と管の長さ L を変えてみて。「変位／圧力／<b style="color:var(--accent)">粗密</b>」で切り替えると、同じ管でも腹と節が入れ替わる。<b>粗密</b>では、空気の粒が実際に詰まる（密）／空く（疎）のが見える。</p>
     <canvas id="cv-tube" width="720" height="190"></canvas>
     <div class="controls">
       <div class="cg"><label>左端</label><button class="btn on" id="tb-left">開</button></div>
@@ -277,24 +277,27 @@
     var nEl=document.getElementById('tb-n'), nV=document.getElementById('tb-n-v');
     var LEl=document.getElementById('tb-L'), LV=document.getElementById('tb-L-v');
     var modeBtn=document.getElementById('tb-mode'), read=document.getElementById('tb-read');
-    var C=35000, leftOpen=true, rightOpen=false, mode=(new URLSearchParams(location.search).get('mode')==='press')?'press':'disp';
+    var C=35000, leftOpen=true, rightOpen=false;
+    var mq=new URLSearchParams(location.search).get('mode');
+    var mode=(mq==='press')?'press':(mq==='dense')?'dense':'disp';
+    var modeLabel={disp:'変位', press:'圧力', dense:'粗密'};
     var PADX=46, A=40, phase=0, last=null;
     function setBtn(b,open){ b.textContent=open?'開':'閉'; b.classList.toggle('on',open); }
     leftBtn.onclick=function(){ leftOpen=!leftOpen; setBtn(leftBtn,leftOpen); frame(); };
     rightBtn.onclick=function(){ rightOpen=!rightOpen; setBtn(rightBtn,rightOpen); frame(); };
-    modeBtn.onclick=function(){ mode=(mode==='disp')?'press':'disp'; modeBtn.textContent=(mode==='disp')?'変位':'圧力'; frame(); };
+    modeBtn.onclick=function(){ mode=(mode==='disp')?'press':(mode==='press')?'dense':'disp'; modeBtn.textContent=modeLabel[mode]; frame(); };
     nEl.oninput=function(){ nV.textContent=nEl.value; frame(); };
     LEl.oninput=function(){ LV.textContent=LEl.value+' cm'; frame(); };
     function shape(){
       var n=+nEl.value, L=+LEl.value, lam, mult, dispIsCos;
       if(leftOpen===rightOpen){ lam=2*L/n; mult=n*Math.PI; dispIsCos=leftOpen; }
       else { var m=2*n-1; lam=4*L/m; mult=m*Math.PI/2; dispIsCos=leftOpen; }
-      var useCos=(mode==='disp')?dispIsCos:!dispIsCos;
-      var fn=useCos?function(s){return Math.cos(mult*s);}:function(s){return Math.sin(mult*s);};
-      return {lam:lam, fn:fn, L:L, n:n};
+      var dispFn=dispIsCos?function(s){return Math.cos(mult*s);}:function(s){return Math.sin(mult*s);};
+      var pressFn=dispIsCos?function(s){return Math.sin(mult*s);}:function(s){return Math.cos(mult*s);};
+      return {lam:lam, dispFn:dispFn, pressFn:pressFn, mult:mult, dispIsCos:dispIsCos, L:L, n:n};
     }
     function frame(){
-      var sh=shape(), lam=sh.lam, L=sh.L, freq=C/lam, curveCol=(mode==='disp')?TEAL:AMBER;
+      var sh=shape(), lam=sh.lam, L=sh.L, freq=C/lam;
       ctx.clearRect(0,0,W,H); ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H);
       var x0=PADX, x1=W-PADX, tubeW=x1-x0, tubeH=120, ty0=MID-tubeH/2, ty1=MID+tubeH/2;
       ctx.strokeStyle='#b9b1a4'; ctx.lineWidth=3;
@@ -302,19 +305,51 @@
       ctx.beginPath(); ctx.moveTo(x0,ty1); ctx.lineTo(x1,ty1); ctx.stroke();
       drawEnd(x0,ty0,ty1,leftOpen); drawEnd(x1,ty0,ty1,rightOpen);
       var t=Math.cos(2*Math.PI*phase);
-      for(var sgn=-1;sgn<=1;sgn+=2){
+      if(mode==='dense'){
+        var sgnD=sh.dispIsCos?1:-1;
+        // 密度分布のシェーディング：密＝青(teal)／疎＝橙(amber)、濃さ∝|圧力|。どの位相でも見える。
+        var NB=140;
+        for(var b=0;b<NB;b++){
+          var sm=(b+0.5)/NB;
+          var P=sgnD*sh.pressFn(sm)*t;            // >0 密／<0 疎
+          var mag=Math.min(1,Math.abs(P));
+          var col=(P>=0)?'60,120,118':'201,118,31';
+          ctx.fillStyle='rgba('+col+','+(0.04+0.52*mag).toFixed(3)+')';
+          ctx.fillRect(x0+b/NB*tubeW, ty0+2, tubeW/NB+1.2, (ty1-ty0)-4);
+        }
+        // 空気の粒：変位場で前後する（粗密の直感）。密な所に寄り、疎な所で離れる。
+        var nPart=70, prows=[MID-22,MID,MID+22], spacing=tubeW/(nPart-1), LONG=Math.min(11, spacing*1.4);
+        for(var r=0;r<prows.length;r++){ var ry=prows[r];
+          for(var i=0;i<nPart;i++){ var s0=i/(nPart-1); var dx=LONG*sh.dispFn(s0)*t;
+            ctx.beginPath(); ctx.arc(x0+s0*tubeW+dx, ry, 1.9, 0, 2*Math.PI);
+            ctx.fillStyle='rgba(40,58,53,.5)'; ctx.fill();
+          }
+        }
+        // 密度の振れが最大になる所＝変位の節＝圧力の腹（破線ガイド）
+        var prevG=sh.dispFn(0), Ng=240;
+        for(var qg=1;qg<=Ng;qg++){ var sg=qg/Ng, vg=sh.dispFn(sg); if(prevG*vg<0){ var sx=x0+(qg-0.5)/Ng*tubeW;
+          ctx.strokeStyle='rgba(120,110,100,.45)'; ctx.setLineDash([3,3]); ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(sx,ty0+2); ctx.lineTo(sx,ty1-2); ctx.stroke(); ctx.setLineDash([]); } prevG=vg; }
+        ctx.fillStyle=INK; ctx.font="11px 'JetBrains Mono',monospace"; ctx.fillText('密度分布：密＝青／疎＝橙（破線＝変位の節＝圧力の腹）', x0+4, ty0-8);
+      } else {
+        var fn=(mode==='disp')?sh.dispFn:sh.pressFn, curveCol=(mode==='disp')?TEAL:AMBER;
+        for(var sgn=-1;sgn<=1;sgn+=2){
+          ctx.beginPath();
+          for(var px=0;px<=tubeW;px++){ var s=px/tubeW; var y=MID - sgn*Math.abs(fn(s))*A; if(px===0)ctx.moveTo(x0+px,y);else ctx.lineTo(x0+px,y); }
+          ctx.strokeStyle=(mode==='disp')?'rgba(60,120,118,.26)':'rgba(201,118,31,.26)'; ctx.lineWidth=1.3; ctx.stroke();
+        }
         ctx.beginPath();
-        for(var px=0;px<=tubeW;px++){ var s=px/tubeW; var y=MID - sgn*Math.abs(sh.fn(s))*A; if(px===0)ctx.moveTo(x0+px,y);else ctx.lineTo(x0+px,y); }
-        ctx.strokeStyle=(mode==='disp')?'rgba(60,120,118,.26)':'rgba(201,118,31,.26)'; ctx.lineWidth=1.3; ctx.stroke();
+        for(var p=0;p<=tubeW;p++){ var ss=p/tubeW; var yy=MID - fn(ss)*A*t; if(p===0)ctx.moveTo(x0+p,yy);else ctx.lineTo(x0+p,yy); }
+        ctx.strokeStyle=curveCol; ctx.lineWidth=2.6; ctx.stroke();
+        var prev=fn(0), Npt=240;
+        for(var q=1;q<=Npt;q++){ var s2=q/Npt, val=fn(s2); if(prev*val<0){ var sx2=x0+(q-0.5)/Npt*tubeW; ctx.beginPath(); ctx.arc(sx2,MID,3.5,0,2*Math.PI); ctx.fillStyle='#cfc9be'; ctx.fill(); } prev=val; }
+        ctx.fillStyle=curveCol; ctx.font="11px 'JetBrains Mono',monospace"; ctx.fillText(mode==='disp'?'変位':'圧力', x0+4, ty0-8);
       }
-      ctx.beginPath();
-      for(var p=0;p<=tubeW;p++){ var ss=p/tubeW; var yy=MID - sh.fn(ss)*A*t; if(p===0)ctx.moveTo(x0+p,yy);else ctx.lineTo(x0+p,yy); }
-      ctx.strokeStyle=curveCol; ctx.lineWidth=2.6; ctx.stroke();
-      var prev=sh.fn(0), Npt=240;
-      for(var q=1;q<=Npt;q++){ var s2=q/Npt, val=sh.fn(s2); if(prev*val<0){ var sx=x0+(q-0.5)/Npt*tubeW; ctx.beginPath(); ctx.arc(sx,MID,3.5,0,2*Math.PI); ctx.fillStyle='#cfc9be'; ctx.fill(); } prev=val; }
-      ctx.fillStyle=curveCol; ctx.font="11px 'JetBrains Mono',monospace"; ctx.fillText(mode==='disp'?'変位':'圧力', x0+4, ty0-8);
-      var el=function(open){ return mode==='disp'?(open?'開（変位の腹）':'閉（変位の節）'):(open?'開（圧力の節）':'閉（圧力の腹）'); };
-      var note=(mode==='press')?'<br>声道ラボ /vowel はこの<b>圧力</b>で描いている（開いた唇＝圧力の節）。':'';
+      var el=function(open){
+        if(mode==='dense') return open?'開（粒がよく動く＝密度変化は小）':'閉（粒は動かない＝密度変化が最大）';
+        return mode==='disp'?(open?'開（変位の腹）':'閉（変位の節）'):(open?'開（圧力の節）':'閉（圧力の腹）');
+      };
+      var note=(mode==='press')?'<br>声道ラボ /vowel はこの<b>圧力</b>で描いている（開いた唇＝圧力の節）。':
+               (mode==='dense')?'<br>空気の粒が前後して、詰まる所（<b>密</b>）と空く所（<b>疎</b>）ができる。<b>密度が最大になるのは変位の節＝圧力の腹</b>（破線）── 「圧力は変位の4分の1波長ずれ」が、粒の動きで見える。':'';
       read.innerHTML='端の条件：左 <b>'+el(leftOpen)+'</b>・右 <b>'+el(rightOpen)+'</b><br>'+
         '倍音 <b>n='+sh.n+'</b>・管長 <b>L='+L+' cm</b> → 共鳴波長 <b>λ='+lam.toFixed(1)+' cm</b>、共鳴周波数 <b>f=c/λ≈'+Math.round(freq)+' Hz</b>（c≈350 m/s）'+note;
       function drawEnd(x,yA,yB,open){
@@ -324,7 +359,7 @@
     }
     function loop(ts){ if(!visible(cv)) return; if(last==null)last=ts; var dt=Math.min((ts-last)/1000,.05); last=ts; phase+=0.8*dt; frame(); requestAnimationFrame(loop); }
     setBtn(leftBtn,leftOpen); setBtn(rightBtn,rightOpen); nV.textContent=nEl.value; LV.textContent=LEl.value+' cm';
-    modeBtn.textContent=(mode==='disp')?'変位':'圧力'; modeBtn.classList.add('on');
+    modeBtn.textContent=modeLabel[mode]; modeBtn.classList.add('on');
     frame(); requestAnimationFrame(loop);
   })();
 })();
