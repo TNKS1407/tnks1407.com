@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>映進 ── 鏡と、半歩</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#f5f2ec;--card:#fff;--border:#e3dbd0;--ink:#1d1b17;--mut:#7d7568;--accent:#3c7876;--amber:#c9761f;}
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'Zen Kaku Gothic New',system-ui,sans-serif;}
+  .wrap{max-width:760px;margin:0 auto;padding:1.4rem 1.1rem 3rem;}
+  h1{font-size:1.32rem;margin:.2rem 0 .5rem;line-height:1.35;}
+  .lead{color:var(--mut);font-size:.96rem;line-height:1.7;margin:0 0 1.1rem;}
+  .lead b{color:var(--accent);}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 1px 6px rgba(29,27,23,.05);padding:1rem 1.1rem;margin-bottom:1.1rem;}
+  canvas{width:100%;height:auto;display:block;border-radius:10px;background:#fbf9f5;border:1px solid var(--border);}
+  .ctrl{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center;margin:.9rem 0 .2rem;}
+  .ctrl .lbl{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--mut);margin-right:.2rem;}
+  button.op{font-size:.9rem;font-weight:600;border:1px solid var(--border);background:#fff;color:var(--ink);border-radius:9px;padding:.42rem .8rem;cursor:pointer;transition:.12s;}
+  button.op:hover{border-color:var(--accent);} button.op.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .say{margin-top:.7rem;font-size:.94rem;line-height:1.7;} .say b{color:var(--accent);}
+  .foot{font-size:.9rem;color:var(--mut);line-height:1.7;} .foot a{color:var(--accent);text-decoration:none;font-weight:600;} .foot a:hover{text-decoration:underline;}
+</style></head>
+<body>
+<div class="wrap">
+  <h1>映進 ── 鏡と、半歩</h1>
+  <p class="lead">回転や鏡に、最初の主役 <b>並進（ずらし）</b> が混ざると、新しい対称が生まれる。いちばん身近なのが <b>映進（glide）</b>＝<b>鏡に映して、半歩ずらす</b>。<br>
+  砂浜の足あとを思い出して。左足、右足、左足…。あれ、ぜんぶ映進なんだ。操作を切り替えて、軌跡を見比べてみて。</p>
+
+  <div class="card">
+    <canvas id="cv" width="720" height="300"></canvas>
+    <div class="ctrl">
+      <span class="lbl">操作：</span>
+      <button class="op on" data-op="glide">映進（鏡＋半歩）</button>
+      <button class="op" data-op="mirror">鏡だけ</button>
+      <button class="op" data-op="trans">並進だけ</button>
+    </div>
+    <div class="say" id="say"></div>
+  </div>
+
+  <div class="card foot">
+    <b>映進は、それ自身が一つの対称</b><br>
+    映進は「鏡だけ」でも「並進だけ」でもない。どちらか単独では模様が重ならないのに、<b>二つを“同時に”</b>やると重なる ── そういう一個の操作なんだ。だから足あとは、片足だけの並進（ケンケン）でも、その場での鏡（気をつけ）でもなく、左右が交互に出る。<br>
+    そして面白いのは、<b>映進を2回くり返すと、ちょうど“ひと並進”になる</b>こと（左→右→左で、元と同じ左足が1歩先に出る）。鏡を2回かけると元に戻るのと同じ理屈で、半歩×2＝1歩、裏返り×2＝表に戻る。<br><br>
+    立体版が <b>らせん軸（screw）</b>＝「回しながら、軸の方向にずらす」。らせん階段や、ネジの溝を思い浮かべて。映進が「鏡＋ずらし」なら、らせんは「回転＋ずらし」── 同じ“混ぜ技”の兄弟だ。<br><br>
+    つながる先 → <a href="https://tnks1407.com/mirror/">鏡で、増える</a> ／ <a href="https://sg.tnks1407.com/">本物の空間群エクスプローラー</a>
+  </div>
+</div>
+
+<script>
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+let op='glide';
+function dpi(){ const r=cv.getBoundingClientRect(); const s=Math.min(2,devicePixelRatio||1);
+  cv.width=Math.round(r.width*s); cv.height=Math.round(r.width*0.42*s); ctx.setTransform(s,0,0,s,0,0); return {w:r.width,h:r.width*0.42}; }
+// draw a foot at (x,y): forward=+x. side=+1 toe-bump above, -1 below (chirality). col, alpha.
+function foot(x,y,side,col,alpha){
+  ctx.save(); ctx.globalAlpha=alpha; ctx.translate(x,y);
+  ctx.fillStyle=col;
+  ctx.beginPath(); ctx.ellipse(0,0,17,8,0,0,7); ctx.fill();           // sole
+  ctx.beginPath(); ctx.ellipse(-13,0,6,5,0,0,7); ctx.fill();          // heel
+  // toes at front, with the big toe offset to one side = chirality
+  ctx.beginPath(); ctx.arc(17,side*5,3.4,0,7); ctx.fill();            // big toe (inner)
+  ctx.beginPath(); ctx.arc(18,side*-1,2.2,0,7); ctx.fill();
+  ctx.beginPath(); ctx.arc(17,side*-5,1.8,0,7); ctx.fill();
+  ctx.restore();
+}
+function draw(){
+  const {w,h}=dpi(); ctx.clearRect(0,0,w,h);
+  const cy=h*0.5, stride=120, gap=48;
+  // path line
+  ctx.strokeStyle='#e3dbd0'; ctx.lineWidth=1; ctx.setLineDash([6,5]); ctx.beginPath(); ctx.moveTo(0,cy); ctx.lineTo(w,cy); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle='#a59c8c'; ctx.font='11px "JetBrains Mono",monospace'; ctx.textAlign='left'; ctx.fillText('進む向き →（並進の軸）',8,cy-h*0.5+16);
+  const cx=w*0.5;
+  const N=4;
+  for(let k=-N;k<=N;k++){
+    let x,y,side,col,alpha;
+    const base=cx + k*(op==='glide'?stride/2:stride);
+    if(op==='glide'){ const up = (k%2===0); y=cy+(up?-gap:gap); side= up?1:-1; }
+    else if(op==='mirror'){ x=cx+k*stride; // pairs: original above, mirror below, same x
+      col=(k===0?'#1d1b17':'#c9761f'); alpha=(k===0?1:.85);
+      foot(cx+k*stride,cy-gap,1,col,alpha); foot(cx+k*stride,cy+gap,-1,col,alpha); continue; }
+    else { y=cy-gap; side=1; } // trans: same foot repeated, one side
+    x=base;
+    col=(k===0?'#1d1b17':'#c9761f'); alpha=(k===0?1:.82);
+    foot(x,y,side,col,alpha);
+  }
+  // label the origin foot
+  const oy = op==='glide'? cy-gap : (op==='mirror'? cy-gap : cy-gap);
+  ctx.fillStyle='#1d1b17'; ctx.font='600 11px "JetBrains Mono",monospace'; ctx.textAlign='center';
+  ctx.fillText('もと', cx, oy-gap-2);
+  // say
+  const say=document.getElementById('say');
+  if(op==='glide') say.innerHTML='左→右→左…と、<b>左右が交互</b>に、半歩ずつ進む。鏡で裏返し、同時に半歩ずらす ── これが映進。自然な「歩いた跡」だ。2歩で、元と同じ左足が1歩先（＝ひと並進）。';
+  else if(op==='mirror') say.innerHTML='鏡だけだと、両足がその場で向かい合う＝<b>気をつけの姿勢</b>。前に進まない。これは映進とは別物。';
+  else say.innerHTML='並進だけだと、同じ左足が並ぶ＝<b>ケンケン</b>。裏返らない。これも映進とは別物。映進は、この2つを“同時に”やったときだけ生まれる。';
+}
+document.querySelectorAll('button.op').forEach(b=>b.onclick=()=>{op=b.dataset.op;
+  document.querySelectorAll('button.op').forEach(c=>c.classList.toggle('on',c===b)); draw();});
+{const q=new URLSearchParams(location.search).get('op'); if(['glide','mirror','trans'].includes(q)){op=q; }}
+addEventListener('resize',draw); draw();
+</script>
+</body></html>
