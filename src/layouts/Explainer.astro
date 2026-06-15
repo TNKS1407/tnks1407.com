@@ -1,5 +1,6 @@
 ---
 import ImproveButton from '../components/ImproveButton.astro';
+import ParaFeedback from '../components/ParaFeedback.astro';
 const { title, description, pubDate, demo, demoLabel } = Astro.props;
 const d = pubDate instanceof Date ? pubDate : new Date(pubDate);
 const dateStr = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
@@ -132,5 +133,6 @@ const dateStr = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${
       });
     </script>
     <ImproveButton />
+    <ParaFeedback />
   </body>
 </html>

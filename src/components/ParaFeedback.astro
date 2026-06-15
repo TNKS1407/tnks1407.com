@@ -1,0 +1,190 @@
+---
+// 段落フィードバック：記事の段落ごとに「ここで詰まった / 気になった」を匿名ワンタップ。
+// 押すと任意で“理由”を一言送れる。カウントは著者だけが見る（読者には数を返さない＝誘導を避ける）。
+// 送信は母艦 feedback.tnks1407.com/para へ。今は ALLOWED の記事だけで有効（プロトタイプ）。
+// 増やすときは下の ALLOWED に slug を足すだけ。
+---
+<script is:inline>
+(function () {
+  var ALLOWED = ['crystal-translation-symmetry'];
+  var API = 'https://feedback.tnks1407.com';
+  var m = location.pathname.match(/\/docs\/([a-z0-9-]+)/);
+  var slug = m ? m[1] : '';
+  if (!slug || ALLOWED.indexOf(slug) < 0) return;
+  var prose = document.querySelector('article.prose');
+  if (!prose) return;
+
+  var targets = [];
+  Array.prototype.forEach.call(prose.children, function (el) {
+    if ((el.tagName === 'P' || el.tagName === 'BLOCKQUOTE') &&
+        (el.textContent || '').trim().length >= 12) targets.push(el);
+  });
+  if (!targets.length) return;
+
+  var LSKEY = 'pf:' + slug;
+  var tapped = {};
+  try { tapped = JSON.parse(localStorage.getItem(LSKEY)) || {}; } catch (e) {}
+  function persist() { try { localStorage.setItem(LSKEY, JSON.stringify(tapped)); } catch (e) {} }
+
+  // 共有ポップオーバー（1個だけ body に置いて使い回す）
+  var pop = document.createElement('div');
+  pop.className = 'pf-pop'; pop.style.display = 'none';
+  pop.innerHTML =
+    '<div class="pf-stage" data-stage="choose">' +
+      '<div class="pf-q">この段落、どうだった？</div>' +
+      '<div class="pf-btns">' +
+        '<button type="button" class="pf-b" data-type="stuck">🤔 ここで詰まった</button>' +
+        '<button type="button" class="pf-b" data-type="curious">👀 気になった</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="pf-stage" data-stage="reason" style="display:none">' +
+      '<div class="pf-q pf-thanks">ありがとう。よかったら一言だけ（任意）。</div>' +
+      '<div class="pf-btns pf-reason-row">' +
+        '<input type="text" class="pf-input" maxlength="280" placeholder="例: ここの式変形が急に感じた" />' +
+        '<button type="button" class="pf-send">送る</button>' +
+      '</div>' +
+      '<div class="pf-done" style="display:none">届いたよ。ありがとう。</div>' +
+    '</div>';
+  document.body.appendChild(pop);
+
+  var cur = { para: null, type: null, handle: null };
+  var stChoose = pop.querySelector('[data-stage="choose"]');
+  var stReason = pop.querySelector('[data-stage="reason"]');
+  var reasonRow = pop.querySelector('.pf-reason-row');
+  var thanksMsg = pop.querySelector('.pf-thanks');
+  var input = pop.querySelector('.pf-input');
+  var doneMsg = pop.querySelector('.pf-done');
+  var sendBtn = pop.querySelector('.pf-send');
+
+  function post(para, type, reason) {
+    var body = reason ? { para: para, type: type, reason: reason } : { para: para, type: type };
+    return fetch(API + '/para?key=' + encodeURIComponent(slug), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    }).catch(function () {});
+  }
+  function closePop() { pop.style.display = 'none'; cur.handle = null; }
+  function openPop(handle, para) {
+    cur.para = para; cur.type = null; cur.handle = handle;
+    stChoose.style.display = ''; stReason.style.display = 'none';
+    reasonRow.style.display = ''; thanksMsg.style.display = '';
+    input.value = ''; doneMsg.style.display = 'none'; sendBtn.disabled = false;
+    pop.style.display = 'block';
+    var r = handle.getBoundingClientRect();
+    var pw = pop.offsetWidth || 280;
+    var maxLeft = window.scrollX + document.documentElement.clientWidth - pw - 12;
+    var left = Math.max(8, Math.min(r.left + window.scrollX, maxLeft));
+    pop.style.top = (r.bottom + window.scrollY + 6) + 'px';
+    pop.style.left = left + 'px';
+  }
+
+  Array.prototype.forEach.call(pop.querySelectorAll('.pf-b'), function (b) {
+    b.addEventListener('click', function () {
+      cur.type = b.getAttribute('data-type');
+      tapped[cur.para + ':' + cur.type] = 1; persist();
+      if (cur.handle) cur.handle.classList.add('pf-on');
+      post(cur.para, cur.type, null);              // タップ自体を即カウント
+      stChoose.style.display = 'none'; stReason.style.display = '';
+      setTimeout(function () { input.focus(); }, 40);
+    });
+  });
+  sendBtn.addEventListener('click', function () {
+    var reason = (input.value || '').trim();
+    if (!reason) { closePop(); return; }            // 理由なしで閉じても“タップ”は記録済み
+    sendBtn.disabled = true;
+    post(cur.para, cur.type, reason).then(function () {
+      reasonRow.style.display = 'none'; thanksMsg.style.display = 'none';
+      doneMsg.style.display = '';
+      setTimeout(closePop, 1400);
+    });
+  });
+  input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); sendBtn.click(); } });
+
+  document.addEventListener('click', function (e) {
+    if (pop.style.display === 'none') return;
+    if (pop.contains(e.target)) return;
+    if (e.target.classList && e.target.classList.contains('pf-handle')) return;
+    closePop();
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePop(); });
+
+  // 各段落のうしろに、小さな手がかり（💬）を足す
+  targets.forEach(function (el, i) {
+    el.classList.add('pf-p');
+    var h = document.createElement('button');
+    h.type = 'button'; h.className = 'pf-handle';
+    h.setAttribute('aria-label', 'この段落の感想を送る（ここで詰まった / 気になった）');
+    h.textContent = '💬';
+    if (tapped[i + ':stuck'] || tapped[i + ':curious']) h.classList.add('pf-on');
+    el.appendChild(h);
+    h.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (cur.handle === h && pop.style.display !== 'none') { closePop(); return; }
+      openPop(h, i);
+    });
+  });
+
+  // 初回だけ、そっと使い方を出す
+  try {
+    if (!localStorage.getItem('pf-hint-seen')) {
+      var hint = document.createElement('div');
+      hint.className = 'pf-hint';
+      hint.innerHTML = '段落のうしろの <b>💬</b> から「ここで詰まった / 気になった」を送れるよ。<br>声に出さない感想が、いちばん知りたいんだ。';
+      document.body.appendChild(hint);
+      setTimeout(function () { hint.classList.add('pf-hint-show'); }, 900);
+      setTimeout(function () { hint.classList.remove('pf-hint-show'); setTimeout(function () { hint.remove(); }, 450); }, 7200);
+      localStorage.setItem('pf-hint-seen', '1');
+    }
+  } catch (e) {}
+})();
+</script>
+
+<style is:global>
+  .pf-p { position: relative; }
+  .pf-handle {
+    appearance: none; background: none; border: none; cursor: pointer;
+    font-size: .72em; line-height: 1; opacity: .17; filter: grayscale(1);
+    margin-left: .3em; vertical-align: .05em; padding: 0 .12em;
+    transition: opacity .15s, transform .15s, filter .15s;
+  }
+  .pf-p:hover .pf-handle { opacity: .45; }
+  .pf-handle:hover { opacity: 1; filter: none; transform: scale(1.2); }
+  .pf-handle.pf-on { opacity: .85; filter: none; }
+  .pf-pop {
+    position: absolute; z-index: 1003; background: var(--card, #fff);
+    border: 1px solid var(--border, #e3dbd0); border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(29,27,23,.16); padding: .6rem .7rem; max-width: 300px;
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+  }
+  .pf-q { font-size: .74rem; color: var(--text-muted, #7d7568); margin-bottom: .45rem; }
+  .pf-btns { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+  .pf-b {
+    background: var(--surface, #faf8f4); border: 1px solid var(--border, #e3dbd0);
+    border-radius: 999px; padding: .34rem .7rem; font-size: .78rem; cursor: pointer;
+    font-family: inherit; color: var(--text, #1d1b17); transition: .12s; white-space: nowrap;
+  }
+  .pf-b:hover { border-color: var(--accent, #3c7876); color: var(--accent, #3c7876); }
+  .pf-input {
+    flex: 1; min-width: 150px; border: 1px solid var(--border, #e3dbd0); border-radius: 8px;
+    padding: .36rem .55rem; font-size: .78rem; font-family: inherit;
+    background: var(--surface, #faf8f4); color: var(--text, #1d1b17); outline: none;
+  }
+  .pf-input:focus { border-color: var(--accent, #3c7876); }
+  .pf-send {
+    background: var(--accent, #3c7876); color: #fff; border: none; border-radius: 8px;
+    padding: .36rem .7rem; font-size: .76rem; cursor: pointer; font-family: inherit;
+  }
+  .pf-send:disabled { opacity: .5; cursor: default; }
+  .pf-done { font-size: .78rem; color: var(--accent, #3c7876); }
+  .pf-hint {
+    position: fixed; left: 50%; bottom: 5.2rem; transform: translate(-50%, 12px);
+    background: var(--text, #1d1b17); color: #f5f2ec; font-size: .78rem; line-height: 1.6;
+    padding: .7rem 1rem; border-radius: 12px; max-width: 88vw; width: max-content;
+    box-shadow: 0 8px 26px rgba(29,27,23,.28); z-index: 1004; text-align: center;
+    opacity: 0; pointer-events: none; transition: opacity .35s, transform .35s;
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+  }
+  .pf-hint b { color: #9fe0db; }
+  .pf-hint-show { opacity: 1; transform: translate(-50%, 0); }
+  @media (max-width: 480px) { .pf-hint { bottom: 4.2rem; } }
+</style>
