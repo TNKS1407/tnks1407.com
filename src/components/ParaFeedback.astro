@@ -23,6 +23,7 @@
 
   var LSKEY = 'pf:' + slug;
   var tapped = {};
+  var snips = {};
   try { tapped = JSON.parse(localStorage.getItem(LSKEY)) || {}; } catch (e) {}
   function persist() { try { localStorage.setItem(LSKEY, JSON.stringify(tapped)); } catch (e) {} }
 
@@ -57,7 +58,8 @@
   var sendBtn = pop.querySelector('.pf-send');
 
   function post(para, type, reason) {
-    var body = reason ? { para: para, type: type, reason: reason } : { para: para, type: type };
+    var body = { para: para, type: type, snippet: snips[para] || '' };
+    if (reason) body.reason = reason;
     return fetch(API + '/para?key=' + encodeURIComponent(slug), {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
@@ -111,6 +113,7 @@
   // 各段落のうしろに、小さな手がかり（💬）を足す
   targets.forEach(function (el, i) {
     el.classList.add('pf-p');
+    snips[i] = (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 60);
     var h = document.createElement('button');
     h.type = 'button'; h.className = 'pf-handle';
     h.setAttribute('aria-label', 'この段落の感想を送る（ここで詰まった / 気になった）');
