@@ -53,7 +53,7 @@ const works: Work[] = [
     description: "式を1本足すたびに「まだ決まらない量」が減っていく。必要十分な式が揃った瞬間、自由度がゼロになって運動が一意に確定する――その過程を連立ソルバ＋canvasで可視化。束縛条件を外すと「ひもが伸びる運動」すら式の上では正解になってしまうことも確かめられる。",
     url: "https://eom.tnks1407.com",
     tags: ["JavaScript", "Canvas", "古典力学", "連立方程式"],
-    status: "Stable", section: "lab", group: "engineering",
+    status: "Single Crystal", section: "lab", group: "engineering",
   },
   {
     title: "反応拡散ラボ — Reaction-Diffusion",
@@ -61,7 +61,7 @@ const works: Work[] = [
     description: "Gray-Scottモデルの反応拡散をGPU(WebGL2)で高解像度・実時間にシミュレート。マウスで種を撒くと、縞・斑点・迷路・珊瑚のような模様が自分で育つ。F(餌)とk(分解)のスライダー＋プリセットで、同じ仕組みが全く違うパターンに化ける。",
     url: "https://rd.tnks1407.com",
     tags: ["WebGL2", "GPU", "Reaction-Diffusion", "Generative"],
-    status: "Stable", section: "lab", group: "engineering",
+    status: "Annealing", section: "lab", group: "engineering",
   },
   {
     title: "Stepper Physics Lab",
@@ -69,7 +69,7 @@ const works: Work[] = [
     description: "2相ハイブリッドステッピングモーターの低次物理モデル。STEPパルスで指令位置だけが離散的に進み、ロータは電流・トルク・慣性・減衰で連続的に追従する。電気角/機械角・50歯・1.8°full-step、フル/ハーフ/マイクロ/wave駆動、電流decayモード、脱調リスクまで可視化。",
     url: "https://stepper.tnks1407.com",
     tags: ["JavaScript", "Canvas", "Motor Control", "Power Electronics"],
-    status: "Stable", section: "lab", group: "engineering",
+    status: "Annealing", section: "lab", group: "engineering",
   },
   {
     title: "Stepper 選定シミュレータ",
@@ -77,7 +77,7 @@ const works: Work[] = [
     description: "ステッピングモータ選定シミュレータ。速度-トルク曲線（JSON/CSV）を読み込み、指令速度でのトルク余裕・脱調・追従誤差・ドライバIC温度・時間応答を概算。負荷計算（ベルト/ねじ等）と代表値表つき。計算モデルはアプリ内に明記、結果は参考値。",
     url: "https://stepsim.tnks1407.com",
     tags: ["JavaScript", "Motor Selection", "Driver IC", "Power Electronics"],
-    status: "Beta", section: "lab", group: "engineering",
+    status: "Single Crystal", section: "lab", group: "engineering",
   },
   {
     title: "PixLab — 画像を数の格子として",
@@ -85,7 +85,7 @@ const works: Work[] = [
     description: "写真をドット絵（数の格子）に分解して、畳み込み・エッジ（微分）・二値化（大津）・知覚減色・ホワイトバランスを一歩ずつ手で動かして見る画像処理ラボ。1次元の微分から色彩理論まで「学びの道」で辿れて、各処理の理屈は別ページの教科書（Gradus）へ繋がる。",
     url: "/pixlab/",
     tags: ["JavaScript", "Canvas", "画像処理", "可視化"],
-    status: "Stable", section: "lab", group: "data-lab",
+    status: "Single Crystal", section: "lab", group: "data-lab",
   },
   {
     title: "Astro Tools — 天文シミュレーション",
@@ -93,7 +93,7 @@ const works: Work[] = [
     description: "天動説シミュレーター（プトレマイオス周転円モデル）と天体軌跡図（羊皮紙風ビジュアル）の2本立て。古典天文学の視点で惑星運動を体験する。",
     url: "https://astro.tnks1407.com",
     tags: ["JavaScript", "Canvas", "天文学", "シミュレーション"],
-    status: "Stable", section: "lab", group: "engineering",
+    status: "Nucleation", section: "lab", group: "engineering",
     prompt: "古典天文学の2本セットを作って。どちらも「プトレマイオス以前の天文学者たちが実際に見ていたもの」をブラウザで追体験できるのがテーマ。\n\n## Theatrum Mundi（天動説シミュレーター）\n\nプトレマイオスの地球中心モデルをインタラクティブに視覚化する。\n\n### 物理モデル\n惑星はそれぞれ「離心円（deferent）」と「周転円（epicycle）」の2重円で動く。\n- 離心円の中心は地球から少しずれた位置（離心 eccentric）\n- 周転円の中心が離心円上を公転し、惑星は周転円の端を動く\n- プトレマイオスは「エカント（equant）」で速度を均等化した\n- 内惑星（水星・金星）と外惑星（火星・木星・土星）で周転円の向きが異なる\n\n### UI\n- 暗い夜空背景（#05060d）・真鍮・金色系カラー\n- 地球を中心に固定表示。軌道円は半透明破線\n- 日付スライダーでアニメ（ユリウス暦）\n- 惑星名をラテン語で表示（MARS、IUPITER 等）\n- 「逆行運動」が自然に発生するのを観察できること\n\n---\n\n## Tabula Motuum（天体軌跡図）\n\n惑星の軌跡を時間積分して描く。古い羊皮紙・写本スタイル。\n\n### ビジュアルコンセプト\nモノクロ（--paper:#f3eee1、--ink:#15120d）。フォントは Cinzel + EB Garamond。\nページにうっすら紙の質感ノイズを SVG filter で追加。二重罫線フレーム（書物のページ風）。\n\n### 機能\n- 惑星を選択（水星・金星・火星・木星・土星）\n- 時間スケールを設定（1年分、5年分、10年分）\n- 「描画」ボタンで軌跡をアニメーションで描いていく\n- 軌跡を重ねると逆行ループ（retrograde loop）が浮かび上がる\n- 黒地モードへの切り替え（夜間観測手帳 vs 昼の写本）",
   },
   {
@@ -102,7 +102,7 @@ const works: Work[] = [
     description: "全230空間群をブラウザで探索する3Dビジュアライザ。Hermann-Mauguin記号を選ぶと対称操作が可視化され、一般位置(x,y,z)スライダーで等価位置の生成が見える。逆空間（BZ）モード・実在結晶プリセット付き。",
     url: "https://sg.tnks1407.com",
     tags: ["Three.js", "結晶学", "空間群", "対称性"],
-    status: "Stable", section: "lab", group: "engineering",
+    status: "Single Crystal", section: "lab", group: "engineering",
     prompt: "結晶学の空間群を3Dで探索できるブラウザツールを作って。「空間群を調べるたびにITAを開く」を解消するのがゴール。\n\n## 背景・動機\nHermann-Mauguin 記号（例: Fm3̄m、P21/c）は記号の読み方は覚えられるが、\n「その操作が3D空間でどう見えるか」はなかなかピンとこない。\nWyckoff 位置の一覧を見ても「等価位置がどこにあるか」が感覚的にわからない。\n3D で動かしながら理解できるツールが欲しい。\n\n## データ設計\n全230空間群の対称操作を JSON でハードコード。各空間群に持たせる情報:\n- 番号（1〜230）・記号・結晶系・点群\n- 格子パラメータ制約（a/b/c 比、角度）\n- Wyckoff 位置リスト（文字・重複度・サイト対称性・座標式）\n\n## 3Dビューア（Three.js）\n- 単位胞の格子ベクトル（3本のアウトライン箱）\n- 一般位置 (x,y,z) スライダーで等価点をリアルタイム生成（球体）\n- 各点の色を操作の種類で分類（回転軸=青、鏡映=黄、反転=赤、螺旋軸=緑）\n- 回転軸・鏡映面を半透明で表示\n\n## 逆空間（BZ）モード\nブリルアンゾーンの形状（結晶系に応じた多面体）を描画。高対称点（Γ, X, M, R 等）にラベルを付ける。\n\n## 実在結晶プリセット\n- 岩塩 (NaCl): Fm3̄m (225)、Na=4a、Cl=4b\n- ダイヤモンド: Fd3̄m (227)、C=8a\n- ルチル (TiO2): P42/mnm (136)、Ti=2a、O=4f\n- ペロブスカイト (SrTiO3): Pm3̄m (221)、Sr=1a、Ti=1b、O=3c\n- ウルツ鉱 (ZnS): P63mc (186)、Zn=2b、S=2b\n\n## 記号デコーダ（右パネル）\n選択した記号をトークンに分解して表示。例: P 2₁/c → P（単純格子）+ 2₁（2回螺旋軸）+ /（垂直方向に）+ c（c 映進面）\n\n## UI レイアウト\n- 左250px: 空間群リスト（番号・記号・結晶系フィルタ・検索）\n- 中央: Three.js 3Dビューア\n- 右350px: 操作リスト・記号解説・Wyckoff表・実在結晶プリセット\n- モバイル: タブバー切替（List / View / Info）",
   },
   {
@@ -111,7 +111,7 @@ const works: Work[] = [
     description: "dB変換・RC時定数・LCR共振・抵抗分圧・LED抵抗・MOSFET損失・熱抵抗・Bode近似・AWGリファレンスを1ページに集めた工学計算カード集。入力するとリアルタイムで結果が更新される。",
     url: "https://eng.tnks1407.com",
     tags: ["JavaScript", "RF", "Power Electronics", "計算ツール"],
-    status: "Beta", section: "works", group: "engineering",
+    status: "Nucleation", section: "works", group: "engineering",
     prompt: "よく使う工学計算を1ページにカード形式で集めたブラウザツールを作って。実験中・設計中にすぐ計算したいときに開くリファレンス計算機。外部ライブラリなし・単一HTMLファイルで動く。\n\n## 設計方針\n- 各カードは独立していて一つの計算に集中できる\n- 入力フィールドを変えた瞬間に結果が更新される（Enter不要）\n- 式を必ず表示する（「なぜこの値になるか」がわかるように）\n- 単位を明示（Ω、H、F、dB、°C 等）\n- NaN・Infinity になる入力には「—」を表示して壊れない\n\n## カード一覧\n### 1. dB 変換: 電圧比→dB: 20*log10(V2/V1) / 電力比→dB: 10*log10(P2/P1)\n### 2. RC 時定数: τ=RC / fc=1/(2πRC) / V(t)=Vs*(1-exp(-t/τ))\n### 3. LCR 共振: fr=1/(2π√(LC)) / Q（直列）=(1/R)*√(L/C) / BW=fr/Q\n### 4. 抵抗分圧: Vout=Vin*R2/(R1+R2) / R1またはR2の逆算\n### 5. LED 保護抵抗: R=(Vsupply-Vf)/If / Vf/Ifプリセット付き\n### 6. MOSFET 損失: Pon=Id²*RdsOn*D + Psw=0.5*Vds*Id*(tr+tf)*fs + Pg=Qg*Vgs*fs\n### 7. 熱抵抗: Tj=Ta+Ptot*(Rth_JC+Rth_CH+Rth_HA)\n### 8. Bode 近似（1次系）: LPF/HPF の折れ線 + Canvasグラフ（ゲイン+位相）\n### 9. AWG リファレンス表: AWG 10〜36、線径・断面積・抵抗・許容電流\n### 10. インピーダンス: XL=2πfL、XC=1/(2πfC)、Z=R+jX → |Z|、VSWR\n### 11. ノイズ指数 (NF): NF[dB]→F / Friis公式（2段）/ 等価雑音温度Te=T0*(F-1)\n\n## UI\n- ウォームクリーム背景（サイト統一テーマ）\n- カードグリッド（auto-fill, minmax 280px）\n- 各カードに式をグレーで表示\n- 注意書き: 「安全係数・マージンは設計者が判断すること」",
   },
   {
@@ -120,7 +120,7 @@ const works: Work[] = [
     description: "「パラメータを変えると何が起きるか」をスライダーで確認するインタラクティブ実験ツール。単回帰・多重共線性・JIT・グレーボックス・転移学習・生データ診断を、ノイズ量や共線性の強さを動かしながら体験できる。Study Guide 付き。",
     url: "https://effect.tnks1407.com",
     tags: ["Python", "PLS", "What-If分析"],
-    status: "Beta", section: "lab", group: "data-lab",
+    status: "Annealing", section: "lab", group: "data-lab",
     links: [{ label: "GitHub", url: "https://github.com/TNKS1407/process-effect-lab" }],
     prompt: "プロセスデータのモデリング手法を「パラメータを変えると何が起きるか」で体験する What-If 実験台を作って。\n\n## コンセプト\nProcess Modeling Lab（pml.tnks1407.com）は「実験ボタンを押してPNG結果を見る」形式。\nこの v2 は「スライダーを動かしながらリアルタイムに変化を観察する」形式にしたい。\n\n学習したい問いの例:\n- 「ノイズをどこまで増やしたら OLS が PLS に負け始めるか？」\n- 「共線性が強くなるほど OLS 係数はどう発散するか？」\n- 「JIT の局所窓サイズを小さくしすぎると何が起きるか？」\n\n## 技術スタック\n- Python 軽量 HTTP サーバー（server.py、外部フレームワークなし）\n- スライダー変更 → fetch POST /api/run → matplotlib PNG を base64 で返す\n- フロントエンド: 単一 index.html（バニラJS）/ タブ切替UI（6実験）\n\n## 実験タブ詳細\n### Tab 1: 単回帰 — スライダー: n, σ, β, 外れ値数\n### Tab 2: 多重共線性と PLS — スライダー: 共線性ρ, σ, PLS成分数\n### Tab 3: JIT ソフトセンサー — スライダー: 局所窓サイズk, ノイズ, モード変化量\n### Tab 4: グレーボックスモデル — スライダー: 物理モデル誤差%, 追加ノイズ\n### Tab 5: 転移学習（FEHDA）— スライダー: ターゲットサンプル数, 分布シフト量\n### Tab 6: 生データ診断 — スライダー: 外れ値率, ドリフト強度, ノイズ変化点\n\n## Study Guide\n各タブに「このアルゴリズムが何を解こうとしているか」を2〜3段落で説明するアコーディオンパネルを置く。数式はテキスト表記。「なぜ動くか」の物理的直感を重視。",
   },
@@ -130,7 +130,7 @@ const works: Work[] = [
     description: "色を3Dで掴むツール。HSL色立体をドラッグで回し、中立軸（グレーの芯）・色相環(S¹)・等明度スライスをその場で確認できる。「中立軸のゆがみ」で軸が曲がり、「ねじれ」で色相環が螺旋にねじれる＝ベゾルト・ブリュッケ効果まで触れる。Three.js・クライアント完結。",
     url: "/color/",
     tags: ["Three.js", "色彩", "知覚", "幾何"],
-    status: "Beta", section: "lab", group: "data-lab",
+    status: "Annealing", section: "lab", group: "data-lab",
   },
   {
     title: "Gradus — 触って学ぶ画像処理ラボ",
@@ -138,7 +138,7 @@ const works: Work[] = [
     description: "ブラウザ完結の画像処理インタラクティブラボ。明るさ・ぼかし・輪郭・色変換・合成・ノイズ・FFT など30種以上のフィルターをスライダーでリアルタイム操作。KaTeX 数式・理論解説つき。",
     url: "https://gradus.tnks1407.com",
     tags: ["JavaScript", "Canvas API", "画像処理", "KaTeX"],
-    status: "Stable", section: "lab", group: "data-lab",
+    status: "Annealing", section: "lab", group: "data-lab",
     prompt: "ブラウザ完結で画像処理フィルターをリアルタイム操作できる学習ツールを作って。\n\n## コンセプト\n「触ってわかる」を重視したインタラクティブ画像処理ラボ。\nスライダーを動かすと即座に結果が変わり、KaTeX で数式も表示される。\n外部ライブラリは KaTeX のみ。Canvas API を使ってすべてのフィルターを自前実装する。\n\n## フィルターカテゴリ\n### 輝度・色調\n明るさ / コントラスト / ガンマ補正 / 露出 / HSL（色相シフト・彩度・輝度）/ 色温度\n\n### 空間フィルタ（ぼかし系）\nガウシアンぼかし（カーネルサイズ・σ指定）/ 箱型ぼかし / モーションブラー / メディアンフィルタ\n\n### エッジ検出・鮮鋭化\nソーベル（Gx・Gy 勾配と合成）/ ラプラシアン / シャープネス（アンシャープマスク）\n\n### 二値化\n単純閾値処理 / 適応的閾値処理（ブロックサイズ・定数）\n\n### 画像合成\n加算・乗算・差分・スクリーン・オーバーレイ / 2枚を不透明度スライダーでブレンド\n\n### ノイズ\nガウシアンノイズ・塩胡椒ノイズの追加\n\n### 周波数領域\nFFT 周波数スペクトル表示（振幅・位相）/ ローパスフィルタ / ハイパスフィルタ\n\n## UI\n- サンプル画像セレクター（サムネイル一覧）+ ドラッグ&ドロップでカスタム画像アップロード\n- 効果ピル（カテゴリ別）でアクティブなフィルターを選択\n- 入力（左）・出力（右）パネル並列表示 + ピクセル座標・RGB値のホバー表示\n- 数式パネル（KaTeX で現在のフィルターの式をレンダリング）\n- 結果画像のダウンロード（PNG）\n- 「次の入力に送り込む」ボタン（フィルターを連鎖適用）\n- フィルター履歴（最大5件のUndoスタック）\n\n## 技術制約\n- ピクセル操作は ImageData + Uint8ClampedArray\n- 重いフィルター（FFT・大カーネルのガウシアン）は Web Worker で非同期実行",
   },
   {
@@ -147,7 +147,7 @@ const works: Work[] = [
     description: "プロセスデータのモデル化を数値計算で体験する学習ツール。単回帰・多重共線性・PLS・JIT型ソフトセンサー・グレーボックス・転移学習・生データ診断を実際に計算して比較できる。scikit-learn不使用。",
     url: "https://pml.tnks1407.com",
     tags: ["Python", "PLS", "JIT", "転移学習"],
-    status: "Prototype", section: "lab", group: "data-lab",
+    status: "Nucleation", section: "lab", group: "data-lab",
     prompt: "プロセスデータのモデル化を、実際の数値計算で試す学習ツールを作って。\n\n## 背景・目的\nOLS・Ridge・PCR・PLS・JIT型・グレーボックス・転移学習の違いを「動く数値」で実感したい。\nscikit-learn は使わず、アルゴリズムの中身が見えるように numpy だけで自前実装する。\n\n## シミュレーション一覧\n### 1. 単回帰: 標準化傾き = 相関係数の数値確認\nX と Y を標準化してから OLS を適用すると、推定された傾き β* が Pearson 相関係数 r とほぼ一致することを数値で検証する。\n\n### 2. 多重共線性とPLS\nx1+x2+x3≈14 の制約を持つ80サンプルを2セット（A/B）生成。OLS と PLS（1〜3成分）を両データに適用して標準化係数を比較。VIF とコンディション数で多重共線性を定量化。\n\n### 3. JIT型ソフトセンサー\n14変数・420サンプルの合成プロセスデータを生成（メンテナンス周期・運転モード変動あり）。グローバルPLS・1NN・kNN・局所線形・局所加重PLSで予測。RMSE / MAE / R² で比較。\n\n### 4. グレーボックスモデル\n物理シグナル g = feed*exp(-850/(T+273))*τ/P を持つ合成データ260件を生成。5種類のモデル（ホワイト/ブラック/パラレル/シリアル/複合）をRMSEでランキング。\n\n### 5. 転移学習（FEHDA型特徴拡張）\n共通8変数 + ソース固有4 + ターゲット固有4の合成ドメインを生成。4手法を比較。100モデルのバギングで平均予測と不確かさ幅を算出。\n\n### 6. 生データ診断\n9変数・360サンプルの診断用合成データを生成。7種類の統計検定（外れ値・レンジ変化・トレンド・周期性・下限張り付き・多峰性・欠損）を実行。\n\n## 技術要件\n- numpy・pandas・matplotlib のみ（scikit-learn なし）\n- 各アルゴリズムの核心部分をモジュール（process_modeling_core.py）に自前実装\n- 軽量HTTPサーバーで提供（Streamlit なし）\n- 各実験カードに「アルゴリズム理論」「実行ステップ」「結果の見方」の3層構成を表示",
   },
   {
@@ -156,7 +156,7 @@ const works: Work[] = [
     description: "GHz帯の無線源と人体の相互作用をFDTD法で2Dシミュレート。電界の影・回り込み・透過・吸収をリアルタイム可視化。遮蔽損失[dB]・RMS・GIFアニメ出力対応。",
     url: "https://fdtd.tnks1407.com",
     tags: ["Python", "FDTD", "RF", "Self-host"],
-    status: "Prototype", section: "lab", group: "engineering",
+    status: "Nucleation", section: "lab", group: "engineering",
     prompt: "GHz帯の小型無線源（点波源）と受信点の間に人体が存在する場合の電磁波伝搬を可視化する Python ツールを作って。\n\n## 背景・動機\nBluetooth/Wi-Fi 帯域（2.4GHz）で人体が電波をどう遮蔽・散乱させるかを定性的に確認したい。\nFEM や MoM は重く、MATLAB/CST は環境依存が大きいので、手元で動く軽量ツールが欲しい。\n精度より「傾向の理解」を優先する。\n\n## 物理モデル\n### FDTD 設定\n- 2D TMz FDTD（Ez フィールドのみ）\n- セルサイズ: λ/20 以下（2.4GHz なら約 6mm）\n- グリッドサイズ: 100×150 程度（速度優先）\n- PML（完全一致層）吸収境界、5〜10セル\n- 励振: 加算正弦波またはガウシアンパルス（選択可）\n- Courant 安定条件: Δt ≤ Δx / (c√2) を自動計算\n\n### 人体断面モデル\n楕円形状の簡易断面。材料パラメータ（2.4GHz基準）:\n- 皮膚: εr=40, σ=1.5 S/m / 脂肪: εr=5, σ=0.1 S/m\n- 筋肉: εr=55, σ=1.8 S/m / 骨: εr=12, σ=0.2 S/m / 肺: εr=20, σ=0.4 S/m\n\n## 可視化・出力\n- Ez 分布のカラーマップ（赤=正、青=負、透過で人体境界を重ねる）\n- 人体あり vs なしを並べて表示\n- 受信プローブの時間波形グラフ\n- 遮蔽損失 [dB]: 20log10（人体あり/なしの受信振幅比）\n- GIF アニメーション（時間ステップごとの Ez 分布）\n- RMS 分布マップ（時間平均の電力密度）\n\n## UI（Streamlit）\n- 送信周波数 [GHz]（1〜6GHz）\n- 送受信点位置・人体断面サイズ・人体位置のスライダー\n- シミュレーション実行ボタン + プログレスバー\n- 結果: カラーマップ + 遮蔽損失数値 + 時間波形 + GIF ダウンロード\n\n## 実装上の制約\n- NumPy 配列操作のみ（Fortran・C 拡張なし）\n- 1回のシミュレーション実行が30秒以内に終わること\n- 材料パラメータは一定値で近似（Debye モデル不要）",
   },
   {
@@ -165,7 +165,7 @@ const works: Work[] = [
     description: "プレゼン・配信画面にリアルタイムコメントを流すニコニコ風オーバーレイ。投稿URL・表示URL・QRコード・管理画面の4エンドポイント。外部npmゼロ・Node.js標準APIのみ。",
     url: "https://nico.tnks1407.com",
     tags: ["Node.js", "SSE", "Self-host"],
-    status: "Stable", section: "works", group: "utilities",
+    status: "Annealing", section: "works", group: "utilities",
     links: [{ label: "投稿", url: "https://nico.tnks1407.com/p/A7kP3dQ9" }, { label: "画面", url: "https://nico.tnks1407.com/s/A7kP3dQ9" }, { label: "管理（要認証）", url: "https://nico.tnks1407.com/admin" }, { label: "QR", url: "https://nico.tnks1407.com/q/A7kP3dQ9" }],
     prompt: "プレゼンや配信画面にリアルタイムコメントを流す「ニコニコ風オーバーレイ」を作って。\n\n## 背景・動機\nOBS のブラウザソース・Zoom 画面共有・スライド発表で使う。\nDiscord や外部サービスに依存せず、自分の PC/サーバーだけで動かしたい。\nスマホから投稿→画面に流れるという体験が 1 コマンドで立ち上がること。\nNode.js と標準ライブラリだけで動く（npm パッケージ不使用）。\n\n## アーキテクチャ\n単一の Node.js ファイル（server.js）で HTTP サーバを立てる。\n使用モジュール: node:http, node:fs, node:crypto, node:url のみ。\nコメントのリアルタイム配信には SSE（Server-Sent Events）を使う。\n\n## エンドポイント設計\n- GET /s/:roomId → 表示画面（コメントが右から左に流れる HTML）\n- GET /p/:roomId → 投稿フォーム（スマホ向けシンプル UI）\n- GET /q/:roomId → QRコード付き投稿URL表示（OBS オーバーレイ用）\n- GET /admin → 管理画面（コメント一覧・有効無効切替・一括クリア）\n- GET /events/:roomId → SSE ストリーム（表示画面が購読）\n- POST /comment → コメント投稿\n\n## コメント表示アニメーション\n- ランダムな上下位置（画面高さの 5%〜90% の範囲）\n- ランダムな速度（3秒〜8秒で画面を横断）\n- フォントサイズはランダム（16px〜28px）\n- テキスト色はランダム（視認性確保のため明るい色のみ: HSL(*, 80%, 70%)）\n- CSS transform: translateX で実装（-100vw から 100vw へ）\n- 表示中は背景透明（OBS で chroma key 不要）\n\n## 安全対策\n- IP ベースの連投制限（30秒間に3件まで）\n- NG ワードリスト（config.json で設定）\n- コメント内の URL・電話番号を正規表現で除去\n- コメント長 200文字上限\n\n## 使用例\nnode server.js → http://localhost:3000\nOBS ブラウザソース: /s/roomId（幅: 1920px, 高さ: 1080px, 背景透明）",
   },
@@ -175,7 +175,7 @@ const works: Work[] = [
     description: "ボルテックスジェネレーターのSTLをブラウザだけで生成・ダウンロード。Rect Vane / Delta Wedgeの2形状。リアルタイム3Dプレビュー付き。サーバー不要・3Dプリント直行。",
     url: "https://vg.tnks1407.com",
     tags: ["JavaScript", "3D Print", "STL"],
-    status: "Stable", section: "works", group: "engineering",
+    status: "Nucleation", section: "works", group: "engineering",
     prompt: "ボルテックスジェネレーター（VG）の STL をブラウザだけで生成する Web アプリを作って。\n\n## 背景・動機\n市販 CAD なしで 3D プリンター用 VG を作りたい。\n物理的な VG は平板上の空力デバイスで、境界層の剥離制御に使う。\n寸法精度よりも「すぐ出力できる」ことを優先する。\nブラウザだけで完結し、サーバー不要の単一 HTML ファイルで動くこと。\n\n## 対象形状\n### Rect Vane（矩形ベーン）\n- L（長さ）・W（幅）・H（高さ）・θ（取付角）を入力\n- 断面は矩形。根元から先端まで同一断面をθだけ傾けて押し出した形状\n- θ=14〜20° が典型的\n\n### Delta Wedge（デルタ型）\n- W（根元幅）・H（高さ）・t（チップ厚: 0.4mm以上）・L（長さ）を入力\n- 平面視で三角形、先端に最小肉厚 t を持たせて印刷性を確保\n\n## ジオメトリ生成（JavaScript + ASCII STL）\n- 各形状を三角形ポリゴンに分解し、法線ベクトル（右手系）付きで ASCII STL 出力\n- 頂点座標は mm 単位、小数点以下4桁\n- 底面（Base プレート接触面）は平面を保証\n\n## 3D プレビュー\n- canvas 2D でペインターアルゴリズムによる擬似3D表示\n- 面を Zバッファでソートして奥から描画\n- 環境光 + 指向性ライト（法線ドット積）でシェーディング\n- 回転: elevation / azimuth スライダー\n- パラメータ変更時に即座に再描画（100ms 以内）\n\n## UX\n- スライダー + 数値入力フィールドの連動\n- 「STL をダウンロード」ボタン\n- ファイル名に形状・パラメータ概要を含める（例: rect-vane-L30-H8-A15.stl）\n- 印刷設定ガイド（推奨: 0.2mm レイヤー、20%インフィル、PLA）を注記",
   },
   {
@@ -184,7 +184,7 @@ const works: Work[] = [
     description: "Buck/Boostコンバーターの電圧モード制御設計ツール。小信号モデルからBode線図・ループゲイン・PI/Type-II/III補償器設計・ステップ応答・デジタル制御遅延シミュレーションまで。",
     url: "https://psu.tnks1407.com",
     tags: ["JavaScript", "Control", "Buck/Boost"],
-    status: "Stable", section: "works", group: "engineering",
+    status: "Annealing", section: "works", group: "engineering",
     prompt: "Buck/Boost コンバーターの電圧モード制御を設計・検証できるブラウザツールを作って。\n\n## 背景・動機\n電源設計で「位相余裕はどのくらいか」「補償器のゼロ点をどこに置くべきか」を\nLTspice なしでその場で確認したい。Mathcad/MATLAB なしで動くブラウザ計算ツール。\n\n## 小信号モデルの導出\n### Buck コンバーター\nGvd(s) = (Vout/D) × 1/(1 + s·L/R + s²·LC)\nDCゲイン = Vin / 共振周波数 ω0 = 1/√(LC) / Q = R·√(C/L)\n\n### Boost コンバーター\nGvd(s) = (Vout/(1-D)²) × (1 - s·L/((1-D)²·R)) / (1 + s·L/((1-D)²·R) + s²·LC/(1-D)²)\n右半平面ゼロ点（RHPZ）: f_rhpz = (1-D)²·R / (2π·L) — 補償器設計への影響を警告する\n\n## Bode 線図\n- 周波数レンジ: 1Hz〜Nyquist(fs/2)\n- プロット: プラントゲイン・位相、補償器ゲイン・位相、ループゲイン・位相\n- 位相余裕・ゲイン余裕を自動計算して数値表示\n- クロスオーバー周波数を自動検出してマーカー表示\n- 安定条件（PM > 45°, GM > 6dB）に対して色分け（OK=緑, 警告=黄, NG=赤）\n\n## 補償器設計\n- PI: H(s) = Kp·(1 + ωz/s) / ゼロ点1個、-20dB/dec の積分特性\n- Type-II: H(s) = Kp·(1 + s/ωz) / (s/ωp) / ゼロ1個・極1個\n- Type-III: H(s) = Kp·(1 + s/ωz1)·(1 + s/ωz2) / ((s/ωp1)·(1 + s/ωp2)) / Boost の RHPZ 対応\n\n## ステップ応答シミュレーション\n- 負荷電流のステップ変化（Δi_load 指定）\n- 出力電圧オーバーシュート・整定時間の推定\n- 離散時間近似（Tustin 変換）で実際のデジタル実装を模倣\n\n## デジタル制御モデル\n- ADC 量子化ビット数→量子化ノイズの Bode 線図上への影響\n- PWM 分解能（Tpwm/Ts 比）\n- 計算遅延（1〜2 サンプル）の位相遅れを追加\n\n## UI\n- ダークテーマ、スクロール不要（1画面に収める）\n- 左パネル: パラメータ入力（Vin、Vout、L、C、R、D、fs）\n- 中央: Bode 線図（Canvas または SVG）\n- 右パネル: 補償器選択・パラメータ・PM/GM 表示\n- パラメータ変更に対して Bode 線図をリアルタイム更新（debounce 50ms）",
   },
   {
@@ -193,7 +193,7 @@ const works: Work[] = [
     description: "データシート・論文のグラフ画像をAIが読み取りJSON化。点の追加・移動・削除、線形/対数補間、複数グラフ重ね合わせ、比較カーソル、CSV書き出しが可能な作業台。",
     url: "https://graph.tnks1407.com",
     tags: ["JavaScript", "Graph", "CSV"],
-    status: "Stable", section: "works", group: "engineering",
+    status: "Single Crystal", section: "works", group: "engineering",
     prompt: "データシート・論文のグラフを AI が読み取って JSON 化し、ブラウザで編集・分析できる「グラフ作業台」を作って。\n\n## 背景・動機\nデータシートの S パラメータグラフや論文の特性曲線を数値で扱いたいとき、\nWebPlotDigitizer は使いにくく、AI に読み取らせた結果を直接使えない。\n「AI が JSON を出力 → このツールで微調整 → CSV で取り出す」というワークフローを作りたい。\n\n## JSON フォーマット\n{ label, xLabel, yLabel, xScale (linear/log), yScale (linear/log), points: [{x, y}] }\n\n## 編集機能\n- Canvas 上で点をクリック＆ドラッグで移動\n- キャンバスクリックで新しい点を追加\n- 点を選択して Delete キーで削除\n- 座標を数値フィールドで直接編集\n- Undo（Ctrl+Z）対応（最大20件）\n- JSON ファイルをドラッグ&ドロップで読み込み\n\n## 補間・解析\n- 線形スケール: 線形補間\n- 対数スケール（X）: log 空間で線形補間\n- 任意の X を入力→対応する Y を表示\n- カーブ間の差分・比・平均の計算\n\n## 比較表示\n- 最大4データセットを重ね合わせ表示（色分け・凡例付き）\n- X 軸で同期したカーソルラインで各 Y の値を一覧表示\n- 横並び表示（サブプロット）への切替\n\n## 出力\n- CSV 書き出し（全点/補間サンプリング/N ポイント均等）\n- JSON の編集結果をクリップボードにコピー\n- PNG として現在のグラフを保存\n- AI へのプロンプト生成（「このグラフを読み取って JSON で出力して」の定型文）\n\n## UX\n- ブラウザ完結（サーバー不要）\n- モバイルはプレビューのみ（編集はデスクトップ向け）\n- キーボードショートカット: 矢印キーで選択点を±0.1 移動",
   },
   {
@@ -202,7 +202,7 @@ const works: Work[] = [
     description: "RFエンジニア向け架空マッチングアプリ。インピーダンス・Γ・Q値・VSWRがプロフィール欄に並ぶ。スワイプでMATCH後、L型整合回路のL/C値を計算してくれる。",
     url: "https://seigou.tnks1407.com",
     tags: ["JavaScript", "RF", "スミスチャート"],
-    status: "Toy", section: "lab", group: "engineering",
+    status: "Melt", section: "lab", group: "engineering",
     prompt: "RF エンジニア向けの架空マッチングアプリを作って。「相性」をインピーダンス整合の概念で表現し、RF 工学と恋愛のダジャレ・メタファーで構成する。\n\n## コンセプト\n50Ω に矯正するのでなく、複素負荷のまま最大電力伝送できる関係を探す。\n共役整合（MATCH）が最高の相性。開放端（OPEN）は拒絶、終端（THRU）は流した。\n\n## プロフィール設計\n各プロフィールは以下のパラメータを持つ:\n- インピーダンス傾向: 容量性 (C) / 抵抗的 (R) / 誘導性 (L)\n- Z = R + jX として具体的な値（例: 35+j20Ω）\n- Γ（反射係数）/ VSWR / Return Loss [dB] / Q 値: |X|/R\n- bio: RF っぽい自己紹介文\n- 欲しい整合: 「L型でも可」「バランが必要」「そのままで繋いで」等\n\n## スワイプ UI\n- カードスタック表示（z-index で重なり）\n- 左: OPEN（開放端）/ 右: MATCH（共役整合）/ 上: THRU（スルー）\n- NOPE / LIKE オーバーレイ（スワイプ中にカード上に表示）\n- Fisher-Yates シャッフルでデッキをランダム化\n\n## カード表示\n- カードヒーロー全面を本格スミスチャートに（定抵抗円・定リアクタンス弧・|Γ|=1 外周円）\n- 相手のΓ点をパルスアニメで強調\n\n## MATCH 後の処理\n整合成功アニメーション（全画面、RF 粒子エフェクト）の後:\n- L 型整合回路計算機を表示（f [MHz]、Zs、Zl から L/C 値を算出）\n- 「会話ボタン」→ 「S21 測定中…」トースト表示\n\n## マップタブ\n全プロフィールのΓ点を同一スミスチャート上に表示。タップでプロフィールカードに移動。\n\n## 技術要件\n- スマホ最適化（max-width: 480px）\n- profiles.json で外部管理（JSON 編集でキャラクター追加可能）\n- スミスチャートは Canvas 2D で描画",
   },
   {
@@ -211,7 +211,7 @@ const works: Work[] = [
     description: "Rect Vane・Delta Wedge形状のVG STLをCLIで生成するPythonライブラリ。plate配列モード対応。numpy・trimeshのみ。ブラウザ版VG Generatorのバックエンド相当。",
     url: "https://github.com/TNKS1407/vortex-generator-tools",
     tags: ["Python", "trimesh", "3D Print"],
-    status: "Prototype", section: "lab", group: "engineering",
+    status: "Nucleation", section: "lab", group: "engineering",
     prompt: "Python で VG（ボルテックスジェネレーター）の STL ファイルを生成する CLI ライブラリを作って。\n\n## 背景・動機\nブラウザ版 VG Generator（vg.tnks1407.com）の Python バックエンド相当。\nCAD 操作なしで形状パラメータ→STL を自動生成したい。\nバッチ処理や形状の組み合わせ試験を想定。numpy と trimesh のみ使用。\n\n## 対象形状\n### rect_vane（矩形ベーン）\n引数: --length L --width W --height H --angle θ\n矩形断面を取付角 θ だけ傾けて押し出した形状。θ=15〜20° が典型的。\n\n### delta_wedge（デルタウェッジ）\n引数: --base-width W --height H --tip-thickness t --length L\n平面視で三角形、先端に最小肉厚 t を持つ楔型。\n\n## plate モード\n--mode plate --count N --spacing S で N 個の VG を等間隔配置。\n配置パターン: aligned（全て同じ向き）/ alternating（交互に逆向き）/ half-and-half\n\n## 実装\n- numpy で頂点座標を計算\n- trimesh.Trimesh(vertices, faces) でメッシュ構築\n- trimesh.export() で STL 出力（バイナリ）\n- 法線ベクトルは trimesh が自動計算（is_watertight を確認）\n- 座標系: X=流れ方向、Y=幅方向、Z=高さ方向\n\n## コマンド例\npython vg.py rect_vane --length 30 --width 2 --height 8 --angle 15 -o vg.stl\npython vg.py --mode plate --count 6 --spacing 20 --pattern alternating rect_vane -o plate.stl\n\n## Python パッケージ化\n- pyproject.toml で pip install 可能にする",
   },
   {
@@ -220,7 +220,7 @@ const works: Work[] = [
     description: "パワーMOSFETのスイッチング設計リファレンス。損失計算・ゲート駆動・熱設計・SOA・アバランシェ耐量・測定まで実務で参照できる構成。参考文献付き。",
     url: "https://docs.tnks1407.com",
     tags: ["MOSFET", "Power Electronics", "技術文書"],
-    status: "Stable", section: "works", group: "engineering",
+    status: "Single Crystal", section: "works", group: "engineering",
     prompt: "パワー MOSFET のスイッチング用途向け技術リファレンスを、実務で使える辞書的文書としてまとめてほしい。\n\n## 対象読者\n電子回路の基礎知識（Vgs, Id, RdsOn の意味は分かる）はあるが、\nスイッチング電源・モータードライバ・インバータでの MOSFET 設計に初めて踏み込む人。\n「データシートを見て何を確認すべきか」「なぜ壊れるか」が分かることがゴール。\n\n## ドキュメント構成\n### 1. MOSFET の選定フロー\n電圧マージン: Vds_max ≥ Vbus × 1.5 / 電流マージン: Id_max ≥ Ipeak × 1.3\nRdsOn（Tj=125°C）は温度で 2〜3 倍になることに注意\n\n### 2. 損失計算\n- P_on = Id² × RdsOn(Tj) × D（温度補正付き）\n- P_sw = 0.5 × Vds × Id × (tr+tf) × fs\n- P_g = Qg × Vgs × fs\n- ボディダイオード損失: V_f × I_d × (1-D)（同期整流使用時）\n\n### 3. ゲート駆動設計\n- ゲート抵抗 Rg の決め方: dV/dt ≈ (Vgs-Vth) / (Rg × Cgd)\n- ブートストラップ回路: 最大 Duty は 99% 程度（100%連続では Cboot が充電できない）\n- 絶縁ドライバ: フォトカプラ（低速）/ パルストランス（中速）/ 専用IC（高速・小型）\n\n### 4. 熱設計\nTj = Tamb + Ptot × (Rth_JC + Rth_CH + Rth_HA)\n過渡熱インピーダンス曲線の読み方（パルス動作での許容損失）\n\n### 5. SOA（安全動作領域）\nDC/Pulse/Safe-Operating-Area 図の読み方\n誘導性負荷スイッチオフ時の Vds スパイク: V = L × dI/dt\n\n### 6. アバランシェ耐量\nEAS = 0.5 × L × I_peak² × Vbr/(Vbr - Vdc)\nインダクタンスエネルギー 0.5LI² との比較で壊れるかを判定\n\n### 7. よくある故障モードと対策\n- ゲート酸化膜破壊: Vgs_max（通常 ±20V）を超えないこと\n- 過電流による熱暴走: デレーティングと保護回路\n- dV/dt 誤作動: Rg の増大・Cgd に対する Vgs の影響\n\n### 8. 参考文献\nInfineon AN2020 / Infineon EiceDRIVER AN2019 / IRF Design Tip 94-1\n\n## スタイル指針\n- 式はテキスト表記（LaTeX 不要、プレーン HTML で表示できる）\n- 数値例は実際に使いそうな値（100V/10A、fs=100kHz）\n- 「なぜそうなるか」の物理的直感を必ず添える\n- 実務でよく見る間違い・落とし穴を「注意」として明示する",
   },
   {
@@ -229,7 +229,7 @@ const works: Work[] = [
     description: "AI実験ログ・雑メモをdropフォルダに置くだけでGitHub Issueに変換する個人用ワークフロー。PowerShell製UIランチャーで操作。GitHub CLI経由でIssue投稿。",
     url: "https://github.com/TNKS1407/tnks-lab",
     tags: ["PowerShell", "GitHub API", "CLI"],
-    status: "Prototype", section: "lab", group: "utilities",
+    status: "Melt", section: "lab", group: "utilities",
     prompt: "AI 実験ログ・雑メモを drop フォルダに置くだけで GitHub Issue に変換する個人用ワークフローツールを作って。\n\n## 背景・動機\nAI との実験や思いついたアイデアを「あとで見返せる形」で残したい。\nNotion は重く、Obsidian は別途開く手間がある。\n「ファイルを一つ放り込む → GitHub Issue に自動変換 → 全文検索できる」が理想。\nGitHub の Issue 検索・ラベル・マイルストーン機能をそのまま活用する。\n\n## ディレクトリ構成\ntnks-lab/ inbox/ drop/（ここに .md/.txt を置く） / processed/（処理済み移動先） / failed/（失敗した場合）\nscripts/ push-issues.ps1（メイン処理）/ config.json / launch.cmd / watch.ps1（フォルダ監視デーモン）\n\n## 処理フロー（push-issues.ps1）\n1. inbox/drop 内の .md/.txt をすべて取得\n2. ファイル名からタイトルを生成（YYYY-MM-DD_タイトル.md → タイトル）\n3. ファイル先頭の「# タイトル」があればそれを Issue タイトルに使用\n4. フロントマター（---）を解析: labels / milestone を GitHub に設定\n5. gh issue create --title ... --body ... --repo TNKS1407/tnks-lab で投稿\n6. 成功したら inbox/processed/ に移動（タイムスタンプ付きでリネーム）\n7. 失敗したらエラーログを出力して inbox/failed/ に移動\n\n## フォルダ監視デーモン（watch.ps1）\nFileSystemWatcher でフォルダを監視。新規ファイルが drop/ に置かれたら自動的に処理を実行。\n\n## launch.cmd（UIランチャー）\n「1: 今すぐ処理」「2: 監視デーモン起動」「3: 処理済み一覧」「4: 終了」のメニュー。\n\n## config.json\n{ defaultRepo, defaultLabel, watchDir, logFile, dryRun（実際に投稿しないテストモード） }\n\n## 制約・前提\n- GitHub CLI (gh) がインストール済み・認証済みであること前提\n- PowerShell 7+ 対応 / ファイルエンコーディングは UTF-8\n- GitHub の API レート制限（5000 req/h）に注意",
   },
 ];
@@ -413,10 +413,11 @@ const favKey = (w: Work) => {
       .work-tags{display:flex;gap:0.25rem;flex-wrap:wrap;align-items:center;}
       .tag{background:var(--surface2);border:1px solid var(--border);color:var(--text-muted);padding:0.08rem 0.4rem;border-radius:4px;font-size:0.68rem;font-weight:500;font-family:'JetBrains Mono',monospace;}
       .status-badge{padding:0.08rem 0.4rem;border-radius:4px;font-size:0.66rem;font-weight:700;font-family:'JetBrains Mono',monospace;border:1px solid;}
-      .status-Stable{background:#eaf7f4;color:#0d7f6e;border-color:#9de0cf;}
-      .status-Beta{background:#fdf4eb;color:#b45e1a;border-color:#f5cfaa;}
-      .status-Prototype{background:#eef4ff;color:#3058b8;border-color:#c0d2f5;}
-      .status-Toy{background:#f5f0fb;color:#6b34b0;border-color:#d8c4f3;}
+      /* 成熟度＝結晶化の進み具合。融液→核生成→焼鈍→単結晶 と進むほど整っている。 */
+      .status-SingleCrystal{background:#eaf7f4;color:#0d7f6e;border-color:#9de0cf;}
+      .status-Annealing{background:#fdf4eb;color:#b45e1a;border-color:#f5cfaa;}
+      .status-Nucleation{background:#f3ece0;color:#9a7b43;border-color:#e2d3b8;}
+      .status-Melt{background:#f4f1ec;color:#948b7c;border-color:#e3dbd0;}
       .work-footer{display:flex;gap:0.3rem;flex-wrap:wrap;padding:0.5rem 1.2rem 0.8rem;align-items:center;}
       .work-link{color:var(--accent);font-size:0.7rem;font-weight:600;text-decoration:none;font-family:'JetBrains Mono',monospace;padding:0.1rem 0.4rem;background:var(--accent-dim);border-radius:4px;border:1px solid rgba(60,120,118,0.18);transition:background 0.15s;}
       .work-link:hover{background:rgba(60,120,118,0.16);}
@@ -635,7 +636,7 @@ const favKey = (w: Work) => {
                       </div>
                       <div class="work-desc">{w.description}</div>
                       <div class="work-tags">
-                        {w.status && <span class={`status-badge status-${w.status}`}>{w.status}</span>}
+                        {w.status && <span class={`status-badge status-${w.status.replace(/\s+/g,'')}`}>{w.status}</span>}
                         {w.tags.map(t => <span class="tag">{t}</span>)}
                       </div>
                     </a>
