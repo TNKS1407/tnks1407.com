@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>鏡で、増える ── 右手と左手が入れ替わる</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#f5f2ec;--card:#fff;--border:#e3dbd0;--ink:#1d1b17;--mut:#7d7568;--accent:#3c7876;--amber:#c9761f;--ng:#c0392b;}
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'Zen Kaku Gothic New',system-ui,sans-serif;}
+  .wrap{max-width:760px;margin:0 auto;padding:1.4rem 1.1rem 3rem;}
+  h1{font-size:1.32rem;margin:.2rem 0 .5rem;line-height:1.35;}
+  .lead{color:var(--mut);font-size:.96rem;line-height:1.7;margin:0 0 1.1rem;}
+  .lead b{color:var(--accent);}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 1px 6px rgba(29,27,23,.05);padding:1rem 1.1rem;margin-bottom:1.1rem;}
+  canvas{width:100%;height:auto;display:block;border-radius:10px;background:#fbf9f5;border:1px solid var(--border);touch-action:none;cursor:grab;}
+  .ctrl{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center;margin:.9rem 0 .2rem;}
+  .ctrl .lbl{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--mut);margin-right:.2rem;}
+  button.op{font-family:'Zen Kaku Gothic New',sans-serif;font-size:.9rem;font-weight:600;border:1px solid var(--border);background:#fff;color:var(--ink);border-radius:9px;padding:.42rem .8rem;cursor:pointer;transition:.12s;}
+  button.op:hover{border-color:var(--accent);}
+  button.op.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .verdict{margin-top:.7rem;font-family:'JetBrains Mono',monospace;font-size:.9rem;}
+  .big{font-size:1.02rem;font-weight:700;}
+  .flip{color:var(--ng);} .keep{color:var(--accent);}
+  .say{margin-top:.55rem;font-size:.94rem;line-height:1.7;}
+  .foot{font-size:.9rem;color:var(--mut);line-height:1.7;}
+  .foot a{color:var(--accent);text-decoration:none;font-weight:600;} .foot a:hover{text-decoration:underline;}
+  .hint{font-size:.82rem;color:#a59c8c;margin-top:.3rem;}
+</style></head>
+<body>
+<div class="wrap">
+  <h1>鏡で、増える ── 右手と左手が入れ替わる</h1>
+  <p class="lead">対称操作のいちばん素朴な姿は「<b>点をコピーすること</b>」。でも、コピーには2種類ある。<br>
+  目印に小さな <b>三脚</b>（赤＝x・緑＝y の腕）と <b>F</b> を付けたよ。操作を選んで、コピーの<b>向き</b>がどうなるか見て。</p>
+
+  <div class="card">
+    <canvas id="cv" width="720" height="360"></canvas>
+    <div class="hint">点（と三脚）はドラッグで動かせる。</div>
+    <div class="ctrl">
+      <span class="lbl">操作：</span>
+      <button class="op on" data-op="mirror">鏡（反転）</button>
+      <button class="op" data-op="rot">回転 180°</button>
+      <button class="op" data-op="inv">点対称（反転中心）</button>
+    </div>
+    <div class="verdict big" id="ans"></div>
+    <div class="say" id="say"></div>
+  </div>
+
+  <div class="card foot">
+    <b>第1種と第2種</b><br>
+    操作は行列 W で書ける。<b>det(W)=+1</b> なら向き（手の系）はそのまま＝<b class="keep">第1種</b>（回転・並進）。<b>det(W)=−1</b> なら右手系↔左手系が入れ替わる＝<b class="flip">第2種</b>（鏡・反転・回反）。<br>
+    三脚の「赤→緑の回り向き」が逆になったら、それが handedness の反転＝第2種だよ。F が裏返るのと同じこと。<br><br>
+    本物の3Dエクスプローラーでも、各等価点に三脚が付いてる。<em>三脚が左右に反転して見えたら、その操作は第2種</em>── それを2Dで先に体に入れる回。<br><br>
+    つながる先 → <a href="https://tnks1407.com/nfold/">回すと、増える（5回だけ閉じない）</a> ／ <a href="https://sg.tnks1407.com/">本物の空間群エクスプローラー（230群・3D）</a>
+  </div>
+</div>
+
+<script>
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+let op='mirror';
+{const q=new URLSearchParams(location.search).get('op'); if(['mirror','rot','inv'].includes(q))op=q;}
+let mp={x:-1.1,y:0.55}; // motif in world units (cell ~ [-2,2])
+const SC=78; // px per world unit
+function dpi(){ const r=cv.getBoundingClientRect(); const s=Math.min(2,devicePixelRatio||1);
+  cv.width=Math.round(r.width*s); cv.height=Math.round(r.width*0.5*s); ctx.setTransform(s,0,0,s,0,0); return {w:r.width,h:r.width*0.5}; }
+let CX=0,CY=0;
+const W2S=p=>({x:CX+p.x*SC, y:CY-p.y*SC});
+const S2W=(sx,sy)=>({x:(sx-CX)/SC, y:(CY-sy)/SC});
+// apply current op to a world point + its local frame (ex,ey unit legs)
+function applyOp(p,ex,ey){
+  if(op==='mirror') return {p:{x:-p.x,y:p.y}, ex:{x:-ex.x,y:ex.y}, ey:{x:-ey.x,y:ey.y}, det:-1};
+  if(op==='rot')    return {p:{x:-p.x,y:-p.y}, ex:{x:-ex.x,y:-ex.y}, ey:{x:-ey.x,y:-ey.y}, det:1};
+  /*inv*/           return {p:{x:-p.x,y:-p.y}, ex:{x:-ex.x,y:-ex.y}, ey:{x:-ey.x,y:-ey.y}, det:1};
+}
+// NOTE: in 2D, 180° rotation and point-inversion are the same map; their det differ only in 3D.
+function drawF(P,ex,ey,col){
+  // F drawn in the local frame (ex,ey are screen-space leg directions, unit≈ in px scaled)
+  const u=v=>({x:P.x+v.x, y:P.y+v.y});
+  const L=34, vx=ex, vy=ey; // ex,ey already screen px vectors (length ~L handled by caller scaling)
+  const at=(a,b)=>u({x:vx.x*a+vy.x*b, y:vx.y*a+vy.y*b});
+  ctx.strokeStyle=col; ctx.lineWidth=3.2; ctx.lineCap='round'; ctx.lineJoin='round';
+  ctx.beginPath();
+  let s;
+  s=at(0,0); ctx.moveTo(s.x,s.y); s=at(0,1); ctx.lineTo(s.x,s.y);   // vertical stem (up)
+  s=at(0,1); ctx.moveTo(s.x,s.y); s=at(0.7,1); ctx.lineTo(s.x,s.y); // top bar
+  s=at(0,0.55); ctx.moveTo(s.x,s.y); s=at(0.5,0.55); ctx.lineTo(s.x,s.y); // mid bar
+  ctx.stroke();
+}
+function triad(P,ex,ey){
+  const arr=(v,col)=>{const t={x:P.x+v.x,y:P.y+v.y}; ctx.strokeStyle=col;ctx.lineWidth=2.4;ctx.beginPath();ctx.moveTo(P.x,P.y);ctx.lineTo(t.x,t.y);ctx.stroke();
+    const a=Math.atan2(t.y-P.y,t.x-P.x);ctx.beginPath();ctx.moveTo(t.x,t.y);ctx.lineTo(t.x-7*Math.cos(a-0.4),t.y-7*Math.sin(a-0.4));ctx.lineTo(t.x-7*Math.cos(a+0.4),t.y-7*Math.sin(a+0.4));ctx.closePath();ctx.fillStyle=col;ctx.fill();};
+  arr(ex,'#d23b3b'); arr(ey,'#2fa360');
+  ctx.fillStyle='#1d1b17';ctx.beginPath();ctx.arc(P.x,P.y,3.2,0,7);ctx.fill();
+}
+function draw(){
+  const {w,h}=dpi(); CX=w*0.5; CY=h*0.5;
+  ctx.clearRect(0,0,w,h);
+  // mirror line / element
+  ctx.strokeStyle='#c9761f'; ctx.lineWidth=2; ctx.setLineDash([7,5]);
+  if(op==='mirror'){ ctx.beginPath(); ctx.moveTo(CX,8); ctx.lineTo(CX,h-8); ctx.stroke();
+    ctx.fillStyle='#c9761f';ctx.font='600 12px "JetBrains Mono",monospace';ctx.textAlign='left';ctx.fillText('鏡 m',CX+6,18); }
+  else { ctx.fillStyle='#c9761f';ctx.beginPath();ctx.arc(CX,CY,4,0,7);ctx.fill();
+    ctx.font='600 12px "JetBrains Mono",monospace';ctx.textAlign='left';ctx.fillText(op==='rot'?'2回軸 / 中心':'反転中心 −1',CX+8,CY-8); }
+  ctx.setLineDash([]);
+  // original frame: ex along +x, ey along +y (screen px)
+  const Lpx=34; const ex={x:Lpx,y:0}, ey={x:0,y:-Lpx};
+  const Po=W2S(mp);
+  // copy
+  const r=applyOp(mp,{x:1,y:0},{x:0,y:1});
+  const Pc=W2S(r.p);
+  const exC={x:r.ex.x*Lpx, y:-r.ex.y*Lpx}, eyC={x:r.ey.x*Lpx, y:-r.ey.y*Lpx};
+  // draw copy (amber-ish), original (ink)
+  ctx.globalAlpha=.95; drawF(Pc,exC,eyC,'#c9761f'); triad(Pc,exC,eyC);
+  ctx.fillStyle='#c9761f';ctx.font='600 12px "JetBrains Mono",monospace';ctx.textAlign='center';ctx.fillText('コピー',Pc.x,Pc.y+Lpx+18);
+  drawF(Po,ex,ey,'#1d1b17'); triad(Po,ex,ey);
+  ctx.fillStyle='#1d1b17';ctx.fillText('もと',Po.x,Po.y+Lpx+18);
+  // verdict
+  const ans=document.getElementById('ans'), say=document.getElementById('say');
+  if(op==='mirror'){ ans.innerHTML='det(W) = −1 ・ <span class="flip">手の系が反転（第2種）</span>';
+    say.innerHTML='鏡に映すと、赤→緑の回り向きが逆になり、F が裏返る。<b class="flip">右手系↔左手系が入れ替わる＝第2種の対称操作</b>（鏡・反転・回反の仲間）。'; }
+  else if(op==='rot'){ ans.innerHTML='det(W) = +1 ・ <span class="keep">手の系はそのまま（第1種）</span>';
+    say.innerHTML='180°回しても、F は裏返らない（回っただけ）。赤→緑の回り向きも同じ。<b class="keep">向きは保たれる＝第1種</b>（回転・並進の仲間）。'; }
+  else { ans.innerHTML='det(W) = +1（2D）／ −1（3D）';
+    say.innerHTML='点対称（反転中心）は、2D では 180°回転と<b>同じ写像</b>になってしまう（だから 2D では det=+1）。本当に「反転」が第2種になるのは <b>3D の反転中心</b>。次元で顔が変わる、面白い所だよ。'; }
+}
+// drag
+let drag=false;
+function pos(e){const r=cv.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};}
+cv.addEventListener('pointerdown',e=>{const s=pos(e),P=W2S(mp);if(Math.hypot(s.x-P.x,s.y-P.y)<46){drag=true;cv.setPointerCapture(e.pointerId);cv.style.cursor='grabbing';}});
+cv.addEventListener('pointermove',e=>{if(!drag)return;const s=pos(e);mp=S2W(s.x,s.y);
+  mp.x=Math.max(-2.3,Math.min(-0.15,mp.x)); mp.y=Math.max(-1.7,Math.min(1.7,mp.y)); draw();});
+cv.addEventListener('pointerup',()=>{drag=false;cv.style.cursor='grab';});
+cv.addEventListener('pointercancel',()=>{drag=false;cv.style.cursor='grab';});
+// op buttons
+document.querySelectorAll('button.op').forEach(b=>b.onclick=()=>{op=b.dataset.op;
+  document.querySelectorAll('button.op').forEach(c=>c.classList.toggle('on',c===b)); draw();});
+addEventListener('resize',draw);
+draw();
+</script>
+</body></html>
