@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>準結晶 ── 並進を捨てると、5回が戻る（ペンローズ・タイリング）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#f5f2ec;--card:#fff;--border:#e3dbd0;--ink:#1d1b17;--mut:#7d7568;--accent:#3c7876;--amber:#c9761f;}
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'Zen Kaku Gothic New',system-ui,sans-serif;}
+  .wrap{max-width:760px;margin:0 auto;padding:1.4rem 1.1rem 3rem;}
+  h1{font-size:1.28rem;margin:.2rem 0 .5rem;line-height:1.35;}
+  .lead{color:var(--mut);font-size:.96rem;line-height:1.7;margin:0 0 1.1rem;}
+  .lead b{color:var(--accent);}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 1px 6px rgba(29,27,23,.05);padding:1rem 1.1rem;margin-bottom:1.1rem;}
+  canvas{width:100%;height:auto;display:block;border-radius:10px;background:#fbf9f5;border:1px solid var(--border);}
+  .ctrl{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center;margin:.9rem 0 .2rem;}
+  .ctrl .lbl{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--mut);margin-right:.2rem;}
+  button.lv{font-family:'JetBrains Mono',monospace;font-size:.9rem;font-weight:600;border:1px solid var(--border);background:#fff;color:var(--ink);border-radius:8px;padding:.4rem .72rem;cursor:pointer;}
+  button.lv.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .leg{display:inline-flex;align-items:center;gap:.35rem;font-size:.82rem;color:var(--mut);margin-right:.9rem;}
+  .sw{width:14px;height:14px;border-radius:3px;border:1px solid var(--border);display:inline-block;}
+  .say{margin-top:.7rem;font-size:.94rem;line-height:1.7;} .say b{color:var(--accent);} .say .amb{color:var(--amber);font-weight:600;}
+  .foot{font-size:.9rem;color:var(--mut);line-height:1.7;} .foot a{color:var(--accent);text-decoration:none;font-weight:600;} .foot a:hover{text-decoration:underline;} .foot b{color:var(--ink);}
+</style></head>
+<body>
+<div class="wrap">
+  <h1>準結晶 ── 並進を捨てると、5回が戻る</h1>
+  <p class="lead">周期結晶では <b>5回対称が禁制</b>だった（並進と握手できないから）。でも「並進でくり返す」という約束を手放すと ── 5回対称は堂々と戻ってくる。<br>
+  下は <b>ペンローズ・タイリング</b>。<b>2種類のひし形</b>だけで平面をすき間なく敷きつめるのに、<b>どこまでいっても同じ模様がくり返さない</b>（並進周期がない）。なのに、中心は5回対称で、全体に秩序がある。</p>
+
+  <div class="card">
+    <canvas id="cv" width="720" height="600"></canvas>
+    <div class="ctrl">
+      <span class="lbl">細かさ：</span>
+      <button class="lv" data-n="1">1</button>
+      <button class="lv" data-n="2">2</button>
+      <button class="lv" data-n="3">3</button>
+      <button class="lv on" data-n="4">4</button>
+      <button class="lv" data-n="5">5</button>
+      <button class="lv" data-n="6">6</button>
+    </div>
+    <div style="margin-top:.5rem;">
+      <span class="leg"><span class="sw" style="background:rgba(60,120,118,.20)"></span>太いひし形</span>
+      <span class="leg"><span class="sw" style="background:rgba(201,118,31,.18)"></span>細いひし形</span>
+    </div>
+    <div class="say" id="say"></div>
+  </div>
+
+  <div class="card foot">
+    <b>禁制が、戻ってくる</b><br>
+    正五角形だけでは平面を敷きつめられない（すき間が空く）── だから5回対称の<b>周期</b>結晶は無い、というのが <a href="https://tnks1407.com/nfold/">回すと、増える</a> の話だった。<br>
+    ところが、<b>太い／細い 2種類のひし形</b>に「辺の合わせ方のルール」をつけると、平面をすき間なく ── しかも <b>絶対に周期的にならない形で</b> ── 敷きつめられる。これが <b>ペンローズ・タイリング</b>（1974年）。<br><br>
+    指紋は <b>黄金比 φ ≈ 1.618</b>。タイルを細かくしていくと、太いひし形と細いひし形の<b>個数の比が φ に近づく</b>。φ は分数で表せない無理数だから、整数回でくり返す周期とは、原理的に両立しない ── これが「周期がないのに秩序がある」の正体だ。<br><br>
+    現実の物質では <b>準結晶</b>。1982年にシェヒトマンが Al-Mn 合金で <b>鋭い10回対称の回折</b>を観測（＝結晶のような長距離秩序があるのに、周期結晶では禁制の対称）。1984年に発表、長く否定された末、2011年にノーベル化学賞。結晶の定義は「<b>周期的な並び</b>」から「<b>鋭い回折を与える秩序</b>」へと広げられた。<br><br>
+    つながる先 → <a href="https://tnks1407.com/nfold/">回すと、増える（5回はなぜ閉じない）</a> ／ <a href="https://tnks1407.com/reflection/">系統的消滅（回折の指紋）</a>
+  </div>
+</div>
+
+<script>
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+const phi=(1+Math.sqrt(5))/2;
+let level=4;
+// ---- canonical P3 (rhombus) Penrose deflation, via Robinson half-triangles ----
+// triangle = {c:0|1, A:[x,y], B:[x,y], C:[x,y]}  (c=1 thick/太い, c=0 thin/細い)
+function seed(){
+  const t=[];
+  for(let i=0;i<10;i++){
+    let B=[Math.cos((2*i-1)*Math.PI/10), Math.sin((2*i-1)*Math.PI/10)];
+    let C=[Math.cos((2*i+1)*Math.PI/10), Math.sin((2*i+1)*Math.PI/10)];
+    if(i%2===0){ const tmp=B; B=C; C=tmp; }      // mirror every other
+    t.push({c:0, A:[0,0], B, C});
+  }
+  return t;
+}
+const lerp=(P,Q,f)=>[P[0]+(Q[0]-P[0])*f, P[1]+(Q[1]-P[1])*f];
+function subdivide(tris){
+  const out=[];
+  for(const {c,A,B,C} of tris){
+    if(c===0){ // thin
+      const P=lerp(A,B,1/phi);
+      out.push({c:0, A:C, B:P, C:B});
+      out.push({c:1, A:P, B:C, C:A});
+    } else {   // thick
+      const Q=lerp(B,A,1/phi);
+      const R=lerp(B,C,1/phi);
+      out.push({c:1, A:R, B:C, C:A});
+      out.push({c:1, A:Q, B:R, C:B});
+      out.push({c:0, A:R, B:Q, C:A});
+    }
+  }
+  return out;
+}
+function build(n){ let t=seed(); for(let i=0;i<n;i++) t=subdivide(t); return t; }
+function dpi(){ const r=cv.getBoundingClientRect(); const s=Math.min(2,devicePixelRatio||1);
+  cv.width=Math.round(r.width*s); cv.height=Math.round(r.width*0.82*s); ctx.setTransform(s,0,0,s,0,0); return {w:r.width,h:r.width*0.82}; }
+function draw(){
+  const {w,h}=dpi(); ctx.clearRect(0,0,w,h);
+  const tris=build(level);
+  const cx=w*0.5, cy=h*0.5, S=Math.min(w,h)*0.475;
+  const X=p=>cx+p[0]*S, Y=p=>cy+p[1]*S;
+  const fill={0:'rgba(201,118,31,.18)', 1:'rgba(60,120,118,.20)'};
+  // fill triangles by type (each rhombus = two same-type triangles)
+  for(const {c,A,B,C} of tris){
+    ctx.beginPath(); ctx.moveTo(X(A),Y(A)); ctx.lineTo(X(B),Y(B)); ctx.lineTo(X(C),Y(C)); ctx.closePath();
+    ctx.fillStyle=fill[c]; ctx.fill();
+  }
+  // stroke the two "rhombus" sides of each half-triangle (skip the diagonal A-C) → clean rhombus outlines
+  ctx.strokeStyle='#b9ad9b'; ctx.lineWidth=Math.max(0.4, 1.4-level*0.18); ctx.lineJoin='round';
+  for(const {A,B,C} of tris){
+    ctx.beginPath(); ctx.moveTo(X(A),Y(A)); ctx.lineTo(X(B),Y(B)); ctx.lineTo(X(C),Y(C)); ctx.stroke();
+  }
+  // counts → ratio approaches phi
+  let nThick=0, nThin=0; for(const t of tris){ if(t.c===1) nThick++; else nThin++; }
+  // each rhombus = 2 triangles, so divide; ratio of triangle counts already = ratio of rhombi
+  const ratio = nThin===0?0 : (nThick/nThin);
+  const say=document.getElementById('say');
+  say.innerHTML='いまの細かさで、タイルは <b>'+(tris.length)+'</b> 枚（半分に割った三角で数えている）。'+
+    '太いひし形 ÷ 細いひし形 の個数比 ＝ <span class="amb">'+ratio.toFixed(4)+'</span>　→　黄金比 φ ＝ <b>'+phi.toFixed(4)+'</b> に近づく。'+
+    '<br>中心をよく見て ── <b>5回対称</b>（72°回すと重なる）。でも外へたどっても、同じ模様が並進でくり返すことは、けっして無い。';
+}
+document.querySelectorAll('button.lv').forEach(b=>b.onclick=()=>{level=+b.dataset.n;
+  document.querySelectorAll('button.lv').forEach(c=>c.classList.toggle('on',c===b)); draw();});
+{const q=+new URLSearchParams(location.search).get('n'); if(q>=1&&q<=6){level=q;
+  document.querySelectorAll('button.lv').forEach(c=>c.classList.toggle('on',+c.dataset.n===q));}}
+addEventListener('resize',draw); draw();
+</script>
+</body></html>
