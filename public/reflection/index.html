@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ja"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>系統的消滅 ── 中心化は、回折に指紋を残す</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#f5f2ec;--card:#fff;--border:#e3dbd0;--ink:#1d1b17;--mut:#7d7568;--accent:#3c7876;--amber:#c9761f;--ghost:#ddd5c8;}
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'Zen Kaku Gothic New',system-ui,sans-serif;}
+  .wrap{max-width:760px;margin:0 auto;padding:1.4rem 1.1rem 3rem;}
+  h1{font-size:1.3rem;margin:.2rem 0 .5rem;line-height:1.35;}
+  .lead{color:var(--mut);font-size:.96rem;line-height:1.7;margin:0 0 1.1rem;}
+  .lead b{color:var(--accent);}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:14px;box-shadow:0 1px 6px rgba(29,27,23,.05);padding:1rem 1.1rem;margin-bottom:1.1rem;}
+  canvas{width:100%;height:auto;display:block;border-radius:10px;background:#fbf9f5;border:1px solid var(--border);}
+  .ctrl{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center;margin:.9rem 0 .2rem;}
+  .ctrl .lbl{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--mut);margin-right:.2rem;}
+  .ctrl .sp{flex-basis:100%;height:0;}
+  button.op{font-family:'Zen Kaku Gothic New',sans-serif;font-size:.9rem;font-weight:600;border:1px solid var(--border);background:#fff;color:var(--ink);border-radius:9px;padding:.42rem .8rem;cursor:pointer;transition:.12s;}
+  button.op:hover{border-color:var(--accent);} button.op.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+  button.op .k{font-family:'JetBrains Mono',monospace;font-size:.72rem;opacity:.7;margin-left:.25rem;}
+  button.lo{font-family:'JetBrains Mono',monospace;font-size:.88rem;font-weight:600;border:1px solid var(--border);background:#fff;color:var(--ink);border-radius:8px;padding:.36rem .66rem;cursor:pointer;}
+  button.lo.on{background:var(--amber);color:#fff;border-color:var(--amber);}
+  .say{margin-top:.7rem;font-size:.94rem;line-height:1.7;} .say b{color:var(--accent);} .say .amb{color:var(--amber);font-weight:600;}
+  .rule{font-family:'JetBrains Mono',monospace;font-size:.85rem;color:var(--mut);margin-top:.5rem;} .rule b{color:var(--ink);}
+  .foot{font-size:.9rem;color:var(--mut);line-height:1.7;} .foot a{color:var(--accent);text-decoration:none;font-weight:600;} .foot a:hover{text-decoration:underline;} .foot b{color:var(--ink);}
+</style></head>
+<body>
+<div class="wrap">
+  <h1>系統的消滅 ── 中心化は、回折に指紋を残す</h1>
+  <p class="lead">中心化（C・I・F）は、実空間で格子点を増やすだけじゃない。<b>X線回折のパターンにも痕跡を残す</b>。<br>
+  本来あるはずの反射 hkl のうち、ある種のものが <b>ちょうど打ち消し合って消える</b>。下で格子の心を切り替えて、消える点（薄いゴースト）と残る点を見比べてみて。l の層も変えられるよ。</p>
+
+  <div class="card">
+    <canvas id="cv" width="720" height="520"></canvas>
+    <div class="ctrl">
+      <span class="lbl">格子の心：</span>
+      <button class="op on" data-op="P">素な格子<span class="k">P</span></button>
+      <button class="op" data-op="C">底心<span class="k">C</span></button>
+      <button class="op" data-op="I">体心<span class="k">I</span></button>
+      <button class="op" data-op="F">面心<span class="k">F</span></button>
+      <span class="sp"></span>
+      <span class="lbl">層 l：</span>
+      <button class="lo on" data-l="0">l=0</button>
+      <button class="lo" data-l="1">l=1</button>
+      <button class="lo" data-l="2">l=2</button>
+    </div>
+    <div class="say" id="say"></div>
+    <div class="rule" id="rule"></div>
+  </div>
+
+  <div class="card foot">
+    <b>消え方を読むと、心が当てられる</b><br>
+    実空間に増えた中心化並進は、逆空間（回折）では「ある反射を消す」という形で顔を出す。中心化による条件（積分反射条件）は、こうだ。<br>
+    ・<b>P</b>：条件なし。全部の hkl が残る。<br>
+    ・<b>C</b>（底心）：<b>h+k が偶数</b>のときだけ残る。<br>
+    ・<b>I</b>（体心）：<b>h+k+l が偶数</b>のときだけ残る。<br>
+    ・<b>F</b>（面心）：<b>h,k,l が全部偶数 or 全部奇数</b>のときだけ残る。<br><br>
+    だから、写真に写った反射の「消え方」を逆に読むと、その結晶の心（P/C/I/F）を当てられる。これが、中心化や映進・らせんを学ぶ大きな理由のひとつ ── <b>対称は、実空間の模様だけでなく、回折にも現れる</b>。<br>
+    （映進面・らせん軸は、特定の列・面の反射だけを消す。ここでは中心化に絞ってある。）<br><br>
+    つながる先 → <a href="https://tnks1407.com/centering/">心（centering）</a> ／ <a href="https://sg.tnks1407.com/">空間群エクスプローラー（教材用）</a>
+  </div>
+</div>
+
+<script>
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+let op='P', L=0;
+const par=x=>((x%2)+2)%2;            // parity 0/1, negatives safe
+function present(op,h,k,l){
+  if(op==='P') return true;
+  if(op==='C') return par(h+k)===0;
+  if(op==='I') return par(h+k+l)===0;
+  /*F*/ return par(h)===par(k) && par(k)===par(l);
+}
+function dpi(){ const r=cv.getBoundingClientRect(); const s=Math.min(2,devicePixelRatio||1);
+  cv.width=Math.round(r.width*s); cv.height=Math.round(r.width*0.66*s); ctx.setTransform(s,0,0,s,0,0); return {w:r.width,h:r.width*0.66}; }
+const RANGE=4;
+function draw(){
+  const {w,h}=dpi(); ctx.clearRect(0,0,w,h);
+  const cx=w*0.5, cy=h*0.5;
+  const step=Math.min((w-70)/(2*RANGE), (h-70)/(2*RANGE));
+  // faint axes
+  ctx.strokeStyle='#ece5da'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(cx-RANGE*step-14,cy); ctx.lineTo(cx+RANGE*step+14,cy);
+  ctx.moveTo(cx,cy-RANGE*step-14); ctx.lineTo(cx,cy+RANGE*step+14); ctx.stroke();
+  // axis labels
+  ctx.fillStyle='#a59c8c'; ctx.font='600 12px "JetBrains Mono",monospace';
+  ctx.textAlign='left'; ctx.fillText('h →', cx+RANGE*step-2, cy+18);
+  ctx.textAlign='center'; ctx.fillText('k ↑', cx-16, cy-RANGE*step-2);
+  let present_n=0, total=0;
+  for(let k=RANGE;k>=-RANGE;k--){
+    for(let hh=-RANGE;hh<=RANGE;hh++){
+      const x=cx+hh*step, y=cy-k*step;
+      total++;
+      const on=present(op,hh,k,L);
+      if(on){
+        present_n++;
+        ctx.beginPath(); ctx.arc(x,y,7.2,0,7); ctx.fillStyle='#3c7876'; ctx.fill();
+        ctx.lineWidth=1.4; ctx.strokeStyle='#fff'; ctx.stroke();
+      } else {
+        // ghost: faint hollow ring where a reflection "would be"
+        ctx.beginPath(); ctx.arc(x,y,4.5,0,7); ctx.strokeStyle='#ddd5c8'; ctx.lineWidth=1.4; ctx.stroke();
+      }
+    }
+  }
+  // label the origin reflection 000 / 00L
+  ctx.fillStyle='#7d7568'; ctx.font='11px "JetBrains Mono",monospace'; ctx.textAlign='left';
+  ctx.fillText('(0,0,'+L+')', cx+9, cy-9);
+  // legend
+  ctx.textAlign='left';
+  const ly=h-12;
+  ctx.beginPath(); ctx.arc(14,ly-3,6,0,7); ctx.fillStyle='#3c7876'; ctx.fill();
+  ctx.fillStyle='#7d7568'; ctx.font='11px "JetBrains Mono",monospace'; ctx.fillText('残る反射',26,ly);
+  ctx.beginPath(); ctx.arc(108,ly-3,4.5,0,7); ctx.strokeStyle='#ccc3b4'; ctx.lineWidth=1.4; ctx.stroke();
+  ctx.fillStyle='#a59c8c'; ctx.fillText('消えた反射（ゴースト）',120,ly);
+  // text
+  const say=document.getElementById('say'), rule=document.getElementById('rule');
+  const msg={
+    P:'素な格子（<b>P</b>）。条件なし ── どの hkl も残る。消える反射は無い。',
+    C:'底心（<b>C</b>）。<span class="amb">h+k が奇数</span>の反射が、まるごと消える。l を変えても消え方は同じ（C の条件に l は効かない）。',
+    I:'体心（<b>I</b>）。<span class="amb">h+k+l が奇数</span>の反射が消える。l=0 と l=1 で市松が反転するのが分かる ── これが C との見分けになる。',
+    F:'面心（<b>F</b>）。<span class="amb">h,k,l のパリティが揃っていない</span>反射が消える。残るのは「全部偶数 or 全部奇数」だけ ── ぐっと少なくなる。',
+  };
+  const cond={P:'残る条件：なし（全反射）', C:'残る条件：h + k = 偶数', I:'残る条件：h + k + l = 偶数', F:'残る条件：h, k, l が同じパリティ'};
+  say.innerHTML=msg[op];
+  rule.innerHTML=cond[op]+'　／　この層で残る反射：<b>'+present_n+' / '+total+'</b>';
+}
+document.querySelectorAll('button.op').forEach(b=>b.onclick=()=>{op=b.dataset.op;
+  document.querySelectorAll('button.op').forEach(c=>c.classList.toggle('on',c===b)); draw();});
+document.querySelectorAll('button.lo').forEach(b=>b.onclick=()=>{L=+b.dataset.l;
+  document.querySelectorAll('button.lo').forEach(c=>c.classList.toggle('on',c===b)); draw();});
+{const q=new URLSearchParams(location.search); const o=q.get('op'); const l=q.get('l');
+ if(['P','C','I','F'].includes(o)){op=o; document.querySelectorAll('button.op').forEach(c=>c.classList.toggle('on',c.dataset.op===o));}
+ if(['0','1','2'].includes(l)){L=+l; document.querySelectorAll('button.lo').forEach(c=>c.classList.toggle('on',c.dataset.l===l));}}
+addEventListener('resize',draw); draw();
+</script>
+</body></html>
