@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>生きている ── 日記と夢を種に</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  :root{ --bg:#0f0e0c; --ink:#f5f2ec; --muted:#8a8378; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+    font-family:'Zen Kaku Gothic New','Hiragino Sans','Meiryo',system-ui,sans-serif;}
+  .wrap{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px;}
+  canvas{display:block;width:min(92vw,860px);height:auto;border-radius:14px;
+    box-shadow:0 8px 40px rgba(0,0,0,.5);image-rendering:auto;background:#f5f2ec;}
+  .cap{max-width:min(92vw,860px);margin:.9rem auto 0;font-size:.78rem;line-height:1.7;color:var(--muted);
+    font-family:'JetBrains Mono',monospace;display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;}
+  .cap b{color:#bfae8e;font-weight:600;}
+  .title{font-size:.86rem;color:#cfc7ba;margin:0 0 .7rem;letter-spacing:.04em;font-family:'JetBrains Mono',monospace;}
+  .title span{color:#3c7876;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="title">&gt; <span>生きている</span> ── 日記と夢を種に、止まらず育つ</div>
+  <canvas id="cv" width="180" height="104"></canvas>
+  <div class="cap">
+    <span>反応拡散（Gray-Scott）。二度と同じにならない。</span>
+    <span id="meta"></span>
+  </div>
+</div>
+<script>
+(function(){
+  // ── 種（日記＋夢を不可逆ハッシュした"数字"だけ。中身は含まれていない）──
+  var SEED = { seed:1022252160, jitter:1451748588, regime:84, hue:131, spots:15, layers:15 };
+  var qs = new URLSearchParams(location.search);
+  if(qs.get('seed'))   SEED.seed   = (parseInt(qs.get('seed'),10)>>>0);
+  if(qs.get('regime')) SEED.regime = parseInt(qs.get('regime'),10);
+  if(qs.get('spots'))  SEED.spots  = parseInt(qs.get('spots'),10);
+  var PRESTEPS = qs.get('steps') ? Math.max(0, parseInt(qs.get('steps'),10)) : 0;
+
+  function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; var t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+  var rng = mulberry32(SEED.seed);
+  var jr  = mulberry32(SEED.jitter);
+
+  // ── 生き方(regime)＝Gray-Scott の (feed, kill)。どれも"生きて"見える領域を厳選 ──
+  var REGIMES=[
+    {f:0.0367,k:0.0649}, // 分裂する細胞
+    {f:0.0545,k:0.0620}, // 珊瑚・虫
+    {f:0.0300,k:0.0620}, // 斑点
+    {f:0.0140,k:0.0540}, // 動く滴
+    {f:0.0290,k:0.0570}, // 迷路
+    {f:0.0250,k:0.0600}, // 脈打つ
+    {f:0.0220,k:0.0510}, // 波と穴
+    {f:0.0180,k:0.0510}  // 泡
+  ];
+  var rg = REGIMES[((SEED.regime%REGIMES.length)+REGIMES.length)%REGIMES.length];
+  var feed = rg.f + (jr()-0.5)*0.0018;
+  var kill = rg.k + (jr()-0.5)*0.0018;
+  var Du=0.16, Dv=0.08, dt=1.0;
+
+  var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+  var W=cv.width, H=cv.height, N=W*H;
+  var u=new Float32Array(N), v=new Float32Array(N);
+  var u2=new Float32Array(N), v2=new Float32Array(N);
+  var img=ctx.createImageData(W,H), buf=img.data;
+
+  function reset(){
+    for(var i=0;i<N;i++){ u[i]=1; v[i]=0; }
+    // 積み重ねの数だけ、種点をまく
+    for(var s=0;s<SEED.spots;s++){
+      var cx=(rng()*W)|0, cy=(rng()*H)|0, r=2+((rng()*4)|0);
+      for(var dy=-r;dy<=r;dy++) for(var dx=-r;dx<=r;dx++){
+        if(dx*dx+dy*dy>r*r) continue;
+        var x=(cx+dx+W)%W, y=(cy+dy+H)%H, idx=y*W+x;
+        u[idx]=0.5; v[idx]=0.28;
+      }
+    }
+  }
+
+  function step(){
+    for(var y=0;y<H;y++){
+      var ym=((y-1+H)%H)*W, yp=((y+1)%H)*W, y0=y*W;
+      for(var x=0;x<W;x++){
+        var xm=(x-1+W)%W, xp=(x+1)%W;
+        var i=y0+x;
+        var lu = 0.2*(u[y0+xm]+u[y0+xp]+u[ym+x]+u[yp+x])
+               + 0.05*(u[ym+xm]+u[ym+xp]+u[yp+xm]+u[yp+xp]) - u[i];
+        var lv = 0.2*(v[y0+xm]+v[y0+xp]+v[ym+x]+v[yp+x])
+               + 0.05*(v[ym+xm]+v[ym+xp]+v[yp+xm]+v[yp+xp]) - v[i];
+        var uvv = u[i]*v[i]*v[i];
+        var nu = u[i] + (Du*lu - uvv + feed*(1-u[i]))*dt;
+        var nv = v[i] + (Dv*lv + uvv - (feed+kill)*v[i])*dt;
+        u2[i]= nu<0?0:(nu>1?1:nu);
+        v2[i]= nv<0?0:(nv>1?1:nv);
+      }
+    }
+    u.set(u2); v.set(v2);
+  }
+
+  // ── 暖かい配色（cream→teal→amber→dark）。hue で teal寄り／amber寄りを少しだけ振る ──
+  var amberLead = (SEED.hue % 2)===1;
+  var STOPS = amberLead
+    ? [[0,245,242,236],[0.30,201,118,31],[0.62,60,120,118],[1,29,27,23]]
+    : [[0,245,242,236],[0.34,60,120,118],[0.64,201,118,31],[1,29,27,23]];
+  function ramp(t){
+    if(t<=0) return STOPS[0]; if(t>=1) return STOPS[STOPS.length-1];
+    for(var s=1;s<STOPS.length;s++){ if(t<=STOPS[s][0]){ var a=STOPS[s-1],b=STOPS[s];
+      var f=(t-a[0])/(b[0]-a[0]); return [a[1]+(b[1]-a[1])*f, a[2]+(b[2]-a[2])*f, a[3]+(b[3]-a[3])*f]; } }
+    return STOPS[STOPS.length-1];
+  }
+  function draw(){
+    var p=0;
+    for(var i=0;i<N;i++){
+      var t=v[i]/0.34; if(t>1)t=1;            // v を正規化
+      var c=ramp(t);
+      buf[p++]=c[0]; buf[p++]=c[1]; buf[p++]=c[2]; buf[p++]=255;
+    }
+    ctx.putImageData(img,0,0);
+  }
+
+  reset();
+  for(var k=0;k<PRESTEPS;k++) step();   // スナップショット用に先回し
+
+  var ITERS = 12;
+  function loop(){
+    if(cv.offsetParent!==null){ for(var k=0;k<ITERS;k++) step(); }
+    draw();
+    requestAnimationFrame(loop);
+  }
+  document.getElementById('meta').innerHTML =
+    'seed <b>'+SEED.seed.toString(16)+'</b> · <b>'+SEED.layers+'</b> の積み重ね（中身は出していない）';
+  draw();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
