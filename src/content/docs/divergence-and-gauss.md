@@ -111,6 +111,8 @@ $$\nabla\cdot\vec{F} = \frac{\partial F_x}{\partial x} + \frac{\partial F_y}{\pa
 <figcaption style="font-size:.8rem;color:#aaa49b;margin-top:.3rem;">発散＝小さな箱で、出ていく量から入ってくる量を引いたもの。出るほうが多ければ「ここで湧いている」（発散＞0）。箱を点まで縮めた、その場の湧き出しが ∇·F。</figcaption>
 </figure>
 
+発散は、電場や重力だけの道具じゃない。「一点からの正味の湧き出し」を測るという意味では、どんな流れにも効く ── そこが面白い所だ。**流体** なら、$\nabla\cdot\vec{v}$ は「その点で水が湧いているか・吸い込まれているか」そのもの（蛇口は湧き出し、排水口は吸い込み）。縮まない流れ（非圧縮）は、源のある所以外では $\nabla\cdot\vec{v}=0$ ── どこでも出入りが釣り合う。**熱** なら、熱の流れの発散は「その点でどれだけ熱が生まれているか」。**電流** なら、$\nabla\cdot\vec{J}$ は電荷が溜まっていく速さで、定常状態では $\nabla\cdot\vec{J}=0$ ── これは回路の **キルヒホッフの電流則**（節点で電流の出入りが釣り合う）そのものだ。同じ「小さな箱の出入りを数える」が、水でも熱でも電流でも効いている。
+
 ## 大きな袋か、小さな箱か ── 同じ法則の二つの顔
 
 ここまでで、ガウスの法則に二つの顔が出てきた。
@@ -173,11 +175,3 @@ $$\nabla^2\phi = -(\text{源})$$
 場の湧き出し（$\nabla\cdot\vec{E}$）と、ポテンシャルの曲がり（$\nabla^2\phi$）がつながると、この一本の式になる ── **ポアソン方程式**。源を入れると、ポテンシャルがどう曲がるかを決める式だ。
 
 そしてその先で、いよいよ ── 「**一点の源への、たった一発の返事**」を使って、この方程式を解く道具が出てくる。④でずっと足し続けてきた、あの $1/r$ の返事。それに名前がつく。
-
-<nav style="margin-top:2.2rem;padding-top:1rem;border-top:1px solid #e3dbd0;font-family:'JetBrains Mono',monospace;font-size:.82rem;color:#7d7568;display:flex;gap:.4rem .9rem;flex-wrap:wrap;align-items:center;">
-  <span>← 前回 <a href="/docs/field-from-sources/">源を足して、場を作る</a></span>
-  <span style="color:#cfc9be;">/</span>
-  <span>今回 <b style="color:#3c7876;">場の湧き出しを数える</b></span>
-  <span style="color:#cfc9be;">/</span>
-  <span>次回 <a href="/docs/source-bends-potential/">源はポテンシャルを曲げる</a></span>
-</nav>

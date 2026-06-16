@@ -52,6 +52,8 @@ $$t = t' + \frac{|\vec{x}-\vec{x}'|}{c}$$
 
 私たちが見ている太陽は、8分前の太陽だ（光が地球まで旅するのに8分かかる）。遠くの雷は、光ってから音が遅れて届く。夜空の星に至っては、何年も、何千年も前の光を見ている。── 「いま」見えているものは、どれも、**少し前にそこで起きたこと** の返事が、いま到着したものなんだ。波の世界では、「同時」は、そう簡単には成り立たない。
 
+そしてこの「遅れ」は、ただの不思議じゃなく、**ものさし**にもなる。**GPS** は、衛星からの電波が届くまでの旅の時間（$r/c$）を測って、自分の位置を逆算している ── 遅れそのものが測定の道具だ。**地震** では、速いP波と遅いS波の到達の差から、震源までの距離を当てる。**レーダーやソナー** は、送った波が往復して戻る遅れで、相手までの距離を測る。さらに ── アンテナが電波を放つしくみ（**遅延ポテンシャル**）も、まさにこの「遅れて届く返事」を、源の分だけ足したものなんだ。遅れを知ることは、距離と時間を測ること。
+
 ## どんな源も、遅れた返事を足す
 
 解き方は、やっぱり変わらない。源が時間とともに動いても ── 各瞬間・各場所の「叩き」に、時空のグリーン関数（遅れて届く返事）を置いて、**全部足す**。ただし今度は、空間だけでなく、**過去の時間ぜんぶ** にわたって足す：
@@ -98,10 +100,4 @@ $$\phi(\vec{x},t) = \iint G\,\rho(\vec{x}',t')\,d\vec{x}'\,dt'$$
 
 いつか、覚悟ができたら、その扉を開けよう。それまでは、ここで掴んだ「一発の返事を足す」を、お守りに。── おつかれさま。
 
-<nav style="margin-top:2.2rem;padding-top:1rem;border-top:1px solid #e3dbd0;font-family:'JetBrains Mono',monospace;font-size:.82rem;color:#7d7568;display:flex;gap:.4rem .9rem;flex-wrap:wrap;align-items:center;">
-  <span>← 前回 <a href="/docs/green-function/">一発の返事で、方程式を解く</a></span>
-  <span style="color:#cfc9be;">/</span>
-  <span>今回 <b style="color:#3c7876;">遅れて届く返事</b></span>
-  <span style="color:#cfc9be;">/</span>
-  <span>── 第3章 完 ──</span>
-</nav>
+<p style="text-align:center;margin:2rem 0 0;font-family:'JetBrains Mono',monospace;font-size:.82rem;color:#7d7568;">── 第3章 完 ──</p>
