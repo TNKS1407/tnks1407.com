@@ -45,6 +45,8 @@
     <canvas id="cv" width="720" height="240"></canvas>
     <div class="controls">
       <div class="cg"><label>玉の数 N</label><input type="range" id="nN" min="3" max="48" step="1" value="24"><span class="v" id="nN-v">24</span></div>
+      <div class="cg"><label>時間きざみ Δt</label><input type="range" id="dt" min="0.04" max="1.20" step="0.02" value="0.18"><span class="v" id="dt-v">0.18</span></div>
+      <div class="cg"><label>減衰</label><input type="range" id="dmp" min="0" max="0.06" step="0.005" value="0"><span class="v" id="dmp-v">0.00</span></div>
       <button class="btn primary" id="pluck">弾く</button>
       <button class="btn" id="m1">基準モード1</button>
       <button class="btn" id="m2">2</button>
@@ -63,10 +65,12 @@
   var qs=new URLSearchParams(location.search);
   var qn=parseInt(qs.get('n')); var N=(qn>=3&&qn<=48)?qn:24;   // 内部の玉の数（両端の壁は別）
   var k=1, m=1, dt=0.18, sub=6, damp=0.0;
-  var y=[], v=[], state='静止', curMode=0;
+  var qdt=parseFloat(qs.get('dt')); if(qdt>=0.04&&qdt<=1.2) dt=qdt;          // ?dt= で時間きざみを指定（記事の埋め込み用）
+  var qdmp=parseFloat(qs.get('damp')); if(qdmp>=0&&qdmp<=0.06) damp=qdmp;    // ?damp= で減衰を指定
+  var y=[], v=[], state='静止', curMode=0, diverged=false;
   var mL=26, mR=W-26, SCALE=40;
 
-  function alloc(){ y=new Array(N+2).fill(0); v=new Array(N+2).fill(0); }
+  function alloc(){ y=new Array(N+2).fill(0); v=new Array(N+2).fill(0); diverged=false; }
   function rest(){ alloc(); state='静止'; curMode=0; }
   function pluck(){
     alloc(); state='弾いた（波が走る）'; curMode=0;
@@ -84,6 +88,14 @@
       for(var j=1;j<=N;j++){ v[j]=(v[j]+a[j]*dt)*(1-damp); }
       for(var p=1;p<=N;p++){ y[p]+=v[p]*dt; }
       y[0]=0; y[N+1]=0; v[0]=0; v[N+1]=0;
+    }
+    // 発散ガード：Δt が安定限界を越えると、最高次モード（ギザギザ）が爆発する。
+    // それを「無かったこと」にせず、ギザギザの形を残したまま止めて、理由を伝える。
+    var mx=0; for(var q=1;q<=N;q++){ var a2=Math.abs(y[q]); if(a2>mx) mx=a2; }
+    if(!isFinite(mx)){ alloc(); state='発散した（Δt が大きすぎ）'; diverged=true; }
+    else if(mx>8){
+      for(var r=1;r<=N;r++){ y[r]=y[r]/mx*1.4; v[r]=0; }   // ギザギザを残して正規化＝最高次モードを見せる
+      state='発散した（Δt が大きすぎ）'; curMode=0; diverged=true;
     }
   }
   function px(i){ return mL + (mR-mL)*i/(N+1); }
@@ -114,17 +126,30 @@
         ctx.beginPath(); ctx.arc(xi,MID,3,0,2*Math.PI); ctx.fillStyle=FAINT; ctx.fill();
       }
     }
-    var note = (curMode>0)
-      ? '基準モード <b>m='+curMode+'</b>：腹が '+curMode+' 個の定在波。鎖は形を保って上下に揺れる＝前にやった定在波そのもの。'
-      : (state.indexOf('弾')===0
-          ? '弾いた山が左右へ走り、壁（固定端）で跳ね返って重なる。これは N 個の F=ma が勝手に作る波だよ。'
-          : '「弾く」か「基準モード」を押してみて。');
-    read.innerHTML='玉の数 <b>N='+N+'</b>（両端は壁に固定）・状態：<b>'+state+'</b><br>'+note;
+    var dtCrit=Math.sqrt(m/k);            // ≈1：これを越えると最高次モードが数値的に発散する
+    var ratio=dt/dtCrit, stabCol, stabTxt;
+    if(diverged){ stabCol=RED; stabTxt='発散領域'; }
+    else if(ratio<0.8){ stabCol=TEAL; stabTxt='安定'; }
+    else if(ratio<1.0){ stabCol=AMBER; stabTxt='境目に接近'; }
+    else { stabCol=RED; stabTxt='発散領域'; }
+    var stab='数値の安定：<b style="color:'+stabCol+'">'+stabTxt+'</b>（Δt='+dt.toFixed(2)+' ／ 限界 ≈'+dtCrit.toFixed(2)+'）';
+    var note = diverged
+      ? 'Δt が安定限界（≈'+dtCrit.toFixed(2)+'）を越えて、最高次のギザギザモードが爆発した。これはバグじゃなく <b>数値計算の安定限界</b> ── 刻みが粗いと、速い波を一歩で追い越してしまう。Δt を下げて、もう一度弾いてみて。'
+      : (curMode>0)
+        ? '基準モード <b>m='+curMode+'</b>：腹が '+curMode+' 個の定在波。鎖は形を保って上下に揺れる＝前にやった定在波そのもの。'
+        : (state.indexOf('弾')===0
+            ? '弾いた山が左右へ走り、壁（固定端）で跳ね返って重なる。これは N 個の F=ma が勝手に作る波だよ。'
+            : '「弾く」か「基準モード」を押してみて。減衰を上げると、だんだん静かになる。');
+    read.innerHTML='玉の数 <b>N='+N+'</b>（両端は壁に固定）・状態：<b>'+state+'</b><br>'+stab+'<br>'+note;
   }
-  function loop(){ if(cv.offsetParent!==null){ if(state!=='静止') physStep(); } draw(); requestAnimationFrame(loop); }
+  function loop(){ if(cv.offsetParent!==null){ if(state!=='静止' && !diverged) physStep(); } draw(); requestAnimationFrame(loop); }
 
   // 操作
   nEl.oninput=function(){ N=+nEl.value; nV.textContent=N; rest(); };
+  var dtEl=document.getElementById('dt'), dtV=document.getElementById('dt-v');
+  var dmpEl=document.getElementById('dmp'), dmpV=document.getElementById('dmp-v');
+  dtEl.oninput=function(){ dt=+dtEl.value; dtV.textContent=dt.toFixed(2); diverged=false; };
+  dmpEl.oninput=function(){ damp=+dmpEl.value; dmpV.textContent=damp.toFixed(3); };
   document.getElementById('pluck').onclick=pluck;
   document.getElementById('m1').onclick=function(){ mode(1); };
   document.getElementById('m2').onclick=function(){ mode(2); };
@@ -146,8 +171,10 @@
   cv.addEventListener('touchmove',function(e){ e.preventDefault(); if(dragging) pinch(e); },{passive:false});
   cv.addEventListener('touchend',function(e){ e.preventDefault(); dragging=false; if(state.indexOf('つま')===0) state='弾いた（波が走る）'; },{passive:false});
 
-  // init（?n=, ?mode=, ?pluck= で初期状態を指定／記事から埋め込み）
+  // init（?n=, ?dt=, ?damp=, ?mode=, ?pluck= で初期状態を指定／記事から埋め込み）
   nV.textContent=N;
+  dtEl.value=dt; dtV.textContent=dt.toFixed(2);
+  dmpEl.value=damp; dmpV.textContent=damp.toFixed(3);
   var qm=parseInt(qs.get('mode'));
   if(qm>=1&&qm<=3){ mode(qm); }
   else if(qs.get('pluck')!=null){ pluck(); }
