@@ -8,6 +8,7 @@ demoLabel: "ばね玉の鎖を全画面で開く"
 series: "conservation"
 order: 1
 related:
+  - { title: "なぜシミュレーションは壊れるのか（CFL＝格子の速度制限）", url: "/docs/why-simulations-break/" }
   - { title: "力学：仕事とエネルギー", url: "/docs/work-energy/" }
   - { title: "波動：声道と共鳴（波動方程式が出てくる）", url: "/docs/formant-transfer-matrix/" }
 ---
