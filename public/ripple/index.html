@@ -61,8 +61,8 @@
   var ddEl=document.getElementById('dd'), ddV=document.getElementById('dd-v'), dwrap=document.getElementById('dwrap');
   var read=document.getElementById('read');
   var qs=new URLSearchParams(location.search);
-  var SURF=[250,248,244], TEAL=[60,120,118], AMBER=[201,118,31];
-  var mode='1', phase=0, last=null, srcs=[], rtab=[];   // rtab[s] = Float32Array(W*H) 距離
+  var SURF=[250,248,244], TEAL=[60,120,118], AMBER=[201,118,31], NODE=[88,96,92];
+  var mode='1', phase=0, last=null, srcs=[], rtab=[], env=null;   // rtab[s]=距離, env=干渉の振幅包絡（節線用）
   var SX=Math.round(W*0.16);                            // 波源のx（左寄り）
 
   function setSources(){
@@ -77,6 +77,24 @@
       for(var y=0;y<H;y++){ var dy=y-s.y; for(var x=0;x<W;x++){ var dx=x-s.x; a[idx++]=Math.sqrt(dx*dx+dy*dy); } }
       return a;
     });
+    buildEnv();
+  }
+  // 干渉の「振幅の包絡」を一度だけ計算する。env が小さい場所＝2つの波がいつも逆位相でぶつかる＝消し合いの線（節）。
+  // 包絡は位相に依らず静止しているので、これを暗い線にすれば、動く波の上に消し合いの骨格が浮かぶ。
+  function buildEnv(){
+    env=null;
+    if(mode!=='2') return;
+    var lam=+lamEl.value, k=2*Math.PI/lam, ns=srcs.length, e=new Float32Array(W*H), mx=0;
+    for(var i=0;i<W*H;i++){
+      var re=0, im=0;
+      for(var s=0;s<ns;s++){
+        var r=rtab[s][i], amp=1/Math.sqrt(0.6+r*k/6.283);
+        re+=amp*Math.cos(k*r); im+=amp*Math.sin(k*r);
+      }
+      var a2=Math.sqrt(re*re+im*im); e[i]=a2; if(a2>mx)mx=a2;
+    }
+    if(mx>0) for(var j=0;j<W*H;j++) e[j]/=mx;
+    env=e;
   }
   function frame(){
     var lam=+lamEl.value, k=2*Math.PI/lam, ns=srcs.length, ph=phase;
@@ -92,12 +110,17 @@
         A += amp*Math.cos(k*r - ph);
       }
       var t=A/scale; if(t>1)t=1; else if(t<-1)t=-1;
-      var c0,c1,m;
+      var c1, m;
       if(t>=0){ m=t; c1=TEAL; } else { m=-t; c1=AMBER; }
-      buf[p++]=SURF[0]+(c1[0]-SURF[0])*m;
-      buf[p++]=SURF[1]+(c1[1]-SURF[1])*m;
-      buf[p++]=SURF[2]+(c1[2]-SURF[2])*m;
-      buf[p++]=255;
+      var r0=SURF[0]+(c1[0]-SURF[0])*m;
+      var g0=SURF[1]+(c1[1]-SURF[1])*m;
+      var b0=SURF[2]+(c1[2]-SURF[2])*m;
+      if(env){                                    // 節線（消し合い）を暗い線で重ねる
+        var nd=(0.15-env[i])/0.15;
+        if(nd>0){ if(nd>1)nd=1; nd*=0.82;
+          r0+=(NODE[0]-r0)*nd; g0+=(NODE[1]-g0)*nd; b0+=(NODE[2]-b0)*nd; }
+      }
+      buf[p++]=r0; buf[p++]=g0; buf[p++]=b0; buf[p++]=255;
     }
     ctx.putImageData(img,0,0);
     // 波源の点
@@ -105,7 +128,7 @@
     for(var q=0;q<srcs.length;q++){ ctx.beginPath(); ctx.arc(srcs[q].x,srcs[q].y,2.2,0,2*Math.PI); ctx.fill(); }
     var note;
     if(mode==='1') note='1つの波源から、丸い波（波紋）が等速で広がる。これが「点を一発叩いたときの返事」＝点源の応答だよ。';
-    else if(mode==='2') note='2つの波源。山と山・谷と谷が重なる線では強め合い、山と谷がぶつかる線では消し合う＝<b>干渉</b>。間隔 d や波長 λ を変えると縞が動く。波の足し算（重ね合わせ）が目に見える。';
+    else if(mode==='2') note='2つの波源。山と山・谷と谷が重なる所で強め合い、<b>暗い線</b>では消し合う＝<b>干渉</b>。この暗い線（節）は、2つの波がいつも逆位相でぶつかり、水面がほとんど動かない場所。波は流れているのに、消し合いの骨格だけは静止しているのが面白い。間隔 d や波長 λ を変えると縞が動く。';
     else note='波源を横一列に並べると、丸い波が足し合わさって右に<b>平面波</b>が立つ。波面は「無数の点源が出す小さな波の足し算」でできている——これが<b>ホイヘンスの原理</b>。';
     read.innerHTML=note;
   }
