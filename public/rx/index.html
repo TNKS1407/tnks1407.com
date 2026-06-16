@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>受信機をぜんぶ開ける ── IQから音まで</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  :root{ --bg:#f5f2ec;--card:#fff;--border:#e3dbd0;--accent:#3c7876;--amber:#c9761f;--red:#c2543d;
+    --text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;--surf:#faf8f4; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--text);
+    font-family:'Zen Kaku Gothic New','Hiragino Sans','Meiryo',system-ui,sans-serif;line-height:1.6;}
+  .wrap{max-width:880px;margin:0 auto;padding:14px 14px 28px;}
+  h1{font-size:1.05rem;margin:0 0 .2rem;}
+  .sub{font-size:.78rem;color:var(--muted);margin:0 0 .9rem;line-height:1.6;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:12px 13px;margin:0 0 12px;box-shadow:0 1px 6px rgba(29,27,23,.05);}
+  .lab{font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--muted);margin:0 0 .35rem;}
+  canvas{display:block;width:100%;border:1px solid var(--border);border-radius:9px;background:var(--surf);}
+  .row{display:flex;gap:12px;flex-wrap:wrap;}
+  .row .card{flex:1 1 230px;margin:0;}
+  .controls{display:flex;flex-wrap:wrap;gap:.55rem 1rem;align-items:center;}
+  .cg{display:flex;align-items:center;gap:.5rem;}
+  .cg label{font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--muted);white-space:nowrap;}
+  .cg input[type=range]{width:120px;accent-color:var(--accent);}
+  .cg .v{font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--accent);font-weight:600;min-width:4ch;}
+  .btn{padding:.28rem .66rem;border:1px solid var(--border);border-radius:7px;background:none;
+    font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--muted);cursor:pointer;transition:.15s;}
+  .btn:hover{border-color:var(--accent);color:var(--accent);}
+  .btn.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .btn.warn{border-color:var(--red);color:var(--red);}
+  .read{margin-top:.6rem;font-family:'JetBrains Mono',monospace;font-size:.76rem;color:var(--text);
+    background:var(--surf);border:1px solid var(--border);border-radius:9px;padding:.5rem .7rem;line-height:1.8;}
+  .read b{color:var(--accent);} .read .r{color:var(--red);font-weight:700;}
+  .presets{display:flex;gap:.5rem;flex-wrap:wrap;margin:.2rem 0 .6rem;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>受信機を、ぜんぶ開ける ── <span style="font-family:'JetBrains Mono',monospace;color:var(--accent);">IQ → 音</span></h1>
+  <p class="sub">電波（複素IQサンプル）を、受信機が音に変えるまでの全工程を、自分の手で歩く。同調でDCへ寄せ、帯域で1本を切り出し、間引いて、復調する。── 魔法の箱の中を透かして、<b>嘘をつく所（エイリアス・ノイズ）まで正直に</b>見る。</p>
+
+  <div class="presets">
+    <span class="lab" style="align-self:center;">プリセット：</span>
+    <button class="btn" id="pAM">AMに合わせる</button>
+    <button class="btn" id="pFM">FMに合わせる</button>
+    <button class="btn warn" id="pAlias">わざとエイリアスを起こす</button>
+  </div>
+
+  <div class="card">
+    <div class="lab">① 電波の風景（スペクトル）── 緑＝信号, 破線＝ノイズフロア, 橙＝同調位置, 帯＝通過帯域, 赤＝間引き後のナイキスト/折り返し</div>
+    <canvas id="spec" width="850" height="250"></canvas>
+  </div>
+
+  <div class="row">
+    <div class="card">
+      <div class="lab">② IQ平面（同調＋フィルタ後の複素サンプルの軌跡）</div>
+      <canvas id="iq" width="320" height="240"></canvas>
+    </div>
+    <div class="card">
+      <div class="lab">③ 受信した中身（復調の出力波形）</div>
+      <canvas id="out" width="320" height="240"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="controls">
+      <div class="cg"><label>同調 f</label><input type="range" id="tune" min="-90" max="90" step="0.5" value="28"><span class="v" id="tune-v">28k</span></div>
+      <div class="cg"><label>帯域 BW</label><input type="range" id="bw" min="2" max="150" step="1" value="8"><span class="v" id="bw-v">8k</span></div>
+      <div class="cg"><label>間引き D</label><input type="range" id="dec" min="1" max="16" step="1" value="8"><span class="v" id="dec-v">8</span></div>
+      <div class="cg"><label>ノイズ</label><input type="range" id="noise" min="0" max="100" step="1" value="7"><span class="v" id="noise-v">.07</span></div>
+      <div class="cg"><label>復調</label>
+        <button class="btn on" id="mAM">AM</button><button class="btn" id="mFM">FM</button><button class="btn" id="mNone">なし</button>
+      </div>
+    </div>
+    <div class="read" id="read"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var TEAL='#3c7876', AMBER='#c9761f', RED='#c2543d', MUT='#7d7568', FAINT='#cfc9be', SURF='#faf8f4', GRID='#ece6dc';
+  var fs=200000, N=8192;          // サンプリング周波数 と 処理ブロック長
+  var I=new Float32Array(N), Q=new Float32Array(N);
+  var demod='AM';
+
+  // ── 乱数（再現性のため種固定）──
+  function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+  function gauss(rng){var u=1-rng(),v=rng();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+
+  // ── 電波の風景を合成（中身が分かってるから"嘘"も誠実に示せる）──
+  // S1: AMの声  +28kHz, 変調音 1.2kHz, 深さ0.8
+  // S2: FMの音  -40kHz, 変調音 2.5kHz, 偏移 6kHz
+  // S3: 純キャリア(CW) +64kHz
+  var SIG=[
+    {name:'AMの声', type:'AM', f:28000, tone:1200, a:1.0, depth:0.8},
+    {name:'FMの音', type:'FM', f:-40000, tone:2500, a:0.9, dev:6000},
+    {name:'CW',     type:'CW', f:64000, tone:0,   a:0.55}
+  ];
+  function buildScene(nlev){
+    var rng=mulberry32(12345);
+    for(var n=0;n<N;n++){ I[n]=0; Q[n]=0; }
+    for(var s=0;s<SIG.length;s++){
+      var g=SIG[s], w=2*Math.PI*g.f/fs;
+      for(var n=0;n<N;n++){
+        var ph, amp=g.a;
+        if(g.type==='AM'){ amp=g.a*(1+g.depth*Math.cos(2*Math.PI*g.tone*n/fs)); ph=w*n; }
+        else if(g.type==='FM'){ var beta=g.dev/g.tone; ph=w*n + beta*Math.sin(2*Math.PI*g.tone*n/fs); }
+        else { ph=w*n; }
+        I[n]+=amp*Math.cos(ph); Q[n]+=amp*Math.sin(ph);
+      }
+    }
+    for(var n=0;n<N;n++){ I[n]+=nlev*gauss(rng); Q[n]+=nlev*gauss(rng); }
+  }
+
+  // ── FFT（反復基数2, 複素）──
+  function fft(re,im,inv){
+    var n=re.length;
+    for(var i=1,j=0;i<n;i++){ var bit=n>>1; for(;j&bit;bit>>=1) j^=bit; j^=bit;
+      if(i<j){ var tr=re[i];re[i]=re[j];re[j]=tr; var ti=im[i];im[i]=im[j];im[j]=ti; } }
+    for(var len=2;len<=n;len<<=1){ var ang=(inv?2:-2)*Math.PI/len, wr=Math.cos(ang), wi=Math.sin(ang);
+      for(var i=0;i<n;i+=len){ var cr=1,ci=0;
+        for(var k=0;k<(len>>1);k++){ var p=i+k, qd=i+k+(len>>1);
+          var vr=re[qd]*cr-im[qd]*ci, vi=re[qd]*ci+im[qd]*cr;
+          re[qd]=re[p]-vr; im[qd]=im[p]-vi; re[p]+=vr; im[p]+=vi;
+          var ncr=cr*wr-ci*wi; ci=cr*wi+ci*wr; cr=ncr;
+        } } }
+    if(inv){ for(var i=0;i<n;i++){ re[i]/=n; im[i]/=n; } }
+  }
+  function specMag(re,im){ // Hann窓→FFT→dB（fftshift順, freq昇順）
+    var n=re.length, wr=new Float32Array(n), wi=new Float32Array(n);
+    for(var k=0;k<n;k++){ var w=0.5-0.5*Math.cos(2*Math.PI*k/(n-1)); wr[k]=re[k]*w; wi[k]=im[k]*w; }
+    fft(wr,wi,false);
+    var mag=new Float32Array(n);
+    for(var k=0;k<n;k++){ var idx=(k+n/2)%n; mag[k]=Math.sqrt(wr[idx]*wr[idx]+wi[idx]*wi[idx])/n; }
+    return mag; // mag[0]= -fs/2 ... mag[n-1]≈+fs/2
+  }
+
+  // ── 受信チェーン ──
+  var chain={};
+  function process(){
+    var ftune=+tune.value*1000, bwv=+bw.value*1000, D=+dec.value;
+    // ① ミキサ：ftune を 0 へ
+    var yr=new Float32Array(N), yi=new Float32Array(N);
+    var wt=-2*Math.PI*ftune/fs;
+    for(var n=0;n<N;n++){ var c=Math.cos(wt*n), s=Math.sin(wt*n);
+      yr[n]=I[n]*c - Q[n]*s; yi[n]=I[n]*s + Q[n]*c; }
+    // ② フィルタ：FFTで |f|>bw/2 を落とす（ブリックウォール）
+    var fr=yr.slice(0), fi=yi.slice(0); fft(fr,fi,false);
+    for(var k=0;k<N;k++){ var fk=(k<=N/2?k:k-N)*fs/N; if(Math.abs(fk)>bwv/2){ fr[k]=0; fi[k]=0; } }
+    fft(fr,fi,true); // 逆FFT → フィルタ後の時間波形 fr,fi
+    // ③ 間引き
+    var M=Math.floor(N/D), fs2=fs/D;
+    var dr=new Float32Array(M), di=new Float32Array(M);
+    for(var m=0;m<M;m++){ dr[m]=fr[m*D]; di[m]=fi[m*D]; }
+    // ④ 復調
+    var out=new Float32Array(M);
+    if(demod==='AM'){ var mean=0; for(var m=0;m<M;m++){ out[m]=Math.sqrt(dr[m]*dr[m]+di[m]*di[m]); mean+=out[m]; } mean/=M; for(var m=0;m<M;m++) out[m]-=mean; }
+    else if(demod==='FM'){ for(var m=1;m<M;m++){ var a=Math.atan2(di[m],dr[m])-Math.atan2(di[m-1],dr[m-1]); if(a>Math.PI)a-=2*Math.PI; if(a<-Math.PI)a+=2*Math.PI; out[m]=a*fs2/(2*Math.PI); } out[0]=out[1]||0; }
+    else { for(var m=0;m<M;m++) out[m]=dr[m]; }
+    // 出力の主成分（音）を検出
+    var P=1; while(P*2<=M) P<<=1; // 2の冪に切り詰め
+    var orr=new Float32Array(P), oii=new Float32Array(P), mo=0;
+    for(var m=0;m<P;m++){ orr[m]=out[m]; }
+    // 出力DC除去
+    var dc=0; for(var m=0;m<P;m++) dc+=orr[m]; dc/=P; for(var m=0;m<P;m++) orr[m]-=dc;
+    fft(orr,oii,false);
+    var best=0,bf=0; for(var k=1;k<P/2;k++){ var mg=orr[k]*orr[k]+oii[k]*oii[k]; var f=k*fs2/P; if(f>150&&f<12000&&mg>best){best=mg;bf=f;} }
+    chain={ ftune:ftune, bw:bwv, D:D, fs2:fs2, fr:fr, fi:fi, out:out, M:M, detect:bf, alias:(bwv/2>fs2/2) };
+  }
+
+  // ── 描画 ──
+  var spec=document.getElementById('spec'), sx=spec.getContext('2d');
+  var iqc=document.getElementById('iq'), ix=iqc.getContext('2d');
+  var outc=document.getElementById('out'), ox=outc.getContext('2d');
+  var sceneMag=null;
+  function fxToPx(f, W){ return (f + fs/2)/fs * W; } // 絶対周波数→x（-fs/2..+fs/2）
+
+  function drawSpec(){
+    var W=spec.width, H=spec.height; sx.clearRect(0,0,W,H); sx.fillStyle=SURF; sx.fillRect(0,0,W,H);
+    // dBレンジ
+    var maxdb=-999, db=new Float32Array(sceneMag.length);
+    for(var k=0;k<sceneMag.length;k++){ db[k]=20*Math.log10(sceneMag[k]+1e-9); if(db[k]>maxdb)maxdb=db[k]; }
+    var top=maxdb+4, rng=86; // 表示 top..top-rng dB
+    function yOf(d){ var t=(top-d)/rng; if(t<0)t=0; if(t>1)t=1; return 6+t*(H-30); }
+    // グリッド（周波数目盛 -100..100k）
+    sx.strokeStyle=GRID; sx.lineWidth=1; sx.fillStyle=FAINT; sx.font="9px 'JetBrains Mono',monospace"; sx.textAlign='center';
+    for(var f=-100000;f<=100000;f+=25000){ var x=fxToPx(f,W); sx.beginPath();sx.moveTo(x,6);sx.lineTo(x,H-22);sx.stroke(); sx.fillText((f/1000)+'k', x, H-8); }
+    // 通過帯域（同調±BW/2）
+    var ft=chain.ftune, bw=chain.bw;
+    sx.fillStyle='rgba(60,120,118,0.12)';
+    sx.fillRect(fxToPx(ft-bw/2,W),6, fxToPx(ft+bw/2,W)-fxToPx(ft-bw/2,W), H-28);
+    // 折り返し領域（エイリアス：±fs2/2 の外で通過帯域内）
+    if(chain.alias){
+      sx.fillStyle='rgba(194,84,61,0.16)';
+      var nyq=chain.fs2/2;
+      sx.fillRect(fxToPx(ft+nyq,W),6, fxToPx(ft+bw/2,W)-fxToPx(ft+nyq,W), H-28);
+      sx.fillRect(fxToPx(ft-bw/2,W),6, fxToPx(ft-nyq,W)-fxToPx(ft-bw/2,W), H-28);
+    }
+    // ノイズフロア（破線）
+    var nf=0; for(var k=0;k<sceneMag.length;k++) nf+=sceneMag[k]; nf=20*Math.log10(nf/sceneMag.length+1e-9);
+    sx.strokeStyle=MUT; sx.setLineDash([4,3]); sx.beginPath(); var ynf=yOf(nf); sx.moveTo(0,ynf); sx.lineTo(W,ynf); sx.stroke(); sx.setLineDash([]);
+    // スペクトル本体
+    sx.strokeStyle=TEAL; sx.lineWidth=1.3; sx.beginPath();
+    for(var k=0;k<sceneMag.length;k++){ var f=(k - sceneMag.length/2)*fs/sceneMag.length; var x=fxToPx(f,W), y=yOf(db[k]); if(k===0)sx.moveTo(x,y); else sx.lineTo(x,y); }
+    sx.stroke();
+    // 同調マーカー
+    sx.strokeStyle=AMBER; sx.lineWidth=1.6; sx.beginPath(); sx.moveTo(fxToPx(ft,W),6); sx.lineTo(fxToPx(ft,W),H-22); sx.stroke();
+    // 間引き後ナイキスト（赤）
+    sx.strokeStyle=RED; sx.lineWidth=1.2; sx.setLineDash([3,2]);
+    sx.beginPath(); sx.moveTo(fxToPx(ft+chain.fs2/2,W),6); sx.lineTo(fxToPx(ft+chain.fs2/2,W),H-22); sx.stroke();
+    sx.beginPath(); sx.moveTo(fxToPx(ft-chain.fs2/2,W),6); sx.lineTo(fxToPx(ft-chain.fs2/2,W),H-22); sx.stroke();
+    sx.setLineDash([]);
+    // 信号ラベル
+    sx.fillStyle=MUT; sx.font="9.5px 'JetBrains Mono',monospace";
+    for(var s=0;s<SIG.length;s++){ sx.textAlign='center'; sx.fillText(SIG[s].name, fxToPx(SIG[s].f,W), 16); }
+  }
+
+  function drawIQ(){
+    var W=iqc.width, H=iqc.height; ix.clearRect(0,0,W,H); ix.fillStyle=SURF; ix.fillRect(0,0,W,H);
+    ix.strokeStyle=GRID; ix.beginPath(); ix.moveTo(W/2,0);ix.lineTo(W/2,H);ix.moveTo(0,H/2);ix.lineTo(W,H/2);ix.stroke();
+    ix.fillStyle=FAINT; ix.font="9px 'JetBrains Mono',monospace"; ix.textAlign='left'; ix.fillText('I',W-12,H/2-4); ix.fillText('Q',W/2+4,10);
+    // フィルタ後（間引き前）の複素サンプルの軌跡
+    var sc=0; for(var n=0;n<2000&&n<N;n++){ var a=Math.sqrt(chain.fr[n]*chain.fr[n]+chain.fi[n]*chain.fi[n]); if(a>sc)sc=a; } sc=sc||1;
+    var R=Math.min(W,H)*0.42/sc;
+    ix.strokeStyle='rgba(60,120,118,0.5)'; ix.lineWidth=1; ix.beginPath();
+    for(var n=0;n<1600&&n<N;n++){ var x=W/2+chain.fr[n]*R, y=H/2-chain.fi[n]*R; if(n===0)ix.moveTo(x,y); else ix.lineTo(x,y); }
+    ix.stroke();
+  }
+
+  function drawOut(){
+    var W=outc.width, H=outc.height; ox.clearRect(0,0,W,H); ox.fillStyle=SURF; ox.fillRect(0,0,W,H);
+    ox.strokeStyle=GRID; ox.beginPath(); ox.moveTo(0,H/2);ox.lineTo(W,H/2);ox.stroke();
+    var o=chain.out, M=chain.M; if(!o||M<2) return;
+    var sc=0; for(var m=0;m<M;m++){ var a=Math.abs(o[m]); if(a>sc)sc=a; } sc=sc||1;
+    var show=Math.min(M, Math.floor(chain.fs2*0.02)); if(show<8)show=Math.min(M,8); // ~20ms
+    ox.strokeStyle=TEAL; ox.lineWidth=1.4; ox.beginPath();
+    for(var m=0;m<show;m++){ var x=m/(show-1)*W, y=H/2 - (o[m]/sc)*(H*0.4); if(m===0)ox.moveTo(x,y); else ox.lineTo(x,y); }
+    ox.stroke();
+    ox.fillStyle=MUT; ox.font="10px 'JetBrains Mono',monospace"; ox.textAlign='left';
+    ox.fillText('検出した音：'+(chain.detect>0?(chain.detect/1000).toFixed(2)+' kHz':'—'), 8, 16);
+  }
+
+  function readout(){
+    var el=document.getElementById('read');
+    var msg='同調 <b>'+(chain.ftune/1000).toFixed(1)+'k</b> ／ 帯域 <b>'+(chain.bw/1000)+'k</b> ／ 間引き後 fs\' = <b>'+(chain.fs2/1000).toFixed(1)+'k</b>（ナイキスト ±'+(chain.fs2/2000).toFixed(1)+'k）<br>';
+    msg+='復調 <b>'+demod+'</b> ／ 出てきた音 <b>'+(chain.detect>0?(chain.detect/1000).toFixed(2)+' kHz':'—')+'</b>。';
+    if(chain.alias){ msg+=' <span class="r">⚠ エイリアス発生</span>：通過帯域が間引き後ナイキストより広い。赤い帯のぶんが折り返して、出てきた音に<b>偽の成分</b>が混じる。これが"嘘"だよ ── 帯域を狭めるか、間引きを減らして。'; }
+    else { msg+=' 通過帯域はナイキストの内側＝折り返しなし（正直な受信）。'; }
+    el.innerHTML=msg;
+  }
+
+  function recompute(){ process(); drawSpec(); drawIQ(); drawOut(); readout(); }
+  function rebuild(){ buildScene(+noise.value/100); sceneMag=specMag(I.slice(0), Q.slice(0)); recompute(); }
+
+  // ── UI ──
+  var tune=document.getElementById('tune'), bw=document.getElementById('bw'), dec=document.getElementById('dec'), noise=document.getElementById('noise');
+  function vfmt(){ document.getElementById('tune-v').textContent=(+tune.value)+'k'; document.getElementById('bw-v').textContent=(+bw.value)+'k'; document.getElementById('dec-v').textContent=dec.value; document.getElementById('noise-v').textContent=(+noise.value/100).toFixed(2); }
+  tune.oninput=function(){vfmt();recompute();}; bw.oninput=function(){vfmt();recompute();}; dec.oninput=function(){vfmt();recompute();};
+  noise.oninput=function(){vfmt();rebuild();};
+  function setDemod(m,id){ demod=m; ['mAM','mFM','mNone'].forEach(function(x){document.getElementById(x).classList.remove('on');}); document.getElementById(id).classList.add('on'); recompute(); }
+  document.getElementById('mAM').onclick=function(){setDemod('AM','mAM');};
+  document.getElementById('mFM').onclick=function(){setDemod('FM','mFM');};
+  document.getElementById('mNone').onclick=function(){setDemod('なし','mNone');};
+  function preset(t,b,d,m,id){ tune.value=t; bw.value=b; dec.value=d; vfmt(); setDemod(m,id); }
+  document.getElementById('pAM').onclick=function(){ preset(28,8,8,'AM','mAM'); };
+  document.getElementById('pFM').onclick=function(){ preset(-40,24,4,'FM','mFM'); };
+  document.getElementById('pAlias').onclick=function(){ preset(28,120,8,'AM','mAM'); };
+
+  // ── init（?tune=,?bw=,?dec=,?demod=,?noise= で初期状態）──
+  var qs=new URLSearchParams(location.search);
+  if(qs.get('tune'))tune.value=qs.get('tune'); if(qs.get('bw'))bw.value=qs.get('bw');
+  if(qs.get('dec'))dec.value=qs.get('dec'); if(qs.get('noise'))noise.value=qs.get('noise');
+  if(qs.get('demod')){ var dm=qs.get('demod'); demod=(dm==='FM'?'FM':dm==='none'?'なし':'AM'); ['mAM','mFM','mNone'].forEach(function(x){document.getElementById(x).classList.remove('on');}); document.getElementById(demod==='FM'?'mFM':demod==='なし'?'mNone':'mAM').classList.add('on'); }
+  vfmt(); rebuild();
+})();
+</script>
+</body>
+</html>
