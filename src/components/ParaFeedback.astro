@@ -123,10 +123,135 @@
     el.appendChild(h);
     h.addEventListener('click', function (e) {
       e.stopPropagation();
+      if (fpop) fpop.style.display = 'none';
       if (cur.handle === h && pop.style.display !== 'none') { closePop(); return; }
       openPop(h, i);
     });
   });
+
+  // ── 開発者モード（オーナー専用：段落単位の「修正指示」）──
+  // 有効化: 記事を ?dev 付きで開き合言葉を入れる（その端末だけ・localStorage）。?dev=off で解除。
+  var fpop = null;
+  (function () {
+    try {
+      var u = new URL(location.href);
+      if (u.searchParams.has('dev')) {
+        var v = u.searchParams.get('dev');
+        if (v === 'off') { localStorage.removeItem('pf_dev'); }
+        else { var entered = (v && v.length > 3) ? v : prompt('開発者モードの合言葉'); if (entered) localStorage.setItem('pf_dev', entered); }
+        history.replaceState(null, '', location.pathname);
+      }
+    } catch (e) {}
+    var DEV = null;
+    try { DEV = localStorage.getItem('pf_dev'); } catch (e) {}
+    if (!DEV) return;
+
+    var DKEY = 'pf_fixdraft:' + slug;
+    var draft = [];
+    try { draft = JSON.parse(localStorage.getItem(DKEY)) || []; } catch (e) {}
+    function saveDraft() { try { localStorage.setItem(DKEY, JSON.stringify(draft)); } catch (e) {} updateBatch(); }
+
+    fpop = document.createElement('div'); fpop.className = 'pf-fpop'; fpop.style.display = 'none';
+    fpop.innerHTML =
+      '<div class="pf-q">🔧 修正指示 <span class="pf-fpara"></span></div>' +
+      '<textarea class="pf-finput" rows="3" placeholder="例: ここに図を1枚／この主張は言いすぎ／前段落と用語を揃える"></textarea>' +
+      '<div class="pf-btns">' +
+        '<button type="button" class="pf-b pf-fadd">📋 この記事にためる</button>' +
+        '<button type="button" class="pf-b pf-fnow">⚡今すぐ送る</button>' +
+      '</div>' +
+      '<div class="pf-done pf-fmsg" style="display:none"></div>';
+    document.body.appendChild(fpop);
+    var fcur = { para: null, snip: null, handle: null };
+    var fpara = fpop.querySelector('.pf-fpara');
+    var finput = fpop.querySelector('.pf-finput');
+    var fmsg = fpop.querySelector('.pf-fmsg');
+
+    function closeFpop() { fpop.style.display = 'none'; fcur.handle = null; }
+    function openFpop(handle, para, snip) {
+      closePop();
+      fcur.para = para; fcur.snip = snip; fcur.handle = handle;
+      fpara.textContent = '#' + para;
+      var ex = draft.filter(function (d) { return d.para === para; }).map(function (d) { return d.text; })[0];
+      finput.value = ex || '';
+      fmsg.style.display = 'none';
+      fpop.style.display = 'block';
+      var r = handle.getBoundingClientRect();
+      var pw = fpop.offsetWidth || 320;
+      var left = Math.max(8, Math.min(r.left + window.scrollX, window.scrollX + document.documentElement.clientWidth - pw - 12));
+      fpop.style.top = (r.bottom + window.scrollY + 6) + 'px';
+      fpop.style.left = left + 'px';
+      setTimeout(function () { finput.focus(); }, 40);
+    }
+    function fpost(items, now) {
+      return fetch(API + '/fix?key=' + encodeURIComponent(slug), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dev: DEV, items: items, now: !!now })
+      }).then(function (r) { return r.json().catch(function () { return {}; }); }).catch(function () { return {}; });
+    }
+    function showMsg(t) { fmsg.textContent = t; fmsg.style.display = ''; }
+
+    fpop.querySelector('.pf-fadd').addEventListener('click', function () {
+      var text = (finput.value || '').trim();
+      draft = draft.filter(function (d) { return d.para !== fcur.para; });   // 段落ごと1件（上書き）
+      if (text) draft.push({ para: fcur.para, snippet: fcur.snip, text: text });
+      saveDraft();
+      if (fcur.handle) fcur.handle.classList.toggle('pf-fon', !!text);
+      if (text) { showMsg('ためたよ（記事まとめて送れる）。'); setTimeout(closeFpop, 800); } else closeFpop();
+    });
+    fpop.querySelector('.pf-fnow').addEventListener('click', function () {
+      var text = (finput.value || '').trim(); if (!text) return;
+      var btn = fpop.querySelector('.pf-fnow'); btn.disabled = true;
+      fpost([{ para: fcur.para, snippet: fcur.snip, text: text }], true).then(function (d) {
+        btn.disabled = false;
+        if (d && d.ok) { if (fcur.handle) fcur.handle.classList.add('pf-fon'); showMsg('⚡送った。'); setTimeout(closeFpop, 900); }
+        else showMsg(d && d.error === 'forbidden' ? '合言葉が違うみたい。' : '送れなかった。');
+      });
+    });
+    finput.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeFpop(); });
+
+    var batch = document.createElement('button');
+    batch.type = 'button'; batch.className = 'pf-batch'; batch.style.display = 'none';
+    document.body.appendChild(batch);
+    function updateBatch() {
+      if (draft.length) { batch.textContent = '📋 修正指示を送る（' + draft.length + '件）'; batch.style.display = 'block'; }
+      else batch.style.display = 'none';
+    }
+    batch.addEventListener('click', function () {
+      if (!draft.length) return;
+      batch.disabled = true; batch.textContent = '送信中…';
+      fpost(draft, false).then(function (d) {
+        batch.disabled = false;
+        if (d && d.ok) {
+          draft = []; saveDraft();
+          Array.prototype.forEach.call(document.querySelectorAll('.pf-fhandle.pf-fon'), function (h) { h.classList.remove('pf-fon'); });
+          batch.textContent = '送ったよ ✓'; setTimeout(function () { batch.style.display = 'none'; }, 1600);
+        } else { batch.textContent = (d && d.error === 'forbidden') ? '合言葉が違う' : '送れなかった'; setTimeout(updateBatch, 1600); }
+      });
+    });
+
+    targets.forEach(function (el, i) {
+      var fh = document.createElement('button');
+      fh.type = 'button'; fh.className = 'pf-handle pf-fhandle';
+      fh.setAttribute('aria-label', 'この段落の修正指示（開発者）');
+      fh.textContent = '🔧';
+      if (draft.some(function (d) { return d.para === i; })) fh.classList.add('pf-fon');
+      el.appendChild(fh);
+      fh.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (fcur.handle === fh && fpop.style.display !== 'none') { closeFpop(); return; }
+        openFpop(fh, i, snips[i]);
+      });
+    });
+    updateBatch();
+
+    document.addEventListener('click', function (e) {
+      if (fpop.style.display === 'none') return;
+      if (fpop.contains(e.target)) return;
+      if (e.target.classList && e.target.classList.contains('pf-fhandle')) return;
+      closeFpop();
+    });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeFpop(); });
+  })();
 
   // 初回だけ、そっと使い方を出す
   try {
@@ -191,4 +316,31 @@
   .pf-hint b { color: #9fe0db; }
   .pf-hint-show { opacity: 1; transform: translate(-50%, 0); }
   @media (max-width: 480px) { .pf-hint { bottom: 4.2rem; } }
+  /* 開発者モード（オーナーの修正指示） */
+  .pf-fhandle { filter: none; opacity: .32; }
+  .pf-p:hover .pf-fhandle { opacity: .6; }
+  .pf-fhandle:hover { opacity: 1; transform: scale(1.2); }
+  .pf-fhandle.pf-fon { opacity: .95; }
+  .pf-fpop {
+    position: absolute; z-index: 1005; background: var(--card, #fff);
+    border: 1px solid var(--accent, #3c7876); border-radius: 12px;
+    box-shadow: 0 12px 34px rgba(29,27,23,.22); padding: .6rem .7rem; width: 320px; max-width: 90vw;
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+  }
+  .pf-fpara { color: var(--accent, #3c7876); font-weight: 700; }
+  .pf-finput {
+    width: 100%; box-sizing: border-box; border: 1px solid var(--border, #e3dbd0); border-radius: 8px;
+    padding: .45rem .55rem; font-size: .82rem; font-family: inherit; line-height: 1.6;
+    background: var(--surface, #faf8f4); color: var(--text, #1d1b17); outline: none; resize: vertical;
+    margin: .1rem 0 .5rem;
+  }
+  .pf-finput:focus { border-color: var(--accent, #3c7876); }
+  .pf-fmsg { margin-top: .35rem; }
+  .pf-batch {
+    position: fixed; left: 1.2rem; bottom: 1.2rem; z-index: 1006;
+    background: var(--accent, #3c7876); color: #fff; border: none; border-radius: 999px;
+    padding: .6rem 1.2rem; font-size: .82rem; font-weight: 700; cursor: pointer;
+    font-family: 'Zen Kaku Gothic New', sans-serif; box-shadow: 0 6px 20px rgba(60,120,118,.4);
+  }
+  .pf-batch:disabled { opacity: .6; cursor: default; }
 </style>
