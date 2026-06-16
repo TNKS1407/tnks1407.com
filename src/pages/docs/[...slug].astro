@@ -9,6 +9,19 @@ export async function getStaticPaths() {
 
 const { doc } = Astro.props;
 const { Content } = await render(doc);
+
+// 同じ章（series）の前後を order 順で計算して、記事末のナビに渡す
+const all = await getCollection('docs');
+const series = doc.data.series;
+const course = all
+  .filter((d) => series && d.data.series === series)
+  .sort((a, b) => (a.data.order ?? 99) - (b.data.order ?? 99));
+const i = course.findIndex((d) => d.id === doc.id);
+const nav = {
+  series: series ?? null,
+  prev: i > 0 ? { title: course[i - 1].data.title, slug: course[i - 1].id } : null,
+  next: i >= 0 && i < course.length - 1 ? { title: course[i + 1].data.title, slug: course[i + 1].id } : null,
+};
 ---
 <Explainer
   title={doc.data.title}
@@ -16,6 +29,8 @@ const { Content } = await render(doc);
   pubDate={doc.data.pubDate}
   demo={doc.data.demo}
   demoLabel={doc.data.demoLabel}
+  nav={nav}
+  related={doc.data.related}
 >
   <Content />
 </Explainer>

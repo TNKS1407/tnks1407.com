@@ -13,6 +13,7 @@ const docs = defineCollection({
     demoLabel: z.string().optional(),
     series: z.string().optional(),      // トップで章立てするコースのキー
     order: z.number().optional(),       // コース内の読む順
+    related: z.array(z.object({ title: z.string(), url: z.string() })).optional(), // 合わせて読みたいリンク（任意）
   }),
 });
 

@@ -1,7 +1,7 @@
 ---
 import ImproveButton from '../components/ImproveButton.astro';
 import ParaFeedback from '../components/ParaFeedback.astro';
-const { title, description, pubDate, demo, demoLabel } = Astro.props;
+const { title, description, pubDate, demo, demoLabel, nav, related } = Astro.props;
 const d = pubDate instanceof Date ? pubDate : new Date(pubDate);
 const dateStr = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${String(d.getDate()).padStart(2,'0')}`;
 ---
@@ -81,6 +81,19 @@ const dateStr = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${
         color:var(--text-faint);font-size:.78rem;text-align:center;line-height:1.8;}
       footer a{color:var(--text-muted);}
       .footer-credit{margin-top:.35rem;font-size:.68rem;font-family:'JetBrains Mono',monospace;}
+      .doc-nav{margin:2.6rem 0 0;padding-top:1.5rem;border-top:1px solid var(--border);}
+      .dn-pn{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;}
+      .dn-card{display:flex;flex-direction:column;gap:.25rem;border:1px solid var(--border);border-radius:12px;padding:.7rem .9rem;background:var(--card);transition:border-color .15s,background .15s;}
+      .dn-card:hover{border-color:var(--accent);background:var(--accent-soft);opacity:1;}
+      .dn-next{text-align:right;}
+      .dn-k{font-size:.72rem;color:var(--accent);font-family:'JetBrains Mono',monospace;font-weight:600;}
+      .dn-t{font-size:.92rem;color:var(--text);line-height:1.4;}
+      .dn-rel{margin-top:1.1rem;}
+      .dn-rel-h{font-size:.78rem;color:var(--text-muted);font-weight:700;}
+      .dn-rel ul{margin:.4rem 0 0;padding-left:1.2rem;}
+      .dn-rel li{margin:.2rem 0;font-size:.9rem;}
+      .dn-map{display:inline-block;margin-top:1.2rem;font-size:.8rem;font-family:'JetBrains Mono',monospace;color:var(--text-muted);}
+      @media(max-width:560px){ .dn-pn{grid-template-columns:1fr;} .dn-next{text-align:left;} }
       @media(max-width:680px){ .demo-embed iframe{height:480px;} }
     </style>
   </head>
@@ -109,6 +122,31 @@ const dateStr = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${
       <article class="prose">
         <slot />
       </article>
+      {(nav?.prev || nav?.next || (related && related.length)) && (
+        <nav class="doc-nav">
+          {(nav?.prev || nav?.next) && (
+            <div class="dn-pn">
+              {nav?.prev ? (
+                <a class="dn-card dn-prev" href={`/docs/${nav.prev.slug}/`}>
+                  <span class="dn-k">← 前の回</span><span class="dn-t">{nav.prev.title}</span>
+                </a>
+              ) : (<span></span>)}
+              {nav?.next ? (
+                <a class="dn-card dn-next" href={`/docs/${nav.next.slug}/`}>
+                  <span class="dn-k">次の回 →</span><span class="dn-t">{nav.next.title}</span>
+                </a>
+              ) : (<span></span>)}
+            </div>
+          )}
+          {related && related.length > 0 && (
+            <div class="dn-rel">
+              <span class="dn-rel-h">合わせて読みたい</span>
+              <ul>{related.map((r) => (<li><a href={r.url}>{r.title}</a></li>))}</ul>
+            </div>
+          )}
+          <a class="dn-map" href="/docs/">↑ 解説の地図に戻る</a>
+        </nav>
+      )}
     </main>
     <footer>
       © 2026 TNKS1407 ·
