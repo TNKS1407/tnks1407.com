@@ -36,6 +36,7 @@
       '<div class="pf-btns">' +
         '<button type="button" class="pf-b" data-type="stuck">🤔 ここで詰まった</button>' +
         '<button type="button" class="pf-b" data-type="curious">👀 気になった</button>' +
+        '<button type="button" class="pf-b" data-type="liked">❤️ この表現好き</button>' +
       '</div>' +
     '</div>' +
     '<div class="pf-stage" data-stage="reason" style="display:none">' +
@@ -118,7 +119,7 @@
     h.type = 'button'; h.className = 'pf-handle';
     h.setAttribute('aria-label', 'この段落の感想を送る（ここで詰まった / 気になった）');
     h.textContent = '💬';
-    if (tapped[i + ':stuck'] || tapped[i + ':curious']) h.classList.add('pf-on');
+    if (tapped[i + ':stuck'] || tapped[i + ':curious'] || tapped[i + ':liked']) h.classList.add('pf-on');
     el.appendChild(h);
     h.addEventListener('click', function (e) {
       e.stopPropagation();
