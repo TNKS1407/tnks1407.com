@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>位相が、形を運ぶ ── 振幅と位相を入れ替える</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  :root{ --bg:#f5f2ec;--card:#fff;--border:#e3dbd0;--accent:#3c7876;--amber:#c9761f;--text:#1d1b17;--muted:#7d7568;--surf:#faf8f4; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:var(--bg);color:var(--text);
+    font-family:'Zen Kaku Gothic New','Hiragino Sans','Meiryo',system-ui,sans-serif;line-height:1.6;}
+  .wrap{max-width:760px;margin:0 auto;padding:14px 14px 24px;}
+  h1{font-size:1.02rem;margin:0 0 .2rem;}
+  .sub{font-size:.78rem;color:var(--muted);margin:0 0 1rem;line-height:1.6;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .cell{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:10px;text-align:center;box-shadow:0 1px 6px rgba(29,27,23,.05);}
+  .cell.hl{border-color:var(--accent);}
+  .lab{font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--muted);margin:0 0 .4rem;min-height:2.4em;display:flex;align-items:center;justify-content:center;}
+  .lab b{color:var(--accent);}
+  canvas{display:block;width:100%;max-width:200px;margin:0 auto;border:1px solid var(--border);border-radius:8px;image-rendering:pixelated;background:#000;}
+  .controls{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;margin:14px 0 0;}
+  .btn{padding:.34rem .8rem;border:1px solid var(--border);border-radius:8px;background:none;
+    font-family:'JetBrains Mono',monospace;font-size:.76rem;color:var(--muted);cursor:pointer;transition:.15s;}
+  .btn:hover{border-color:var(--accent);color:var(--accent);}
+  .btn.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .read{margin-top:.9rem;font-family:'JetBrains Mono',monospace;font-size:.77rem;color:var(--text);
+    background:var(--surf);border:1px solid var(--border);border-radius:9px;padding:.55rem .8rem;line-height:1.8;}
+  .read b{color:var(--accent);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>位相が、形を運ぶ ── 振幅と位相を、入れ替える</h1>
+  <p class="sub">2枚の画像をフーリエ変換すると、それぞれ「振幅」と「位相」に分かれる。── ここで、<b>片方の振幅と、もう片方の位相</b>を組み合わせて画像に戻すと、どうなるか。出てくるのは、いつも<b>“位相を残したほう”</b>の絵だ。形を運んでいるのは、測れない側 ── 位相のほうなんだ。</p>
+
+  <div class="grid">
+    <div class="cell"><div class="lab">画像A</div><canvas id="ia" width="128" height="128"></canvas></div>
+    <div class="cell"><div class="lab">画像B</div><canvas id="ib" width="128" height="128"></canvas></div>
+    <div class="cell hl"><div class="lab"><b>A の振幅</b> ＋ <b style="color:#c9761f">B の位相</b><br>→ どっちに見える？</div><canvas id="r1" width="128" height="128"></canvas></div>
+    <div class="cell hl"><div class="lab"><b>B の振幅</b> ＋ <b style="color:#c9761f">A の位相</b><br>→ どっちに見える？</div><canvas id="r2" width="128" height="128"></canvas></div>
+  </div>
+
+  <div class="controls">
+    <button class="btn on" id="mSwap">位相を入れ替える</button>
+    <button class="btn" id="mAmp">位相を捨てる（振幅だけ）</button>
+    <span class="lab" style="min-height:auto;color:#aaa49b;">下段の2枚を切り替え</span>
+  </div>
+  <div class="read" id="read"></div>
+</div>
+
+<script>
+(function(){
+  var N=128;
+  // ── 2枚の画像を描く（自己完結・外部画像なし）──
+  function drawA(ctx){ // スマイリー
+    ctx.fillStyle='#000'; ctx.fillRect(0,0,N,N);
+    ctx.strokeStyle='#fff'; ctx.fillStyle='#fff'; ctx.lineWidth=5;
+    ctx.beginPath(); ctx.arc(64,64,46,0,2*Math.PI); ctx.stroke();
+    ctx.beginPath(); ctx.arc(48,52,7,0,2*Math.PI); ctx.fill();
+    ctx.beginPath(); ctx.arc(80,52,7,0,2*Math.PI); ctx.fill();
+    ctx.lineWidth=5; ctx.beginPath(); ctx.arc(64,68,24,0.15*Math.PI,0.85*Math.PI); ctx.stroke();
+  }
+  function drawB(ctx){ // 5回対称の星
+    ctx.fillStyle='#000'; ctx.fillRect(0,0,N,N);
+    ctx.fillStyle='#fff';
+    ctx.beginPath();
+    for(var i=0;i<10;i++){ var ang=-Math.PI/2 + i*Math.PI/5; var rad=(i%2===0)?48:20;
+      var x=64+rad*Math.cos(ang), y=64+rad*Math.sin(ang); if(i===0)ctx.moveTo(x,y); else ctx.lineTo(x,y); }
+    ctx.closePath(); ctx.fill();
+  }
+  function gray(ctx){ var d=ctx.getImageData(0,0,N,N).data, g=new Float32Array(N*N);
+    for(var i=0;i<N*N;i++){ g[i]=(0.299*d[i*4]+0.587*d[i*4+1]+0.114*d[i*4+2])/255; } return g; }
+
+  // ── FFT（反復基数2）と2D ──
+  function fft(re,im,inv){
+    var n=re.length;
+    for(var i=1,j=0;i<n;i++){ var bit=n>>1; for(;j&bit;bit>>=1) j^=bit; j^=bit;
+      if(i<j){ var tr=re[i];re[i]=re[j];re[j]=tr; var ti=im[i];im[i]=im[j];im[j]=ti; } }
+    for(var len=2;len<=n;len<<=1){ var ang=(inv?2:-2)*Math.PI/len, wr=Math.cos(ang), wi=Math.sin(ang);
+      for(var i=0;i<n;i+=len){ var cr=1,ci=0;
+        for(var k=0;k<(len>>1);k++){ var p=i+k,q=i+k+(len>>1);
+          var vr=re[q]*cr-im[q]*ci, vi=re[q]*ci+im[q]*cr;
+          re[q]=re[p]-vr; im[q]=im[p]-vi; re[p]+=vr; im[p]+=vi;
+          var ncr=cr*wr-ci*wi; ci=cr*wi+ci*wr; cr=ncr; } } }
+    if(inv){ for(var i=0;i<n;i++){ re[i]/=n; im[i]/=n; } }
+  }
+  function fft2(re,im,inv){
+    var row_r=new Float32Array(N), row_i=new Float32Array(N), k,x,y;
+    for(y=0;y<N;y++){ for(x=0;x<N;x++){ row_r[x]=re[y*N+x]; row_i[x]=im[y*N+x]; }
+      fft(row_r,row_i,inv); for(x=0;x<N;x++){ re[y*N+x]=row_r[x]; im[y*N+x]=row_i[x]; } }
+    var col_r=new Float32Array(N), col_i=new Float32Array(N);
+    for(x=0;x<N;x++){ for(y=0;y<N;y++){ col_r[y]=re[y*N+x]; col_i[y]=im[y*N+x]; }
+      fft(col_r,col_i,inv); for(y=0;y<N;y++){ re[y*N+x]=col_r[y]; im[y*N+x]=col_i[y]; } }
+  }
+
+  // 画像 → 振幅・位相
+  function spectrum(g){
+    var re=Float32Array.from(g), im=new Float32Array(N*N);
+    fft2(re,im,false);
+    var amp=new Float32Array(N*N), ph=new Float32Array(N*N);
+    for(var i=0;i<N*N;i++){ amp[i]=Math.hypot(re[i],im[i]); ph[i]=Math.atan2(im[i],re[i]); }
+    return {amp:amp, ph:ph};
+  }
+  // 振幅×位相 → 画像（実部）
+  function recon(amp, ph){
+    var re=new Float32Array(N*N), im=new Float32Array(N*N);
+    for(var i=0;i<N*N;i++){ re[i]=amp[i]*Math.cos(ph[i]); im[i]=amp[i]*Math.sin(ph[i]); }
+    fft2(re,im,true);
+    return re; // 実部（振幅も位相もエルミート性を保つので、ほぼ実）
+  }
+  function paint(cv, arr){
+    var ctx=cv.getContext('2d'), img=ctx.createImageData(N,N), d=img.data;
+    var mn=Infinity,mx=-Infinity; for(var i=0;i<N*N;i++){ if(arr[i]<mn)mn=arr[i]; if(arr[i]>mx)mx=arr[i]; }
+    var rng=(mx-mn)||1;
+    for(var i=0;i<N*N;i++){ var v=Math.round((arr[i]-mn)/rng*255); d[i*4]=v;d[i*4+1]=v;d[i*4+2]=v;d[i*4+3]=255; }
+    ctx.putImageData(img,0,0);
+  }
+
+  var ia=document.getElementById('ia'), ib=document.getElementById('ib');
+  drawA(ia.getContext('2d')); drawB(ib.getContext('2d'));
+  var gA=gray(ia.getContext('2d')), gB=gray(ib.getContext('2d'));
+  var SA=spectrum(gA), SB=spectrum(gB);
+
+  var mode='swap';
+  function render(){
+    var r1=document.getElementById('r1'), r2=document.getElementById('r2');
+    if(mode==='swap'){
+      paint(r1, recon(SA.amp, SB.ph));   // Aの振幅 + Bの位相 → Bに見える
+      paint(r2, recon(SB.amp, SA.ph));   // Bの振幅 + Aの位相 → Aに見える
+      document.getElementById('read').innerHTML='<b>振幅</b>は「どの縞模様がどれだけ強いか」、<b>位相</b>は「その縞模様がどこに来るか（ずれ）」。再構成は、いつも<b>位相を残したほう</b>に似る ── 左下はBの位相だから★に、右下はAの位相だから顔に見えるはず。形を決めているのは、測れない側の位相なんだ。';
+    } else {
+      var flat=new Float32Array(N*N); // 位相0
+      paint(r1, recon(SA.amp, flat));
+      paint(r2, recon(SB.amp, flat));
+      document.getElementById('read').innerHTML='位相を全部0にして、<b>振幅だけ</b>で戻すと ── 中央に集まった点になるだけで、もとの形は消える。「どの縞が強いか」（振幅）を知っていても、「それがどこに来るか」（位相）が無ければ、絵にならない。<b>振幅だけでは、形は作れない。</b>';
+    }
+  }
+  document.getElementById('mSwap').onclick=function(){ mode='swap'; this.classList.add('on'); document.getElementById('mAmp').classList.remove('on'); render(); };
+  document.getElementById('mAmp').onclick=function(){ mode='amp'; this.classList.add('on'); document.getElementById('mSwap').classList.remove('on'); render(); };
+  render();
+})();
+</script>
+</body>
+</html>

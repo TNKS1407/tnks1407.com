@@ -6,6 +6,7 @@ tags: ["不在", "回折", "干渉", "対称性"]
 demo: "/ripple/?mode=2"
 demoLabel: "干渉の節線（消し合いの線）を全画面で開く"
 related:
+  - { title: "位相 ── 見えないのに、形を決めている", url: "/docs/phase-carries-form/" }
   - { title: "結晶のセンタリング ── 格子点と原子", url: "/docs/crystal-centering/" }
   - { title: "2次元の波 ── 干渉とホイヘンス", url: "/docs/two-dimensional-waves/" }
 ---
