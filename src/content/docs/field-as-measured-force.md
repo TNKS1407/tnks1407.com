@@ -4,7 +4,7 @@ description: "電磁気は、力学の延長だ。電荷が力を及ぼし合う
 pubDate: 2026-06-22
 tags: ["電磁気", "場", "クーロンの法則", "電場"]
 demo: "/efield-probe/"
-demoLabel: "電場プローブを全画面で開く"
+demoLabel: "電場の地図ラボを全画面で開く"
 series: "electromagnetism"
 order: 1
 ---
@@ -196,7 +196,7 @@ $$F = m\,g \qquad\longleftrightarrow\qquad \vec F = q\,\vec E$$
 そして、試し電荷を動かして空間をなぞると、源のまわりに矢印の地図（電場 $\vec{E}$）が浮かび上がる。薄い矢印（場）は $q$ を変えても動かないのに、濃い矢印（力 $\vec{F}=q\vec{E}$）だけが $q$ で伸び縮みする ── **場はそこに在って、力は “それに自分の電荷を掛けた結果”** だ、という関係が、目で掴めると思う。
 
 <div class="demo-embed">
-  <iframe src="/efield-probe/" title="電場プローブ" loading="lazy"></iframe>
+  <iframe src="/efield-probe/" title="電場の地図ラボ" loading="lazy"></iframe>
   <div class="cap"><span>efield-probe</span><a href="/efield-probe/" target="_blank" rel="noopener noreferrer">全画面で開く ↗</a></div>
 </div>
 
