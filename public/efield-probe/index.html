@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>電場プローブ ── 場は、そこに在る</title>
+<style>
+  :root{
+    --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
+    --teal:#3c7876;--red:#c2543d;--amber:#c9761f;
+    --text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;}
+  body{font-family:'Zen Kaku Gothic New',system-ui,sans-serif;background:var(--bg);color:var(--text);
+    display:flex;flex-direction:column;overflow:hidden;}
+  #stage{flex:1;position:relative;min-height:0;}
+  canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair;}
+  .hint{position:absolute;left:10px;top:8px;font-size:.72rem;color:var(--faint);pointer-events:none;
+    font-family:'JetBrains Mono',monospace;}
+  .readout{position:absolute;right:10px;top:8px;font-size:.7rem;color:var(--muted);text-align:right;
+    font-family:'JetBrains Mono',monospace;line-height:1.5;pointer-events:none;background:rgba(250,248,244,.7);
+    border-radius:6px;padding:.2rem .45rem;}
+  .readout b{color:var(--text);font-weight:700;}
+  .ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.6rem .8rem;
+    display:flex;flex-wrap:wrap;gap:.7rem 1.1rem;align-items:center;}
+  .row{display:flex;align-items:center;gap:.5rem;font-size:.78rem;color:var(--muted);}
+  .row label{font-weight:700;color:var(--text);white-space:nowrap;}
+  input[type=range]{width:150px;accent-color:var(--red);}
+  .qval{font-family:'JetBrains Mono',monospace;font-weight:700;min-width:4.2em;color:var(--red);}
+  button{font:inherit;font-size:.74rem;font-weight:700;color:var(--text);background:var(--card);
+    border:1px solid var(--border);border-radius:8px;padding:.3rem .6rem;cursor:pointer;}
+  button:hover{border-color:var(--teal);}
+  .legend{font-size:.7rem;color:var(--muted);display:flex;gap:.9rem;flex-wrap:wrap;align-items:center;}
+  .sw{display:inline-block;width:18px;height:0;border-top-width:3px;border-top-style:solid;vertical-align:middle;margin-right:.25rem;}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="c"></canvas>
+  <div class="hint">源（◯）の近くで、プローブ（●）をドラッグ。タップでも移動。</div>
+  <div class="readout" id="ro"></div>
+</div>
+<div class="ctrl">
+  <div class="row">
+    <label>プローブの電荷 q</label>
+    <input id="q" type="range" min="-3" max="3" step="0.1" value="1" />
+    <span class="qval" id="qv">+1.0 nC</span>
+  </div>
+  <div class="row">
+    <button id="flip">源の符号を反転（＋ / −）</button>
+    <button id="second">2つ目の源を足す</button>
+    <button id="reset">リセット</button>
+  </div>
+  <div class="legend">
+    <span><span class="sw" style="border-color:var(--teal)"></span>場 E（q によらない）</span>
+    <span><span class="sw" style="border-color:var(--red)"></span>力 F = qE（q で伸縮）</span>
+  </div>
+</div>
+<script>
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const ro = document.getElementById('ro');
+const qEl = document.getElementById('q'), qv = document.getElementById('qv');
+let W=0,H=0,DPR=1;
+// world: 1 unit = 'scale' px. origin at canvas center.
+let scale = 120;
+let sources = [{x:-0.7,y:0,sign:1}];
+let probe = {x:1.0,y:0.0};
+let q = 1.0;
+
+function resize(){
+  const r = cv.getBoundingClientRect();
+  DPR = Math.min(window.devicePixelRatio||1, 2);
+  W = r.width; H = r.height;
+  cv.width = Math.round(W*DPR); cv.height = Math.round(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  scale = Math.min(W,H)/4.2;
+  draw();
+}
+function w2s(p){ return { x: W/2 + p.x*scale, y: H/2 + p.y*scale }; }
+function s2w(px,py){ return { x:(px-W/2)/scale, y:(py-H/2)/scale }; }
+
+// E field (k=1, Q=±1). returns vector in world units (per unit charge, scaled).
+function fieldAt(x,y){
+  let ex=0, ey=0;
+  for(const s of sources){
+    let dx=x-s.x, dy=y-s.y;
+    let r2=dx*dx+dy*dy; if(r2<0.01) r2=0.01;
+    let r=Math.sqrt(r2);
+    let m=s.sign/r2;            // magnitude of E (k=Q=1)
+    ex += m*dx/r; ey += m*dy/r; // direction radial
+  }
+  return {x:ex,y:ey};
+}
+function arrow(p, vx, vy, len, color, wdt){
+  const m=Math.hypot(vx,vy); if(m<1e-9) return;
+  const ux=vx/m, uy=vy/m;
+  const ex=p.x+ux*len, ey=p.y+uy*len;
+  ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=wdt;
+  ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(ex,ey); ctx.stroke();
+  const a=Math.atan2(uy,ux), h=Math.max(5,wdt*2.6);
+  ctx.beginPath();
+  ctx.moveTo(ex,ey);
+  ctx.lineTo(ex-h*Math.cos(a-0.4), ey-h*Math.sin(a-0.4));
+  ctx.lineTo(ex-h*Math.cos(a+0.4), ey-h*Math.sin(a+0.4));
+  ctx.closePath(); ctx.fill();
+}
+// soft length mapping so near-source arrows don't explode
+function alen(mag, Lmax, k){ return Lmax*mag/(mag+k); }
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  // faint field-map grid
+  const step = Math.max(34, Math.min(W,H)/11);
+  for(let px=step/2; px<W; px+=step){
+    for(let py=step/2; py<H; py+=step){
+      const wp=s2w(px,py);
+      const f=fieldAt(wp.x,wp.y);
+      const m=Math.hypot(f.x,f.y);
+      const L=alen(m, step*0.46, 1.1);
+      ctx.globalAlpha=0.33;
+      arrow({x:px,y:py}, f.x, f.y, L, '#3c7876', 1.3);
+      ctx.globalAlpha=1;
+    }
+  }
+  // sources
+  for(const s of sources){
+    const sp=w2s(s);
+    ctx.beginPath(); ctx.arc(sp.x,sp.y,15,0,7);
+    ctx.fillStyle = s.sign>0 ? 'rgba(194,84,61,0.14)' : 'rgba(60,120,118,0.14)';
+    ctx.fill();
+    ctx.lineWidth=2; ctx.strokeStyle = s.sign>0 ? '#c2543d' : '#3c7876'; ctx.stroke();
+    ctx.fillStyle = s.sign>0 ? '#c2543d' : '#3c7876';
+    ctx.font='bold 18px JetBrains Mono, monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(s.sign>0?'+':'−', sp.x, sp.y+1);
+  }
+  // probe
+  const pp=w2s(probe);
+  const E=fieldAt(probe.x,probe.y);
+  const Em=Math.hypot(E.x,E.y);
+  // E arrow (teal, depends only on position — NOT on q)
+  arrow(pp, E.x, E.y, alen(Em, scale*0.55, 1.0), '#3c7876', 2.4);
+  // F = qE arrow (red, scales with q, flips sign)
+  const Fx=q*E.x, Fy=q*E.y, Fm=Math.abs(q)*Em;
+  arrow(pp, Fx, Fy, alen(Fm, scale*0.7, 1.2), '#c2543d', 3.4);
+  // probe dot
+  const rad = 7+Math.min(7, Math.abs(q)*2.2);
+  ctx.beginPath(); ctx.arc(pp.x,pp.y,rad,0,7);
+  ctx.fillStyle = q>=0 ? 'rgba(194,84,61,0.16)':'rgba(60,120,118,0.16)';
+  ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle = q>=0?'#c2543d':'#3c7876'; ctx.stroke();
+  ctx.fillStyle = q>=0?'#c2543d':'#3c7876';
+  ctx.font='bold 11px JetBrains Mono, monospace';
+  ctx.fillText('q', pp.x, pp.y+0.5);
+  // readout (arbitrary but consistent units)
+  const Edisp=(Em*3000).toFixed(0);
+  const Fdisp=(Math.abs(q)*Em*3).toFixed(2);
+  ro.innerHTML = `|E| = <b>${Edisp}</b> N/C<br>|F| = |q|·|E| = <b>${Fdisp}</b> μN<br>q = <b>${q>=0?'+':''}${q.toFixed(1)}</b> nC`;
+}
+
+// interaction
+let dragging=false;
+function pos(e){ const r=cv.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return {x:t.clientX-r.left, y:t.clientY-r.top}; }
+function down(e){ e.preventDefault(); const p=pos(e); const pp=w2s(probe);
+  dragging=true; // grab probe (or jump to tap)
+  if(Math.hypot(p.x-pp.x,p.y-pp.y)>26){ const wp=s2w(p.x,p.y); probe.x=wp.x; probe.y=wp.y; }
+  move(e);
+}
+function move(e){ if(!dragging) return; e.preventDefault(); const p=pos(e); const wp=s2w(p.x,p.y); probe.x=wp.x; probe.y=wp.y; draw(); }
+function up(){ dragging=false; }
+cv.addEventListener('mousedown',down); window.addEventListener('mousemove',move); window.addEventListener('mouseup',up);
+cv.addEventListener('touchstart',down,{passive:false}); cv.addEventListener('touchmove',move,{passive:false}); cv.addEventListener('touchend',up);
+
+qEl.addEventListener('input',()=>{ q=parseFloat(qEl.value); qv.textContent=(q>=0?'+':'')+q.toFixed(1)+' nC'; draw(); });
+document.getElementById('flip').addEventListener('click',()=>{ sources[0].sign*=-1; draw(); });
+document.getElementById('second').addEventListener('click',(e)=>{
+  if(sources.length===1){ sources.push({x:0.7,y:0,sign:-1}); e.target.textContent='2つ目の源を消す'; }
+  else { sources=[sources[0]]; e.target.textContent='2つ目の源を足す'; }
+  draw();
+});
+document.getElementById('reset').addEventListener('click',(e)=>{
+  sources=[{x:-0.7,y:0,sign:1}]; probe={x:1.0,y:0.0}; q=1.0; qEl.value=1; qv.textContent='+1.0 nC';
+  document.getElementById('second').textContent='2つ目の源を足す'; draw();
+});
+window.addEventListener('resize',resize);
+resize();
+</script>
+</body>
+</html>
