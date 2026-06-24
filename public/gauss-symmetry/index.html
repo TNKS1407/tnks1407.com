@@ -18,11 +18,12 @@
   #stage{flex:1;position:relative;min-height:0;}
   canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab;}
   canvas:active{cursor:grabbing;}
-  .hint{position:absolute;left:10px;top:8px;font-size:.72rem;color:var(--faint);pointer-events:none;
-    font-family:'JetBrains Mono',monospace;max-width:52%;line-height:1.5;}
-  .readout{position:absolute;right:10px;top:8px;font-size:.72rem;color:var(--muted);text-align:right;
-    font-family:'JetBrains Mono',monospace;line-height:1.7;pointer-events:none;background:rgba(250,248,244,.82);
-    border-radius:6px;padding:.35rem .55rem;}
+  /* hint sits at the BOTTOM-left so it never collides with the top-right readout */
+  .hint{position:absolute;left:10px;bottom:8px;right:10px;font-size:.7rem;color:var(--faint);pointer-events:none;
+    font-family:'JetBrains Mono',monospace;line-height:1.5;}
+  .readout{position:absolute;right:8px;top:8px;font-size:.66rem;color:var(--muted);text-align:right;
+    font-family:'JetBrains Mono',monospace;line-height:1.6;pointer-events:none;background:rgba(250,248,244,.9);
+    border:1px solid var(--border);border-radius:6px;padding:.3rem .5rem;white-space:nowrap;}
   .readout b{color:var(--text);font-weight:700;}
   .readout .e{color:var(--red);font-weight:700;}
   .readout .f{color:var(--teal);font-weight:700;}
@@ -41,8 +42,8 @@
 <body>
 <div id="stage">
   <canvas id="c"></canvas>
-  <div class="hint" id="hint">電荷の対称性を選ぶと、合うガウス面が立体で立ち上がる。ドラッグで回せる。スライダで面を広げてみて。</div>
   <div class="readout" id="ro"></div>
+  <div class="hint" id="hint">対称性を選ぶと、合うガウス面が立体で立ち上がる。ドラッグで回せる。</div>
 </div>
 <div class="ctrl">
   <div class="row">
@@ -53,10 +54,10 @@
   </div>
   <div class="row">
     <label id="rlab">半径 r</label>
-    <input id="r" type="range" min="40" max="150" step="1" value="78" />
+    <input id="r" type="range" min="40" max="150" step="1" value="100" />
   </div>
   <div class="legend">
-    <span style="color:var(--red)">■ 電荷（源）</span>
+    <span style="color:var(--red)">■ 電荷</span>
     <span style="color:var(--teal)">▦ ガウス面／効く面は塗り</span>
     <span style="color:var(--text)">→ 場 E</span>
   </div>
@@ -65,15 +66,19 @@
 const cv=document.getElementById('c'), ctx=cv.getContext('2d');
 const ro=document.getElementById('ro'), hintEl=document.getElementById('hint'), rlab=document.getElementById('rlab');
 let W=0,H=0,DPR=Math.min(window.devicePixelRatio||1,2);
-let mode=0, R=78, R0=78;
-let yaw=0.6;                 // view rotation (radians), drag to change
-let cx=0, cy=0;
+let mode=0, R=100, R0=100;
+let yaw=0.6;
+let cx=0, cyc=0, maxHalf=120;   // drawing center & max half-size (computed to fit, clear of readout)
 
-// --- oblique projection: model (x right, y up, z toward viewer-left/back) ---
-// yaw tilts the depth axis so shapes read as 3D and can be spun.
+function layout(){
+  cx=W/2;
+  const TOPRES=86, BOTRES=30;          // reserve top (readout) & bottom (hint)
+  cyc=TOPRES + (H-TOPRES-BOTRES)/2;
+  maxHalf=Math.max(60,(H-TOPRES-BOTRES)/2 - 24);
+}
 function proj(x,y,z){
   const dx=Math.cos(yaw)*0.55, dy=Math.sin(yaw)*0.34;
-  return { X: cx + x + z*dx*34, Y: cy - y + z*dy*34 };
+  return { X: cx + x + z*dx*30, Y: cyc - y + z*dy*30 };
 }
 function arrowSeg(x1,y1,x2,y2,col,w){
   ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=w||1.7;
@@ -84,10 +89,11 @@ function arrowSeg(x1,y1,x2,y2,col,w){
   ctx.lineTo(x2-9*Math.cos(a+0.4), y2-9*Math.sin(a+0.4));
   ctx.closePath(); ctx.fill();
 }
+function seg(a,b){ ctx.beginPath(); ctx.moveTo(a.X,a.Y); ctx.lineTo(b.X,b.Y); ctx.stroke(); }
+function poly(ps,close){ ctx.beginPath(); ctx.moveTo(ps[0].X,ps[0].Y); for(let i=1;i<ps.length;i++)ctx.lineTo(ps[i].X,ps[i].Y); if(close)ctx.closePath(); }
 
 function draw(){
-  ctx.clearRect(0,0,W,H);
-  cx=W/2; cy=H/2;
+  ctx.clearRect(0,0,W,H); layout();
   ctx.font='12px JetBrains Mono, monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
   if(mode===0) drawSphere();
   else if(mode===1) drawCylinder();
@@ -97,131 +103,117 @@ function draw(){
 
 // ---------- 点 → 球 ----------
 function drawSphere(){
-  const r=R;
-  // shaded sphere body
-  const g=ctx.createRadialGradient(cx-r*0.32,cy-r*0.32,r*0.1, cx,cy,r);
-  g.addColorStop(0,'rgba(60,120,118,0.05)'); g.addColorStop(1,'rgba(60,120,118,0.20)');
-  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,r,0,7); ctx.fill();
-  // silhouette
-  ctx.strokeStyle='#3c7876'; ctx.lineWidth=1.7;
-  ctx.beginPath(); ctx.arc(cx,cy,r,0,7); ctx.stroke();
-  // latitude/longitude ellipses (front solid, back dashed) for 3D read
-  const ry=r*Math.max(0.12, Math.abs(Math.sin(yaw))*0.5+0.12);
-  const rx=r*Math.max(0.12, Math.abs(Math.cos(yaw))*0.5+0.12);
-  ctx.lineWidth=1.2;
-  // equator (horizontal-ish ellipse)
-  ctx.strokeStyle='rgba(60,120,118,0.85)';
-  ctx.beginPath(); ctx.ellipse(cx,cy,r,ry,0,0,Math.PI); ctx.stroke();            // front
+  const r=Math.min(R, maxHalf, W*0.34);
+  const g=ctx.createRadialGradient(cx-r*0.32,cyc-r*0.32,r*0.1, cx,cyc,r);
+  g.addColorStop(0,'rgba(60,120,118,0.05)'); g.addColorStop(1,'rgba(60,120,118,0.22)');
+  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cyc,r,0,7); ctx.fill();
+  ctx.strokeStyle='#3c7876'; ctx.lineWidth=1.7; ctx.beginPath(); ctx.arc(cx,cyc,r,0,7); ctx.stroke();
+  const ry=r*Math.max(0.13, Math.abs(Math.sin(yaw))*0.5+0.13);
+  const rx=r*Math.max(0.13, Math.abs(Math.cos(yaw))*0.5+0.13);
+  ctx.lineWidth=1.2; ctx.strokeStyle='rgba(60,120,118,0.85)';
+  ctx.beginPath(); ctx.ellipse(cx,cyc,r,ry,0,0,Math.PI); ctx.stroke();
   ctx.setLineDash([4,3]); ctx.strokeStyle='rgba(60,120,118,0.4)';
-  ctx.beginPath(); ctx.ellipse(cx,cy,r,ry,0,Math.PI,2*Math.PI); ctx.stroke();    // back
-  // meridian (vertical-ish ellipse)
+  ctx.beginPath(); ctx.ellipse(cx,cyc,r,ry,0,Math.PI,2*Math.PI); ctx.stroke();
   ctx.strokeStyle='rgba(60,120,118,0.5)';
-  ctx.beginPath(); ctx.ellipse(cx,cy,rx,r,0,0,2*Math.PI); ctx.stroke();
+  ctx.beginPath(); ctx.ellipse(cx,cyc,rx,r,0,0,2*Math.PI); ctx.stroke();
   ctx.setLineDash([]);
-  // radial field arrows in-plane (8) + foreshortened depth pair
-  for(let k=0;k<8;k++){ const a=k*Math.PI/4; arrowSeg(cx+Math.cos(a)*(r-20),cy+Math.sin(a)*(r-20),cx+Math.cos(a)*(r+15),cy+Math.sin(a)*(r+15),'#1d1b17'); }
-  // charge
-  ctx.beginPath(); ctx.arc(cx,cy,9,0,7); ctx.fillStyle='rgba(194,84,61,0.20)'; ctx.fill();
+  for(let k=0;k<8;k++){ const a=k*Math.PI/4; arrowSeg(cx+Math.cos(a)*(r-19),cyc+Math.sin(a)*(r-19),cx+Math.cos(a)*(r+15),cyc+Math.sin(a)*(r+15),'#1d1b17'); }
+  ctx.beginPath(); ctx.arc(cx,cyc,9,0,7); ctx.fillStyle='rgba(194,84,61,0.20)'; ctx.fill();
   ctx.strokeStyle='#c2543d'; ctx.lineWidth=1.8; ctx.stroke();
-  ctx.fillStyle='#c2543d'; ctx.fillText('+',cx,cy+1);
-  ctx.fillStyle='#3c7876'; ctx.fillText('球（面積 4πr²）',cx,cy-r-15);
+  ctx.fillStyle='#c2543d'; ctx.fillText('+',cx,cyc+1);
+  ctx.fillStyle='#3c7876'; ctx.fillText('球（面積 4πr²）',cx,cyc+r+18);
 }
 
 // ---------- 線 → 円柱 ----------
 function drawCylinder(){
-  const r=R, hh=Math.min(H*0.34,150), ry=Math.max(8, r*(0.22+Math.abs(Math.sin(yaw))*0.18));
-  const topY=cy-hh, botY=cy+hh;
+  const r=Math.min(R, W*0.30);
+  const ry=Math.max(8, r*(0.24+Math.abs(Math.sin(yaw))*0.16));
+  const hh=Math.min(maxHalf-ry-6, 150);
+  const topY=cyc-hh, botY=cyc+hh;
   // curved side shading
   const g=ctx.createLinearGradient(cx-r,0,cx+r,0);
-  g.addColorStop(0,'rgba(60,120,118,0.20)'); g.addColorStop(0.5,'rgba(60,120,118,0.05)'); g.addColorStop(1,'rgba(60,120,118,0.20)');
+  g.addColorStop(0,'rgba(60,120,118,0.22)'); g.addColorStop(0.5,'rgba(60,120,118,0.05)'); g.addColorStop(1,'rgba(60,120,118,0.22)');
   ctx.fillStyle=g;
-  ctx.beginPath();
-  ctx.moveTo(cx-r,topY); ctx.lineTo(cx-r,botY);
+  ctx.beginPath(); ctx.moveTo(cx-r,topY); ctx.lineTo(cx-r,botY);
   ctx.ellipse(cx,botY,r,ry,0,Math.PI,0,true); ctx.lineTo(cx+r,topY);
   ctx.ellipse(cx,topY,r,ry,0,0,Math.PI,true); ctx.closePath(); ctx.fill();
-  // side edges (effective faces) - solid teal
+  // top cap (filled light) for solidity
+  ctx.fillStyle='rgba(60,120,118,0.10)';
+  ctx.beginPath(); ctx.ellipse(cx,topY,r,ry,0,0,2*Math.PI); ctx.fill();
+  // side edges (effective faces)
   ctx.strokeStyle='#3c7876'; ctx.lineWidth=2;
   ctx.beginPath(); ctx.moveTo(cx-r,topY); ctx.lineTo(cx-r,botY); ctx.moveTo(cx+r,topY); ctx.lineTo(cx+r,botY); ctx.stroke();
-  // bottom cap ellipse: front solid, back dashed
-  ctx.lineWidth=1.4;
+  // bottom cap: front solid, back dashed
+  ctx.lineWidth=1.4; ctx.strokeStyle='#3c7876';
   ctx.beginPath(); ctx.ellipse(cx,botY,r,ry,0,0,Math.PI); ctx.stroke();
   ctx.setLineDash([4,3]); ctx.strokeStyle='rgba(60,120,118,0.45)';
   ctx.beginPath(); ctx.ellipse(cx,botY,r,ry,0,Math.PI,2*Math.PI); ctx.stroke();
-  // top cap ellipse (full, slightly faint)
-  ctx.strokeStyle='rgba(60,120,118,0.7)';
+  // top cap rim
+  ctx.strokeStyle='rgba(60,120,118,0.75)';
   ctx.beginPath(); ctx.ellipse(cx,topY,r,ry,0,0,2*Math.PI); ctx.stroke();
   ctx.setLineDash([]);
-  // radial (horizontal) field arrows at heights
-  for(const yy of [topY+hh*0.55, cy, botY-hh*0.55]){
+  // radial arrows
+  for(const yy of [topY+hh*0.5, cyc, botY-hh*0.5]){
     arrowSeg(cx+10,yy,cx+r+15,yy,'#1d1b17'); arrowSeg(cx-10,yy,cx-r-15,yy,'#1d1b17');
   }
-  // wire (red) along axis
+  // wire
   ctx.strokeStyle='#c2543d'; ctx.lineWidth=3;
-  ctx.beginPath(); ctx.moveTo(cx,topY-22); ctx.lineTo(cx,botY+22); ctx.stroke();
-  ctx.fillStyle='#c2543d'; ctx.fillText('+λ',cx+15,topY-12);
-  ctx.fillStyle='#3c7876'; ctx.fillText('円柱の側面（2πr·L）',cx,botY+ry+14);
-  ctx.fillStyle='#aaa49b'; ctx.fillText('ふたは貫かない＝0',cx,topY-ry-12);
+  ctx.beginPath(); ctx.moveTo(cx,topY-16); ctx.lineTo(cx,botY+16); ctx.stroke();
+  ctx.fillStyle='#c2543d'; ctx.textAlign='left'; ctx.fillText('+λ',cx+8,topY-8); ctx.textAlign='center';
+  ctx.fillStyle='#3c7876'; ctx.fillText('円柱の側面（2πr·L）',cx,botY+ry+16);
 }
 
 // ---------- 面 → 箱 ----------
 function drawBox(){
-  const hw=Math.min(W*0.26,150), r=R*0.8, dep=1.0;
+  const hw=Math.min(W*0.23,138), r=Math.min(R*0.7, maxHalf-8), dep=1.0;
   const P=(x,y,z)=>proj(x,y,z);
-  // corners: front z=0, back z=1; top y=+r, bottom y=-r
   const ftl=P(-hw,r,0),ftr=P(hw,r,0),fbr=P(hw,-r,0),fbl=P(-hw,-r,0);
   const btl=P(-hw,r,dep),btr=P(hw,r,dep),bbr=P(hw,-r,dep),bbl=P(-hw,-r,dep);
-  // charged sheet (plane y=0), a bit wider than the box
-  const s=1.32;
+  // charged sheet plane (y=0)
+  const s=1.3;
   const sp=[P(-hw*s,0,-0.2),P(hw*s,0,-0.2),P(hw*s,0,dep+0.2),P(-hw*s,0,dep+0.2)];
-  ctx.beginPath(); ctx.moveTo(sp[0].X,sp[0].Y); for(let i=1;i<4;i++)ctx.lineTo(sp[i].X,sp[i].Y); ctx.closePath();
-  ctx.fillStyle='rgba(194,84,61,0.13)'; ctx.fill(); ctx.strokeStyle='#c2543d'; ctx.lineWidth=1.6; ctx.stroke();
-  // flux faces: top & bottom (tinted teal)
+  poly(sp,true); ctx.fillStyle='rgba(194,84,61,0.13)'; ctx.fill(); ctx.strokeStyle='#c2543d'; ctx.lineWidth=1.6; ctx.stroke();
+  // solid-look face fills: right side + front (subtle), then flux faces top/bottom (teal)
+  poly([ftr,btr,bbr,fbr],true); ctx.fillStyle='rgba(60,120,118,0.06)'; ctx.fill();   // right side
   const faceTop=[ftl,ftr,btr,btl], faceBot=[fbl,fbr,bbr,bbl];
-  for(const f of [faceTop,faceBot]){
-    ctx.beginPath(); ctx.moveTo(f[0].X,f[0].Y); for(let i=1;i<4;i++)ctx.lineTo(f[i].X,f[i].Y); ctx.closePath();
-    ctx.fillStyle='rgba(60,120,118,0.14)'; ctx.fill();
-  }
+  for(const f of [faceTop,faceBot]){ poly(f,true); ctx.fillStyle='rgba(60,120,118,0.16)'; ctx.fill(); }
+  poly([ftl,ftr,fbr,fbl],true); ctx.fillStyle='rgba(60,120,118,0.04)'; ctx.fill();   // front
   // back edges dashed
   ctx.strokeStyle='rgba(60,120,118,0.5)'; ctx.lineWidth=1.2; ctx.setLineDash([4,3]);
-  poly([btl,btr,bbr,bbl],true); seg(bbl,fbl);
+  poly([btl,btr,bbr,bbl],true); ctx.stroke(); seg(bbl,fbl);
   ctx.setLineDash([]);
-  // front + connecting edges solid
-  ctx.strokeStyle='#3c7876'; ctx.lineWidth=1.7;
-  poly([ftl,ftr,fbr,fbl],true);
+  // front + connectors solid
+  ctx.strokeStyle='#3c7876'; ctx.lineWidth=1.8;
+  poly([ftl,ftr,fbr,fbl],true); ctx.stroke();
   seg(ftl,btl); seg(ftr,btr); seg(fbr,bbr);
-  // perpendicular field arrows: up from top, down from bottom (3 each)
+  // perpendicular arrows up/down
   for(const xx of [-hw*0.5,0,hw*0.5]){
     const t=P(xx,r,dep*0.5), b=P(xx,-r,dep*0.5);
-    arrowSeg(t.X,t.Y, t.X, t.Y-30,'#1d1b17');
-    arrowSeg(b.X,b.Y, b.X, b.Y+30,'#1d1b17');
+    arrowSeg(t.X,t.Y,t.X,t.Y-26,'#1d1b17'); arrowSeg(b.X,b.Y,b.X,b.Y+26,'#1d1b17');
   }
-  ctx.fillStyle='#c2543d'; ctx.fillText('+σ',ftr.X+16,ftr.Y+10);
-  ctx.fillStyle='#3c7876'; ctx.fillText('箱の表と裏（2A）',cx,faceTop[0].Y-34);
-  ctx.fillStyle='#aaa49b'; ctx.fillText('側面は貫かない＝0',cx,faceBot[0].Y+30);
+  ctx.fillStyle='#c2543d'; ctx.textAlign='left'; ctx.fillText('+σ',ftr.X+10,ftr.Y+12); ctx.textAlign='center';
+  ctx.fillStyle='#3c7876'; ctx.fillText('箱の表と裏（2A）が効く面',cx,faceBot[0].Y+26);
 }
-function seg(a,b){ ctx.beginPath(); ctx.moveTo(a.X,a.Y); ctx.lineTo(b.X,b.Y); ctx.stroke(); }
-function poly(ps,close){ ctx.beginPath(); ctx.moveTo(ps[0].X,ps[0].Y); for(let i=1;i<ps.length;i++)ctx.lineTo(ps[i].X,ps[i].Y); if(close)ctx.closePath(); ctx.stroke(); }
 
 function updateReadout(){
   const ratio=R/R0;
   if(mode===0){
     const E=1/(ratio*ratio);
-    ro.innerHTML=`点電荷（球で囲う）<br>∮E·dA = E·<b>4πr²</b> = Q/ε₀<br>→ <span class="e">E = Q / 4πε₀r²</span> ∝ 1/r²<br>E（相対）= <span class="e">${E.toFixed(2)}</span>　∮E·dA = <span class="f">一定</span>`;
+    ro.innerHTML=`点：球で囲う<br>E·<b>4πr²</b> = Q/ε₀<br>→ <span class="e">E = Q/4πε₀r²</span><br>E相対 <span class="e">${E.toFixed(2)}</span> ／ ∮ <span class="f">一定</span>`;
   } else if(mode===1){
     const E=1/ratio;
-    ro.innerHTML=`無限の線（円柱で囲う）<br>∮E·dA = E·<b>2πr·L</b> = λL/ε₀<br>→ <span class="e">E = λ / 2πε₀r</span> ∝ 1/r<br>E（相対）= <span class="e">${E.toFixed(2)}</span>　∮E·dA = <span class="f">一定</span>`;
+    ro.innerHTML=`線：円柱で囲う<br>E·<b>2πrL</b> = λL/ε₀<br>→ <span class="e">E = λ/2πε₀r</span><br>E相対 <span class="e">${E.toFixed(2)}</span> ／ ∮ <span class="f">一定</span>`;
   } else {
-    ro.innerHTML=`無限の面（箱で囲う）<br>∮E·dA = E·<b>2A</b> = σA/ε₀<br>→ <span class="e">E = σ / 2ε₀</span>（rによらない）<br>E（相対）= <span class="e">1.00</span>　箱を広げても <span class="f">不変</span>`;
+    ro.innerHTML=`面：箱で囲う<br>E·<b>2A</b> = σA/ε₀<br>→ <span class="e">E = σ/2ε₀</span><br>r によらず E <span class="f">不変</span>`;
   }
 }
-
 function setMode(m){
   mode=m;
   for(let i=0;i<3;i++) document.getElementById('m'+i).classList.toggle('on',i===m);
   rlab.textContent = m===2?'箱の高さ':'半径 r';
   hintEl.textContent = m===2
-    ? '箱をどれだけ広げても E は変わらない ── 無限平面の場は距離によらない。ドラッグで回せる。'
-    : 'ガウス面を広げると E は弱まるのに、貫く総フラックス ∮E·dA は一定のまま。ドラッグで回せる。';
+    ? '箱をどれだけ広げても E は変わらない（無限平面の場は距離によらない）。ドラッグで回せる。'
+    : 'ガウス面を広げると E は弱まるのに、貫く総フラックス ∮E·dA は一定。ドラッグで回せる。';
   draw();
 }
 document.getElementById('m0').onclick=()=>setMode(0);
@@ -229,10 +221,9 @@ document.getElementById('m1').onclick=()=>setMode(1);
 document.getElementById('m2').onclick=()=>setMode(2);
 document.getElementById('r').oninput=(e)=>{ R=parseFloat(e.target.value); draw(); };
 
-// drag to spin the view
-let dragging=false, lastX=0;
+let dragging=false,lastX=0;
 function down(e){ dragging=true; lastX=(e.touches?e.touches[0]:e).clientX; }
-function move(e){ if(!dragging)return; const x=(e.touches?e.touches[0]:e).clientX; yaw+=(x-lastX)*0.01; lastX=x; draw(); e.preventDefault&&e.preventDefault(); }
+function move(e){ if(!dragging)return; const x=(e.touches?e.touches[0]:e).clientX; yaw+=(x-lastX)*0.01; lastX=x; draw(); if(e.cancelable)e.preventDefault(); }
 function up(){ dragging=false; }
 cv.addEventListener('mousedown',down); window.addEventListener('mousemove',move); window.addEventListener('mouseup',up);
 cv.addEventListener('touchstart',down,{passive:true}); cv.addEventListener('touchmove',move,{passive:false}); cv.addEventListener('touchend',up);
