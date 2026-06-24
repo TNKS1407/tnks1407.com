@@ -68,6 +68,24 @@ const labGroups: { label: string; items: Lab[] }[] = [
   },
 ];
 const labCount = labGroups.reduce((n, g) => n + g.items.length, 0);
+
+// 作業ログ ── 誰が、何をしたか。新しい順。
+// 「続く作り手（持続）」は名前で、今日の使い捨てエージェントは「一時」と正直に分ける。
+type LogEntry = { date: string; agent: string; persistent: boolean; task: string; out?: { title: string; url: string }; note: string };
+const agentLog: LogEntry[] = [
+  {
+    date: '2026.06.24', agent: 'バックグラウンド制作', persistent: false,
+    task: 'オイラーの式 widget を作る',
+    out: { title: 'オイラーの式（回転）', url: '/euler-rotation/' },
+    note: 'e^{iθ} を単位円上で。実軸に cosθ・虚軸に sinθ の影、φ を足すと掛け算＝回転。node --check 済。',
+  },
+  {
+    date: '2026.06.24', agent: 'バックグラウンド制作', persistent: false,
+    task: '位相空間の散歩 widget を作る',
+    out: { title: '位相空間の散歩', url: '/phase-space/' },
+    note: 'RK4 で振り子を解き、保存＝閉じた輪／越えると回転／減衰でスパイラルを位相平面に。エネルギー漂流 1e-9 まで自己検算。',
+  },
+];
 ---
 
 <!doctype html>
@@ -111,6 +129,18 @@ const labCount = labGroups.reduce((n, g) => n + g.items.length, 0);
       .row:hover .ttl{color:var(--teal);}
       .badge{font-size:.68rem;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--teal);
         border:1px solid var(--border);border-radius:999px;padding:.05rem .55rem;white-space:nowrap;background:var(--card);}
+      /* log */
+      .log{display:flex;flex-direction:column;gap:.1rem;}
+      .logrow{display:flex;align-items:baseline;gap:.7rem;padding:.6rem .2rem;border-bottom:1px dashed var(--border-dim);}
+      .logrow .date{font-family:'JetBrains Mono',monospace;font-size:.74rem;color:var(--text-faint);white-space:nowrap;min-width:5.6em;}
+      .who{font-size:.68rem;font-weight:700;font-family:'JetBrains Mono',monospace;border-radius:999px;padding:.05rem .55rem;white-space:nowrap;}
+      .who-p{color:var(--teal);border:1px solid var(--teal);}
+      .who-t{color:var(--text-muted);border:1px solid var(--border);background:var(--card);}
+      .logbody{flex:1;}
+      .logtask{font-weight:500;}
+      .logtask a{color:var(--teal);text-decoration:none;font-weight:700;}
+      .logtask a:hover{text-decoration:underline;}
+      .lognote{font-size:.82rem;color:var(--text-muted);margin-top:.15rem;}
       /* labs */
       .lab-group{margin-bottom:1.3rem;}
       .lab-group h3{font-size:.85rem;font-weight:700;color:var(--text-muted);margin-bottom:.5rem;}
@@ -153,6 +183,21 @@ const labCount = labGroups.reduce((n, g) => n + g.items.length, 0);
             <span class="ttl">{d.data.title}</span>
             {d.data.series && <span class="badge">{SERIES_LABEL[d.data.series] ?? d.data.series}</span>}
           </a>
+        ))}
+      </div>
+
+      <h2>作業ログ ── 誰が、何をしたか</h2>
+      <p style="color:var(--text-muted);margin-bottom:.7rem;font-size:.9rem;">作り手ごとの仕事の記録。出てきたものは私が必ず目を通してから公開している。「一時」＝その仕事だけの使い捨ての手、名前つき＝続く作り手（これから）。</p>
+      <div class="log">
+        {agentLog.map((e) => (
+          <div class="logrow">
+            <span class="date">{e.date}</span>
+            <span class={`who ${e.persistent ? 'who-p' : 'who-t'}`}>{e.agent}{e.persistent ? '' : '・一時'}</span>
+            <div class="logbody">
+              <div class="logtask">{e.task}{e.out && (<> → <a href={e.out.url} target="_blank" rel="noopener noreferrer">{e.out.title} ↗</a></>)}</div>
+              <div class="lognote">{e.note}</div>
+            </div>
+          </div>
         ))}
       </div>
 
