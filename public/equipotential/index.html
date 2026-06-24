@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>等電位の地図 ── 道によらない、を触る</title>
+<style>
+  :root{
+    --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
+    --teal:#3c7876;--red:#c2543d;--amber:#c9761f;
+    --text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;}
+  body{font-family:'Zen Kaku Gothic New',system-ui,sans-serif;background:var(--bg);color:var(--text);
+    display:flex;flex-direction:column;overflow:hidden;}
+  #stage{flex:1;position:relative;min-height:0;}
+  canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair;}
+  .hint{position:absolute;left:10px;top:8px;font-size:.72rem;color:var(--faint);pointer-events:none;
+    font-family:'JetBrains Mono',monospace;max-width:60%;line-height:1.5;}
+  .readout{position:absolute;right:10px;top:8px;font-size:.72rem;color:var(--muted);text-align:right;
+    font-family:'JetBrains Mono',monospace;line-height:1.6;pointer-events:none;background:rgba(250,248,244,.78);
+    border-radius:6px;padding:.3rem .5rem;}
+  .readout b{color:var(--text);font-weight:700;}
+  .readout .eq{color:var(--teal);font-weight:700;}
+  .ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.6rem .8rem;
+    display:flex;flex-wrap:wrap;gap:.7rem 1.1rem;align-items:center;}
+  .row{display:flex;align-items:center;gap:.5rem;font-size:.78rem;color:var(--muted);}
+  button{font:inherit;font-size:.74rem;font-weight:700;color:var(--text);background:var(--card);
+    border:1px solid var(--border);border-radius:8px;padding:.32rem .62rem;cursor:pointer;}
+  button:hover{border-color:var(--teal);}
+  button.on{background:var(--teal);color:#fff;border-color:var(--teal);}
+  .legend{font-size:.7rem;color:var(--muted);display:flex;gap:.9rem;flex-wrap:wrap;align-items:center;}
+  .sw{display:inline-block;width:16px;height:16px;border-radius:3px;vertical-align:middle;margin-right:.25rem;}
+  .swl{display:inline-block;width:18px;height:0;border-top-width:3px;border-top-style:solid;vertical-align:middle;margin-right:.25rem;}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="c"></canvas>
+  <div class="hint" id="hint">源（◯）をドラッグして電位の地形を変える。色の帯＝等電位、緑の矢印＝場 E。</div>
+  <div class="readout" id="ro"></div>
+</div>
+<div class="ctrl">
+  <div class="row">
+    <button id="flip">触れた源の符号を反転</button>
+    <button id="second">2つ目の源を足す</button>
+    <button id="path">道を歩く（保存力を見る）</button>
+    <button id="reset">リセット</button>
+  </div>
+  <div class="legend">
+    <span><span class="sw" style="background:linear-gradient(90deg,#3c7876,#f5f2ec,#c9761f)"></span>電位 V（低 → 高）</span>
+    <span><span class="swl" style="border-color:var(--teal)"></span>場 E（下り坂・等電位に直角）</span>
+  </div>
+</div>
+<script>
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const ro = document.getElementById('ro'), hintEl = document.getElementById('hint');
+let W=0, H=0, DPR=Math.min(window.devicePixelRatio||1, 2);
+
+// --- model ---------------------------------------------------------------
+// sources in canvas (CSS) px; q in arbitrary units.
+let sources = [];
+let pathMode = false;
+// path handles (CSS px): A start, M waypoint (bends the path), B end.
+let path = null;
+let drag = null;            // {type:'src'|'path', idx/key}
+let lastTouchedSrc = 0;
+
+const K = 9000;             // arbitrary scale so readouts are O(1..100)
+const SOFT = 14;            // softening radius (px) to tame the singularity
+
+function resetModel(){
+  const w = W||600, h = H||360;
+  sources = [{x:w*0.5, y:h*0.5, q:+1}];
+  lastTouchedSrc = 0;
+  path = {A:{x:w*0.27,y:h*0.62}, M:{x:w*0.5,y:h*0.34}, B:{x:w*0.73,y:h*0.62}};
+}
+
+function potentialAt(x,y){
+  let v=0;
+  for(const s of sources){
+    const dx=x-s.x, dy=y-s.y;
+    const r=Math.sqrt(dx*dx+dy*dy+SOFT*SOFT);
+    v += K*s.q/r;
+  }
+  return v;
+}
+function fieldAt(x,y){
+  let ex=0, ey=0;
+  for(const s of sources){
+    const dx=x-s.x, dy=y-s.y;
+    const r2=dx*dx+dy*dy+SOFT*SOFT, r=Math.sqrt(r2);
+    const f=K*s.q/(r2*r);      // K q / r^3 * (dx,dy)
+    ex+=f*dx; ey+=f*dy;
+  }
+  return {ex,ey};
+}
+
+// map (unbounded) V -> [-1,1] for coloring; arctan compresses gently.
+function squash(v){ return Math.atan(v/40)/(Math.PI/2); }
+// banded warm colormap: low=teal, mid=paper, high=amber/red.
+function colorFor(v){
+  const t=squash(v);                 // -1..1
+  const band=Math.round(t*8)/8;      // 17 bands -> contour look
+  // interpolate teal(-1) -> paper(0) -> red(+1)
+  const c0=[60,120,118], cm=[245,242,236], c1=[201,118,31], c2=[194,84,61];
+  let r,g,b;
+  if(band<0){ const u=band+1; r=lerp(c0[0],cm[0],u); g=lerp(c0[1],cm[1],u); b=lerp(c0[2],cm[2],u); }
+  else { // 0..1 paper->amber->red
+    if(band<0.6){ const u=band/0.6; r=lerp(cm[0],c1[0],u); g=lerp(cm[1],c1[1],u); b=lerp(cm[2],c1[2],u); }
+    else { const u=(band-0.6)/0.4; r=lerp(c1[0],c2[0],u); g=lerp(c1[1],c2[1],u); b=lerp(c1[2],c2[2],u); }
+  }
+  return `rgb(${r|0},${g|0},${b|0})`;
+}
+function lerp(a,b,t){ return a+(b-a)*t; }
+
+// integrate E·dl along the polyline A->M->B (work per unit charge).
+function pathIntegral(){
+  const pts=[path.A, path.M, path.B];
+  let sum=0, N=160;
+  for(let seg=0; seg<2; seg++){
+    const p=pts[seg], q=pts[seg+1];
+    for(let i=0;i<N;i++){
+      const t0=i/N, t1=(i+1)/N;
+      const x0=p.x+(q.x-p.x)*t0, y0=p.y+(q.y-p.y)*t0;
+      const x1=p.x+(q.x-p.x)*t1, y1=p.y+(q.y-p.y)*t1;
+      const mx=(x0+x1)/2, my=(y0+y1)/2;
+      const E=fieldAt(mx,my);
+      sum += E.ex*(x1-x0) + E.ey*(y1-y0);   // E·dl
+    }
+  }
+  // scale by /K so the number is O(1) and matches ΔV scale (both use same K)
+  return sum;
+}
+
+// --- drawing -------------------------------------------------------------
+function draw(){
+  // terrain (downsampled bands)
+  const cell=5;
+  for(let y=0;y<H;y+=cell){
+    for(let x=0;x<W;x+=cell){
+      ctx.fillStyle=colorFor(potentialAt(x+cell/2,y+cell/2));
+      ctx.fillRect(x,y,cell,cell);
+    }
+  }
+  // field arrows on coarse grid
+  const g=46;
+  ctx.strokeStyle='rgba(60,120,118,0.85)'; ctx.fillStyle='rgba(60,120,118,0.85)'; ctx.lineWidth=1.4;
+  for(let y=g/2;y<H;y+=g){
+    for(let x=g/2;x<W;x+=g){
+      const E=fieldAt(x,y);
+      const mag=Math.hypot(E.ex,E.ey);
+      if(mag<1e-6) continue;
+      const L=Math.min(g*0.42, 6+18*Math.tanh(mag/6));
+      const ux=E.ex/mag, uy=E.ey/mag;
+      const x2=x+ux*L, y2=y+uy*L;
+      ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x2,y2); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x2,y2);
+      ctx.lineTo(x2-ux*5-uy*3, y2-uy*5+ux*3);
+      ctx.lineTo(x2-ux*5+uy*3, y2-uy*5-ux*3);
+      ctx.closePath(); ctx.fill();
+    }
+  }
+  // sources
+  for(const s of sources){
+    ctx.beginPath(); ctx.arc(s.x,s.y,12,0,7);
+    ctx.fillStyle = s.q>=0 ? 'rgba(194,84,61,0.16)' : 'rgba(60,120,118,0.16)';
+    ctx.fill();
+    ctx.lineWidth=1.8; ctx.strokeStyle = s.q>=0 ? '#c2543d' : '#3c7876'; ctx.stroke();
+    ctx.fillStyle = s.q>=0 ? '#c2543d' : '#3c7876';
+    ctx.font='700 15px JetBrains Mono, monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(s.q>=0?'+':'−', s.x, s.y+1);
+  }
+  // path tool
+  if(pathMode && path){
+    const pts=[path.A,path.M,path.B];
+    ctx.lineWidth=2.4; ctx.strokeStyle='#1d1b17'; ctx.setLineDash([1,0]);
+    ctx.beginPath(); ctx.moveTo(pts[0].x,pts[0].y);
+    ctx.lineTo(pts[1].x,pts[1].y); ctx.lineTo(pts[2].x,pts[2].y); ctx.stroke();
+    // handles
+    const labels={A:'A',M:'',B:'B'};
+    for(const key of ['A','M','B']){
+      const p=path[key];
+      ctx.beginPath(); ctx.arc(p.x,p.y, key==='M'?6:8, 0,7);
+      ctx.fillStyle = key==='M' ? '#faf8f4' : '#1d1b17';
+      ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle='#1d1b17'; ctx.stroke();
+      if(labels[key]){ ctx.fillStyle='#1d1b17'; ctx.font='700 12px JetBrains Mono, monospace';
+        ctx.fillText(labels[key], p.x, p.y-16); }
+    }
+    ctx.fillStyle='var(--muted)';
+  }
+  updateReadout();
+}
+
+function updateReadout(){
+  if(pathMode && path){
+    const dV = potentialAt(path.A.x,path.A.y) - potentialAt(path.B.x,path.B.y);
+    const line = pathIntegral();
+    ro.innerHTML =
+      `この道に沿う <b>∫E·dl</b> = <span class="eq">${line.toFixed(2)}</span><br>`+
+      `電位差 <b>V(A) − V(B)</b> = <span class="eq">${dV.toFixed(2)}</span><br>`+
+      `<span style="color:var(--faint)">道を曲げても、二つは一致したまま</span>`;
+  } else {
+    ro.innerHTML = `源をドラッグ。<br><span style="color:var(--faint)">色＝電位の高さ／矢印＝下り坂の場</span>`;
+  }
+}
+
+// --- interaction ---------------------------------------------------------
+function pos(e){
+  const r=cv.getBoundingClientRect();
+  const t=e.touches?e.touches[0]:e;
+  return {x:t.clientX-r.left, y:t.clientY-r.top};
+}
+function pickHandle(p){
+  if(pathMode && path){
+    for(const key of ['M','A','B']){
+      const h=path[key];
+      if(Math.hypot(p.x-h.x,p.y-h.y)<22) return {type:'path',key};
+    }
+  }
+  for(let i=0;i<sources.length;i++){
+    if(Math.hypot(p.x-sources[i].x,p.y-sources[i].y)<22) return {type:'src',idx:i};
+  }
+  return null;
+}
+function down(e){ e.preventDefault(); const p=pos(e); drag=pickHandle(p);
+  if(drag && drag.type==='src') lastTouchedSrc=drag.idx; }
+function move(e){
+  if(!drag) return; e.preventDefault(); const p=pos(e);
+  p.x=Math.max(0,Math.min(W,p.x)); p.y=Math.max(0,Math.min(H,p.y));
+  if(drag.type==='src') { sources[drag.idx].x=p.x; sources[drag.idx].y=p.y; }
+  else { path[drag.key].x=p.x; path[drag.key].y=p.y; }
+  draw();
+}
+function up(){ drag=null; }
+cv.addEventListener('mousedown',down); window.addEventListener('mousemove',move); window.addEventListener('mouseup',up);
+cv.addEventListener('touchstart',down,{passive:false}); cv.addEventListener('touchmove',move,{passive:false}); cv.addEventListener('touchend',up);
+
+document.getElementById('flip').onclick=()=>{ if(sources[lastTouchedSrc]) sources[lastTouchedSrc].q*=-1; draw(); };
+document.getElementById('second').onclick=(ev)=>{
+  if(sources.length<2){ sources.push({x:W*0.66,y:H*0.5,q:-1}); ev.target.textContent='2つ目の源を消す'; }
+  else { sources.pop(); lastTouchedSrc=0; ev.target.textContent='2つ目の源を足す'; }
+  draw();
+};
+document.getElementById('path').onclick=(ev)=>{
+  pathMode=!pathMode; ev.target.classList.toggle('on',pathMode);
+  hintEl.textContent = pathMode
+    ? 'A・B と途中の白い点をドラッグ。道を曲げても ∫E·dl と V(A)−V(B) が一致＝保存力。'
+    : '源（◯）をドラッグして電位の地形を変える。色の帯＝等電位、緑の矢印＝場 E。';
+  draw();
+};
+document.getElementById('reset').onclick=()=>{ resetModel(); document.getElementById('second').textContent='2つ目の源を足す'; draw(); };
+
+// --- sizing --------------------------------------------------------------
+function resize(){
+  const st=document.getElementById('stage');
+  W=st.clientWidth; H=st.clientHeight;
+  cv.width=W*DPR; cv.height=H*DPR; cv.style.width=W+'px'; cv.style.height=H+'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  if(!sources.length) resetModel();
+  draw();
+}
+window.addEventListener('resize', resize);
+resetModel(); resize();
+</script>
+</body>
+</html>
