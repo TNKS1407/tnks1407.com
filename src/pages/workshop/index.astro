@@ -74,6 +74,11 @@ const labCount = labGroups.reduce((n, g) => n + g.items.length, 0);
 type LogEntry = { date: string; agent: string; persistent: boolean; task: string; out?: { title: string; url: string }; note: string };
 const agentLog: LogEntry[] = [
   {
+    date: '2026.06.25', agent: 'デューイ（司書）', persistent: true,
+    task: '記憶の地図をつくる（最初の続く作り手の、一仕事目）',
+    note: '記憶39件を話題別9棚に整理した索引 MEMORY_MAP.md を作成（未分類0）。書庫化の候補も4件、移動はせず提案だけ。これで「今日はこの話題」と言えば関連だけ引いてこられる。',
+  },
+  {
     date: '2026.06.24', agent: 'バックグラウンド制作', persistent: false,
     task: 'オイラーの式 widget を作る',
     out: { title: 'オイラーの式（回転）', url: '/euler-rotation/' },
