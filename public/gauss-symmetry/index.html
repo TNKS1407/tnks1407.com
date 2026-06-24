@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>対称性とガウス面 ── 面積で割れば、場が出る</title>
+<style>
+  :root{
+    --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
+    --teal:#3c7876;--red:#c2543d;--amber:#c9761f;
+    --text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;}
+  body{font-family:'Zen Kaku Gothic New',system-ui,sans-serif;background:var(--bg);color:var(--text);
+    display:flex;flex-direction:column;overflow:hidden;}
+  #stage{flex:1;position:relative;min-height:0;}
+  canvas{display:block;width:100%;height:100%;touch-action:none;}
+  .hint{position:absolute;left:10px;top:8px;font-size:.72rem;color:var(--faint);pointer-events:none;
+    font-family:'JetBrains Mono',monospace;max-width:54%;line-height:1.5;}
+  .readout{position:absolute;right:10px;top:8px;font-size:.72rem;color:var(--muted);text-align:right;
+    font-family:'JetBrains Mono',monospace;line-height:1.7;pointer-events:none;background:rgba(250,248,244,.82);
+    border-radius:6px;padding:.35rem .55rem;}
+  .readout b{color:var(--text);font-weight:700;}
+  .readout .e{color:var(--red);font-weight:700;}
+  .readout .f{color:var(--teal);font-weight:700;}
+  .ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.6rem .8rem;
+    display:flex;flex-wrap:wrap;gap:.7rem 1.1rem;align-items:center;}
+  .row{display:flex;align-items:center;gap:.5rem;font-size:.78rem;color:var(--muted);}
+  .row label{font-weight:700;color:var(--text);white-space:nowrap;}
+  input[type=range]{width:140px;accent-color:var(--teal);}
+  button{font:inherit;font-size:.76rem;font-weight:700;color:var(--text);background:var(--card);
+    border:1px solid var(--border);border-radius:8px;padding:.32rem .7rem;cursor:pointer;}
+  button:hover{border-color:var(--teal);}
+  button.on{background:var(--teal);color:#fff;border-color:var(--teal);}
+  .legend{font-size:.7rem;color:var(--muted);display:flex;gap:.9rem;flex-wrap:wrap;align-items:center;}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="c"></canvas>
+  <div class="hint" id="hint">電荷の対称性を選ぶと、合うガウス面（破線）が立ち上がる。スライダで面を広げてみて。</div>
+  <div class="readout" id="ro"></div>
+</div>
+<div class="ctrl">
+  <div class="row">
+    <label>対称性</label>
+    <button id="m0" class="on">点 → 球</button>
+    <button id="m1">線 → 円柱</button>
+    <button id="m2">面 → 箱</button>
+  </div>
+  <div class="row">
+    <label id="rlab">半径 r</label>
+    <input id="r" type="range" min="40" max="150" step="1" value="70" />
+  </div>
+  <div class="legend">
+    <span style="color:var(--red)">■ 電荷（源）</span>
+    <span style="color:var(--teal)">▦ ガウス面（破線）／効く面は塗り</span>
+    <span style="color:var(--text)">→ 場 E</span>
+  </div>
+</div>
+<script>
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const ro=document.getElementById('ro'), hintEl=document.getElementById('hint'), rlab=document.getElementById('rlab');
+let W=0,H=0,DPR=Math.min(window.devicePixelRatio||1,2);
+let mode=0;                  // 0 point, 1 line, 2 plane
+let R=70;                    // gauss-surface size (px) from slider
+const R0=70;                 // reference size for relative E
+
+function arrow(x1,y1,x2,y2,col){
+  ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=1.7;
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  const a=Math.atan2(y2-y1,x2-x1);
+  ctx.beginPath(); ctx.moveTo(x2,y2);
+  ctx.lineTo(x2-9*Math.cos(a-0.4), y2-9*Math.sin(a-0.4));
+  ctx.lineTo(x2-9*Math.cos(a+0.4), y2-9*Math.sin(a+0.4));
+  ctx.closePath(); ctx.fill();
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  const cx=W/2, cy=H/2;
+  ctx.font='12px JetBrains Mono, monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+
+  if(mode===0){
+    // point -> sphere (circle cross-section)
+    // effective face = whole circle; fill faintly
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,7);
+    ctx.fillStyle='rgba(60,120,118,0.08)'; ctx.fill();
+    ctx.strokeStyle='#3c7876'; ctx.lineWidth=1.6; ctx.setLineDash([5,3]); ctx.stroke(); ctx.setLineDash([]);
+    // radial field arrows
+    for(let k=0;k<8;k++){ const a=k*Math.PI/4; arrow(cx+Math.cos(a)*(R-22),cy+Math.sin(a)*(R-22),cx+Math.cos(a)*(R+14),cy+Math.sin(a)*(R+14),'#1d1b17'); }
+    // charge
+    ctx.beginPath(); ctx.arc(cx,cy,9,0,7); ctx.fillStyle='rgba(194,84,61,0.18)'; ctx.fill();
+    ctx.strokeStyle='#c2543d'; ctx.lineWidth=1.8; ctx.stroke();
+    ctx.fillStyle='#c2543d'; ctx.fillText('+',cx,cy+1);
+    ctx.fillStyle='#3c7876'; ctx.fillText('球（面積 4πr²）',cx,cy-R-16);
+  }
+  else if(mode===1){
+    // line -> cylinder (side view): vertical wire, dashed rectangle, caps top/bottom
+    const halfH=Math.min(H*0.36, 150);
+    // gauss cylinder: vertical sides at cx±R, caps at cy±halfH
+    ctx.strokeStyle='#3c7876'; ctx.lineWidth=1.6; ctx.setLineDash([5,3]);
+    // caps (do NOT count) - thin
+    ctx.beginPath(); ctx.moveTo(cx-R,cy-halfH); ctx.lineTo(cx+R,cy-halfH); ctx.moveTo(cx-R,cy+halfH); ctx.lineTo(cx+R,cy+halfH); ctx.stroke();
+    ctx.setLineDash([]);
+    // effective side faces - filled bands
+    ctx.fillStyle='rgba(60,120,118,0.10)';
+    ctx.fillRect(cx+R-3,cy-halfH,6,halfH*2); ctx.fillRect(cx-R-3,cy-halfH,6,halfH*2);
+    ctx.strokeStyle='#3c7876'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(cx+R,cy-halfH); ctx.lineTo(cx+R,cy+halfH); ctx.moveTo(cx-R,cy-halfH); ctx.lineTo(cx-R,cy+halfH); ctx.stroke();
+    // radial (horizontal) arrows at a few heights
+    for(const yy of [cy-halfH*0.5, cy, cy+halfH*0.5]){
+      arrow(cx+12,yy,cx+R+14,yy,'#1d1b17'); arrow(cx-12,yy,cx-R-14,yy,'#1d1b17');
+    }
+    // wire
+    ctx.strokeStyle='#c2543d'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(cx,cy-halfH-18); ctx.lineTo(cx,cy+halfH+18); ctx.stroke();
+    ctx.fillStyle='#c2543d'; ctx.fillText('+λ',cx+14,cy-halfH-6);
+    ctx.fillStyle='#3c7876'; ctx.fillText('円柱の側面（面積 2πr·L）',cx,cy+halfH+16);
+    ctx.fillStyle='#aaa49b'; ctx.fillText('ふたは貫かない＝0',cx,cy-halfH-16);
+  }
+  else{
+    // plane -> box: horizontal sheet, box straddling, vertical arrows
+    const halfW=Math.min(W*0.32,170);
+    // sheet
+    ctx.strokeStyle='#c2543d'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.moveTo(cx-halfW-20,cy); ctx.lineTo(cx+halfW+20,cy); ctx.stroke();
+    // box: top at cy-R, bottom at cy+R, sides at cx±halfW
+    ctx.strokeStyle='#3c7876'; ctx.lineWidth=1.6; ctx.setLineDash([5,3]);
+    ctx.beginPath(); ctx.moveTo(cx-halfW,cy-R); ctx.lineTo(cx-halfW,cy+R); ctx.moveTo(cx+halfW,cy-R); ctx.lineTo(cx+halfW,cy+R); ctx.stroke();
+    ctx.setLineDash([]);
+    // effective faces top & bottom - filled bands
+    ctx.fillStyle='rgba(60,120,118,0.10)';
+    ctx.fillRect(cx-halfW,cy-R-3,halfW*2,6); ctx.fillRect(cx-halfW,cy+R-3,halfW*2,6);
+    ctx.strokeStyle='#3c7876'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(cx-halfW,cy-R); ctx.lineTo(cx+halfW,cy-R); ctx.moveTo(cx-halfW,cy+R); ctx.lineTo(cx+halfW,cy+R); ctx.stroke();
+    // vertical arrows up & down
+    for(const xx of [cx-halfW*0.5, cx, cx+halfW*0.5]){
+      arrow(xx,cy-12,xx,cy-R-14,'#1d1b17'); arrow(xx,cy+12,xx,cy+R+14,'#1d1b17');
+    }
+    ctx.fillStyle='#c2543d'; ctx.fillText('+σ',cx+halfW+8,cy-12);
+    ctx.fillStyle='#3c7876'; ctx.fillText('箱の表と裏（面積 2A）',cx,cy-R-16);
+    ctx.fillStyle='#aaa49b'; ctx.fillText('側面は貫かない＝0',cx,cy+R+16);
+  }
+  updateReadout();
+}
+
+function updateReadout(){
+  const ratio=R/R0;
+  if(mode===0){
+    const E=(1/(ratio*ratio));
+    ro.innerHTML=`点電荷（球で囲う）<br>∮E·dA = E·<b>4πr²</b> = Q/ε₀<br>→ <span class="e">E = Q / 4πε₀r²</span> ∝ 1/r²<br>E（相対）= <span class="e">${E.toFixed(2)}</span>　∮E·dA = <span class="f">一定</span>`;
+  } else if(mode===1){
+    const E=(1/ratio);
+    ro.innerHTML=`無限の線（円柱で囲う）<br>∮E·dA = E·<b>2πr·L</b> = λL/ε₀<br>→ <span class="e">E = λ / 2πε₀r</span> ∝ 1/r<br>E（相対）= <span class="e">${E.toFixed(2)}</span>　∮E·dA = <span class="f">一定</span>`;
+  } else {
+    ro.innerHTML=`無限の面（箱で囲う）<br>∮E·dA = E·<b>2A</b> = σA/ε₀<br>→ <span class="e">E = σ / 2ε₀</span>（rによらない）<br>E（相対）= <span class="e">1.00</span>　箱を広げても <span class="f">不変</span>`;
+  }
+}
+
+function setMode(m){
+  mode=m;
+  for(let i=0;i<3;i++) document.getElementById('m'+i).classList.toggle('on',i===m);
+  rlab.textContent = m===0?'半径 r' : m===1?'半径 r' : '箱の高さ';
+  hintEl.textContent = m===2
+    ? '箱をどれだけ広げても E は変わらない ── 無限平面の場は距離によらない。'
+    : 'ガウス面（破線）を広げると E は弱まるのに、貫く総フラックス ∮E·dA は一定のまま。';
+  draw();
+}
+document.getElementById('m0').onclick=()=>setMode(0);
+document.getElementById('m1').onclick=()=>setMode(1);
+document.getElementById('m2').onclick=()=>setMode(2);
+document.getElementById('r').oninput=(e)=>{ R=parseFloat(e.target.value); draw(); };
+
+function resize(){
+  const st=document.getElementById('stage'); W=st.clientWidth; H=st.clientHeight;
+  cv.width=W*DPR; cv.height=H*DPR; cv.style.width=W+'px'; cv.style.height=H+'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0); draw();
+}
+window.addEventListener('resize',resize);
+resize();
+</script>
+</body>
+</html>
