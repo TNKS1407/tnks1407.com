@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>位相空間の散歩 ── 振り子が描く閉じた輪</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
+    --teal:#3c7876;--red:#c2543d;--amber:#c9761f;--text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;}
+  body{font-family:'Zen Kaku Gothic New','Hiragino Sans','Meiryo',system-ui,sans-serif;
+    background:var(--bg);color:var(--text);display:flex;flex-direction:column;overflow:hidden;}
+  #stage{flex:1;position:relative;min-height:0;}
+  #stage canvas{display:block;width:100%;height:100%;touch-action:none;}
+  #read{position:absolute;top:10px;right:10px;font-family:'JetBrains Mono',monospace;
+    font-size:.72rem;line-height:1.65;text-align:right;color:var(--text);
+    background:rgba(250,248,244,.85);border:1px solid var(--border);border-radius:9px;
+    padding:.5rem .7rem;pointer-events:none;backdrop-filter:blur(2px);}
+  #read .reg{font-weight:700;}
+  #hint{position:absolute;bottom:8px;left:10px;font-family:'JetBrains Mono',monospace;
+    font-size:.68rem;color:var(--faint);pointer-events:none;}
+  .ctrl{background:var(--surface);border-top:1px solid var(--border);
+    display:flex;flex-wrap:wrap;gap:.5rem 1.1rem;align-items:center;padding:.6rem .9rem;}
+  .cg{display:flex;align-items:center;gap:.45rem;}
+  .cg label{font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--muted);white-space:nowrap;}
+  .cg input[type=range]{width:120px;accent-color:var(--teal);}
+  .cg .v{font-size:.72rem;font-family:'JetBrains Mono',monospace;color:var(--teal);font-weight:600;min-width:3ch;}
+  .btn{padding:.32rem .72rem;border:1px solid var(--border);border-radius:7px;background:var(--card);
+    font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--muted);cursor:pointer;transition:.15s;}
+  .btn:hover{border-color:var(--teal);color:var(--teal);}
+  .btn.on{background:var(--teal);color:#fff;border-color:var(--teal);}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="cv"></canvas>
+  <div id="read"></div>
+  <div id="hint">位相平面をクリック／ドラッグして初期状態 (θ, ω) を置く</div>
+</div>
+<div class="ctrl">
+  <div class="cg"><label>初期の振れ ω₀</label><input type="range" id="amp" min="0" max="8" step="0.05" value="3.4"><span class="v" id="amp-v"></span></div>
+  <div class="cg"><label>減衰 c</label><input type="range" id="damp" min="0" max="1.2" step="0.01" value="0"><span class="v" id="damp-v"></span></div>
+  <div class="cg"><button class="btn" id="kick">ひと押し</button></div>
+  <div class="cg"><button class="btn" id="trail">軌跡を消さない</button></div>
+  <div class="cg"><button class="btn" id="reset">リセット</button></div>
+</div>
+
+<script>
+(function(){
+  var cv=document.getElementById('cv'), ctx=cv.getContext('2d'), stage=document.getElementById('stage');
+  var read=document.getElementById('read');
+  var ampEl=document.getElementById('amp'), ampV=document.getElementById('amp-v');
+  var dampEl=document.getElementById('damp'), dampV=document.getElementById('damp-v');
+
+  var TEAL='#3c7876', RED='#c2543d', AMBER='#c9761f', INK='#1d1b17',
+      MUTED='#7d7568', FAINT='#aaa49b', GRID='#cfc9be', BORDER='#e3dbd0', SURF='#faf8f4';
+
+  // ── 物理パラメータ ──
+  var G_L = 9;            // g/L（固定）。小振動の角振動数 ω0 = sqrt(g/L) = 3
+  var TWO_PI = 2*Math.PI;
+
+  // ── 表示まわり ──
+  var W=0,H=0,dpr=1;
+  // 位相平面の表示範囲：θ ∈ [-θMAX, θMAX], ω ∈ [-ωMAX, ωMAX]
+  var THMAX = 1.9*Math.PI;   // 越えていく軌道も少し見える
+  var OMMAX = 9;
+
+  function resize(){
+    dpr = Math.min(window.devicePixelRatio||1, 2);
+    W = stage.clientWidth; H = stage.clientHeight;
+    cv.width = Math.round(W*dpr); cv.height = Math.round(H*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    rebuildLevels();
+    draw();
+  }
+
+  // 物理座標 → 画面座標
+  function sx(th){ return W*0.5 + (th/THMAX)*(W*0.5 - 28); }
+  function sy(om){ return H*0.5 - (om/OMMAX)*(H*0.5 - 22); }
+  // 画面座標 → 物理座標
+  function ith(px){ return (px - W*0.5)/(W*0.5 - 28)*THMAX; }
+  function iom(py){ return -(py - H*0.5)/(H*0.5 - 22)*OMMAX; }
+
+  // エネルギー（単位質量・単位長あたり）E = ½ω² - (g/L)cosθ
+  function energy(th,om){ return 0.5*om*om - G_L*Math.cos(th); }
+
+  // ── 状態 ──
+  var th=0, om=3.4;     // 角度・角速度
+  var c=0;              // 減衰
+  var keepTrail=false;
+  var trail=[];         // {x,y} 画面座標の軌跡
+  var MAXTRAIL=2600;
+
+  // ── 力学：θ'' = -(g/L) sinθ - c·ω ──
+  function deriv(s){    // s=[th,om] → [dth,dom]
+    return [ s[1], -G_L*Math.sin(s[0]) - c*s[1] ];
+  }
+  function rk4(s, dt){
+    var a=deriv(s);
+    var s2=[s[0]+0.5*dt*a[0], s[1]+0.5*dt*a[1]], b=deriv(s2);
+    var s3=[s[0]+0.5*dt*b[0], s[1]+0.5*dt*b[1]], cc=deriv(s3);
+    var s4=[s[0]+dt*cc[0], s[1]+dt*cc[1]], d=deriv(s4);
+    return [ s[0] + dt/6*(a[0]+2*b[0]+2*cc[0]+d[0]),
+             s[1] + dt/6*(a[1]+2*b[1]+2*cc[1]+d[1]) ];
+  }
+
+  // ── エネルギー等高線（薄く背景に描く） ──
+  // ½ω² - (g/L)cosθ = E  ⇒  ω = ±sqrt(2(E + (g/L)cosθ))
+  var levels=[];
+  function rebuildLevels(){
+    levels=[];
+    // セパラトリクス E = g/L（θ=πでちょうど止まる）を含む並び
+    var Es=[-G_L*0.6, -G_L*0.2, G_L*0.2, G_L*0.6, G_L, G_L*1.6, G_L*2.4, G_L*3.4];
+    for(var i=0;i<Es.length;i++) levels.push(Es[i]);
+  }
+  function drawLevel(E){
+    var pts=[];
+    // θを細かく走査して ω=±sqrt(...) を描く
+    var N=240;
+    for(var sgn=1;sgn>=-1;sgn-=2){
+      pts.length=0;
+      for(var i=0;i<=N;i++){
+        var t=-THMAX + 2*THMAX*i/N;
+        var u=2*(E + G_L*Math.cos(t));
+        if(u<=0){ // 軌道がここで折り返す（振動領域）→ 区切る
+          if(pts.length>1) strokePts(pts);
+          pts.length=0; continue;
+        }
+        var o=sgn*Math.sqrt(u);
+        if(Math.abs(o)>OMMAX*1.05){ if(pts.length>1) strokePts(pts); pts.length=0; continue; }
+        pts.push([sx(t),sy(o)]);
+      }
+      if(pts.length>1) strokePts(pts);
+    }
+  }
+  function strokePts(pts){
+    ctx.beginPath(); ctx.moveTo(pts[0][0],pts[0][1]);
+    for(var i=1;i<pts.length;i++) ctx.lineTo(pts[i][0],pts[i][1]);
+    ctx.stroke();
+  }
+
+  // ── 描画 ──
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle=SURF; ctx.fillRect(0,0,W,H);
+
+    // 等高線（薄い）
+    ctx.lineWidth=1;
+    for(var i=0;i<levels.length;i++){
+      var E=levels[i];
+      // セパラトリクス（E=g/L）だけ少し強調
+      ctx.strokeStyle = (Math.abs(E-G_L)<1e-6) ? 'rgba(201,118,31,.45)' : 'rgba(207,201,190,.7)';
+      drawLevel(E);
+    }
+
+    // 軸
+    ctx.strokeStyle=BORDER; ctx.lineWidth=1.2;
+    ctx.beginPath(); ctx.moveTo(0,sy(0)); ctx.lineTo(W,sy(0)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sx(0),0); ctx.lineTo(sx(0),H); ctx.stroke();
+    // θ=±π の目印（越える境目）
+    ctx.strokeStyle='rgba(170,164,155,.5)'; ctx.setLineDash([3,4]);
+    ctx.beginPath(); ctx.moveTo(sx(Math.PI),0); ctx.lineTo(sx(Math.PI),H); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sx(-Math.PI),0); ctx.lineTo(sx(-Math.PI),H); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle=FAINT; ctx.font="11px 'JetBrains Mono',monospace";
+    ctx.textAlign='center'; ctx.fillText('θ', W-12, sy(0)-7);
+    ctx.fillText('+π', sx(Math.PI), sy(0)+15);
+    ctx.fillText('−π', sx(-Math.PI), sy(0)+15);
+    ctx.textAlign='left'; ctx.fillText('ω', sx(0)+7, 14);
+
+    // 軌跡（trail）
+    if(trail.length>1){
+      ctx.lineWidth=1.6; ctx.lineJoin='round';
+      ctx.beginPath();
+      var started=false, prev=null;
+      for(var k=0;k<trail.length;k++){
+        var p=trail[k];
+        if(p===null){ started=false; continue; } // ラップでの切れ目
+        // フェード：古いほど薄く
+        if(!started){ ctx.moveTo(p.x,p.y); started=true; }
+        else ctx.lineTo(p.x,p.y);
+        prev=p;
+      }
+      ctx.strokeStyle=TEAL; ctx.globalAlpha=keepTrail?0.85:0.9; ctx.stroke(); ctx.globalAlpha=1;
+    }
+
+    // 現在の点
+    var dx=sx(wrap(th)), dy=sy(om);
+    ctx.beginPath(); ctx.arc(dx,dy,5,0,TWO_PI); ctx.fillStyle=RED; ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke();
+
+    // 隅の振り子
+    drawPendulum();
+
+    // 読み出し
+    updateReadout();
+  }
+
+  // θ を [-π, π) に折り返して表示（位相平面が周期的なため）
+  function wrap(a){ a=(a+Math.PI)%TWO_PI; if(a<0)a+=TWO_PI; return a-Math.PI; }
+
+  function drawPendulum(){
+    var R=Math.min(W,H)*0.13, ox=R+24, oy=R+24;
+    // 背景の丸
+    ctx.fillStyle='rgba(255,255,255,.7)'; ctx.strokeStyle=BORDER; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.arc(ox,oy,R+10,0,TWO_PI); ctx.fill(); ctx.stroke();
+    // 支点
+    ctx.fillStyle=MUTED; ctx.beginPath(); ctx.arc(ox,oy,3,0,TWO_PI); ctx.fill();
+    // 鉛直下向きを基準に θ
+    var bx=ox + R*Math.sin(th), by=oy + R*Math.cos(th);
+    ctx.strokeStyle=MUTED; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(ox,oy); ctx.lineTo(bx,by); ctx.stroke();
+    ctx.beginPath(); ctx.arc(bx,by,6,0,TWO_PI); ctx.fillStyle=AMBER; ctx.fill();
+  }
+
+  function regimeInfo(){
+    // 越えていく＝振り子がθ=πを通過できるエネルギー：E > g/L（最大ポテンシャル）
+    var E=energy(th,om);
+    if(c>1e-6) return ['減衰＝内へ巻く', RED];
+    if(E > G_L) return ['回転＝越えていく', AMBER];
+    return ['振動＝閉じた輪', TEAL];
+  }
+
+  function updateReadout(){
+    var E=energy(th,om), info=regimeInfo();
+    var tw=wrap(th);
+    read.innerHTML =
+      'θ = '+fmt(tw)+' rad<br>'+
+      'ω = '+fmt(om)+' rad/s<br>'+
+      'E = '+fmt(E)+'<br>'+
+      'g/L = '+G_L+'<br>'+
+      '<span class="reg" style="color:'+info[1]+'">'+info[0]+'</span>';
+  }
+  function fmt(x){ var s=(x>=0?'+':'−')+Math.abs(x).toFixed(2); return s; }
+
+  // ── 軌跡の追加（θ折り返しで切れ目を入れる） ──
+  function pushTrail(){
+    var tw=wrap(th), x=sx(tw), y=sy(om);
+    var last=trail.length?trail[trail.length-1]:null;
+    if(last && last!==null && Math.abs(x-last.x) > W*0.4){
+      trail.push(null); // 反対端へワープした → 線を切る
+    }
+    trail.push({x:x,y:y});
+    var limit = keepTrail ? MAXTRAIL*3 : MAXTRAIL;
+    while(trail.length>limit) trail.shift();
+  }
+
+  // ── アニメーション ──
+  var last=performance.now(), acc=0;
+  var SUB=0.004; // 積分ステップ（小さく固定）
+  function loop(now){
+    var elapsed=Math.min((now-last)/1000, 0.05); last=now;
+    acc+=elapsed;
+    while(acc>=SUB){
+      var s=rk4([th,om],SUB); th=s[0]; om=s[1]; acc-=SUB;
+    }
+    pushTrail();
+    draw();
+    requestAnimationFrame(loop);
+  }
+
+  // ── 初期化・コントロール ──
+  function setIC(t,o){
+    th=t; om=o; trail.length=0; updateReadout();
+  }
+  function applyAmp(){
+    // スライダ＝θ=0 における初期ω₀（振れの強さ）
+    var o=parseFloat(ampEl.value);
+    setIC(0, o);
+  }
+
+  ampEl.addEventListener('input', function(){
+    ampV.textContent=parseFloat(ampEl.value).toFixed(2);
+    applyAmp();
+  });
+  dampEl.addEventListener('input', function(){
+    c=parseFloat(dampEl.value);
+    dampV.textContent=c.toFixed(2);
+    updateReadout();
+  });
+  document.getElementById('kick').addEventListener('click', function(){
+    // ひと押し＝今の向きに角速度を足す。連打で越えていく領域へ。
+    om += (om>=0?1:-1)*2.2 || 2.2;
+    updateReadout();
+  });
+  var trailBtn=document.getElementById('trail');
+  trailBtn.addEventListener('click', function(){
+    keepTrail=!keepTrail; this.classList.toggle('on',keepTrail);
+    if(!keepTrail && trail.length>MAXTRAIL) trail.splice(0, trail.length-MAXTRAIL);
+  });
+  document.getElementById('reset').addEventListener('click', function(){
+    dampEl.value=0; c=0; dampV.textContent='0.00';
+    ampEl.value=3.4; ampV.textContent='3.40';
+    keepTrail=false; trailBtn.classList.remove('on');
+    applyAmp();
+  });
+
+  // ── ドラッグで初期条件を置く ──
+  var dragging=false;
+  function pointerPos(e){
+    var r=cv.getBoundingClientRect();
+    var cx = (e.touches?e.touches[0].clientX:e.clientX) - r.left;
+    var cy = (e.touches?e.touches[0].clientY:e.clientY) - r.top;
+    return {x:cx,y:cy};
+  }
+  function setFromPointer(e){
+    var p=pointerPos(e);
+    var t=ith(p.x), o=iom(p.y);
+    t=Math.max(-THMAX,Math.min(THMAX,t));
+    o=Math.max(-OMMAX,Math.min(OMMAX,o));
+    setIC(t,o);
+  }
+  cv.addEventListener('mousedown', function(e){ dragging=true; setFromPointer(e); });
+  window.addEventListener('mousemove', function(e){ if(dragging) setFromPointer(e); });
+  window.addEventListener('mouseup', function(){ dragging=false; });
+  cv.addEventListener('touchstart', function(e){ dragging=true; setFromPointer(e); e.preventDefault(); }, {passive:false});
+  cv.addEventListener('touchmove', function(e){ if(dragging){ setFromPointer(e); e.preventDefault(); } }, {passive:false});
+  window.addEventListener('touchend', function(){ dragging=false; });
+
+  window.addEventListener('resize', resize);
+
+  ampV.textContent=parseFloat(ampEl.value).toFixed(2);
+  dampV.textContent='0.00';
+  resize();
+  applyAmp();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

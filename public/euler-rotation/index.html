@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>オイラーの式 ── 回転として触る</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
+    --teal:#3c7876;--red:#c2543d;--amber:#c9761f;
+    --text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;}
+  body{font-family:'Zen Kaku Gothic New',system-ui,sans-serif;background:var(--bg);color:var(--text);
+    display:flex;flex-direction:column;overflow:hidden;}
+  #stage{flex:1;position:relative;min-height:0;}
+  canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab;}
+  canvas.grab{cursor:grabbing;}
+  .hint{position:absolute;left:10px;bottom:8px;font-size:.72rem;color:var(--faint);pointer-events:none;
+    font-family:'JetBrains Mono',monospace;}
+  .readout{position:absolute;right:10px;top:8px;font-size:.7rem;color:var(--muted);text-align:right;
+    font-family:'JetBrains Mono',monospace;line-height:1.6;pointer-events:none;background:rgba(250,248,244,.85);
+    border:1px solid var(--border);border-radius:8px;padding:.4rem .55rem;}
+  .readout b{color:var(--text);font-weight:700;}
+  .readout .t{color:var(--teal);font-weight:700;}
+  .readout .a{color:var(--amber);font-weight:700;}
+  .readout .r{color:var(--red);font-weight:700;}
+  .ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.6rem .8rem;
+    display:flex;flex-wrap:wrap;gap:.7rem 1.1rem;align-items:center;}
+  .row{display:flex;align-items:center;gap:.5rem;font-size:.78rem;color:var(--muted);}
+  .row label{font-weight:700;color:var(--text);white-space:nowrap;}
+  input[type=range]{width:150px;accent-color:var(--teal);}
+  .val{font-family:'JetBrains Mono',monospace;font-weight:700;min-width:4.6em;color:var(--teal);}
+  .val.phi{color:var(--text);}
+  button{font:inherit;font-size:.74rem;font-weight:700;color:var(--text);background:var(--card);
+    border:1px solid var(--border);border-radius:8px;padding:.3rem .6rem;cursor:pointer;}
+  button:hover{border-color:var(--teal);}
+  button.on{background:var(--teal);color:#fff;border-color:var(--teal);}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="c"></canvas>
+  <div class="hint">単位円の上の点 ● をドラッグして θ を回す。φ を足すと、掛け算＝角度の足し算が見える。</div>
+  <div class="readout" id="ro"></div>
+</div>
+<div class="ctrl">
+  <div class="row">
+    <label>θ</label>
+    <input id="th" type="range" min="0" max="6.2832" step="0.005" value="0.9" />
+    <span class="val" id="thv">0.90 rad</span>
+  </div>
+  <div class="row">
+    <label>φ</label>
+    <input id="ph" type="range" min="0" max="6.2832" step="0.005" value="0" />
+    <span class="val phi" id="phv">0.00 rad</span>
+  </div>
+  <div class="row">
+    <button id="play">▶ 回す</button>
+    <button id="reset">リセット</button>
+  </div>
+</div>
+<script>
+const cv = document.getElementById('c'), ctx = cv.getContext('2d');
+const ro = document.getElementById('ro');
+const thEl = document.getElementById('th'), thv = document.getElementById('thv');
+const phEl = document.getElementById('ph'), phv = document.getElementById('phv');
+const playBtn = document.getElementById('play');
+let W=0,H=0,DPR=1;
+let cx=0,cy=0,R=1;          // circle center (px) + radius (px)
+let theta = 0.9;            // angle in radians
+let phi = 0.0;              // second angle in radians
+let playing = false;
+const TAU = Math.PI*2;
+
+const C = { teal:'#3c7876', red:'#c2543d', amber:'#c9761f', ink:'#1d1b17',
+            faint:'#cfc9be', muted:'#7d7568', surf:'#faf8f4' };
+
+function resize(){
+  const r = cv.getBoundingClientRect();
+  DPR = Math.min(window.devicePixelRatio||1, 2);
+  W = r.width; H = r.height;
+  cv.width = Math.round(W*DPR); cv.height = Math.round(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  layout();
+  draw();
+}
+// reserve bottom strip for the cos/sin wave trace
+function layout(){
+  const waveH = Math.max(56, Math.min(120, H*0.22));
+  const usable = H - waveH;
+  R = Math.min(W, usable)/2.55;
+  cx = W/2;
+  cy = usable/2;
+  WAVE = { top: usable, h: waveH };
+}
+let WAVE = {top:0,h:0};
+
+// world(unit circle) -> screen: Im axis points UP, so y is negated
+function w2s(re,im){ return { x: cx + re*R, y: cy - im*R }; }
+function norm(a){ a%=TAU; if(a<0)a+=TAU; return a; }
+
+function dashLine(x1,y1,x2,y2,color,w){
+  ctx.save(); ctx.setLineDash([5,4]); ctx.lineWidth=w||1.4; ctx.strokeStyle=color;
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); ctx.restore();
+}
+function dot(x,y,rad,fill,stroke){
+  ctx.beginPath(); ctx.arc(x,y,rad,0,TAU);
+  if(fill){ ctx.fillStyle=fill; ctx.fill(); }
+  if(stroke){ ctx.lineWidth=2; ctx.strokeStyle=stroke; ctx.stroke(); }
+}
+function arc(cxp,cyp,rad,a0,a1,color,w){
+  // angles given math-style (CCW from +Re). canvas y is down, so negate.
+  ctx.beginPath(); ctx.lineWidth=w||2.4; ctx.strokeStyle=color;
+  ctx.arc(cxp,cyp,rad,-a0,-a1,true);
+  ctx.stroke();
+}
+function label(txt,x,y,color,size,align){
+  ctx.fillStyle=color; ctx.font='600 '+(size||12)+'px JetBrains Mono, monospace';
+  ctx.textAlign=align||'center'; ctx.textBaseline='middle';
+  ctx.fillText(txt,x,y);
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  const cosT=Math.cos(theta), sinT=Math.sin(theta);
+  const P = w2s(cosT, sinT);          // e^{iθ}
+  const sum = norm(theta+phi);
+  const Q = w2s(Math.cos(sum), Math.sin(sum));   // product e^{i(θ+φ)}
+
+  // ---- axes ----
+  ctx.lineWidth=1.2; ctx.strokeStyle=C.faint;
+  ctx.beginPath(); ctx.moveTo(0,cy); ctx.lineTo(W,cy); ctx.stroke();       // Re
+  ctx.beginPath(); ctx.moveTo(cx,WAVE.top); ctx.lineTo(cx,0); ctx.stroke(); // Im
+  // unit ticks ±1
+  ctx.fillStyle=C.faint;
+  label('1', cx+R, cy+12, C.faint, 11);
+  label('Re', W-16, cy-12, C.muted, 11, 'right');
+  label('Im', cx+16, 12, C.muted, 11, 'left');
+  label('i', cx-12, cy-R, C.faint, 11);
+
+  // ---- unit circle ----
+  ctx.beginPath(); ctx.arc(cx,cy,R,0,TAU);
+  ctx.lineWidth=2; ctx.strokeStyle=C.teal; ctx.globalAlpha=.55; ctx.stroke(); ctx.globalAlpha=1;
+
+  // ---- projections (shadows on each axis) ----
+  // cos on Re axis (amber), sin on Im axis (red)
+  const reFoot = w2s(cosT, 0);    // foot on Re axis
+  const imFoot = w2s(0, sinT);    // foot on Im axis
+  dashLine(P.x,P.y, reFoot.x,reFoot.y, C.red, 1.4);    // vertical drop -> reads sinθ height
+  dashLine(P.x,P.y, imFoot.x,imFoot.y, C.amber, 1.4);  // horizontal -> reads cosθ
+  // thick segments ON the axes = the shadows themselves
+  ctx.lineWidth=4; ctx.lineCap='round';
+  ctx.strokeStyle=C.amber; ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(reFoot.x,reFoot.y); ctx.stroke(); // cosθ
+  ctx.strokeStyle=C.red;   ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(imFoot.x,imFoot.y); ctx.stroke(); // sinθ
+  ctx.lineCap='butt';
+  dot(reFoot.x,reFoot.y,3.5,C.amber);
+  dot(imFoot.x,imFoot.y,3.5,C.red);
+  label('cosθ', reFoot.x, cy+(sinT>=0? 16:-16), C.amber, 12);
+  label('sinθ', cx+(cosT>=0? -26:26), imFoot.y, C.red, 12, 'center');
+
+  // ---- angle arc θ at origin ----
+  const arcR = Math.min(R*0.32, 46);
+  arc(cx,cy,arcR, 0, norm(theta), C.teal, 2.4);
+  const aMid = norm(theta)/2;
+  label('θ', cx+Math.cos(aMid)*(arcR+12), cy-Math.sin(aMid)*(arcR+12), C.teal, 13);
+
+  // ---- vector + point e^{iθ} ----
+  ctx.lineWidth=2.4; ctx.strokeStyle=C.teal;
+  ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(P.x,P.y); ctx.stroke();
+  dot(P.x,P.y,7,C.teal,'#fff');
+
+  // ---- product point e^{i(θ+φ)} when φ != 0 ----
+  if(phi>1e-4){
+    // φ arc continuing from θ to θ+φ (amber band) + product vector (ink)
+    arc(cx,cy,arcR*1.5, norm(theta), norm(theta)+phi, C.amber, 2.0);
+    const pMid = norm(theta)+phi/2;
+    label('+φ', cx+Math.cos(pMid)*(arcR*1.5+12), cy-Math.sin(pMid)*(arcR*1.5+12), C.amber, 12);
+    ctx.save(); ctx.setLineDash([4,4]); ctx.lineWidth=2.2; ctx.strokeStyle=C.ink;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(Q.x,Q.y); ctx.stroke(); ctx.restore();
+    dot(Q.x,Q.y,6,C.ink,'#fff');
+    label('e^{i(θ+φ)}', Q.x+ (Math.cos(sum)>=0?14:-14), Q.y - (Math.sin(sum)>=0?14:-14),
+          C.ink, 11, Math.cos(sum)>=0?'left':'right');
+  }
+
+  // origin dot
+  dot(cx,cy,2.5,C.ink);
+
+  // ---- bottom wave trace: cos & sin vs angle ----
+  drawWaves(theta);
+
+  // ---- readout ----
+  const deg=(norm(theta)*180/Math.PI);
+  let html =
+    'θ = <b>'+theta.toFixed(3)+'</b> rad = <b>'+deg.toFixed(1)+'°</b><br>'+
+    'cosθ = <span class="a">'+fmt(cosT)+'</span>   sinθ = <span class="r">'+fmt(sinT)+'</span><br>'+
+    '<span class="t">e^{iθ}</span> = '+fmt(cosT)+' '+(sinT>=0?'+':'−')+' '+fmt(Math.abs(sinT))+' i';
+  if(phi>1e-4){
+    const dsum=(sum*180/Math.PI);
+    html += '<br>φ = <b>'+phi.toFixed(3)+'</b> rad<br>'+
+      '<span class="t">e^{iθ}</span>·e^{iφ} = e^{i(θ+φ)}<br>'+
+      '→ 角 <b>'+sum.toFixed(3)+'</b> rad = <b>'+dsum.toFixed(1)+'°</b>  (|·|=1)';
+  }
+  ro.innerHTML=html;
+}
+function fmt(v){ const s=v.toFixed(3); return (v>=0?'+':'−')+Math.abs(v).toFixed(3); }
+
+function drawWaves(markAng){
+  const x0=12, x1=W-12, top=WAVE.top+8, h=WAVE.h-16, mid=top+h/2, amp=h/2-2;
+  // baseline
+  ctx.lineWidth=1; ctx.strokeStyle=C.faint;
+  ctx.beginPath(); ctx.moveTo(x0,mid); ctx.lineTo(x1,mid); ctx.stroke();
+  const span=TAU; // plot 0..2π across width
+  function px(a){ return x0+(a/span)*(x1-x0); }
+  // cos curve (amber)
+  ctx.beginPath(); ctx.lineWidth=1.8; ctx.strokeStyle=C.amber; ctx.globalAlpha=.85;
+  for(let i=0;i<=240;i++){ const a=span*i/240; const X=px(a), Y=mid-Math.cos(a)*amp; i?ctx.lineTo(X,Y):ctx.moveTo(X,Y); }
+  ctx.stroke();
+  // sin curve (red)
+  ctx.beginPath(); ctx.strokeStyle=C.red;
+  for(let i=0;i<=240;i++){ const a=span*i/240; const X=px(a), Y=mid-Math.sin(a)*amp; i?ctx.lineTo(X,Y):ctx.moveTo(X,Y); }
+  ctx.stroke(); ctx.globalAlpha=1;
+  // marker at current θ
+  const mx=px(norm(markAng));
+  ctx.save(); ctx.setLineDash([3,3]); ctx.lineWidth=1.3; ctx.strokeStyle=C.teal;
+  ctx.beginPath(); ctx.moveTo(mx,top); ctx.lineTo(mx,top+h); ctx.stroke(); ctx.restore();
+  dot(mx, mid-Math.cos(norm(markAng))*amp, 3, C.amber);
+  dot(mx, mid-Math.sin(norm(markAng))*amp, 3, C.red);
+  label('cos', x0+2, top+8, C.amber, 10, 'left');
+  label('sin', x0+30, top+8, C.red, 10, 'left');
+}
+
+// ---- interaction: drag the point on the circle ----
+let dragging=false;
+function pos(e){ const r=cv.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return {x:t.clientX-r.left, y:t.clientY-r.top}; }
+function angleFromPos(p){ return norm(Math.atan2(-(p.y-cy), p.x-cx)); } // Im up
+function near(p){
+  const P=w2s(Math.cos(theta),Math.sin(theta));
+  return Math.hypot(p.x-P.x,p.y-P.y)<30;
+}
+function down(e){ const p=pos(e);
+  // grab if near the point, or anywhere reasonably close to the circle
+  const dr=Math.hypot(p.x-cx,p.y-cy);
+  if(near(p) || Math.abs(dr-R)<R*0.5){
+    dragging=true; cv.classList.add('grab'); stopPlay();
+    setTheta(angleFromPos(p)); e.preventDefault();
+  }
+}
+function move(e){ if(!dragging) return; e.preventDefault(); setTheta(angleFromPos(pos(e))); }
+function up(){ dragging=false; cv.classList.remove('grab'); }
+function setTheta(a){ theta=norm(a); thEl.value=theta.toFixed(4); thv.textContent=theta.toFixed(2)+' rad'; draw(); }
+function setPhi(a){ phi=norm(a); phEl.value=phi.toFixed(4); phv.textContent=phi.toFixed(2)+' rad'; draw(); }
+
+cv.addEventListener('mousedown',down); window.addEventListener('mousemove',move); window.addEventListener('mouseup',up);
+cv.addEventListener('touchstart',down,{passive:false}); cv.addEventListener('touchmove',move,{passive:false}); cv.addEventListener('touchend',up);
+
+thEl.addEventListener('input',()=>{ stopPlay(); theta=norm(parseFloat(thEl.value)); thv.textContent=theta.toFixed(2)+' rad'; draw(); });
+phEl.addEventListener('input',()=>{ phi=norm(parseFloat(phEl.value)); phv.textContent=phi.toFixed(2)+' rad'; draw(); });
+
+// ---- animation ----
+let raf=0, last=0;
+function loop(t){
+  if(!playing){ raf=0; return; }
+  if(!last) last=t;
+  const dt=(t-last)/1000; last=t;
+  theta=norm(theta + dt*0.7);          // ~0.7 rad/s
+  thEl.value=theta.toFixed(4); thv.textContent=theta.toFixed(2)+' rad';
+  draw();
+  raf=requestAnimationFrame(loop);
+}
+function startPlay(){ if(playing) return; playing=true; playBtn.classList.add('on'); playBtn.textContent='⏸ 停止'; last=0; raf=requestAnimationFrame(loop); }
+function stopPlay(){ if(!playing) return; playing=false; playBtn.classList.remove('on'); playBtn.textContent='▶ 回す'; if(raf)cancelAnimationFrame(raf); raf=0; }
+playBtn.addEventListener('click',()=>{ playing?stopPlay():startPlay(); });
+document.getElementById('reset').addEventListener('click',()=>{
+  stopPlay(); setTheta(0.9); setPhi(0);
+});
+
+window.addEventListener('resize',resize);
+// init
+thv.textContent=theta.toFixed(2)+' rad'; phv.textContent=phi.toFixed(2)+' rad';
+resize();
+</script>
+</body>
+</html>
