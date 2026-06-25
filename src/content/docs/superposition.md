@@ -73,6 +73,29 @@ $$y(t) = \int_0^{t} X\cdot\frac{1}{RC}\,e^{-(t-\tau)/RC}\,d\tau = X\bigl(1 - e^{
 
 $$h(t) = \delta(t) + a\,\delta(t-T) + a^2\,\delta(t-2T) + \cdots\qquad(0<a<1)$$
 
+<figure style="margin:1.4rem 0;text-align:center;">
+<svg viewBox="0 0 440 178" width="440" style="max-width:100%;height:auto;font-family:'JetBrains Mono',monospace;">
+  <line x1="40" y1="142" x2="422" y2="142" stroke="#7d7568" stroke-width="1.2"/>
+  <text x="418" y="162" font-size="10" fill="#7d7568" text-anchor="end">時間 →</text>
+  <line x1="60" y1="142" x2="60" y2="24" stroke="#3c7876" stroke-width="2.6"/><polygon points="60,18 55,28 65,28" fill="#3c7876"/>
+  <text x="60" y="14" font-size="11" fill="#3c7876" text-anchor="middle">δ</text>
+  <line x1="130" y1="142" x2="130" y2="71" stroke="#c2543d" stroke-width="2.6"/><polygon points="130,65 125,75 135,75" fill="#c2543d"/>
+  <text x="130" y="59" font-size="10" fill="#c2543d" text-anchor="middle">a·δ</text>
+  <line x1="200" y1="142" x2="200" y2="100" stroke="#c2543d" stroke-width="2.6"/><polygon points="200,94 195,104 205,104" fill="#c2543d"/>
+  <text x="200" y="88" font-size="10" fill="#c2543d" text-anchor="middle">a²·δ</text>
+  <line x1="270" y1="142" x2="270" y2="117" stroke="#c2543d" stroke-width="2.6"/><polygon points="270,111 265,121 275,121" fill="#c2543d"/>
+  <text x="270" y="105" font-size="10" fill="#c2543d" text-anchor="middle">a³·δ</text>
+  <line x1="340" y1="142" x2="340" y2="129" stroke="#c2543d" stroke-width="2.6"/><polygon points="340,123 335,133 345,133" fill="#c2543d"/>
+  <text x="346" y="118" font-size="9" fill="#aaa49b" text-anchor="middle">a⁴·δ …</text>
+  <g font-size="9.5" fill="#7d7568" text-anchor="middle">
+    <text x="60" y="157">0</text><text x="130" y="157">T</text><text x="200" y="157">2T</text><text x="270" y="157">3T</text><text x="340" y="157">4T</text>
+  </g>
+  <text x="95" y="138" font-size="9" fill="#aaa49b" text-anchor="middle">⟵ T ⟶</text>
+  <text x="158" y="40" font-size="9.5" fill="#c2543d">遅れ T ごとに a 倍ずつ減衰</text>
+</svg>
+<figcaption style="font-size:.8rem;color:#aaa49b;margin-top:.3rem;">残響＝最初の叩き（緑の δ）のあと、遅れ T ごとに a 倍ずつ小さくなるこだまが並んだもの。この“こだまの列”がインパルス応答 h。これを入力と畳み込むと、原音＋遅れて小さくなったコピーの和になる。</figcaption>
+</figure>
+
 （$\delta$ は“一発の叩き”そのもの＝無限に細いスパイク。$T$ は反射1回ぶんの遅れ、$a$ は1回ごとの減衰。）これを入力 $x$ と畳み込んでみよう。鍵は、デルタの **ふるい分け（sifting）** ── $\delta$ と畳み込むことは、ただ「そのぶん時間をずらす」ことに等しい：
 
 $$\int x(\tau)\,\delta\big((t-nT)-\tau\big)\,d\tau = x(t-nT)$$
