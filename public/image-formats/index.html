@@ -32,6 +32,7 @@
   button{font:inherit;font-size:.76rem;font-weight:700;color:var(--text);background:var(--card);
     border:1px solid var(--border);border-radius:8px;padding:.32rem .7rem;cursor:pointer;}
   button:hover{border-color:var(--teal);} button.on{background:var(--teal);color:#fff;border-color:var(--teal);}
+  .hide{display:none !important;}
 </style>
 </head>
 <body>
@@ -41,15 +42,24 @@
   <div class="note" id="note">画質を下げると、JPEGが“何を捨てるか”が見える。差分モードは、捨てた所（嘘）を炙り出す。</div>
 </div>
 <div class="ctrl">
+  <div class="row" style="flex:0 0 auto;min-width:0;">
+    <button id="mPixel" class="on">崩れを見る</button>
+    <button id="mCompute">中の計算を見る</button>
+  </div>
   <div class="row">
     <label>JPEG 画質</label>
     <input id="q" type="range" min="1" max="100" step="1" value="85" />
     <span id="qv" style="font-family:'JetBrains Mono',monospace;font-size:.74rem;min-width:1.8rem;">85</span>
   </div>
-  <div class="row" style="flex:0 0 auto;min-width:0;">
+  <div class="row" id="rowPixel" style="flex:0 0 auto;min-width:0;">
     <button id="vJpeg" class="on">JPEG</button>
     <button id="vOrig">元画像</button>
     <button id="vDiff">差分（崩れ）</button>
+  </div>
+  <div class="row hide" id="rowStep" style="flex:0 0 auto;min-width:0;">
+    <button id="stPrev">← 戻る</button>
+    <span id="stLabel" style="font-family:'JetBrains Mono',monospace;font-size:.74rem;min-width:8.5rem;text-align:center;">①画素</span>
+    <button id="stNext">次へ →</button>
   </div>
 </div>
 <script>
@@ -75,6 +85,60 @@ function buildScene(){
 }
 const srcData=()=>sctx.getImageData(0,0,SW,SH);
 
+// ── (b) 中の計算：8×8ブロックを ①画素→②DCT→③量子化(捨てる)→④復元 ──
+let mode='pixel', compStep=0;
+const STEPLABEL=['①画素 (8×8)','②DCTで波に分解','③量子化＝捨てる','④逆DCTで復元'];
+// JPEG解説で有名な例ブロック（実写の8×8・輝度）
+const BLK=[
+ [52,55,61,66,70,61,64,73],[63,59,55,90,109,85,69,72],[62,59,68,113,144,104,66,73],
+ [63,58,71,122,154,106,70,69],[67,61,68,104,126,88,68,70],[79,65,60,70,77,68,58,75],
+ [85,71,64,59,55,61,65,83],[87,79,69,68,65,76,78,94]];
+const Q50=[
+ [16,11,10,16,24,40,51,61],[12,12,14,19,26,58,60,55],[14,13,16,24,40,57,69,56],
+ [14,17,22,29,51,87,80,62],[18,22,37,56,68,109,103,77],[24,35,55,64,81,104,113,92],
+ [49,64,78,87,103,121,120,101],[72,92,95,98,112,100,103,99]];
+function qtable(quality){ const s=quality<50?5000/quality:200-2*quality;
+  return Q50.map(r=>r.map(v=>{ let q=Math.floor((v*s+50)/100); return q<1?1:(q>255?255:q); })); }
+function dct2(b){ const o=[]; for(let u=0;u<8;u++){o[u]=[];for(let v=0;v<8;v++){let s=0;
+  for(let x=0;x<8;x++)for(let y=0;y<8;y++) s+=(b[x][y]-128)*Math.cos((2*x+1)*u*Math.PI/16)*Math.cos((2*y+1)*v*Math.PI/16);
+  const cu=u?1:Math.SQRT1_2, cv=v?1:Math.SQRT1_2; o[u][v]=0.25*cu*cv*s; }} return o; }
+function idct2(C){ const o=[]; for(let x=0;x<8;x++){o[x]=[];for(let y=0;y<8;y++){let s=0;
+  for(let u=0;u<8;u++)for(let v=0;v<8;v++){ const cu=u?1:Math.SQRT1_2, cv=v?1:Math.SQRT1_2; s+=cu*cv*C[u][v]*Math.cos((2*x+1)*u*Math.PI/16)*Math.cos((2*y+1)*v*Math.PI/16);}
+  o[x][y]=Math.round(0.25*s+128); }} return o; }
+
+function drawCompute(){
+  const C=dct2(BLK), QT=qtable(quality);
+  const quant=C.map((r,u)=>r.map((c,v)=>Math.round(c/QT[u][v])));
+  const deq=quant.map((r,u)=>r.map((c,v)=>c*QT[u][v]));
+  const recon=idct2(deq);
+  let grid, fmt, colorOf, title2, zeros=0;
+  if(compStep===0){ grid=BLK; fmt=v=>v; colorOf=v=>'rgb('+v+','+v+','+v+')'; title2='画素の明るさ（0〜255）。これが入力。'; }
+  else if(compStep===1){ grid=C; fmt=v=>Math.round(v); colorOf=(v,u,vv)=>{ const m=Math.min(1,Math.abs(v)/200); return (u===0&&vv===0)?'rgba(60,120,118,.45)':'rgba(201,118,31,'+(0.08+m*0.5)+')'; };
+    title2='左上＝平均（DC）、右へ下へ行くほど細かい波。大きい数＝その波が強い。'; }
+  else if(compStep===2){ grid=quant; fmt=v=>v; quant.forEach(r=>r.forEach(c=>{if(c===0)zeros++;}));
+    colorOf=v=> v===0?'rgba(170,164,155,.18)':'rgba(194,84,61,.45)'; title2='係数を量子化表で割って丸める→細かい波の多くが 0 に。捨てたのはここ。'; }
+  else { grid=recon; fmt=v=>v; colorOf=v=>'rgb('+v+','+v+','+v+')'; title2='0だらけの係数から逆DCTで戻した画素。元と少しズレる＝それが劣化。'; }
+  // draw 8×8 grid
+  const side=Math.min(cv.width, cv.height)-8, ox=(cv.width-side)/2, oy=(cv.height-side)/2, cs=side/8;
+  ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  const fs=Math.max(7,Math.min(13,cs*0.36));
+  for(let u=0;u<8;u++)for(let v=0;v<8;v++){
+    const x=ox+v*cs, y=oy+u*cs, val=grid[u][v];
+    ctx.fillStyle=colorOf(val,u,v); ctx.fillRect(x,y,cs-1,cs-1);
+    ctx.fillStyle = (compStep===0||compStep===3)? (val>140?'#1d1b17':'#f5f2ec') : (compStep===2&&val===0?'#aaa49b':'#1d1b17');
+    ctx.font=(compStep===2&&val!==0?'bold ':'')+fs+'px JetBrains Mono, monospace';
+    ctx.fillText(fmt(val), x+cs/2, y+cs/2);
+  }
+  // stats
+  const ratio=BLK.flat().length, zpct=(zeros/64*100);
+  stats.innerHTML='<span><b>'+STEPLABEL[compStep]+'</b></span>'+
+    (compStep===2?'<span>0になった係数 <span class="lie">'+zeros+'/64（'+zpct.toFixed(0)+'%）</span></span>':'')+
+    (compStep>=1?'<span>画質 Q'+quality+'</span>':'');
+  note.textContent=title2;
+  document.getElementById('stLabel').textContent=STEPLABEL[compStep];
+}
+
 // 圧縮版を保持する canvas
 const comp=document.createElement('canvas'); comp.width=SW; comp.height=SH;
 const cctx=comp.getContext('2d');
@@ -99,7 +163,8 @@ function resize(){
 }
 window.addEventListener('resize',resize);
 
-function render(){
+function render(){ if(mode==='compute'){ drawCompute(); } else { renderPixel(); } }
+function renderPixel(){
   ctx.imageSmoothingEnabled=true;
   ctx.clearRect(0,0,cv.width,cv.height);
   if(view==='orig'){ ctx.drawImage(src,0,0,cv.width,cv.height); }
@@ -132,17 +197,31 @@ function updateInfo(){
                     : '高画質では崩れはほぼ見えないが、それでもJPEGは少しずつ捨てている（差分で見える）。'));
 }
 
-qEl.addEventListener('input',e=>{ quality=parseInt(e.target.value,10); qv.textContent=String(quality); recompress(); });
+qEl.addEventListener('input',e=>{ quality=parseInt(e.target.value,10); qv.textContent=String(quality); if(mode==='compute'){ render(); } else { recompress(); } });
 function setView(v){ view=v; ['vJpeg','vOrig','vDiff'].forEach(id=>document.getElementById(id).classList.toggle('on', id==='v'+v.charAt(0).toUpperCase()+v.slice(1))); render(); }
 document.getElementById('vJpeg').addEventListener('click',()=>setView('jpeg'));
 document.getElementById('vOrig').addEventListener('click',()=>setView('orig'));
 document.getElementById('vDiff').addEventListener('click',()=>setView('diff'));
 
+function setMode2(m){ mode=m;
+  document.getElementById('mPixel').classList.toggle('on',m==='pixel');
+  document.getElementById('mCompute').classList.toggle('on',m==='compute');
+  document.getElementById('rowPixel').classList.toggle('hide',m!=='pixel');
+  document.getElementById('rowStep').classList.toggle('hide',m!=='compute');
+  render();
+}
+document.getElementById('mPixel').addEventListener('click',()=>setMode2('pixel'));
+document.getElementById('mCompute').addEventListener('click',()=>setMode2('compute'));
+document.getElementById('stPrev').addEventListener('click',()=>{ compStep=(compStep+3)%4; render(); });
+document.getElementById('stNext').addEventListener('click',()=>{ compStep=(compStep+1)%4; render(); });
+
 buildScene();
 pngBytes=b64bytes(src.toDataURL('image/png'));
-const hq=parseInt((location.hash||'').replace('#',''),10); if(hq>=1&&hq<=100){ quality=hq; qEl.value=String(hq); qv.textContent=String(hq); }
+const _h=(location.hash||'').replace('#','');
+const hq=parseInt(_h,10); if(hq>=1&&hq<=100){ quality=hq; qEl.value=String(hq); qv.textContent=String(hq); }
 resize();
 recompress();
+if(_h.indexOf('compute')>=0){ const m=_h.match(/compute(\d)/); if(m) compStep=Math.min(3,Math.max(0,+m[1])); setMode2('compute'); }
 </script>
 </body>
 </html>
