@@ -24,3 +24,6 @@ pnpm-debug.log*
 .idea/
 
 dev-server.*.log
+
+# headless-edge screenshot scratch
+.tmp-shot/

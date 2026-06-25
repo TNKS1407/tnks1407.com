@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>羽根車と循環 ── 発散と回転を、別々に捕まえる</title>
+<style>
+  :root{
+    --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
+    --teal:#3c7876;--red:#c2543d;--amber:#c9761f;
+    --text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;}
+  body{font-family:'Zen Kaku Gothic New',system-ui,sans-serif;background:var(--bg);color:var(--text);
+    display:flex;flex-direction:column;overflow:hidden;}
+  #stage{flex:1;position:relative;min-height:0;}
+  canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab;}
+  canvas:active{cursor:grabbing;}
+  .hint{position:absolute;left:10px;bottom:8px;right:10px;font-size:.7rem;color:var(--faint);pointer-events:none;
+    font-family:'JetBrains Mono',monospace;line-height:1.5;}
+  .readout{position:absolute;right:8px;top:8px;font-size:.66rem;color:var(--muted);text-align:right;
+    font-family:'JetBrains Mono',monospace;line-height:1.65;pointer-events:none;background:rgba(250,248,244,.92);
+    border:1px solid var(--border);border-radius:6px;padding:.34rem .55rem;white-space:nowrap;}
+  .readout b{color:var(--text);font-weight:700;}
+  .readout .div{color:var(--amber);font-weight:700;}
+  .readout .rot{color:var(--red);font-weight:700;}
+  .readout .z{color:var(--faint);font-weight:700;}
+  .ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.6rem .8rem;
+    display:flex;flex-wrap:wrap;gap:.7rem 1.1rem;align-items:center;}
+  .row{display:flex;align-items:center;gap:.5rem;font-size:.78rem;color:var(--muted);}
+  .row label{font-weight:700;color:var(--text);white-space:nowrap;}
+  input[type=range]{width:120px;accent-color:var(--teal);}
+  button{font:inherit;font-size:.76rem;font-weight:700;color:var(--text);background:var(--card);
+    border:1px solid var(--border);border-radius:8px;padding:.32rem .7rem;cursor:pointer;}
+  button:hover{border-color:var(--teal);}
+  button.on{background:var(--teal);color:#fff;border-color:var(--teal);}
+  .legend{font-size:.7rem;color:var(--muted);display:flex;gap:.9rem;flex-wrap:wrap;align-items:center;}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="c"></canvas>
+  <div class="readout" id="ro"></div>
+  <div class="hint" id="hint">羽根車をドラッグして置く。流れに浮かべて、回る所と回らない所を探す。</div>
+</div>
+<div class="ctrl">
+  <div class="row">
+    <label>流れ</label>
+    <button id="m0" class="on">一様流</button>
+    <button id="m1">ずり流れ</button>
+    <button id="m2">渦</button>
+    <button id="m3">湧き出し</button>
+  </div>
+  <div class="row">
+    <label>強さ</label>
+    <input id="s" type="range" min="0.3" max="1.7" step="0.01" value="1" />
+  </div>
+  <div class="legend">
+    <span style="color:var(--teal)">— 流れ（粒の流線）</span>
+    <span style="color:var(--red)">✛ 羽根車</span>
+    <span style="color:var(--amber)">→ その点の速度</span>
+  </div>
+</div>
+<script>
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const ro=document.getElementById('ro'), hintEl=document.getElementById('hint');
+let W=0,H=0,DPR=Math.min(window.devicePixelRatio||1,2);
+let mode=0, strength=1;
+let cx0=0, cy0=0;                       // field centre (screen px)
+let wx=0, wy=0;                         // paddle wheel position (screen px)
+let wheelAngle=0;
+let parts=[];
+let last=performance.now();
+
+function resize(){
+  const r=cv.getBoundingClientRect(); W=r.width; H=r.height;
+  cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  cx0=W/2; cy0=H*0.46;
+  if(wx===0&&wy===0){ wx=cx0+Math.min(90,W*0.18); wy=cy0; }
+  seedParts();
+}
+window.addEventListener('resize',resize);
+
+// ---- velocity field in SCREEN coords (vy>0 = downward) ----
+function vel(px,py){
+  const dx=px-cx0, dy=py-cy0, s=strength;
+  if(mode===0){ return {x:60*s, y:0}; }                       // 一様流  div0 curl0
+  if(mode===1){ return {x:50 + (-0.8*s)*dy, y:0}; }           // ずり流れ top(dy<0) faster → curl>0 (CW)
+  if(mode===2){ const O=0.9*s; return {x:O*dy, y:-O*dx}; }    // 渦  CCW, div0
+  const c=0.5*s; return {x:c*dx, y:c*dy};                     // 湧き出し div>0 curl0
+}
+function divcurl(px,py){
+  const h=1.6;
+  const ax=vel(px+h,py), bx=vel(px-h,py), ay=vel(px,py+h), by=vel(px,py-h);
+  const vx_px=(ax.x-bx.x)/(2*h), vy_py=(ay.y-by.y)/(2*h);
+  const vy_px=(ax.y-bx.y)/(2*h), vx_py=(ay.x-by.x)/(2*h);
+  return { div:vx_px+vy_py, curl:vy_px-vx_py };
+}
+
+// ---- tracer particles ----
+function seedOne(p){
+  if(mode===3){                       // expansion: seed near centre so they stream out
+    const a=Math.random()*6.283, r=Math.random()*40+4;
+    p.px=cx0+Math.cos(a)*r; p.py=cy0+Math.sin(a)*r;
+  }else{
+    p.px=Math.random()*W; p.py=Math.random()*H;
+  }
+  p.ppx=p.px; p.ppy=p.py; p.life=Math.random()*2.2+0.8;
+}
+function seedParts(){
+  const N=Math.round(Math.min(260, W*H/2200));
+  parts=[]; for(let i=0;i<N;i++){ const p={}; seedOne(p); parts.push(p); }
+}
+function stepParts(dt){
+  for(const p of parts){
+    p.ppx=p.px; p.ppy=p.py;
+    const v=vel(p.px,p.py);
+    let mx=v.x*dt, my=v.y*dt;
+    const m=Math.hypot(mx,my), cap=14;
+    if(m>cap){ mx*=cap/m; my*=cap/m; }
+    p.px+=mx; p.py+=my; p.life-=dt;
+    if(p.life<=0||p.px<-20||p.px>W+20||p.py<-20||p.py>H+20) seedOne(p);
+  }
+}
+
+// ---- drawing ----
+function arrow(x1,y1,x2,y2,col,w){
+  ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=w||2;
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  const a=Math.atan2(y2-y1,x2-x1);
+  ctx.beginPath(); ctx.moveTo(x2,y2);
+  ctx.lineTo(x2-9*Math.cos(a-0.42), y2-9*Math.sin(a-0.42));
+  ctx.lineTo(x2-9*Math.cos(a+0.42), y2-9*Math.sin(a+0.42));
+  ctx.closePath(); ctx.fill();
+}
+function drawTracers(){
+  ctx.lineCap='round';
+  for(const p of parts){
+    const v=vel(p.px,p.py), sp=Math.hypot(v.x,v.y);
+    const a=Math.max(0.06, Math.min(0.5, sp/180));
+    ctx.strokeStyle='rgba(60,120,118,'+a.toFixed(3)+')';
+    ctx.lineWidth=1.4;
+    ctx.beginPath(); ctx.moveTo(p.ppx,p.ppy); ctx.lineTo(p.px,p.py); ctx.stroke();
+    ctx.fillStyle='rgba(60,120,118,'+(a*1.3).toFixed(3)+')';
+    ctx.beginPath(); ctx.arc(p.px,p.py,1.3,0,6.283); ctx.fill();
+  }
+}
+function drawWheel(){
+  const dc=divcurl(wx,wy);
+  // small loop the wheel "feels"
+  const R=30;
+  ctx.setLineDash([4,4]); ctx.strokeStyle='rgba(125,117,104,0.45)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.arc(wx,wy,R,0,6.283); ctx.stroke(); ctx.setLineDash([]);
+  // local velocity arrow (amber)
+  const v=vel(wx,wy), sp=Math.hypot(v.x,v.y);
+  if(sp>1){ const L=Math.min(46, 14+sp*0.34); arrow(wx,wy, wx+v.x/sp*L, wy+v.y/sp*L, '#c9761f', 2.4); }
+  // blades
+  ctx.save(); ctx.translate(wx,wy); ctx.rotate(wheelAngle);
+  ctx.strokeStyle='#c2543d'; ctx.lineWidth=3; ctx.lineCap='round';
+  for(let k=0;k<4;k++){ const a=k*Math.PI/2; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(Math.cos(a)*22,Math.sin(a)*22); ctx.stroke();
+    ctx.fillStyle='#c2543d'; ctx.beginPath(); ctx.arc(Math.cos(a)*22,Math.sin(a)*22,2.6,0,6.283); ctx.fill(); }
+  ctx.restore();
+  ctx.fillStyle='#1d1b17'; ctx.beginPath(); ctx.arc(wx,wy,5,0,6.283); ctx.fill();
+  // spin direction marker
+  if(Math.abs(dc.curl)>0.05){
+    const ccw = dc.curl<0;   // curl<0 → CCW on screen
+    ctx.strokeStyle='rgba(194,84,61,0.6)'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(wx,wy,R+7, ccw?-0.7:-2.45, ccw?0.9:0.0, ccw); ctx.stroke();
+  }
+  return dc;
+}
+
+const fmt=(v)=> (v>=0?'+':'')+v.toFixed(2);
+function updateReadout(dc){
+  const REF=0.8;
+  const dv=dc.div/REF, rt=dc.curl/REF;
+  let dStr, rStr;
+  if(Math.abs(dv)<0.04) dStr='<span class="z">ゼロ</span>';
+  else dStr='<span class="div">'+(dv>0?'湧き出し':'吸い込み')+' '+fmt(Math.abs(dv))+'</span>';
+  if(Math.abs(rt)<0.04) rStr='<span class="z">回らない</span>';
+  else rStr='<span class="rot">'+(rt>0?'右回り':'左回り')+' '+fmt(Math.abs(rt))+'</span>';
+  // circulation ≈ curl × loop area (relative)
+  const circ = dc.curl*Math.PI*30*30/3000;
+  const names=['一様流','ずり流れ','渦','湧き出し'];
+  ro.innerHTML =
+    '<b>'+names[mode]+'</b><br>'+
+    '発散 div : '+dStr+'<br>'+
+    '回転 curl: '+rStr+'<br>'+
+    '循環 ∮v·dl : <b>'+fmt(circ)+'</b>';
+}
+
+function frame(now){
+  let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05;
+  stepParts(dt);
+  const dc0=divcurl(wx,wy);
+  wheelAngle += 0.5*dc0.curl*dt*5.0;   // spin ∝ curl (vorticity/2)
+  ctx.clearRect(0,0,W,H);
+  drawTracers();
+  const dc=drawWheel();
+  updateReadout(dc);
+  requestAnimationFrame(frame);
+}
+
+// ---- interaction ----
+function setMode(m){ mode=m; for(let i=0;i<4;i++) document.getElementById('m'+i).classList.toggle('on',i===m); seedParts(); }
+['m0','m1','m2','m3'].forEach((id,i)=> document.getElementById(id).addEventListener('click',()=>setMode(i)));
+document.getElementById('s').addEventListener('input',e=>{ strength=parseFloat(e.target.value); });
+
+let dragging=false;
+function pt(e){ const r=cv.getBoundingClientRect(); const t=e.touches?e.touches[0]:e; return {x:t.clientX-r.left, y:t.clientY-r.top}; }
+function place(e){ const p=pt(e); wx=Math.max(8,Math.min(W-8,p.x)); wy=Math.max(8,Math.min(H-8,p.y)); }
+cv.addEventListener('pointerdown',e=>{ dragging=true; place(e); cv.setPointerCapture&&cv.setPointerCapture(e.pointerId); });
+cv.addEventListener('pointermove',e=>{ if(dragging){ e.preventDefault(); place(e); } });
+window.addEventListener('pointerup',()=>{ dragging=false; });
+
+resize();
+const hm=parseInt((location.hash||'').replace('#',''),10);
+if(hm>=0&&hm<=3) setMode(hm);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
