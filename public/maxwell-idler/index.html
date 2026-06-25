@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>マクスウェルの遊輪 ── 渦のムラが、電流になる</title>
+<style>
+  :root{
+    --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
+    --teal:#3c7876;--red:#c2543d;--amber:#c9761f;
+    --text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;}
+  body{font-family:'Zen Kaku Gothic New',system-ui,sans-serif;background:var(--bg);color:var(--text);
+    display:flex;flex-direction:column;overflow:hidden;}
+  #stage{flex:1;position:relative;min-height:0;}
+  canvas{display:block;width:100%;height:100%;touch-action:none;}
+  .hint{position:absolute;left:10px;bottom:8px;right:10px;font-size:.7rem;color:var(--faint);pointer-events:none;
+    font-family:'JetBrains Mono',monospace;line-height:1.5;}
+  .readout{position:absolute;right:8px;top:8px;font-size:.66rem;color:var(--muted);text-align:right;
+    font-family:'JetBrains Mono',monospace;line-height:1.65;pointer-events:none;background:rgba(250,248,244,.92);
+    border:1px solid var(--border);border-radius:6px;padding:.34rem .55rem;white-space:nowrap;}
+  .readout b{color:var(--text);font-weight:700;}
+  .readout .b{color:var(--teal);font-weight:700;}
+  .readout .j{color:var(--red);font-weight:700;}
+  .readout .z{color:var(--faint);font-weight:700;}
+  .ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.6rem .8rem;
+    display:flex;flex-wrap:wrap;gap:.7rem 1.1rem;align-items:center;}
+  .row{display:flex;align-items:center;gap:.5rem;font-size:.78rem;color:var(--muted);}
+  .row label{font-weight:700;color:var(--text);white-space:nowrap;}
+  input[type=range]{width:120px;accent-color:var(--teal);}
+  input[type=range].r{accent-color:var(--red);}
+  button{font:inherit;font-size:.76rem;font-weight:700;color:var(--text);background:var(--card);
+    border:1px solid var(--border);border-radius:8px;padding:.32rem .7rem;cursor:pointer;}
+  button:hover{border-color:var(--teal);}
+  .legend{font-size:.7rem;color:var(--muted);display:flex;gap:.9rem;flex-wrap:wrap;align-items:center;}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="c"></canvas>
+  <div class="readout" id="ro"></div>
+  <div class="hint" id="hint">「Bのムラ」を上げると遊輪が転がりだす＝電流。Bが強くても一様なら電流は流れない。</div>
+</div>
+<div class="ctrl">
+  <div class="row"><label>B 強さ</label><input id="b" type="range" min="0.2" max="2.2" step="0.01" value="1.1" /></div>
+  <div class="row"><label>B のムラ（勾配）</label><input id="g" class="r" type="range" min="-1.5" max="1.5" step="0.01" value="0" /></div>
+  <button id="flat">一様にする</button>
+  <div class="legend">
+    <span style="color:var(--teal)">◎ 渦＝磁場 B（回転）</span>
+    <span style="color:var(--red)">⊙ 遊輪（逆回り）</span>
+    <span style="color:var(--red)">• 流れる電荷＝電流 J</span>
+  </div>
+</div>
+<script>
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const ro=document.getElementById('ro'), bEl=document.getElementById('b'), gEl=document.getElementById('g');
+let W=0,H=0,DPR=Math.min(window.devicePixelRatio||1,2);
+let B0=1.1, grad=0;
+const N=4;                              // vortices
+let R=46, r=16, cy=0, xs=[], xg=[];     // geometry
+let vortTheta=[], idlPhi=[], flow=[];   // animation state (flow = current-dot scroll per gap)
+let last=performance.now();
+
+function layout(){
+  const R0=46, r0=16, base=2*R0+2*r0;
+  const total=(N-1)*base+2*R0;
+  const sc=Math.min(1.15,(W-44)/total);
+  R=R0*sc; r=r0*sc;
+  const sp=2*R+2*r;
+  const rowW=(N-1)*sp;
+  const x0=(W-rowW)/2;
+  xs=[]; for(let i=0;i<N;i++) xs.push(x0+i*sp);
+  xg=[]; for(let i=0;i<N-1;i++) xg.push((xs[i]+xs[i+1])/2);
+  const TOPRES=80, BOTRES=28;
+  cy=TOPRES+(H-TOPRES-BOTRES)/2;
+}
+function resize(){
+  const rc=cv.getBoundingClientRect(); W=rc.width; H=rc.height;
+  cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  layout();
+  if(vortTheta.length!==N){ vortTheta=Array(N).fill(0); }
+  if(idlPhi.length!==N-1){ idlPhi=Array(N-1).fill(0); flow=Array(N-1).fill(0); }
+}
+window.addEventListener('resize',resize);
+
+function Omega(i){ return B0 + grad*(i-(N-1)/2); }   // rotation rate of vortex i (= local B)
+
+function arrowV(x,y,dir,len,col){           // vertical arrow, dir=+1 down / -1 up
+  ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=2.2;
+  ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x,y+dir*len); ctx.stroke();
+  const ty=y+dir*len;
+  ctx.beginPath(); ctx.moveTo(x,ty+dir*4); ctx.lineTo(x-4,ty-dir*4); ctx.lineTo(x+4,ty-dir*4); ctx.closePath(); ctx.fill();
+}
+
+function frame(now){
+  let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05;
+  ctx.clearRect(0,0,W,H);
+
+  // advance vortices
+  for(let i=0;i<N;i++) vortTheta[i]+=Omega(i)*dt;
+
+  // idler kinematics from no-slip meshing (V = translation ∝ gradient = current; om = spin ∝ -avg)
+  let Jrep=0;
+  for(let j=0;j<N-1;j++){
+    const Oi=Omega(j), Oi1=Omega(j+1);
+    const V=(Oi-Oi1)*R/2;                 // vertical translation, +up ∝ B-gradient
+    const om=-(Oi+Oi1)*R/(2*r);           // spin (counter-rotates the vortices)
+    idlPhi[j]+=om*dt;
+    flow[j]+=(-V)*dt*22;                   // current dots scroll (screen y down: V up → up)
+    Jrep += V;
+  }
+  Jrep/=(N-1);
+
+  // draw vortices
+  for(let i=0;i<N;i++){
+    const x=xs[i];
+    const g=ctx.createRadialGradient(x-R*0.3,cy-R*0.3,R*0.1,x,cy,R);
+    g.addColorStop(0,'rgba(60,120,118,0.05)'); g.addColorStop(1,'rgba(60,120,118,0.18)');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,cy,R,0,7); ctx.fill();
+    ctx.strokeStyle='#3c7876'; ctx.lineWidth=1.7; ctx.beginPath(); ctx.arc(x,cy,R,0,7); ctx.stroke();
+    // spokes (show rotation)
+    ctx.strokeStyle='rgba(60,120,118,0.85)'; ctx.lineWidth=2.4; ctx.lineCap='round';
+    for(let k=0;k<3;k++){ const a=vortTheta[i]+k*Math.PI/3;
+      ctx.beginPath(); ctx.moveTo(x-Math.cos(a)*(R-7),cy-Math.sin(a)*(R-7)); ctx.lineTo(x+Math.cos(a)*(R-7),cy+Math.sin(a)*(R-7)); ctx.stroke(); }
+    ctx.fillStyle='#3c7876'; ctx.beginPath(); ctx.arc(x,cy,3,0,7); ctx.fill();
+  }
+
+  // draw idlers (anchored, meshing) + the current as charge-dots streaming through the gap
+  const colH=Math.min(H-110,236), dotSp=24;
+  for(let j=0;j<N-1;j++){
+    const x=xg[j], y=cy;
+    const Oi=Omega(j),Oi1=Omega(j+1), V=(Oi-Oi1)*R/2;
+    // streaming current (charge dots) through the gap
+    if(Math.abs(V)>0.04){
+      ctx.fillStyle='rgba(194,84,61,0.8)';
+      const n=Math.ceil(colH/dotSp);
+      for(let m=0;m<n;m++){
+        const yy=cy-colH/2 + (((flow[j]+m*dotSp)%colH)+colH)%colH;
+        if(Math.abs(yy-cy)<r+2) continue;     // don't clutter the wheel itself
+        ctx.beginPath(); ctx.arc(x,yy,3,0,7); ctx.fill();
+      }
+      arrowV(x+r+10, cy, V>0?-1:1, Math.min(26,9+Math.abs(V)*9), '#c2543d');
+    }
+    // the idle wheel itself (spins, counter-rotating)
+    ctx.fillStyle='rgba(194,84,61,0.16)'; ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.fill();
+    ctx.strokeStyle='#c2543d'; ctx.lineWidth=1.6; ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.stroke();
+    ctx.strokeStyle='rgba(194,84,61,0.95)'; ctx.lineWidth=2; ctx.lineCap='round';
+    for(let k=0;k<2;k++){ const a=idlPhi[j]+k*Math.PI/2;
+      ctx.beginPath(); ctx.moveTo(x-Math.cos(a)*(r-3),y-Math.sin(a)*(r-3)); ctx.lineTo(x+Math.cos(a)*(r-3),y+Math.sin(a)*(r-3)); ctx.stroke(); }
+    ctx.fillStyle='#c2543d'; ctx.beginPath(); ctx.arc(x,y,2.4,0,7); ctx.fill();
+  }
+
+  // readout
+  const flat=Math.abs(grad)<0.03;
+  let bStr = flat ? '<span class="b">一様</span> ('+B0.toFixed(2)+')' : '<span class="b">ムラあり</span> '+(grad>0?'右ほど強い':'左ほど強い');
+  const Jn=Jrep/(R/2);                       // normalised so |J| ≈ |勾配|
+  const Jm=Math.abs(Jn);
+  let jStr = Jm<0.04 ? '<span class="z">なし</span>' : '<span class="j">'+(Jn>0?'上向き':'下向き')+' '+Jm.toFixed(2)+'</span>';
+  ro.innerHTML = '<b>マクスウェルの遊輪</b><br>磁場 B : '+bStr+'<br>電流 J : '+jStr+'<br><span style="color:var(--faint)">J ∝ Bのムラ（curl B）</span>';
+
+  requestAnimationFrame(frame);
+}
+
+bEl.addEventListener('input',e=>{ B0=parseFloat(e.target.value); });
+gEl.addEventListener('input',e=>{ grad=parseFloat(e.target.value); });
+document.getElementById('flat').addEventListener('click',()=>{ grad=0; gEl.value='0'; });
+
+const hg=parseFloat((location.hash||'').replace('#',''));
+if(!isNaN(hg)){ grad=Math.max(-1.5,Math.min(1.5,hg)); gEl.value=String(grad); }
+resize(); requestAnimationFrame(frame);
+</script>
+</body>
+</html>
