@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex, nofollow" />
-<title>騙さない可視化 ── 軸を切る</title>
+<title>騙さない可視化 ── 図にだまされない</title>
 <style>
   :root{
     --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
@@ -15,17 +15,17 @@
   html,body{height:100%;}
   body{font-family:'Zen Kaku Gothic New',system-ui,sans-serif;background:var(--bg);color:var(--text);
     display:flex;flex-direction:column;overflow:hidden;}
-  /* 流れるレイアウト（絶対配置のオーバーレイをやめ、環境依存を下げる） */
-  #stage{flex:1 1 auto;position:relative;min-height:160px;}
+  #stage{flex:1 1 auto;position:relative;min-height:150px;}
   canvas{display:block;width:100%;height:100%;touch-action:none;cursor:ns-resize;}
   .badge{position:absolute;left:8px;top:8px;font-family:'JetBrains Mono',monospace;font-size:.7rem;
     font-weight:700;border-radius:999px;padding:.2rem .6rem;border:1px solid;}
   .badge.honest{color:var(--teal);border-color:var(--teal);background:rgba(60,120,118,.1);}
   .badge.lie{color:var(--red);border-color:var(--red);background:rgba(194,84,61,.1);}
-  /* 情報帯：canvas の下を、はみ出さずに折り返して流れる */
   #info{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);
-    padding:.5rem .7rem;font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--muted);line-height:1.7;}
-  #info .stats{display:flex;flex-wrap:wrap;gap:.3rem .9rem;}
+    padding:.5rem .7rem;font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--muted);line-height:1.7;
+    overflow-wrap:anywhere;word-break:normal;}
+  #info .stats{display:block;}
+  #info .stats > span{margin-right:.9rem;}
   #info b{color:var(--text);}
   #info .lie{color:var(--red);font-weight:700;}
   #info .ok{color:var(--teal);font-weight:700;}
@@ -33,11 +33,14 @@
   .ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.55rem .7rem;
     display:flex;flex-wrap:wrap;gap:.55rem .9rem;align-items:center;}
   .row{display:flex;align-items:center;gap:.5rem;font-size:.78rem;color:var(--muted);flex:1 1 auto;min-width:180px;}
+  .row.modes{flex:0 0 auto;min-width:0;}
   .row label{font-weight:700;color:var(--text);white-space:nowrap;}
   input[type=range]{flex:1 1 90px;min-width:90px;max-width:240px;accent-color:var(--red);}
   button{font:inherit;font-size:.76rem;font-weight:700;color:var(--text);background:var(--card);
     border:1px solid var(--border);border-radius:8px;padding:.32rem .7rem;cursor:pointer;}
   button:hover{border-color:var(--teal);}
+  button.on{background:var(--teal);color:#fff;border-color:var(--teal);}
+  .hide{display:none !important;}
 </style>
 </head>
 <body>
@@ -47,24 +50,42 @@
 </div>
 <div id="info">
   <div class="stats" id="stats"></div>
-  <div class="note">グラフを上下にドラッグ（または下のスライダ）で、軸の下端を動かす。数字は変えてないよ。</div>
+  <div class="note" id="note"></div>
 </div>
 <div class="ctrl">
-  <div class="row">
+  <div class="row modes">
+    <button id="mAxis" class="on">① 軸を切る</button>
+    <button id="mArea">② 面積で誇張</button>
+  </div>
+  <div class="row" id="rowAxis">
     <label>軸の下端</label>
     <input id="base" type="range" min="0" max="90" step="0.5" value="0" />
     <span id="baseV" style="font-family:'JetBrains Mono',monospace;font-size:.74rem;min-width:1.8rem;">0</span>
+    <button id="axHonest">正直(0)</button><button id="axLie">だます</button>
   </div>
-  <button id="honest">正直に戻す（0）</button>
-  <button id="lie">だます</button>
+  <div class="row hide" id="rowArea">
+    <label>大きさの測り方</label>
+    <input id="pexp" type="range" min="0.5" max="1" step="0.01" value="0.5" />
+    <span id="pexpV" style="font-family:'JetBrains Mono',monospace;font-size:.74rem;min-width:3.6rem;">面積で</span>
+    <button id="arHonest">面積で(正)</button><button id="arLie">直径で(誇張)</button>
+  </div>
 </div>
 <script>
 const cv=document.getElementById('c'), ctx=cv.getContext('2d');
-const stats=document.getElementById('stats'), badge=document.getElementById('badge');
-const baseEl=document.getElementById('base'), baseV=document.getElementById('baseV');
+const stats=document.getElementById('stats'), note=document.getElementById('note'), badge=document.getElementById('badge');
 let W=0,H=0,DPR=Math.min(window.devicePixelRatio||1,2);
+let mode='axis';
+
+// ① 軸を切る
 const DATA=[91,93,95,97], LABELS=['A','B','C','D'], TOP=100;
 let base=0;
+const baseEl=document.getElementById('base'), baseV=document.getElementById('baseV');
+
+// ② 面積で誇張（A=10, B=20 ＝ Bは2倍）
+const AV=[10,20], AL=['A','B'];
+let pexp=0.5;  // 0.5=面積∝値(正), 1.0=直径∝値(誇張)
+const pexpEl=document.getElementById('pexp'), pexpV=document.getElementById('pexpV');
+
 let plot={x:0,y:0,w:0,h:0};
 
 function resize(){
@@ -75,66 +96,97 @@ function resize(){
 }
 window.addEventListener('resize',resize);
 
-function draw(){
-  ctx.clearRect(0,0,W,H);
-  const mL=40, mR=12, mT=Math.max(14,H*0.06), mB=28;
+function draw(){ ctx.clearRect(0,0,W,H); (mode==='axis'?drawAxis:drawArea)(); }
+
+function drawAxis(){
+  const mL=40, mR=14, mT=Math.max(14,H*0.06), mB=28;
   plot={x:mL, y:mT, w:Math.max(40,W-mL-mR), h:Math.max(40,H-mT-mB)};
   const yOf=v=> plot.y + plot.h - (v-base)/(TOP-base)*plot.h;
-
   ctx.strokeStyle='#e3dbd0'; ctx.lineWidth=1;
   ctx.beginPath(); ctx.moveTo(plot.x,plot.y); ctx.lineTo(plot.x,plot.y+plot.h); ctx.lineTo(plot.x+plot.w,plot.y+plot.h); ctx.stroke();
   ctx.fillStyle='#7d7568'; ctx.font='10px JetBrains Mono, monospace'; ctx.textAlign='right'; ctx.textBaseline='middle';
-  ctx.fillText(base.toFixed(0), plot.x-5, plot.y+plot.h);
-  ctx.fillText(String(TOP), plot.x-5, plot.y);
+  ctx.fillText(base.toFixed(0), plot.x-5, plot.y+plot.h); ctx.fillText(String(TOP), plot.x-5, plot.y);
   if(base>0.5){
-    ctx.strokeStyle='#c2543d'; ctx.lineWidth=1.6;
-    const bx=plot.x, by=plot.y+plot.h;
+    ctx.strokeStyle='#c2543d'; ctx.lineWidth=1.6; const bx=plot.x, by=plot.y+plot.h;
     ctx.beginPath(); ctx.moveTo(bx-6,by-2); ctx.lineTo(bx+6,by-6); ctx.moveTo(bx-6,by+2); ctx.lineTo(bx+6,by-2); ctx.stroke();
-    ctx.fillStyle='#c2543d'; ctx.textAlign='left'; ctx.font='9px JetBrains Mono, monospace';
-    ctx.fillText('0でない', plot.x+3, plot.y+plot.h+14);
+    ctx.fillStyle='#c2543d'; ctx.textAlign='left'; ctx.font='9px JetBrains Mono, monospace'; ctx.fillText('0でない', plot.x+3, plot.y+plot.h+14);
   }
-
-  const n=DATA.length, gap=plot.w/n, bw=Math.min(64, gap*0.55);
-  let hs=[];
+  const n=DATA.length, gap=plot.w/n, bw=Math.min(64, gap*0.55); let hs=[];
   for(let i=0;i<n;i++){
-    const cx=plot.x + gap*(i+0.5);
-    const top=yOf(DATA[i]); const bot=plot.y+plot.h;
-    const h=Math.max(0, bot-top); hs.push(h);
-    ctx.fillStyle = base>0.5 ? 'rgba(194,84,61,0.78)' : 'rgba(60,120,118,0.78)';
-    ctx.fillRect(cx-bw/2, top, bw, h);
+    const cx=plot.x+gap*(i+0.5), top=yOf(DATA[i]), bot=plot.y+plot.h, h=Math.max(0,bot-top); hs.push(h);
+    ctx.fillStyle = base>0.5?'rgba(194,84,61,0.78)':'rgba(60,120,118,0.78)'; ctx.fillRect(cx-bw/2, top, bw, h);
     ctx.fillStyle='#1d1b17'; ctx.font='bold 11px JetBrains Mono, monospace'; ctx.textAlign='center'; ctx.textBaseline='bottom';
     ctx.fillText(String(DATA[i]), cx, Math.max(plot.y+9, top-3));
-    ctx.fillStyle='#7d7568'; ctx.font='11px Zen Kaku Gothic New, sans-serif'; ctx.textBaseline='top';
-    ctx.fillText(LABELS[i], cx, plot.y+plot.h+4);
+    ctx.fillStyle='#7d7568'; ctx.font='11px Zen Kaku Gothic New, sans-serif'; ctx.textBaseline='top'; ctx.fillText(LABELS[i], cx, plot.y+plot.h+4);
   }
-
-  const realRatio = DATA[n-1]/DATA[0];
-  const visRatio = hs[0]>1 ? hs[n-1]/hs[0] : 1;
-  const honest = base<=0.5;
-  badge.textContent = honest ? '正直' : 'だまし';
-  badge.className = 'badge ' + (honest?'honest':'lie');
-  stats.innerHTML =
-    '<span>本当の値 <b>'+DATA.join('・')+'</b></span>'+
-    '<span>実際の差 <b>+'+(DATA[n-1]-DATA[0])+'（×'+realRatio.toFixed(2)+'）</b></span>'+
-    '<span>棒の見た目 '+(honest? '<span class="ok">×'+visRatio.toFixed(2)+'（ほぼ同じ）</span>'
-                              : '<span class="lie">×'+visRatio.toFixed(1)+' に膨張</span>')+'</span>'+
-    '<span class="note" style="margin:0">数字は1ミリも変えていない</span>';
+  const realRatio=DATA[n-1]/DATA[0], visRatio=hs[0]>1?hs[n-1]/hs[0]:1, honest=base<=0.5;
+  setBadge(honest);
+  stats.innerHTML='<span>値 <b>'+DATA.join('·')+'</b></span>'+
+    '<span>実際 <b>+'+(DATA[n-1]-DATA[0])+'（×'+realRatio.toFixed(2)+'）</b></span>'+
+    '<span>見た目 '+(honest?'<span class="ok">×'+visRatio.toFixed(2)+'</span>':'<span class="lie">×'+visRatio.toFixed(1)+'↑</span>')+'</span>';
+  note.textContent='軸の下端を持ち上げると、+'+(DATA[n-1]-DATA[0])+'の差が崖になる。数字は不変。';
 }
 
+function drawArea(){
+  const cy=H*0.52, n=AV.length, gap=W/n;
+  // r ∝ value^pexp（基準で正規化）。pexp=0.5で面積∝値、1.0で直径∝値。
+  const maxV=Math.max.apply(null,AV);
+  const rMax=Math.min(W*0.16, H*0.30, 80);
+  const rOf=v=> rMax * Math.pow(v/maxV, pexp);
+  for(let i=0;i<n;i++){
+    const cx=gap*(i+0.5), r=rOf(AV[i]);
+    ctx.fillStyle = pexp>0.55?'rgba(194,84,61,0.7)':'rgba(60,120,118,0.7)';
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,6.283); ctx.fill();
+    ctx.strokeStyle = pexp>0.55?'#c2543d':'#3c7876'; ctx.lineWidth=1.4; ctx.stroke();
+    ctx.fillStyle='#1d1b17'; ctx.font='bold 13px JetBrains Mono, monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(String(AV[i]), cx, cy);
+    ctx.fillStyle='#7d7568'; ctx.font='12px Zen Kaku Gothic New, sans-serif'; ctx.textBaseline='top';
+    ctx.fillText(AL[i], cx, cy+rMax+8);
+  }
+  const realRatio=AV[1]/AV[0];                 // 値の比 = 2
+  const areaRatio=Math.pow(AV[1]/AV[0], 2*pexp); // 見た目の面積比
+  const honest=pexp<=0.55;
+  setBadge(honest);
+  stats.innerHTML='<span>値 <b>A10·B20</b></span>'+
+    '<span>実際 <b>×'+realRatio.toFixed(0)+'</b></span>'+
+    '<span>面積 '+(honest?'<span class="ok">×'+areaRatio.toFixed(1)+'</span>':'<span class="lie">×'+areaRatio.toFixed(1)+'↑</span>')+'</span>';
+  note.textContent=honest?'面積を値に比例＝Bは正しく「2倍」に見える。'
+    :'直径を値に比例させると、面積は2乗で効いてBが4倍に膨らむ。値は2倍のまま。';
+}
+
+function setBadge(honest){ badge.textContent=honest?'正直':'だまし'; badge.className='badge '+(honest?'honest':'lie'); }
+
+// controls
 function setBase(v){ base=Math.max(0,Math.min(90,v)); baseEl.value=String(base); baseV.textContent=base.toFixed(0); draw(); }
 baseEl.addEventListener('input',e=>setBase(parseFloat(e.target.value)));
-document.getElementById('honest').addEventListener('click',()=>setBase(0));
-document.getElementById('lie').addEventListener('click',()=>setBase(89));
+document.getElementById('axHonest').addEventListener('click',()=>setBase(0));
+document.getElementById('axLie').addEventListener('click',()=>setBase(89));
+function setPexp(v){ pexp=Math.max(0.5,Math.min(1,v)); pexpEl.value=String(pexp); pexpV.textContent=(pexp<=0.55?'面積で':(pexp>=0.95?'直径で':'途中')); draw(); }
+pexpEl.addEventListener('input',e=>setPexp(parseFloat(e.target.value)));
+document.getElementById('arHonest').addEventListener('click',()=>setPexp(0.5));
+document.getElementById('arLie').addEventListener('click',()=>setPexp(1));
 
+function setMode(m){
+  mode=m;
+  document.getElementById('mAxis').classList.toggle('on',m==='axis');
+  document.getElementById('mArea').classList.toggle('on',m==='area');
+  document.getElementById('rowAxis').classList.toggle('hide',m!=='axis');
+  document.getElementById('rowArea').classList.toggle('hide',m!=='area');
+  cv.style.cursor = m==='axis' ? 'ns-resize' : 'default';
+  draw();
+}
+document.getElementById('mAxis').addEventListener('click',()=>setMode('axis'));
+document.getElementById('mArea').addEventListener('click',()=>setMode('area'));
+
+// drag（軸モードのみ：下端を上下で動かす）
 let drag=false;
 function baseFromY(py){ const t=Math.max(0,Math.min(1,(py-plot.y)/plot.h)); return Math.round(t*90*2)/2; }
-cv.addEventListener('pointerdown',e=>{ drag=true; const r=cv.getBoundingClientRect(); setBase(baseFromY(e.clientY-r.top)); cv.setPointerCapture&&cv.setPointerCapture(e.pointerId); });
-cv.addEventListener('pointermove',e=>{ if(drag){ e.preventDefault(); const r=cv.getBoundingClientRect(); setBase(baseFromY(e.clientY-r.top)); } });
+cv.addEventListener('pointerdown',e=>{ if(mode!=='axis')return; drag=true; const r=cv.getBoundingClientRect(); setBase(baseFromY(e.clientY-r.top)); cv.setPointerCapture&&cv.setPointerCapture(e.pointerId); });
+cv.addEventListener('pointermove',e=>{ if(drag&&mode==='axis'){ e.preventDefault(); const r=cv.getBoundingClientRect(); setBase(baseFromY(e.clientY-r.top)); } });
 window.addEventListener('pointerup',()=>{ drag=false; });
 
-const hb=parseFloat((location.hash||'').replace('#',''));
-if(!isNaN(hb)){ base=Math.max(0,Math.min(90,hb)); baseEl.value=String(base); baseV.textContent=base.toFixed(0); }
 resize();
+if((location.hash||'').indexOf('area')>=0){ setMode('area'); setPexp(1); }
 </script>
 </body>
 </html>
