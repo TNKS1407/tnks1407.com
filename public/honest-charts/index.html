@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>騙さない可視化 ── 軸を切る</title>
+<style>
+  :root{
+    --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
+    --teal:#3c7876;--red:#c2543d;--amber:#c9761f;
+    --text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;}
+  body{font-family:'Zen Kaku Gothic New',system-ui,sans-serif;background:var(--bg);color:var(--text);
+    display:flex;flex-direction:column;overflow:hidden;}
+  #stage{flex:1;position:relative;min-height:0;}
+  canvas{display:block;width:100%;height:100%;touch-action:none;cursor:ns-resize;}
+  .hint{position:absolute;left:10px;bottom:8px;right:10px;font-size:.7rem;color:var(--faint);pointer-events:none;
+    font-family:'JetBrains Mono',monospace;line-height:1.5;}
+  .readout{position:absolute;right:8px;top:8px;font-size:.66rem;color:var(--muted);text-align:right;
+    font-family:'JetBrains Mono',monospace;line-height:1.65;pointer-events:none;background:rgba(250,248,244,.92);
+    border:1px solid var(--border);border-radius:6px;padding:.34rem .55rem;white-space:nowrap;}
+  .readout b{color:var(--text);font-weight:700;}
+  .readout .lie{color:var(--red);font-weight:700;}
+  .readout .ok{color:var(--teal);font-weight:700;}
+  .badge{position:absolute;left:10px;top:10px;font-family:'JetBrains Mono',monospace;font-size:.72rem;
+    font-weight:700;border-radius:999px;padding:.25rem .7rem;border:1px solid;}
+  .badge.honest{color:var(--teal);border-color:var(--teal);background:rgba(60,120,118,.08);}
+  .badge.lie{color:var(--red);border-color:var(--red);background:rgba(194,84,61,.08);}
+  .ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.6rem .8rem;
+    display:flex;flex-wrap:wrap;gap:.7rem 1.1rem;align-items:center;}
+  .row{display:flex;align-items:center;gap:.5rem;font-size:.78rem;color:var(--muted);}
+  .row label{font-weight:700;color:var(--text);white-space:nowrap;}
+  input[type=range]{width:200px;accent-color:var(--red);}
+  button{font:inherit;font-size:.76rem;font-weight:700;color:var(--text);background:var(--card);
+    border:1px solid var(--border);border-radius:8px;padding:.32rem .7rem;cursor:pointer;}
+  button:hover{border-color:var(--teal);}
+  button.on{background:var(--teal);color:#fff;border-color:var(--teal);}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="c"></canvas>
+  <div class="badge honest" id="badge">正直</div>
+  <div class="readout" id="ro"></div>
+  <div class="hint" id="hint">グラフを上下にドラッグ（または下のスライダ）で、軸の下端を持ち上げてみて。数字は変えてないよ。</div>
+</div>
+<div class="ctrl">
+  <div class="row">
+    <label>軸の下端</label>
+    <input id="base" type="range" min="0" max="90" step="0.5" value="0" />
+    <span id="baseV" style="font-family:'JetBrains Mono',monospace;font-size:.74rem;">0</span>
+  </div>
+  <button id="honest">正直に戻す（0）</button>
+  <button id="lie">だます</button>
+</div>
+<script>
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const ro=document.getElementById('ro'), badge=document.getElementById('badge');
+const baseEl=document.getElementById('base'), baseV=document.getElementById('baseV');
+let W=0,H=0,DPR=Math.min(window.devicePixelRatio||1,2);
+// 「本当の数字」── これは何があっても変えない
+const DATA=[91,93,95,97], LABELS=['A','B','C','D'], TOP=100;
+let base=0;
+let plot={x:0,y:0,w:0,h:0};
+
+function resize(){
+  const r=cv.getBoundingClientRect(); W=r.width; H=r.height;
+  cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  draw();
+}
+window.addEventListener('resize',resize);
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  const mL=46, mR=14, mT=58, mB=34;
+  plot={x:mL, y:mT, w:W-mL-mR, h:H-mT-mB};
+  const yOf=v=> plot.y + plot.h - (v-base)/(TOP-base)*plot.h;
+
+  // axis
+  ctx.strokeStyle='#e3dbd0'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(plot.x,plot.y); ctx.lineTo(plot.x,plot.y+plot.h); ctx.lineTo(plot.x+plot.w,plot.y+plot.h); ctx.stroke();
+  // y ticks: base (bottom) and TOP
+  ctx.fillStyle='#7d7568'; ctx.font='11px JetBrains Mono, monospace'; ctx.textAlign='right'; ctx.textBaseline='middle';
+  ctx.fillText(base.toFixed(0), plot.x-6, plot.y+plot.h);
+  ctx.fillText(String(TOP), plot.x-6, plot.y);
+  // broken-axis mark when truncated
+  if(base>0.5){
+    ctx.strokeStyle='#c2543d'; ctx.lineWidth=1.6;
+    const bx=plot.x, by=plot.y+plot.h;
+    ctx.beginPath();
+    ctx.moveTo(bx-7,by-3); ctx.lineTo(bx+7,by-7); ctx.moveTo(bx-7,by+1); ctx.lineTo(bx+7,by-3);
+    ctx.stroke();
+    ctx.fillStyle='#c2543d'; ctx.textAlign='left'; ctx.font='9px JetBrains Mono, monospace';
+    ctx.fillText('0 じゃない', plot.x+4, plot.y+plot.h+16);
+  }
+
+  // bars
+  const n=DATA.length, gap=plot.w/n, bw=Math.min(72, gap*0.56);
+  let hs=[];
+  for(let i=0;i<n;i++){
+    const cx=plot.x + gap*(i+0.5);
+    const top=yOf(DATA[i]); const bot=plot.y+plot.h;
+    const h=Math.max(0, bot-top); hs.push(h);
+    ctx.fillStyle = base>0.5 ? 'rgba(194,84,61,0.78)' : 'rgba(60,120,118,0.78)';
+    ctx.fillRect(cx-bw/2, top, bw, h);
+    // value label on top (the real number — always the same)
+    ctx.fillStyle='#1d1b17'; ctx.font='bold 12px JetBrains Mono, monospace'; ctx.textAlign='center'; ctx.textBaseline='bottom';
+    ctx.fillText(String(DATA[i]), cx, top-4);
+    // x label
+    ctx.fillStyle='#7d7568'; ctx.font='11px Zen Kaku Gothic New, sans-serif'; ctx.textBaseline='top';
+    ctx.fillText(LABELS[i], cx, plot.y+plot.h+5);
+  }
+
+  // readout
+  const realRatio = DATA[n-1]/DATA[0];
+  const visRatio = hs[0]>1 ? hs[n-1]/hs[0] : 1;
+  const honest = base<=0.5;
+  badge.textContent = honest ? '正直' : 'だまし';
+  badge.className = 'badge ' + (honest?'honest':'lie');
+  ro.innerHTML =
+    '本当の値 : <b>'+DATA.join(' / ')+'</b><br>'+
+    '実際の差 : <b>A→D で +'+(DATA[n-1]-DATA[0])+'（×'+realRatio.toFixed(2)+'）</b><br>'+
+    '棒の見た目 : '+(honest? '<span class="ok">×'+visRatio.toFixed(2)+'（ほぼ同じ）</span>'
+                          : '<span class="lie">×'+visRatio.toFixed(1)+' に膨張</span>')+'<br>'+
+    '<span style="color:var(--faint)">数字は1ミリも変えていない</span>';
+}
+
+function setBase(v){ base=Math.max(0,Math.min(90,v)); baseEl.value=String(base); baseV.textContent=base.toFixed(0); draw(); }
+baseEl.addEventListener('input',e=>setBase(parseFloat(e.target.value)));
+document.getElementById('honest').addEventListener('click',()=>setBase(0));
+document.getElementById('lie').addEventListener('click',()=>setBase(89));
+
+// drag on chart: pointer y → base（下にドラッグ＝下端を上げる＝だます方向）
+let drag=false;
+function baseFromY(py){
+  // map pointer y within plot to a base value (top→0, bottom→~min-ish)
+  const t=Math.max(0,Math.min(1,(py-plot.y)/plot.h)); // 0 top .. 1 bottom
+  return Math.round(t*90*2)/2;
+}
+cv.addEventListener('pointerdown',e=>{ drag=true; const r=cv.getBoundingClientRect(); setBase(baseFromY(e.clientY-r.top)); cv.setPointerCapture&&cv.setPointerCapture(e.pointerId); });
+cv.addEventListener('pointermove',e=>{ if(drag){ e.preventDefault(); const r=cv.getBoundingClientRect(); setBase(baseFromY(e.clientY-r.top)); } });
+window.addEventListener('pointerup',()=>{ drag=false; });
+
+const hb=parseFloat((location.hash||'').replace('#',''));
+if(!isNaN(hb)){ base=Math.max(0,Math.min(90,hb)); baseEl.value=String(base); baseV.textContent=base.toFixed(0); }
+resize();
+</script>
+</body>
+</html>
