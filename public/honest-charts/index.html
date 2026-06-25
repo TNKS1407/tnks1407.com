@@ -57,6 +57,8 @@
     <button id="mAxis" class="on">① 軸を切る</button>
     <button id="mArea">② 面積で盛る</button>
     <button id="mDual">③ 二軸で重ねる</button>
+    <button id="mCumul">④ 累計で隠す</button>
+    <button id="mPick">⑤ 切り取る</button>
   </div>
   <div class="row" id="rowAxis">
     <label>盛り具合</label>
@@ -72,6 +74,16 @@
     <label>重ね具合</label>
     <input id="gdual" type="range" min="0" max="1" step="0.01" value="0" />
     <button id="duPlain">素のまま</button><button id="duLie">重ねる</button>
+  </div>
+  <div class="row hide" id="rowCumul">
+    <label>見せ方</label>
+    <input id="cumul" type="range" min="0" max="1" step="1" value="0" />
+    <button id="cuPlain">月ごと（素）</button><button id="cuLie">累計にする</button>
+  </div>
+  <div class="row hide" id="rowPick">
+    <label>切り取り位置</label>
+    <input id="pickstart" type="range" min="0" max="18" step="1" value="8" />
+    <button id="pkPlain">全体を見る</button><button id="pkLie">おいしく切る</button>
   </div>
 </div>
 <script>
@@ -97,6 +109,17 @@ const S1NAME='アイスの売上（万円・左）', S2NAME='サイト訪問者�
 let gDual=0;
 const gdualEl=document.getElementById('gdual');
 
+// ④ 累計で隠す ── 月ごとは毎月減ってるのに、累計は必ず増える
+const NEW=[200,175,155,140,125,112,100,90], NEWTL=['1月','2月','3月','4月','5月','6月','7月','8月'], NEWTITLE='毎月の新規ユーザー（万人）';
+let cumul=0;
+const cumulEl=document.getElementById('cumul');
+
+// ⑤ 都合よく切り取る ── 全期間は下落。窓を選べば「右肩上がり」
+const PICK=[100,96,99,92,88,90,84,80,72,76,81,86,91,95,88,83,78,74,80,71,67,70,64,60];
+const PICKTITLE='株価（円）', PW=6;
+let pickStart=8, pickWhole=true;
+const pickEl=document.getElementById('pickstart');
+
 let plot={x:0,y:0,w:0,h:0};
 
 function resize(){
@@ -112,7 +135,7 @@ function resize(){
 window.addEventListener('resize',resize);
 
 function title(t){ ctx.fillStyle='#7d7568'; ctx.font='12px Zen Kaku Gothic New, sans-serif'; ctx.textAlign='left'; ctx.textBaseline='top'; ctx.fillText(t, 12, 8); }
-function draw(){ ctx.clearRect(0,0,W,H); (mode==='axis'?drawAxis:mode==='area'?drawArea:drawDual)(); }
+function draw(){ ctx.clearRect(0,0,W,H); ({axis:drawAxis,area:drawArea,dual:drawDual,cumul:drawCumul,pick:drawPick}[mode]||drawAxis)(); }
 
 function drawAxis(){
   title(AXTITLE);
@@ -208,6 +231,59 @@ function drawDual(){
     :'右軸を赤の範囲（'+r2lo.toFixed(0)+'–'+r2hi.toFixed(0)+'）だけに拡大すると、青にぴったり重なる。連動の正体は、右軸の選び方。';
 }
 
+function drawCumul(){
+  const monthly = cumul<0.5;
+  title(NEWTITLE+(monthly?'（月ごと）':'（累計）'));
+  const mL=42, mR=14, mT=Math.max(30,H*0.12), mB=26;
+  plot={x:mL,y:mT,w:Math.max(40,W-mL-mR),h:Math.max(40,H-mT-mB)};
+  const n=NEW.length, gap=plot.w/n, top0=plot.y+plot.h*0.07, bot=plot.y+plot.h;
+  let cum=[],s=0; for(let i=0;i<n;i++){s+=NEW[i];cum.push(s);}
+  ctx.strokeStyle='#e3dbd0'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(plot.x,plot.y); ctx.lineTo(plot.x,bot); ctx.lineTo(plot.x+plot.w,bot); ctx.stroke();
+  if(monthly){
+    const mx=Math.max.apply(null,NEW), yOf=v=> bot-(v/mx)*(bot-top0), bw=Math.min(48,gap*0.6);
+    for(let i=0;i<n;i++){ const cx=plot.x+gap*(i+0.5), y=yOf(NEW[i]);
+      ctx.fillStyle='rgba(60,120,118,0.8)'; ctx.fillRect(cx-bw/2,y,bw,bot-y);
+      ctx.fillStyle='#1d1b17'; ctx.font='bold 10px JetBrains Mono, monospace'; ctx.textAlign='center'; ctx.textBaseline='bottom'; ctx.fillText(String(NEW[i]),cx,y-2);
+      ctx.fillStyle='#7d7568'; ctx.font='10px Zen Kaku Gothic New, sans-serif'; ctx.textBaseline='top'; ctx.fillText(NEWTL[i],cx,bot+4); }
+  } else {
+    const mx=cum[n-1], yOf=v=> bot-(v/mx)*(bot-top0);
+    ctx.strokeStyle='#c2543d'; ctx.lineWidth=2.6; ctx.lineJoin='round'; ctx.beginPath();
+    for(let i=0;i<n;i++){const x=plot.x+gap*(i+0.5),y=yOf(cum[i]); i?ctx.lineTo(x,y):ctx.moveTo(x,y);} ctx.stroke();
+    ctx.fillStyle='#c2543d'; for(let i=0;i<n;i++){const x=plot.x+gap*(i+0.5),y=yOf(cum[i]);ctx.beginPath();ctx.arc(x,y,3,0,6.283);ctx.fill();}
+    ctx.fillStyle='#7d7568'; ctx.font='10px Zen Kaku Gothic New, sans-serif'; ctx.textAlign='center'; ctx.textBaseline='top';
+    for(let i=0;i<n;i++) ctx.fillText(NEWTL[i],plot.x+gap*(i+0.5),bot+4);
+  }
+  const declPct=(NEW[n-1]/NEW[0]-1)*100;
+  stats.innerHTML='<span class="badge '+(monthly?'plain':'pad')+'">'+(monthly?'素のまま':'累計にした')+'</span>'+
+    '<span>月ごと <b>'+declPct.toFixed(0)+'%/期</b></span>'+
+    '<span>見た目 '+(monthly?'<span class="ok">減ってる</span>':'<span class="lie">右肩上がり↑</span>')+'</span>';
+  note.textContent=monthly?'毎月の新規は '+NEW[0]+'→'+NEW[n-1]+' と減り続け（'+declPct.toFixed(0)+'%）。'
+    :'同じ数字でも「累計」は足し続けるから毎月必ず増える ── 減速していても、グラフは右肩上がりに見える。';
+}
+
+function drawPick(){
+  title(PICKTITLE+(pickWhole?'（全期間）':'（切り取り）'));
+  const mL=40, mR=14, mT=Math.max(30,H*0.12), mB=24;
+  plot={x:mL,y:mT,w:Math.max(40,W-mL-mR),h:Math.max(40,H-mT-mB)};
+  const N=PICK.length, top0=plot.y+plot.h*0.08, bot=plot.y+plot.h*0.92;
+  const lo=Math.min.apply(null,PICK), hi=Math.max.apply(null,PICK);
+  const xOf=i=> plot.x+plot.w*i/(N-1), yOf=v=> bot-(v-lo)/((hi-lo)||1)*(bot-top0);
+  ctx.strokeStyle='rgba(125,117,104,0.4)'; ctx.lineWidth=1.5; ctx.lineJoin='round'; ctx.beginPath();
+  for(let i=0;i<N;i++){const x=xOf(i),y=yOf(PICK[i]); i?ctx.lineTo(x,y):ctx.moveTo(x,y);} ctx.stroke();
+  let a=0,b=N-1; if(!pickWhole){ a=pickStart; b=Math.min(N-1,pickStart+PW); }
+  ctx.strokeStyle=pickWhole?'#3c7876':'#c2543d'; ctx.lineWidth=2.8; ctx.lineJoin='round'; ctx.beginPath();
+  for(let i=a;i<=b;i++){const x=xOf(i),y=yOf(PICK[i]); i===a?ctx.moveTo(x,y):ctx.lineTo(x,y);} ctx.stroke();
+  ctx.fillStyle=pickWhole?'#3c7876':'#c2543d'; for(let i=a;i<=b;i++){ctx.beginPath();ctx.arc(xOf(i),yOf(PICK[i]),2.6,0,6.283);ctx.fill();}
+  if(!pickWhole){ ctx.strokeStyle='rgba(194,84,61,0.35)'; ctx.lineWidth=1; ctx.setLineDash([4,3]);
+    ctx.strokeRect(xOf(a)-4, top0-6, xOf(b)-xOf(a)+8, bot-top0+12); ctx.setLineDash([]); }
+  const fullPct=(PICK[N-1]/PICK[0]-1)*100, winPct=(PICK[b]/PICK[a]-1)*100;
+  stats.innerHTML='<span class="badge '+(pickWhole?'plain':'pad')+'">'+(pickWhole?'全体':'切り取り')+'</span>'+
+    '<span>全期間 <b>'+fullPct.toFixed(0)+'%</b></span>'+
+    (pickWhole?'':'<span>この窓 <span class="lie">'+(winPct>=0?'+':'')+winPct.toFixed(0)+'%↑</span></span>');
+  note.textContent=pickWhole?'全期間では '+PICK[0]+'→'+PICK[N-1]+'（'+fullPct.toFixed(0)+'%）の下落。'
+    :'同じ株価でも、この窓だけ切り取ると '+(winPct>=0?'+':'')+winPct.toFixed(0)+'%の右肩上がり。窓を動かすと、好きな物語が選べてしまう。';
+}
+
 function setBase(v){ base=Math.max(0,Math.min(50,v)); baseEl.value=String(base); draw(); }
 baseEl.addEventListener('input',e=>setBase(parseFloat(e.target.value)));
 document.getElementById('axPlain').addEventListener('click',()=>setBase(0));
@@ -222,20 +298,23 @@ gdualEl.addEventListener('input',e=>setGDual(parseFloat(e.target.value)));
 document.getElementById('duPlain').addEventListener('click',()=>setGDual(0));
 document.getElementById('duLie').addEventListener('click',()=>setGDual(1));
 
+function setCumul(v){ cumul=v?1:0; cumulEl.value=String(cumul); draw(); }
+cumulEl.addEventListener('input',e=>setCumul(parseFloat(e.target.value)));
+document.getElementById('cuPlain').addEventListener('click',()=>setCumul(0));
+document.getElementById('cuLie').addEventListener('click',()=>setCumul(1));
+function setPickStart(v){ pickStart=Math.max(0,Math.min(18,Math.round(v))); pickEl.value=String(pickStart); pickWhole=false; draw(); }
+pickEl.addEventListener('input',e=>setPickStart(parseFloat(e.target.value)));
+document.getElementById('pkPlain').addEventListener('click',()=>{ pickWhole=true; draw(); });
+document.getElementById('pkLie').addEventListener('click',()=>{ pickWhole=false; pickStart=8; pickEl.value='8'; draw(); });
+
+const MODES=['axis','area','dual','cumul','pick'], MBTN={axis:'mAxis',area:'mArea',dual:'mDual',cumul:'mCumul',pick:'mPick'}, MROW={axis:'rowAxis',area:'rowArea',dual:'rowDual',cumul:'rowCumul',pick:'rowPick'};
 function setMode(m){
   mode=m;
-  document.getElementById('mAxis').classList.toggle('on',m==='axis');
-  document.getElementById('mArea').classList.toggle('on',m==='area');
-  document.getElementById('mDual').classList.toggle('on',m==='dual');
-  document.getElementById('rowAxis').classList.toggle('hide',m!=='axis');
-  document.getElementById('rowArea').classList.toggle('hide',m!=='area');
-  document.getElementById('rowDual').classList.toggle('hide',m!=='dual');
+  MODES.forEach(k=>{ document.getElementById(MBTN[k]).classList.toggle('on',k===m); document.getElementById(MROW[k]).classList.toggle('hide',k!==m); });
   cv.style.cursor = m==='axis' ? 'ns-resize' : 'default';
   draw();
 }
-document.getElementById('mAxis').addEventListener('click',()=>setMode('axis'));
-document.getElementById('mArea').addEventListener('click',()=>setMode('area'));
-document.getElementById('mDual').addEventListener('click',()=>setMode('dual'));
+MODES.forEach(k=> document.getElementById(MBTN[k]).addEventListener('click',()=>setMode(k)));
 
 let drag=false;
 function baseFromY(py){ const t=Math.max(0,Math.min(1,(py-plot.y)/plot.h)); return Math.round(t*50*10)/10; }
@@ -247,6 +326,8 @@ resize();
 const _h=(location.hash||'').replace('#','');
 if(_h.indexOf('dual')>=0){ setMode('dual'); setGDual(1); }
 else if(_h.indexOf('area')>=0){ setMode('area'); setPexp(1.6); }
+else if(_h.indexOf('cumul')>=0){ setMode('cumul'); setCumul(1); }
+else if(_h.indexOf('pick')>=0){ setMode('pick'); pickWhole=false; pickStart=8; pickEl.value='8'; draw(); }
 else { const hb=parseFloat(_h); if(!isNaN(hb)) setBase(hb); }
 </script>
 </body>
