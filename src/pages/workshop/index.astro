@@ -63,8 +63,10 @@ const labGroups: { label: string; items: Lab[] }[] = [
     ],
   },
   {
-    label: '色・その他',
+    label: '画像・データ・色',
     items: [
+      { name: '画像フォーマットを開ける（JPEG/PNG）', url: '/image-formats/' },
+      { name: '図に、だまされない（騙さない可視化）', url: '/honest-charts/' },
       { name: '色空間3Dビューア', url: '/color/' },
     ],
   },
@@ -75,6 +77,17 @@ const labCount = labGroups.reduce((n, g) => n + g.items.length, 0);
 // 「続く作り手（持続）」は名前で、今日の使い捨てエージェントは「一時」と正直に分ける。
 type LogEntry = { date: string; agent: string; persistent: boolean; task: string; out?: { title: string; url: string }; note: string };
 const agentLog: LogEntry[] = [
+  {
+    date: '2026.06.25', agent: 'ランキン', persistent: true,
+    task: '共作の一日 ── 電磁気④・騙さない可視化・画像フォーマット',
+    out: { title: '解説「図に、だまされない」「写真が小さくなる仕組み」', url: '/docs/honest-charts/' },
+    note: '④循環とcurl（記事＋羽根車widget＋マクスウェルの遊輪）／騙さない可視化（軸・面積・二軸・累計・切り取り・ビン・対数・相関≠因果の8つ）／画像フォーマット（JPEGの崩れ＋DCTを一歩ずつ）を、ユーザーと何度もやり取りしながら作り、それぞれ数式つきの解説ページに巻いた。',
+  },
+  {
+    date: '2026.06.25', agent: 'デューイ（司書）', persistent: true,
+    task: 'サイト整理の棚卸し',
+    note: '増えた解説4本・widget が、ロードマップ／Works／play／工房 のどこに未配置か・散らかりが無いかを棚卸し（読み取り・提案だけ）。拾い漏れ（honest-charts/image-formats の導線、作業ログの取りこぼし）を挙げてくれた → 私が並べ直した。',
+  },
   {
     date: '2026.06.25', agent: 'デューイ（司書）', persistent: true,
     task: '/play の棚卸し（“サイトの棚”デビュー）',
