@@ -17,7 +17,7 @@ related:
 
 その $\vec E$ を、いまはどう出していたか。[① クーロンの法則](/docs/field-as-measured-force/) で源ひとつの $1/r^2$ を覚えて、源がいくつもあればその矢印を足す（重ね合わせ）。これは正しいけれど、**骨が折れる**。源が点ならいい。でも、電荷が金属の棒のように線に沿って連続に乗っていたり、平らな板いっぱいに塗り広げられていたら、足すべき源は無限個 ── 各点で無限本の矢印を $\cos/\sin$ で分解して足す、なんてやっていられない。
 
-もっと楽な道はないか。── ある。電荷の並び方に **対称性** があるときに限って、源を一個も足さずに、場が一発で出る。今日はその道具を、手に馴染ませる。
+もっと楽な道はないか。── ある。先に断っておくと、対称性がなくても場は出せる。[④ 源を足して、場を作る](/docs/field-from-sources/) のやり方で、源を一個ずつ足していけばいい ── ただ、それが骨の折れる作業だった、というだけだ。これから使う道具は、その足し算を **まるごと省ける近道** で、電荷の並び方に **対称性** があるときに効く。源を一個も足さずに、場が一発で出る。今日はその道具を、手に馴染ませる。
 
 ## 道具の正体 ── 囲んで、数える
 
@@ -26,6 +26,12 @@ related:
 $$\oint \vec E\cdot d\vec A = \frac{Q_{\text{中}}}{\varepsilon_0}$$
 
 言葉に直すと一文。**どんな形でもいいから閉じた面で囲って、その面を貫いて外へ出ていく電場（フラックス）を数えると、中に入っている電荷の総量（を $\varepsilon_0$ で割ったもの）に等しい。** 左辺の $\oint \vec E\cdot d\vec A$ は「閉じた面ぜんぶで、貫く分を足す」という印 ── ⑥でフラックスとして触ったやつだ。右辺は「囲んだ中の電荷」。面の形には一切よらず、中身だけで決まる。
+
+記号を外して、いちばん素っ気なく書くと、こうなる：
+
+$$(\text{面を貫いて出ていく電場の総量}) = \frac{(\text{中の電荷})}{\varepsilon_0}$$
+
+$\oint\cdots d\vec A$ という見慣れない記号は、この「貫く分を、面ぜんぶで足す」を一文字に畳んだものにすぎない。怖いのは記号の見た目だけで、やっていることは「囲って、貫く分を数える」だけだよ。
 
 ここで、ちょっと不思議に思ってほしい。左辺には知りたい $\vec E$ が入っているのに、右辺は「中の電荷」というすでに知っている量だ。**ということは、この等式を $\vec E$ について解けば、場が出るのでは？** ── 半分は当たり。でも左辺は積分（足し算）だから、ふつうは $\vec E$ をくくり出せない。くくり出せるための、たった一つの条件 ── それが **対称性** だ。
 
@@ -39,7 +45,7 @@ $$\oint \vec E\cdot d\vec A = \frac{Q_{\text{中}}}{\varepsilon_0}$$
 
 $$E \times (\text{面積}) = \frac{Q_{\text{中}}}{\varepsilon_0} \quad\Longrightarrow\quad E = \frac{Q_{\text{中}}}{\varepsilon_0 \times (\text{面積})}$$
 
-積分が消えて、割り算ひとつで $E$ が出た。── これが道具の三段だ。
+積分が消えたわけじゃない ── 足し算（積分）は、ちゃんとしている。ただ $E$ が面の上でどこも同じ値だから、$\oint \vec E\cdot d\vec A$ という足し算が、$E$ をくくり出して **$E \times 面積$** という掛け算に化けただけだ。一様だと、積分が掛け算につぶれて、“積分した感”が消える ── と言ったほうが正確だね。おかげで、残りは割り算ひとつ。$E$ が出た。── これが道具の三段だ。
 
 - **手順** ── 電荷の対称性を見て、「$E$ が一定＆垂直になる」閉じた面を選ぶ。$\oint \vec E\cdot d\vec A = E\times$面積 とおき、$=Q_{\text{中}}/\varepsilon_0$ を $E$ について解く。
 - **意味** ── 中の電荷が外へ撒くフラックスを、対称な面で均等に受け止めている。面積で割れば、一点あたりの強さ＝場。
@@ -85,7 +91,9 @@ $$E \times (\text{面積}) = \frac{Q_{\text{中}}}{\varepsilon_0} \quad\Longrigh
 
 $$E \times 4\pi r^2 = \frac{Q}{\varepsilon_0} \quad\Longrightarrow\quad E = \frac{Q}{4\pi\varepsilon_0 r^2}$$
 
-見覚えがあるよね。── これは①のクーロンの法則 $E = \dfrac{Q}{4\pi\varepsilon_0 r^2}$ そのものだ。出発点だったクーロンが、ガウスから **戻ってきた**。①で「$1/4\pi\varepsilon_0$ の $4\pi$ は、球の表面積の $4\pi$ と後で打ち消し合う」と予告しておいたのは、これのことだった ── いまちょうど、$4\pi r^2$ の $4\pi$ と相殺している。点電荷では、ガウスはクーロンと同じ答えを返す“確かめ算”になっている。本領は、次の二つだ。
+見覚えがあるよね。── これは①のクーロンの法則 $E = \dfrac{Q}{4\pi\varepsilon_0 r^2}$ そのものだ。出発点だったクーロンが、ガウスから **戻ってきた**。①で「$1/4\pi\varepsilon_0$ の $4\pi$ は、球の表面積の $4\pi$ と後で打ち消し合う」と予告しておいたのは、これのことだった ── いまちょうど、$4\pi r^2$ の $4\pi$ と相殺している。
+
+点電荷では、ガウスは①のクーロンと **同じ答え** を返す。新しいことは、何も出ていない ── 出発点に戻ってきただけだ。だからこれは、場を新しく知るための計算というより、**道具がちゃんと動くかの“答え合わせ”**（＝検算）になっている。クーロンという既知の答えに、別の道（ガウス）から行って、ちゃんと同じ所に着いた ── それで「この道具は正しい」と確かめられた。ありがたみが薄いのはそのためで、本領が出るのは、クーロンでは骨が折れる次の二つ ── 線と面だ。
 
 ## 無限に長い線 ── 円柱で囲う
 
@@ -97,6 +105,34 @@ $$E \times 2\pi r L = \frac{\lambda L}{\varepsilon_0} \quad\Longrightarrow\quad 
 
 両辺の $L$ が消えるのが気持ちいい（場は棒の長さの取り方によらない ── 無限に長い、の意味だ）。点電荷では $1/r^2$ だったのに、線では **$1/r$**。薄まり方が一段ゆるい。理由も対称性にある：点は球面（$\propto r^2$）に薄まるのに、線は円柱の側面（$\propto r$）にしか薄まらないから、一つ分ゆるくなる。
 
+<figure style="margin:1.6rem 0;text-align:center;">
+<svg viewBox="0 0 470 210" width="470" style="max-width:100%;height:auto;font-family:'JetBrains Mono',monospace;">
+  <!-- cylinder side shaded -->
+  <rect x="70" y="34" width="80" height="142" fill="rgba(60,120,118,0.10)"/>
+  <line x1="70" y1="34" x2="70" y2="176" stroke="#3c7876" stroke-width="1.5"/>
+  <line x1="150" y1="34" x2="150" y2="176" stroke="#3c7876" stroke-width="1.5"/>
+  <ellipse cx="110" cy="34" rx="40" ry="11" fill="none" stroke="#3c7876" stroke-width="1.4" stroke-dasharray="4 3"/>
+  <ellipse cx="110" cy="176" rx="40" ry="11" fill="rgba(60,120,118,0.06)" stroke="#3c7876" stroke-width="1.4"/>
+  <!-- charged line -->
+  <line x1="110" y1="28" x2="110" y2="182" stroke="#c2543d" stroke-width="2.6"/>
+  <text x="110" y="20" font-size="10" fill="#c2543d" text-anchor="middle">線電荷 λ</text>
+  <!-- E arrows -->
+  <g stroke="#1d1b17" stroke-width="1.6">
+    <line x1="114" y1="105" x2="148" y2="105"/><polygon points="148,105 139,101 139,109" fill="#1d1b17"/>
+    <line x1="106" y1="105" x2="72" y2="105"/><polygon points="72,105 81,101 81,109" fill="#1d1b17"/>
+  </g>
+  <text x="110" y="123" font-size="9" fill="#7d7568" text-anchor="middle">側面だけ貫く</text>
+  <text x="110" y="200" font-size="10" fill="#3c7876" text-anchor="middle">側面積 ＝ 2πr × L</text>
+  <!-- formula block -->
+  <text x="248" y="62" font-size="10.5" fill="#7d7568">貫く電場 × 側面積 ＝ 中の電荷 ÷ ε₀</text>
+  <text x="248" y="98" font-size="13" fill="#1d1b17">E × 2πr L ＝ λL ÷ ε₀</text>
+  <line x1="248" y1="116" x2="438" y2="116" stroke="#e3dbd0" stroke-width="1"/>
+  <text x="248" y="142" font-size="13" fill="#c2543d" font-weight="700">→  E ＝ λ ⁄ (2πε₀ r)</text>
+  <text x="248" y="168" font-size="9.5" fill="#aaa49b">上下のふたは横向きで貫かない（フラックス0）</text>
+</svg>
+<figcaption style="font-size:.8rem;color:#aaa49b;margin-top:.3rem;">線電荷を円柱で囲う。貫くのは側面だけ（面積 2πr×L）、上下のふたは場が横向きで貫かない。だから「E×側面積＝中の電荷÷ε₀」を E について解くだけ ── 側面積が円周 2πr に比例するので、場は 1/r で薄まる。</figcaption>
+</figure>
+
 ## 無限に広い面 ── 箱で囲うと、距離によらない
 
 最後に、電荷が広い板いっぱいに一様に塗られている（面電荷）。1平方メートルあたりの電荷を $\sigma$（面電荷密度）とする。対称性はさらに違って、場は板に **垂直** に、両側へまっすぐ出る。板に平行にどこへずれても、板に近づいても遠ざかっても（無限に広いので）、強さは変わらないはずだ。
@@ -106,6 +142,32 @@ $$E \times 2\pi r L = \frac{\lambda L}{\varepsilon_0} \quad\Longrightarrow\quad 
 $$E \times 2A = \frac{\sigma A}{\varepsilon_0} \quad\Longrightarrow\quad E = \frac{\sigma}{2\varepsilon_0}$$
 
 $A$ が消えて、残った $E$ には **$r$ が入っていない**。── 無限に広い板の場は、**離れても弱くならない**。点や線の感覚だと意外だけど、これも薄まりの話で読める：点は球面に、線は円柱面に薄まったが、無限平面は「広がる先」がない（どこまで行っても同じ無限平面が目の前にある）から、薄まりようがないんだ。
+
+<figure style="margin:1.6rem 0;text-align:center;">
+<svg viewBox="0 0 470 200" width="470" style="max-width:100%;height:auto;font-family:'JetBrains Mono',monospace;">
+  <!-- plane -->
+  <line x1="20" y1="105" x2="246" y2="105" stroke="#c2543d" stroke-width="2.4"/>
+  <text x="34" y="98" font-size="10" fill="#c2543d">面電荷 σ</text>
+  <!-- box straddling plane -->
+  <rect x="94" y="68" width="92" height="74" fill="rgba(60,120,118,0.10)" stroke="#3c7876" stroke-width="1.4" stroke-dasharray="4 3"/>
+  <line x1="94" y1="68" x2="186" y2="68" stroke="#3c7876" stroke-width="2.6"/>
+  <line x1="94" y1="142" x2="186" y2="142" stroke="#3c7876" stroke-width="2.6"/>
+  <!-- E arrows out top & bottom -->
+  <g stroke="#1d1b17" stroke-width="1.7">
+    <line x1="140" y1="64" x2="140" y2="36"/><polygon points="140,32 136,41 144,41" fill="#1d1b17"/>
+    <line x1="140" y1="146" x2="140" y2="174"/><polygon points="140,174 136,165 144,165" fill="#1d1b17"/>
+  </g>
+  <text x="140" y="26" font-size="8.5" fill="#7d7568" text-anchor="middle">表のふた A</text>
+  <text x="140" y="190" font-size="8.5" fill="#7d7568" text-anchor="middle">裏のふた A</text>
+  <!-- formula -->
+  <text x="262" y="70" font-size="10" fill="#7d7568">貫く電場 ×（表＋裏 2A）＝ 中の電荷 ÷ ε₀</text>
+  <text x="262" y="105" font-size="13" fill="#1d1b17">E × 2A ＝ σA ÷ ε₀</text>
+  <line x1="262" y1="122" x2="450" y2="122" stroke="#e3dbd0" stroke-width="1"/>
+  <text x="262" y="148" font-size="13" fill="#c2543d" font-weight="700">→  E ＝ σ ⁄ 2ε₀</text>
+  <text x="262" y="172" font-size="9.5" fill="#aaa49b">A が消える＝距離によらない</text>
+</svg>
+<figcaption style="font-size:.8rem;color:#aaa49b;margin-top:.3rem;">板をまたぐ箱で囲う。貫くのは表と裏のふた（合わせて 2A）だけ、側面は場が平行で貫かない。「E×2A＝中の電荷÷ε₀」を解くと、面積 A が両辺で消えて、$E=\sigma/2\varepsilon_0$ ── 距離 $r$ が残らない。</figcaption>
+</figure>
 
 ## コンデンサ ── 板を2枚、重ねて足す
 

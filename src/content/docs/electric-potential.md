@@ -34,11 +34,41 @@ $$W = \int F\,dx$$
 
 身構えなくていい。中身は「道を細かく刻んで、各歩で “力 × 進んだ距離” を求めて、ぜんぶ足す」だけ。力が一定なら、ただの $F \times$ 距離だ。
 
+<figure style="margin:1.6rem 0;text-align:center;">
+<svg viewBox="0 0 460 180" width="460" style="max-width:100%;height:auto;font-family:'JetBrains Mono',monospace;">
+  <!-- axes: position x, force F -->
+  <line x1="40" y1="130" x2="430" y2="130" stroke="#aaa49b" stroke-width="1.2"/>
+  <line x1="40" y1="130" x2="40" y2="26" stroke="#aaa49b" stroke-width="1.2"/>
+  <text x="426" y="148" font-size="10" fill="#7d7568">位置 x →</text>
+  <text x="46" y="24" font-size="10" fill="#7d7568">力 F</text>
+  <!-- strips (F·Δx pieces) -->
+  <g>
+    <rect x="70" y="96" width="34" height="34" fill="rgba(60,120,118,0.16)" stroke="#3c7876" stroke-width="0.8"/>
+    <rect x="104" y="84" width="34" height="46" fill="rgba(60,120,118,0.16)" stroke="#3c7876" stroke-width="0.8"/>
+    <rect x="138" y="74" width="34" height="56" fill="rgba(60,120,118,0.16)" stroke="#3c7876" stroke-width="0.8"/>
+    <rect x="172" y="66" width="34" height="64" fill="rgba(60,120,118,0.16)" stroke="#3c7876" stroke-width="0.8"/>
+    <rect x="206" y="62" width="34" height="68" fill="rgba(60,120,118,0.16)" stroke="#3c7876" stroke-width="0.8"/>
+  </g>
+  <!-- F(x) curve over the strips -->
+  <path d="M70,98 C 140,60 200,58 274,52" fill="none" stroke="#3c7876" stroke-width="1.8"/>
+  <text x="120" y="44" font-size="10" fill="#3c7876">力 F(x)</text>
+  <!-- one strip annotated -->
+  <line x1="206" y1="130" x2="240" y2="130" stroke="#c2543d" stroke-width="2"/>
+  <text x="223" y="146" font-size="9" fill="#c2543d" text-anchor="middle">Δx</text>
+  <text x="298" y="92" font-size="11" fill="#1d1b17">各歩 ＝ F × Δx</text>
+  <text x="298" y="112" font-size="11" fill="#1d1b17">ぜんぶ足す ＝ 仕事 W</text>
+  <text x="298" y="132" font-size="10" fill="#7d7568">＝ 帯の面積</text>
+</svg>
+<figcaption style="font-size:.8rem;color:#aaa49b;margin-top:.3rem;">仕事は「力 × 進んだ距離」を刻んで足したもの＝グラフの帯（F×Δx）をぜんぶ足した面積。力が一定なら帯は長方形ひとつ分で $F\times$距離、力が場所で変わるなら帯を細かくして足す ── それが $\int F\,dx$ だ。</figcaption>
+</figure>
+
 この仕事が、何になるのか。質量 $m$ の物体が直線上を動いていて、位置によって変わる力 $F$ を受けているとする（ばねの単振動みたいに）。ニュートンの運動方程式は $F = ma = m\dfrac{dv}{dt}$ ── 力は「質量 × 加速度」で、加速度は「速度が変化する速さ $\dfrac{dv}{dt}$」だ。これを、さっきの仕事の式にそのまま入れてみる：
 
 $$W = \int F\,dx = \int m\frac{dv}{dt}\,dx$$
 
 ここで、ひとつ書き換えをする。$dx$ は「ほんの少し進んだ距離」だけれど、それは「ほんの少しの時間 $dt$ のあいだに進んだ距離」でもある。だから $dx = \dfrac{dx}{dt}\,dt = v\,dt$ と書ける（$\dfrac{dx}{dt}$ は速度 $v$ そのものだから）。これを入れると、$\dfrac{dv}{dt}$ と $dt$ が約分されて、こうなる：
+
+（この「$dx$ を $v\,dt$ に書き換えて $dt$ を約分する」が、分数みたいに消していいのか反則に見えた人へ ── これは反則じゃなく、置換積分（変数変換）をしているだけ、という話を別に詳しく書いた → [dx を v dt に書き換えていい理由](/docs/dx-to-vdt/)。気になったら覗いてみてほしい。気にならなければ、このまま読み進めて大丈夫。）
 
 $$W = \int m\frac{dv}{dt}\,(v\,dt) = \int m\,v\,dv$$
 
@@ -52,6 +82,29 @@ $$W = \tfrac12 m v_1^2 - \tfrac12 m v_0^2$$
 
 これが力学のいちばん素直な収支だ。物体に仕事をすると、ちょうどそのぶん、運動エネルギーが増える。逆に物体が外へ仕事をすれば、そのぶん運動エネルギーは減る。**仕事は、エネルギーが出入りする “通り道”** なんだ。
 
+<figure style="margin:1.6rem 0;text-align:center;">
+<svg viewBox="0 0 460 170" width="460" style="max-width:100%;height:auto;font-family:'JetBrains Mono',monospace;">
+  <!-- before: slow block -->
+  <rect x="44" y="74" width="40" height="40" rx="4" fill="rgba(60,120,118,0.12)" stroke="#3c7876" stroke-width="1.5"/>
+  <line x1="86" y1="94" x2="104" y2="94" stroke="#3c7876" stroke-width="1.6"/><polygon points="104,94 97,91 97,97" fill="#3c7876"/>
+  <text x="64" y="134" font-size="11" fill="#1d1b17" text-anchor="middle">速さ v₀</text>
+  <text x="64" y="150" font-size="10" fill="#7d7568" text-anchor="middle">½mv₀²</text>
+  <!-- push (work) -->
+  <line x1="120" y1="94" x2="300" y2="94" stroke="#c2543d" stroke-width="2.4"/><polygon points="300,94 290,89 290,99" fill="#c2543d"/>
+  <text x="210" y="84" font-size="11" fill="#c2543d" text-anchor="middle">力をかけて押す ＝ 仕事 W</text>
+  <text x="210" y="112" font-size="9.5" fill="#7d7568" text-anchor="middle">この区間で F×距離 を足したぶん</text>
+  <!-- after: fast block -->
+  <rect x="332" y="74" width="40" height="40" rx="4" fill="rgba(60,120,118,0.12)" stroke="#3c7876" stroke-width="1.5"/>
+  <g stroke="#3c7876" stroke-width="1.6">
+    <line x1="376" y1="88" x2="408" y2="88"/><polygon points="408,88 401,85 401,91" fill="#3c7876"/>
+    <line x1="376" y1="100" x2="416" y2="100"/><polygon points="416,100 409,97 409,103" fill="#3c7876"/>
+  </g>
+  <text x="352" y="134" font-size="11" fill="#1d1b17" text-anchor="middle">速さ v₁</text>
+  <text x="352" y="150" font-size="10" fill="#c2543d" text-anchor="middle">½mv₁²</text>
+</svg>
+<figcaption style="font-size:.8rem;color:#aaa49b;margin-top:.3rem;">押した仕事 W のぶん、ちょうど運動エネルギーが増える：$\tfrac12 mv_1^2 - \tfrac12 mv_0^2 = W$。仕事は、外から運動エネルギーへ流れ込む“通り道”だ。マイナスの仕事（進む向きと逆に押す）なら、運動エネルギーはそのぶん減る。</figcaption>
+</figure>
+
 ## 位置エネルギー ── 位置に、エネルギーを預ける
 
 ここで、ちょっとした横着を思いつく。
@@ -60,7 +113,31 @@ $$W = \tfrac12 m v_1^2 - \tfrac12 m v_0^2$$
 
 なら、いちいち仕事を計算せず、**「その高さにいる」というだけで、預けたエネルギーが決まる**と考えていい。位置に、エネルギーを預けておくわけだ。これが **位置エネルギー** $U$ だ。重力なら $U = mgh$、ばねなら $U = \tfrac12 k x^2$。
 
-預けたものは、引き出せる。手を離せば、$U$ が運動エネルギーに変わりながら物が落ちていく。「位置エネルギー＋運動エネルギー＝一定」── 力学的エネルギー保存は、この預け入れと引き出しの帳尻のことだった。（この力学の土台 ── 仕事・運動エネルギー・位置エネルギーの関係 ── を腰を据えて追ったのが [仕事と力学的エネルギー](/docs/work-energy/) だ。ここでは電気に持ち上げるのに要るぶんだけ、手早く組み直している。）
+預けたものは、引き出せる。手を離せば、$U$ が運動エネルギーに変わりながら物が落ちていく。「位置エネルギー＋運動エネルギー＝一定」── 力学的エネルギー保存は、この預け入れと引き出しの帳尻のことだった。
+
+<figure style="margin:1.6rem 0;text-align:center;">
+<svg viewBox="0 0 460 200" width="460" style="max-width:100%;height:auto;font-family:'JetBrains Mono',monospace;">
+  <!-- ground -->
+  <line x1="30" y1="170" x2="430" y2="170" stroke="#7d7568" stroke-width="1.5"/>
+  <!-- height axis -->
+  <line x1="60" y1="170" x2="60" y2="46" stroke="#aaa49b" stroke-width="1" stroke-dasharray="3 3"/>
+  <text x="50" y="44" font-size="10" fill="#7d7568" text-anchor="end">高さ h</text>
+  <!-- LEFT: deposit (lift up) -->
+  <rect x="96" y="50" width="34" height="26" rx="3" fill="rgba(60,120,118,0.12)" stroke="#3c7876" stroke-width="1.5"/>
+  <line x1="113" y1="150" x2="113" y2="84" stroke="#3c7876" stroke-width="1.8" stroke-dasharray="5 3"/><polygon points="113,80 109,89 117,89" fill="#3c7876"/>
+  <text x="150" y="110" font-size="11" fill="#3c7876">預ける</text>
+  <text x="150" y="126" font-size="10" fill="#7d7568">持ち上げる仕事</text>
+  <text x="150" y="142" font-size="11" fill="#1d1b17">U ＝ mgh</text>
+  <!-- RIGHT: withdraw (fall) -->
+  <rect x="330" y="56" width="34" height="26" rx="3" fill="rgba(60,120,118,0.12)" stroke="#3c7876" stroke-width="1.5"/>
+  <line x1="347" y1="86" x2="347" y2="150" stroke="#c2543d" stroke-width="2"/><polygon points="347,154 343,145 351,145" fill="#c2543d"/>
+  <g stroke="#c2543d" stroke-width="1.3"><line x1="338" y1="120" x2="338" y2="132"/><line x1="356" y1="120" x2="356" y2="132"/></g>
+  <text x="250" y="110" font-size="11" fill="#c2543d" text-anchor="end">引き出す</text>
+  <text x="250" y="126" font-size="10" fill="#7d7568" text-anchor="end">落ちて加速</text>
+  <text x="250" y="142" font-size="11" fill="#1d1b17" text-anchor="end">U → ½mv²</text>
+</svg>
+<figcaption style="font-size:.8rem;color:#aaa49b;margin-top:.3rem;">位置エネルギーは、高さに預けた“貯金”だ。持ち上げる仕事のぶん $U=mgh$ を預け（左）、手を離せばそれが運動エネルギーに変わりながら引き出される（右）。預けた量と引き出す量がいつも釣り合う ── それが力学的エネルギー保存だ。下のラボの「道を歩く」モードでも、この預け入れ・引き出しを電気で触れる。</figcaption>
+</figure>（この力学の土台 ── 仕事・運動エネルギー・位置エネルギーの関係 ── を腰を据えて追ったのが [仕事と力学的エネルギー](/docs/work-energy/) だ。ここでは電気に持ち上げるのに要るぶんだけ、手早く組み直している。）
 
 ## 道によらない、という奇跡 ── 保存力
 
@@ -137,7 +214,11 @@ $$V = \sum_i \vec E_i\cdot\Delta\vec l_i \;\;\xrightarrow[\ \Delta l\to 0\ ]{}\;
 
 **金属の中は、電位差ゼロ。** 金属には自由に動ける電子がいる。もし金属内の2点に電位差があれば、電子はその坂を転がって動き、差を消してしまう。落ち着いた状態では、**金属のかたまりは丸ごと同じ電位**（等電位）になる。回路図でつないだ導線を「ただの線」として電位を気にせず描けるのは、これが理由だ ── 導線は、同電位の点をつなぐ等電位の線なんだ。
 
-**正電荷は、電位の低い方へ転がる。** 位置エネルギーは $U = qV$ だから、正電荷($q>0$)は $V$ の低い所ほど居心地がいい（$U$ が小さい）。坂を下る石ころと同じで、放っておけば電位の低い方へ動く。負電荷は逆に、電位の高い方へ行きたがる。電池が電位差を作り、その坂を電荷が流れ落ちる ── これが回路に電流が流れる、いちばん素朴な絵だ。
+**正電荷は、電位の低い方へ転がる。** 位置エネルギーは $U = qV$ だから、正電荷($q>0$)は $V$ の低い所ほど $U$ が小さい＝居心地がいい。電位は、正電荷にとっては “居心地の悪さ” の地図なんだ ── 高い所ほど居づらく、低い所ほど楽。負電荷にはちょうど逆で、高い所ほど居心地がいい（だから高い方へ行きたがる）。
+
+放っておけば、正電荷は坂を下る石ころのように、電位の低い方へ動く。── ここで一度、立ち止まりたい。物が落ちるのと、電荷が電位差で加速するのは、**実はまったく同じこと** なんだ。「落下」を“地球の中心へ向かう運動”と狭くとらえず、**“位置エネルギーが運動エネルギーに変わりながら加速していく過程”** と読み替えてみる。すると、電荷が電位の坂を下って速くなるのも、立派な「落下」になる。重力の落下と電気の落下は、位置エネルギーという一つの視点から見れば、見分けがつかない ── ①で「電場と重力場は $F=mg$ と $\vec F=q\vec E$ で同じ構造」と言ったことが、運動の側でもこうしてそろう。
+
+電池は、その坂をいつも作り続ける装置だ。電荷を“高い”側へ汲み上げ続け（電池の中で仕事をして、電荷に位置エネルギーを預ける）、外につないだ回路で、それが流れ落ちる。汲み上げては落とし、汲み上げては落とし ── この繰り返しが、回路に電流が流れ続ける、いちばん素朴な絵だよ。
 
 ## 地図を、見る ── 等電位面と、点電荷の電位
 
