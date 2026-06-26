@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex, nofollow" />
 <title>画像フォーマットを開ける ── JPEGは何を捨てるか</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet" />
 <style>
   :root{
     --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
@@ -12,11 +14,33 @@
     --text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;
   }
   *{margin:0;padding:0;box-sizing:border-box;}
-  html,body{height:100%;max-width:100%;overflow-x:hidden;}
+  html{height:100%;max-width:100%;overflow-x:hidden;}
   body{font-family:'Zen Kaku Gothic New',system-ui,sans-serif;background:var(--bg);color:var(--text);
-    display:flex;flex-direction:column;overflow:hidden;}
-  #stage{flex:1 1 auto;position:relative;min-height:150px;min-width:0;overflow:hidden;
-    display:flex;align-items:center;justify-content:center;}
+    min-height:100%;line-height:1.6;
+    background-image:radial-gradient(circle at 1px 1px,#e9e4da 1px,transparent 0);background-size:22px 22px;}
+  /* ── じっくり遊ぶページの枠（pixlab 等と揃える）── */
+  .wrap{max-width:1000px;margin:0 auto;padding:24px 18px 56px;}
+  header{display:flex;align-items:flex-end;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+  .brand{font-weight:700;font-size:25px;line-height:1.1;font-family:'Zen Maru Gothic','Zen Kaku Gothic New',sans-serif;color:var(--text);}
+  .brand .a{color:var(--teal);}
+  .tag{font-size:12px;color:var(--muted);padding-bottom:3px;}
+  .back{margin-left:auto;font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;text-decoration:none;white-space:nowrap;}
+  .back:hover{color:var(--teal);}
+  .lead{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:15px 18px;margin-bottom:18px;
+    font-size:13px;color:#3a3a36;line-height:1.78;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+  .lead p{margin:0 0 .55rem;} .lead p:last-child{margin-bottom:0;}
+  .lead b{color:var(--text);} .lead a{color:var(--teal);font-weight:700;text-decoration:none;} .lead a:hover{text-decoration:underline;}
+  .card-tool{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;
+    box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+  footer{text-align:center;color:var(--faint);font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:14px;}
+  #stage{position:relative;height:clamp(260px,52vh,460px);min-height:200px;min-width:0;overflow:hidden;
+    display:flex;align-items:center;justify-content:center;background:var(--surface);}
+  /* ── 解説ページの iframe 埋め込み時は枠を消して、従来どおり全画面アプリに戻す ── */
+  body.embed{height:100%;display:flex;flex-direction:column;overflow:hidden;background-image:none;}
+  body.embed .wrap{max-width:none;margin:0;padding:0;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
+  body.embed header,body.embed .lead,body.embed footer{display:none;}
+  body.embed .card-tool{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;border:none;border-radius:0;box-shadow:none;}
+  body.embed #stage{flex:1 1 auto;height:auto;min-height:150px;background:transparent;}
   canvas{display:block;max-width:100%;max-height:100%;image-rendering:auto;background:#fff;
     border:1px solid var(--border);}
   #info{flex-shrink:0;min-width:0;background:var(--surface);border-top:1px solid var(--border);
@@ -41,6 +65,18 @@
 </style>
 </head>
 <body>
+<div class="wrap">
+  <header>
+    <div class="brand"><span class="a">画像</span>フォーマットを、開ける</div>
+    <div class="tag">JPEG は何を捨てて小さくなるのか、を開けて見る</div>
+    <a class="back" href="/">← tnks1407</a>
+  </header>
+  <div class="lead">
+    <p>写真のファイルが小さくなるとき、JPEG は<b>何を捨てている</b>んだろう。これは、その中身を開けて見るための場所だよ。</p>
+    <p><b>崩れを見る</b>で画質を下げると、JPEG と PNG のサイズ差と、JPEG が捨てた所（差分）が浮かぶ。<b>中の計算を見る</b>では、8×8 のブロックを ①画素 → ②DCT で波に分解 → ③量子化で捨てる → ④逆DCT で復元、と一歩ずつ追える。写真の好きな場所をタップすれば、その 8×8 がどんな縞の波でできているかも見えるよ。</p>
+    <p>なぜそうなるのかを言葉と式でじっくり読みたくなったら <a href="/docs/image-formats">解説（写真が小さくなる仕組み）</a> へ。</p>
+  </div>
+  <div class="card-tool">
 <div id="stage"><canvas id="c"></canvas></div>
 <div id="info">
   <div class="stats" id="stats"></div>
@@ -76,7 +112,11 @@
     <button id="blkReset">例に戻す</button>
   </div>
 </div>
+  </div><!-- /.card-tool -->
+  <footer>tnks1407 — じっくり遊ぶ</footer>
+</div><!-- /.wrap -->
 <script>
+if(window.self!==window.top)document.body.classList.add('embed');
 const cv=document.getElementById('c'), ctx=cv.getContext('2d');
 const stats=document.getElementById('stats'), note=document.getElementById('note');
 const qEl=document.getElementById('q'), qv=document.getElementById('qv');

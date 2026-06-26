@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex, nofollow" />
 <title>同じ数字、ちがう絵 ── 図にだまされない</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet" />
 <style>
   :root{
     --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
@@ -12,10 +14,32 @@
     --text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;
   }
   *{margin:0;padding:0;box-sizing:border-box;}
-  html,body{height:100%;max-width:100%;overflow-x:hidden;}
+  html{height:100%;max-width:100%;overflow-x:hidden;}
   body{font-family:'Zen Kaku Gothic New',system-ui,sans-serif;background:var(--bg);color:var(--text);
-    display:flex;flex-direction:column;overflow:hidden;}
-  #stage{flex:1 1 auto;position:relative;min-height:150px;min-width:0;width:100%;overflow:hidden;}
+    min-height:100%;line-height:1.6;
+    background-image:radial-gradient(circle at 1px 1px,#e9e4da 1px,transparent 0);background-size:22px 22px;}
+  /* ── じっくり遊ぶページの枠（pixlab 等と揃える）── */
+  .wrap{max-width:1000px;margin:0 auto;padding:24px 18px 56px;}
+  header{display:flex;align-items:flex-end;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+  .brand{font-weight:700;font-size:25px;line-height:1.1;font-family:'Zen Maru Gothic','Zen Kaku Gothic New',sans-serif;color:var(--text);}
+  .brand .a{color:var(--teal);}
+  .tag{font-size:12px;color:var(--muted);padding-bottom:3px;}
+  .back{margin-left:auto;font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;text-decoration:none;white-space:nowrap;}
+  .back:hover{color:var(--teal);}
+  .lead{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:15px 18px;margin-bottom:18px;
+    font-size:13px;color:#3a3a36;line-height:1.78;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+  .lead p{margin:0 0 .55rem;} .lead p:last-child{margin-bottom:0;}
+  .lead b{color:var(--text);} .lead a{color:var(--teal);font-weight:700;text-decoration:none;} .lead a:hover{text-decoration:underline;}
+  .card-tool{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;
+    box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+  footer{text-align:center;color:var(--faint);font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:14px;}
+  #stage{position:relative;height:clamp(300px,56vh,520px);min-height:220px;min-width:0;width:100%;overflow:hidden;}
+  /* ── 解説ページの iframe 埋め込み時は枠を消して、従来どおり全画面アプリに戻す ── */
+  body.embed{height:100%;display:flex;flex-direction:column;overflow:hidden;background-image:none;}
+  body.embed .wrap{max-width:none;margin:0;padding:0;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
+  body.embed header,body.embed .lead,body.embed footer{display:none;}
+  body.embed .card-tool{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;border:none;border-radius:0;box-shadow:none;}
+  body.embed #stage{flex:1 1 auto;height:auto;min-height:150px;}
   canvas{display:block;width:100%;height:100%;max-width:100%;touch-action:none;cursor:ns-resize;}
   .badge{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:.7rem;
     font-weight:700;border-radius:999px;padding:.05rem .55rem;border:1px solid;margin-right:.4rem;}
@@ -45,6 +69,18 @@
 </style>
 </head>
 <body>
+<div class="wrap">
+  <header>
+    <div class="brand"><span class="a">図</span>に、だまされない</div>
+    <div class="tag">同じ数字でも、絵にすると印象は変わる ── その手口を起こして見破る</div>
+    <a class="back" href="/">← tnks1407</a>
+  </header>
+  <div class="lead">
+    <p>同じ数字でも、絵にすると印象はがらりと変わる。これは、その<b>からくり</b>を自分の手で起こして、見破る目を作るための場所だよ。</p>
+    <p>軸を切る・面積で盛る・二軸で重ねる・累計で隠す・切り取る・ビンを変える・対数で隠す・相関≠因果 ── <b>8つの手口</b>を、つまみで「盛って」みる。数字そのものは 1ミリも変わっていないのに、絵だけが嘘をつくのが見えるはずだ。</p>
+    <p>なぜそう見えてしまうのか、まとめは <a href="/docs/honest-charts">解説（図に、だまされない）</a> に書いてある。</p>
+  </div>
+  <div class="card-tool">
 <div id="stage">
   <canvas id="c"></canvas>
 </div>
@@ -104,7 +140,11 @@
     <button id="caPlain">原因を出す（素）</button><button id="caLie">隠して因果に</button>
   </div>
 </div>
+  </div><!-- /.card-tool -->
+  <footer>tnks1407 — じっくり遊ぶ</footer>
+</div><!-- /.wrap -->
 <script>
+if(window.self!==window.top)document.body.classList.add('embed');
 const cv=document.getElementById('c'), ctx=cv.getContext('2d');
 const stats=document.getElementById('stats'), note=document.getElementById('note');
 function badgeHTML(plain, ratio){ return '<span class="badge '+(plain?'plain':'pad')+'">'+(plain?'素のまま':'盛り ×'+ratio.toFixed(1))+'</span>'; }
