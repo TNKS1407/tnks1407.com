@@ -54,6 +54,14 @@
   #info .lie{color:var(--red);font-weight:700;}
   #info .ok{color:var(--teal);font-weight:700;}
   #info .note{color:var(--faint);margin-top:.2rem;font-size:.68rem;}
+  #info .situ{font-family:'Zen Kaku Gothic New',system-ui,sans-serif;font-size:.76rem;color:var(--text);line-height:1.62;
+    margin-bottom:.5rem;padding-bottom:.45rem;border-bottom:1px dashed var(--border);}
+  #info .situ .sname{display:block;font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--teal);font-size:.72rem;margin-bottom:.3rem;}
+  #info .situ .line{display:block;}
+  #info .situ .k{display:inline-block;min-width:3.6em;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:.66rem;margin-right:.35rem;}
+  #info .situ .scene .k{color:var(--muted);}
+  #info .situ .trick .k{color:var(--red);}
+  #info .situ .ask .k{color:var(--teal);}
   #info{min-width:0;}
   .ctrl{flex-shrink:0;min-width:0;background:var(--surface);border-top:1px solid var(--border);padding:.55rem .7rem;
     display:flex;flex-wrap:wrap;gap:.55rem .9rem;align-items:center;}
@@ -87,6 +95,7 @@
   <canvas id="c"></canvas>
 </div>
 <div id="info">
+  <div class="situ" id="situ"></div>
   <div class="stats" id="stats"></div>
   <div class="note" id="note"></div>
 </div>
@@ -194,6 +203,18 @@ const logkEl=document.getElementById('logk');
 const CICE=[20,35,55,80,95,70,45], CDROWN=[2,4,7,11,13,9,5], CTEMP=[12,18,24,30,33,27,21], CTL=['4月','5月','6月','7月','8月','9月','10月'];
 let causeShow=1;
 const causekEl=document.getElementById('causek');
+
+// 各モードの「状況・手口・見破り」── ウィジェットを触っている最中に、何に騙されているかを常に出す
+const SITU={
+  axis: {n:'① 軸を切る', scene:'四半期の売上（億円）。Q1→Q4 は実際わずか +3.8% の、ほぼ横ばい。', trick:'縦軸の下端を 0 でなく途中から始める ＝ わずかな差を崖のように見せる。', ask:'軸は 0 から始まっている？'},
+  area: {n:'② 面積で盛る', scene:'登録ユーザー数。B社はA社のちょうど 2倍（120→240万人）。', trick:'値を円の「直径」に比例させる ＝ 面積は 2²＝4倍 に膨らんで見える。', ask:'大きさは直径で？ 面積で？'},
+  dual: {n:'③ 二軸で重ねる', scene:'別物の2本：アイスの売上（万円）と サイト訪問者（万人）。単位もスケールも違う。', trick:'左右べつべつの軸にして、右軸の範囲を都合よく選ぶ ＝ 無関係でも「連動」に見せる。', ask:'左右の軸のスケールは揃ってる？'},
+  cumul:{n:'④ 累計で隠す', scene:'毎月の新規ユーザー。実際は毎月、減り続けている（減速）。', trick:'足し上げた「累計」に切り替える ＝ 正の値を足す限り、必ず右肩上がりになる。', ask:'それは「毎月の数」？「累計」？'},
+  pick: {n:'⑤ 都合よく切り取る', scene:'株価（円）。全期間では下落している。', trick:'いい時期だけを窓で切り取る ＝ 同じデータから「右肩上がり」を選べる。', ask:'いつから いつまでの数字？'},
+  bin:  {n:'⑥ ビンを変える', scene:'点数の分布。本当は山が2つ（二峰）＝2グループに分かれている。', trick:'ビン幅を粗くする ＝ 2つの山を のっぺり1つに潰す（刻みすぎれば偽の山も作れる）。', ask:'ビン幅を変えても同じ形？'},
+  log:  {n:'⑦ 対数で隠す', scene:'感染者数（人）。実際は ×50 規模の、爆発的な増加。', trick:'縦軸を対数目盛りにする ＝ 急増を「なだらかな坂」に見せる。', ask:'目盛りは 線形？ 対数？'},
+  cause:{n:'⑧ 相関≠因果', scene:'アイスの売上と 水難事故。見事に連動している。', trick:'本当の原因「気温」を隠して2本だけ並べる ＝ 「片方が原因」に見せる。', ask:'両方を動かす「第3の原因」は？'}
+};
 
 let plot={x:0,y:0,w:0,h:0};
 
@@ -463,6 +484,15 @@ causekEl.addEventListener('input',e=>setCause(parseFloat(e.target.value)));
 document.getElementById('caPlain').addEventListener('click',()=>setCause(1));
 document.getElementById('caLie').addEventListener('click',()=>setCause(0));
 
+const situEl=document.getElementById('situ');
+function renderSitu(){
+  const s=SITU[mode]||SITU.axis;
+  situEl.innerHTML='<span class="sname">'+s.n+'</span>'+
+    '<span class="line scene"><span class="k">状況</span>'+s.scene+'</span>'+
+    '<span class="line trick"><span class="k">手口</span>'+s.trick+'</span>'+
+    '<span class="line ask"><span class="k">見破り</span>'+s.ask+'</span>';
+}
+
 const MODES=['axis','area','dual','cumul','pick','bin','log','cause'],
   MBTN={axis:'mAxis',area:'mArea',dual:'mDual',cumul:'mCumul',pick:'mPick',bin:'mBin',log:'mLog',cause:'mCause'},
   MROW={axis:'rowAxis',area:'rowArea',dual:'rowDual',cumul:'rowCumul',pick:'rowPick',bin:'rowBin',log:'rowLog',cause:'rowCause'};
@@ -470,6 +500,7 @@ function setMode(m){
   mode=m;
   MODES.forEach(k=>{ document.getElementById(MBTN[k]).classList.toggle('on',k===m); document.getElementById(MROW[k]).classList.toggle('hide',k!==m); });
   cv.style.cursor = m==='axis' ? 'ns-resize' : 'default';
+  renderSitu();
   draw();
 }
 MODES.forEach(k=> document.getElementById(MBTN[k]).addEventListener('click',()=>setMode(k)));
@@ -480,6 +511,7 @@ cv.addEventListener('pointerdown',e=>{ if(mode!=='axis')return; drag=true; const
 cv.addEventListener('pointermove',e=>{ if(drag&&mode==='axis'){ e.preventDefault(); const r=cv.getBoundingClientRect(); setBase(baseFromY(e.clientY-r.top)); } });
 window.addEventListener('pointerup',()=>{ drag=false; });
 
+renderSitu();
 resize();
 const _h=(location.hash||'').replace('#','');
 if(_h.indexOf('dual')>=0){ setMode('dual'); setGDual(1); }
