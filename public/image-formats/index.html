@@ -26,20 +26,25 @@
   #info .stats>span{margin-right:.9rem;}
   .ctrl{flex-shrink:0;min-width:0;background:var(--surface);border-top:1px solid var(--border);padding:.55rem .7rem;
     display:flex;flex-wrap:wrap;gap:.55rem .9rem;align-items:center;}
-  .row{display:flex;align-items:center;gap:.5rem;font-size:.78rem;color:var(--muted);flex:1 1 auto;min-width:180px;}
+  .row{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;font-size:.78rem;color:var(--muted);flex:1 1 auto;min-width:0;max-width:100%;}
   .row label{font-weight:700;color:var(--text);white-space:nowrap;}
   input[type=range]{flex:1 1 90px;min-width:90px;max-width:240px;accent-color:var(--red);}
   button{font:inherit;font-size:.76rem;font-weight:700;color:var(--text);background:var(--card);
     border:1px solid var(--border);border-radius:8px;padding:.32rem .7rem;cursor:pointer;}
   button:hover{border-color:var(--teal);} button.on{background:var(--teal);color:#fff;border-color:var(--teal);}
   .hide{display:none !important;}
+  /* サムネイル選択UI */
+  #thumbWrap{position:relative;display:inline-block;line-height:0;flex-shrink:0;}
+  #thumb{border:1px solid var(--border);cursor:crosshair;image-rendering:pixelated;
+    touch-action:none;user-select:none;}
+  #thumbLabel{font-size:.68rem;color:var(--faint);white-space:nowrap;}
 </style>
 </head>
 <body>
 <div id="stage"><canvas id="c"></canvas></div>
 <div id="info">
   <div class="stats" id="stats"></div>
-  <div class="note" id="note">画質を下げると、JPEGが“何を捨てるか”が見える。差分モードは、捨てた所（嘘）を炙り出す。</div>
+  <div class="note" id="note">画質を下げると、JPEGが"何を捨てるか"が見える。差分モードは、捨てた所（嘘）を炙り出す。</div>
 </div>
 <div class="ctrl">
   <div class="row" style="flex:0 0 auto;min-width:0;">
@@ -62,6 +67,13 @@
     <button id="stNext">次へ →</button>
     <button id="cellToggle">🔍 1マスずつ</button>
     <span id="cellNav" class="hide"><button id="clPrev">◀</button><button id="clNext">▶</button></span>
+  </div>
+  <!-- ブロック選択行：compute モード時のみ表示 -->
+  <div class="row hide" id="rowPick" style="flex:0 0 auto;min-width:0;gap:.5rem;">
+    <label style="font-weight:700;color:var(--text);white-space:nowrap;font-size:.78rem;">ブロック</label>
+    <div id="thumbWrap"><canvas id="thumb"></canvas></div>
+    <span id="thumbLabel">タップで選ぶ</span>
+    <button id="blkReset">例に戻す</button>
   </div>
 </div>
 <script>
@@ -95,6 +107,96 @@ const BLK=[
  [52,55,61,66,70,61,64,73],[63,59,55,90,109,85,69,72],[62,59,68,113,144,104,66,73],
  [63,58,71,122,154,106,70,69],[67,61,68,104,126,88,68,70],[79,65,60,70,77,68,58,75],
  [85,71,64,59,55,61,65,83],[87,79,69,68,65,76,78,94]];
+
+// ── ブロック選択 ──
+// blkSource: 'example'=BLK, 'scene'=画像から取得
+let blkSource='example';
+let pickX=0, pickY=0;   // src 画像上の選択位置（8pxアライン済み、0〜248）
+let activeBlk=BLK;       // drawCompute が使うブロック
+
+// src から 8×8 輝度ブロックを取り出す（sRGB→Y: 0.299R+0.587G+0.114B）
+function extractBlock(px, py){
+  const id=sctx.getImageData(px, py, 8, 8).data;
+  const b=[];
+  for(let row=0;row<8;row++){
+    b[row]=[];
+    for(let col=0;col<8;col++){
+      const i=(row*8+col)*4;
+      const Y=Math.round(0.299*id[i]+0.587*id[i+1]+0.114*id[i+2]);
+      b[row][col]=Math.max(0,Math.min(255,Y));
+    }
+  }
+  return b;
+}
+
+// サムネイル
+const thumbCv=document.getElementById('thumb');
+const thumbCtx=thumbCv.getContext('2d');
+// thumb = src を 1/3 縮小（≈85×64px、ctrl行に収まる小さいサイズ）
+const TSCALE=3;
+const TW=Math.round(SW/TSCALE), TH=Math.round(SH/TSCALE);
+
+function setupThumb(){
+  thumbCv.width=TW; thumbCv.height=TH;
+  thumbCv.style.width=TW+'px'; thumbCv.style.height=TH+'px';
+}
+
+function drawThumbOverlay(){
+  thumbCtx.drawImage(src, 0, 0, TW, TH);
+  // 薄いグリッド
+  thumbCtx.strokeStyle='rgba(60,120,118,0.2)'; thumbCtx.lineWidth=0.5;
+  for(let gx=0;gx<=SW;gx+=8){ const tx=gx/TSCALE; thumbCtx.beginPath(); thumbCtx.moveTo(tx,0); thumbCtx.lineTo(tx,TH); thumbCtx.stroke(); }
+  for(let gy=0;gy<=SH;gy+=8){ const ty=gy/TSCALE; thumbCtx.beginPath(); thumbCtx.moveTo(0,ty); thumbCtx.lineTo(TW,ty); thumbCtx.stroke(); }
+  // 選択ブロックのハイライト
+  const tx=pickX/TSCALE, ty=pickY/TSCALE, tsz=8/TSCALE;
+  thumbCtx.fillStyle=blkSource==='scene'?'rgba(60,120,118,0.35)':'rgba(60,120,118,0.18)';
+  thumbCtx.fillRect(tx, ty, tsz, tsz);
+  thumbCtx.strokeStyle='#3c7876'; thumbCtx.lineWidth=blkSource==='scene'?1.5:1;
+  thumbCtx.strokeRect(tx+0.5, ty+0.5, tsz-1, tsz-1);
+}
+
+// thumb 上の pointer 座標 → src 座標（8px アライン）
+function pointerToSrcXY(e){
+  const rect=thumbCv.getBoundingClientRect();
+  const cx=(e.clientX-rect.left)/rect.width*SW;
+  const cy=(e.clientY-rect.top)/rect.height*SH;
+  const ax=Math.max(0,Math.min(SW-8, Math.round(cx/8)*8));
+  const ay=Math.max(0,Math.min(SH-8, Math.round(cy/8)*8));
+  return [ax, ay];
+}
+
+function applyPickedBlock(nx, ny){
+  pickX=nx; pickY=ny;
+  blkSource='scene';
+  activeBlk=extractBlock(pickX, pickY);
+  document.getElementById('thumbLabel').textContent='('+pickX+','+pickY+')';
+  document.getElementById('blkReset').classList.add('on');
+  drawThumbOverlay();
+  render();
+}
+
+thumbCv.addEventListener('pointerdown', e=>{
+  e.preventDefault();
+  thumbCv.setPointerCapture(e.pointerId);
+  const [nx,ny]=pointerToSrcXY(e);
+  applyPickedBlock(nx, ny);
+});
+thumbCv.addEventListener('pointermove', e=>{
+  if(e.buttons===0) return;
+  e.preventDefault();
+  const [nx,ny]=pointerToSrcXY(e);
+  applyPickedBlock(nx, ny);
+});
+
+document.getElementById('blkReset').addEventListener('click',()=>{
+  blkSource='example';
+  activeBlk=BLK;
+  document.getElementById('thumbLabel').textContent='タップで選ぶ';
+  document.getElementById('blkReset').classList.remove('on');
+  drawThumbOverlay();
+  render();
+});
+
 const Q50=[
  [16,11,10,16,24,40,51,61],[12,12,14,19,26,58,60,55],[14,13,16,24,40,57,69,56],
  [14,17,22,29,51,87,80,62],[18,22,37,56,68,109,103,77],[24,35,55,64,81,104,113,92],
@@ -109,12 +211,12 @@ function idct2(C){ const o=[]; for(let x=0;x<8;x++){o[x]=[];for(let y=0;y<8;y++)
   o[x][y]=Math.round(0.25*s+128); }} return o; }
 
 function drawCompute(){
-  const C=dct2(BLK), QT=qtable(quality);
+  const C=dct2(activeBlk), QT=qtable(quality);
   const quant=C.map((r,u)=>r.map((c,v)=>Math.round(c/QT[u][v])));
   const deq=quant.map((r,u)=>r.map((c,v)=>c*QT[u][v]));
   const recon=idct2(deq);
   let grid, fmt, colorOf, title2, zeros=0;
-  if(compStep===0){ grid=BLK; fmt=v=>v; colorOf=v=>'rgb('+v+','+v+','+v+')'; title2='画素の明るさ（0〜255）。これが入力。'; }
+  if(compStep===0){ grid=activeBlk; fmt=v=>v; colorOf=v=>'rgb('+v+','+v+','+v+')'; title2='画素の明るさ（0〜255）。これが入力。'+(blkSource==='scene'?' 画像から取り出した実ブロック。':''); }
   else if(compStep===1){ grid=C; fmt=v=>Math.round(v); colorOf=(v,u,vv)=>{ const m=Math.min(1,Math.abs(v)/200); return (u===0&&vv===0)?'rgba(60,120,118,.45)':'rgba(201,118,31,'+(0.08+m*0.5)+')'; };
     title2='左上＝平均（DC）、右へ下へ行くほど細かい波。大きい数＝その波が強い。'; }
   else if(compStep===2){ grid=quant; fmt=v=>v; quant.forEach(r=>r.forEach(c=>{if(c===0)zeros++;}));
@@ -133,8 +235,9 @@ function drawCompute(){
     ctx.fillText(fmt(val), x+cs/2, y+cs/2);
   }
   // stats
-  const ratio=BLK.flat().length, zpct=(zeros/64*100);
+  const zpct=(zeros/64*100);
   stats.innerHTML='<span><b>'+STEPLABEL[compStep]+'</b></span>'+
+    (blkSource==='scene'?'<span>選択ブロック <b class="ok">('+pickX+', '+pickY+')</b></span>':'')+
     (compStep===2?'<span>0になった係数 <span class="lie">'+zeros+'/64（'+zpct.toFixed(0)+'%）</span></span>':'')+
     (compStep>=1?'<span>画質 Q'+quality+'</span>':'');
   note.textContent=title2;
@@ -148,10 +251,10 @@ function drawCompute(){
     drawBasisInset(u, v);
     // このマスの計算を一行で
     const cf=Math.round(C[u][v]);
-    if(compStep===0) note.textContent='マス ('+u+','+v+') の明るさ ＝ '+BLK[u][v];
+    if(compStep===0) note.textContent='マス ('+u+','+v+') の明るさ ＝ '+activeBlk[u][v];
     else if(compStep===1) note.textContent='波 (u='+u+', v='+v+') の強さ ＝ F＝'+cf+'（右上の小さな縞が、その波）';
     else if(compStep===2) note.textContent='F('+u+','+v+')＝'+cf+' ÷ 量子化表 Q＝'+QT[u][v]+' ＝ '+(C[u][v]/QT[u][v]).toFixed(2)+' → 四捨五入 ＝ '+quant[u][v]+(quant[u][v]===0?'　→ 0 ＝ この波は捨てる':'　→ 残す');
-    else note.textContent='マス ('+u+','+v+') の復元値 ＝ '+recon[u][v]+'（元は '+BLK[u][v]+'）';
+    else note.textContent='マス ('+u+','+v+') の復元値 ＝ '+recon[u][v]+'（元は '+activeBlk[u][v]+'）';
   }
 }
 function drawBasisInset(u, v){
@@ -182,8 +285,10 @@ function recompress(){
 
 function resize(){
   const r=cv.parentElement.getBoundingClientRect();
-  const maxW=Math.max(60,r.width-12), maxH=Math.max(60,r.height-12);
-  scale=Math.max(1, Math.min(maxW/SW, maxH/SH, 3));
+  // 幅はビューポートにピン留め（ctrl行が body を押し広げても canvas をはみ出させない）
+  const vw=window.innerWidth||r.width;
+  const maxW=Math.max(60, Math.min(r.width, vw)-12), maxH=Math.max(60,r.height-12);
+  scale=Math.min(maxW/SW, maxH/SH, 3);
   cv.width=Math.round(SW*scale); cv.height=Math.round(SH*scale);
   cv.style.width=cv.width+'px'; cv.style.height=cv.height+'px';
   render();
@@ -235,6 +340,7 @@ function setMode2(m){ mode=m;
   document.getElementById('mCompute').classList.toggle('on',m==='compute');
   document.getElementById('rowPixel').classList.toggle('hide',m!=='pixel');
   document.getElementById('rowStep').classList.toggle('hide',m!=='compute');
+  document.getElementById('rowPick').classList.toggle('hide',m!=='compute');
   render();
 }
 document.getElementById('mPixel').addEventListener('click',()=>setMode2('pixel'));
@@ -249,6 +355,8 @@ document.getElementById('clNext').addEventListener('click',()=>{ cellIdx=(cellId
 
 buildScene();
 pngBytes=b64bytes(src.toDataURL('image/png'));
+setupThumb();
+drawThumbOverlay();
 const _h=(location.hash||'').replace('#','');
 const hq=parseInt(_h,10); if(hq>=1&&hq<=100){ quality=hq; qEl.value=String(hq); qv.textContent=String(hq); }
 resize();
