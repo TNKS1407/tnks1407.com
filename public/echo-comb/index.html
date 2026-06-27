@@ -127,7 +127,7 @@ if(window.self!==window.top)document.body.classList.add('embed');
   // ── パラメータ ──
   var a=0.70;  // 減衰係数
   var T=0.18;  // エコー遅れ（秒）
-  var N_ECHO=16; // 最大エコー数（打ち切り）
+  var N_ECHO=64; // 最大エコー数（打ち切り）
 
   // 時間軸：0〜T_MAX
   var T_MAX=2.0;
@@ -141,6 +141,7 @@ if(window.self!==window.top)document.body.classList.add('embed');
   // 出力信号 y の棒（{t, amp} の配列）
   var yBars=[]; // 最後のパルス発射で計算
   var hasPulse=false;
+  var echoAnim={running:false,revealedN:0,startMs:0,raf:null};
 
   var W=0,Hh=0,Hy=0,DPR=1;
 
@@ -291,8 +292,9 @@ if(window.self!==window.top)document.body.classList.add('embed');
       return;
     }
 
-    // y の棒（tSec, amp）
-    for(var i=0;i<yBars.length;i++){
+    // y の棒（アニメ中は revealedN 本まで、それ以外は全本）
+    var showN=echoAnim.running?echoAnim.revealedN:yBars.length;
+    for(var i=0;i<showN;i++){
       var b=yBars[i];
       var col=(i===0)?'#1d1b17':'#3c7876';
       var lw=(i===0)?2.5:1.8;
@@ -317,9 +319,7 @@ if(window.self!==window.top)document.body.classList.add('embed');
   }
 
   // ── パルス発射 ──
-  function firePulse(){
-    // 入力 x(t) = δ(t-0)（t=0 で叩く）
-    // y(t) = Σ_{n=0}^{N} a^n · δ(t - n·T)
+  function computeYBars(){
     yBars=[];
     for(var n=0;n<N_ECHO;n++){
       var tEcho=n*T;
@@ -328,7 +328,30 @@ if(window.self!==window.top)document.body.classList.add('embed');
       if(amp<0.003)break;
       yBars.push({t:tEcho,amp:amp});
     }
+  }
+  function stopEchoAnim(){
+    if(echoAnim.raf){cancelAnimationFrame(echoAnim.raf);echoAnim.raf=null;}
+    echoAnim.running=false;
+  }
+  function startEchoAnim(){
+    stopEchoAnim();
+    echoAnim.running=true;
+    echoAnim.revealedN=0;
+    echoAnim.startMs=performance.now();
+    (function tick(){
+      var elapsed=(performance.now()-echoAnim.startMs)/1000;
+      var newN=0;
+      for(var n=0;n<yBars.length;n++){if(yBars[n].t<=elapsed+0.025)newN=n+1;}
+      if(newN!==echoAnim.revealedN){echoAnim.revealedN=newN;drawY();}
+      if(echoAnim.revealedN<yBars.length){echoAnim.raf=requestAnimationFrame(tick);}
+      else{stopEchoAnim();}
+    })();
+  }
+  function firePulse(){
+    computeYBars();
     hasPulse=true;
+    stopEchoAnim();
+    echoAnim.revealedN=yBars.length; // 即座に全本表示
     draw();
   }
 
@@ -340,12 +363,14 @@ if(window.self!==window.top)document.body.classList.add('embed');
       catch(e){ alert('WebAudio が使えません'); return; }
     }
     if(audioCtx.state==='suspended') audioCtx.resume();
+    // yBars を最新パラメータで再計算（音と映像を必ず同期）
+    computeYBars();
+    hasPulse=true;
     var now=audioCtx.currentTime;
-    for(var n=0;n<N_ECHO;n++){
-      var tOff=n*T;
-      var amp=Math.pow(a,n)*0.4; // 音量0.4でクリップ防止
+    for(var n=0;n<yBars.length;n++){
+      var tOff=yBars[n].t;
+      var amp=yBars[n].amp*0.4;
       if(amp<0.005)break;
-      // 短いサイン波バースト（クリック音に近い）
       var osc=audioCtx.createOscillator();
       var gain=audioCtx.createGain();
       osc.type='sine';
@@ -356,11 +381,13 @@ if(window.self!==window.top)document.body.classList.add('embed');
       osc.connect(gain);
       gain.connect(audioCtx.destination);
       osc.start(now+tOff);
-      osc.stop(now+tOff+0.05);
+      osc.stop(now+tOff+0.06);
     }
+    // 映像アニメ：音と同時スタート（performance.now()基準で棒を順に出す）
+    startEchoAnim();
     bPlay.textContent='♪ 再生中…';
-    var totalT=yBars.length>0?yBars[yBars.length-1].t+0.1:T*(N_ECHO-1)+0.1;
-    setTimeout(function(){bPlay.textContent='♪ 鳴らす';},Math.min(totalT,T_MAX)*1000+200);
+    var totalT=yBars.length>0?yBars[yBars.length-1].t+0.15:T_MAX;
+    setTimeout(function(){bPlay.textContent='♪ 鳴らす';},Math.min(totalT,T_MAX)*1000+300);
   }
 
   // ── イベント ──
