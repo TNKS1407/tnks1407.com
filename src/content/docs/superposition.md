@@ -67,6 +67,11 @@ $$y(t) = \int_0^{t} X\cdot\frac{1}{RC}\,e^{-(t-\tau)/RC}\,d\tau = X\bigl(1 - e^{
 
 あの見慣れた **充電カーブ** が出てくる。これは「過去の入力 × まだ残っている応答」を足した、畳み込みそのもの。$y=k\,x$ では、この“じわっと立ち上がる”形は絶対に出ない。
 
+<div class="demo-embed">
+  <iframe src="/rc-impulse/" title="RCローパスのインパルス応答（触れる）" loading="lazy"></iframe>
+  <div class="cap"><span>RC impulse</span><a href="/rc-impulse/" target="_blank" rel="noopener noreferrer">全画面で開く ↗</a></div>
+</div>
+
 ### 例2：部屋の残響
 
 手をパンと叩くと、直接音のあとに、壁で反射した音が遅れて届き、それがまた反射して…と、だんだん小さくなりながら続く。応答は「減衰するこだまの列」：
@@ -111,6 +116,11 @@ y(t) &= \int x(\tau)\,h(t-\tau)\,d\tau \\
 $$
 
 つまり **原音 ＋ 遅れて小さくなったコピーの足し算**。部屋が音にこだまを重ねていく、その操作の正体が畳み込みなんだ。畳み込みの本質は、まさにここにある ── **過去に入れた一つひとつに、いまもまだ残っている応答を掛けて、足し合わせる**。離散の和でも、なめらかな積分でも、やっているのは同じ『過去の返事を足す』だよ。
+
+<div class="demo-embed">
+  <iframe src="/echo-comb/" title="部屋の残響＝くし形インパルス応答（触れる）" loading="lazy"></iframe>
+  <div class="cap"><span>echo comb</span><a href="/echo-comb/" target="_blank" rel="noopener noreferrer">全画面で開く ↗</a></div>
+</div>
 
 この「尾を引く＝**記憶**」が肝だ。記憶があると、いまの出力は **いまの入力だけ** では決まらない。少し前に叩いたぶん、もっと前に叩いたぶんの “まだ残っている返事” が、いまも効いている。だから $y(t)$ は、過去のすべての叩きの「いまだ残っているぶん」を足し合わせたものになる ── ただの比例じゃ済まず、**積分** になるのは、これが理由だ。
 
