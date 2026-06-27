@@ -66,6 +66,14 @@ const works: Work[] = [
     status: "Annealing", section: "lab", group: "engineering",
   },
   {
+    title: "truss-lab — トラスを解く",
+    icon: "🏗",
+    description: "2次元トラスを直接剛性法（K u = F）で解く。節点をドラッグして形を変えるたび解き直し、各部材を引張＝青／圧縮＝赤、線の太さで軸力の大きさに描く。座屈・曲げ・降伏は「線形・微小変形では扱わないもの」として正直に明示。手計算で答えの出る単純トラス3例と小数まで一致（test 11/11 PASS）。次は寸法・荷重のばらつきをモンテカルロで伝播させ、安全率の点推定でなく“破壊確率 P(SF<1)”まで言う層を重ねる。",
+    url: "https://truss.tnks1407.com",
+    tags: ["JavaScript", "SVG", "構造力学", "直接剛性法"],
+    status: "Annealing", section: "lab", group: "engineering",
+  },
+  {
     title: "Stepper Physics Lab",
     icon: "🧲",
     description: "2相ハイブリッドステッピングモーターの低次物理モデル。STEPパルスで指令位置だけが離散的に進み、ロータは電流・トルク・慣性・減衰で連続的に追従する。電気角/機械角・50歯・1.8°full-step、フル/ハーフ/マイクロ/wave駆動、電流decayモード、脱調リスクまで可視化。",
