@@ -8,6 +8,7 @@ demoLabel: "画像フォーマットを開けるラボを全画面で開く"
 related:
   - { title: "PixLab ── 写真を数の格子にして触る", url: "https://tnks1407.com/pixlab/" }
   - { title: "1次元の微分（隣との差）── 信号の“細かさ”を見る入口", url: "https://tnks1407.com/pixlab1d/" }
+  - { title: "gradus 教科書編 ── 色を測る（色空間と知覚の計量）", url: "https://gradus.tnks1407.com/textbook.html" }
 ---
 
 スマホで撮った写真、よく見ると一枚で何百万画素もある。なのにファイルは数MBで済んでいる。── その「小さくする」をやっているのが、画像の圧縮だ。今日は、その箱を開けてみる。

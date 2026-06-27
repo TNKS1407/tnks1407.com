@@ -54,6 +54,11 @@ const dateStr = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${
       .prose{font-size:1.02rem;}
       .prose h2{margin:2.4rem 0 1rem;font-size:1.4rem;color:var(--accent);font-weight:700;}
       .prose h2::before{content:'# ';opacity:.35;font-family:'JetBrains Mono',monospace;font-size:.85em;}
+      .prose h2.h2-fold{cursor:pointer;user-select:none;}
+      .prose h2.h2-fold::after{content:'▾';font-size:.6em;color:var(--text-faint);margin-left:.5em;display:inline-block;transition:transform .2s,color .2s;vertical-align:middle;}
+      .prose h2.h2-fold:hover::after{color:var(--accent);}
+      .prose h2.h2-fold.collapsed::after{transform:rotate(-90deg);}
+      .prose .h2-body.collapsed{display:none;}
       .prose h3{margin:1.8rem 0 .7rem;font-size:1.12rem;}
       .prose p{margin:1em 0;}
       .prose strong{font-weight:700;}
@@ -167,6 +172,28 @@ const dateStr = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,'0')}.${
           img.src=showOrig?orig:svg;
           btn.textContent=showOrig?'清書（SVG）に戻す':'作者の手書き図を見る';
           f.classList.toggle('is-orig',showOrig);
+        });
+      });
+      // 各 h2 をクリックでその節を畳む（既定は開いた状態）
+      document.querySelectorAll('.prose h2').forEach(function(h2){
+        var body=document.createElement('div');
+        body.className='h2-body';
+        var el=h2.nextElementSibling;
+        while(el && el.tagName!=='H2'){ var n=el.nextElementSibling; body.appendChild(el); el=n; }
+        if(!body.childNodes.length) return;
+        h2.parentNode.insertBefore(body,h2.nextSibling);
+        h2.classList.add('h2-fold');
+        h2.setAttribute('role','button');
+        h2.setAttribute('tabindex','0');
+        h2.setAttribute('aria-expanded','true');
+        function toggle(){
+          var c=h2.classList.toggle('collapsed');
+          body.classList.toggle('collapsed',c);
+          h2.setAttribute('aria-expanded',c?'false':'true');
+        }
+        h2.addEventListener('click',toggle);
+        h2.addEventListener('keydown',function(e){
+          if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggle(); }
         });
       });
     </script>
