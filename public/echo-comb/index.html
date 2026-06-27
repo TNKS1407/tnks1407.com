@@ -71,9 +71,9 @@ body.embed #stage{flex:1 1 auto;height:auto;min-height:160px;}
     <div class="tag">こだまが1個ずつ帰ってきて、余韻が重なって「尾」になる</div>
   </header>
   <div class="lead">
-    <p>手を叩くと、まず<b>直接音</b>が届く。少し遅れて、壁で跳ね返った<b>こだま</b>が1個ずつ帰ってくる ── 遅れ <b>T</b> ごとに、<b>a</b> 倍ずつ小さくなりながら。</p>
-    <p>1個1個は小さくても、間隔が詰まっていると<b>余韻が重なり合って、ひと続きの「反響の尾」</b>になる。これが残響（リバーブ）だ。下の塗りつぶしが、その重なった尾。<b>a</b> を 1 に近づけると尾が長く伸び、<b>T</b> を詰めると密になる。</p>
-    <p style="font-size:12px;color:var(--muted);">「♪ 鳴らす」＝音と一緒に、こだまが順に帰ってくる。「パルス」＝全部いっぺんに表示。</p>
+    <p>手を叩くと、まず<b>直接音</b>（振幅 1）が届く。少し遅れて、壁で跳ね返った<b>こだま</b>が1個ずつ帰ってくる ── 遅れ <b>T</b> ごとに、<b>a</b> 倍ずつ小さくなりながら。縦軸は振幅で、直接音がいちばん大きい。</p>
+    <p>1個1個は小さくても、間隔 <b>T</b> が詰まっていると連なって「尾」のように聞こえる。<b>a</b> を 1 に近づけると尾が長く伸びる。下の薄い塗りは、その振幅の<b>包絡 a<sup>t/T</sup></b>＝こだまの頂点をちょうど通る減衰の目安だよ。</p>
+    <p style="font-size:12px;color:var(--muted);">これは「平行な壁の間で繰り返す1本の反射（フラッターエコー）」の、ちょうどの応答。本物の部屋の残響は、こういう反射が無数に重なったもの ── ここでは飾らずに、素直な1本ぶんを正直に出している。「♪鳴らす」＝順に帰る／「パルス」＝全部表示。</p>
   </div>
   <div class="card-tool">
     <div id="stage"><canvas id="cv"></canvas></div>
@@ -112,7 +112,7 @@ if(window.self!==window.top)document.body.classList.add('embed');
   var stage=document.getElementById('stage');
 
   var a=0.82, T=0.09, T_MAX=2.6, NMAX=90;
-  var AMPMAX=1.7;
+  var AMPMAX=1.08;
   var anim={running:false,revealed:0,startMs:0,raf:null};
   var echoes=[];
 
@@ -125,26 +125,26 @@ if(window.self!==window.top)document.body.classList.add('embed');
     ctx.setTransform(DPR,0,0,DPR,0,0); draw();
   }
 
+  // 正直に：一定間隔 T ごとに a 倍ずつ小さくなる反射（幾何級数）。これがこだまの実体。
+  // ＝平行な壁の間で繰り返す反射（フラッターエコー）の、ごまかしのない応答。ランダムな飾りは入れない。
   function computeEchoes(){
     var arr=[];
-    for(var n=0;n<NMAX;n++){
-      var tn=n*T; if(tn>T_MAX)break;
-      var amp=Math.pow(a,n); if(n>0 && amp<0.012)break;
-      arr.push({t:tn,amp:amp});
+    for(var n=0; n*T<=T_MAX && n<300; n++){
+      var amp=Math.pow(a,n);
+      if(n>0 && amp<0.006) break;
+      arr.push({t:n*T, amp:amp});
     }
     return arr;
   }
-  // 余韻つきの重なり（reverb envelope）
+  // 振幅の包絡：a^(t/T)（＝こだまの頂点を“ちょうど”通る指数減衰）。直接音(1)から下がるだけ。
   function envAt(t,upto){
-    var tau=T*1.4, s=0;
-    for(var i=0;i<upto;i++){
-      var e=echoes[i]; if(e.t>t)break;
-      s+=e.amp*Math.exp(-(t-e.t)/tau);
-    }
-    return s;
+    if(upto<=0||t<0)return 0;
+    var lastT=echoes[Math.min(upto,echoes.length)-1].t;
+    if(t<=lastT) return Math.pow(a,t/T);
+    return Math.pow(a,lastT/T)*Math.exp(-(t-lastT)/(T*0.6));
   }
 
-  var PAD_L=40,PAD_R=14,PAD_T=18,PAD_B=34;
+  var PAD_L=40,PAD_R=14,PAD_T=26,PAD_B=34;
   function ax(){ return {gW:W-PAD_L-PAD_R, gH:H-PAD_T-PAD_B, x0:PAD_L, y0:PAD_T, base:H-PAD_B}; }
   function yv(g,v){ return g.base - Math.min(v,AMPMAX)/AMPMAX*g.gH; }
 
@@ -154,12 +154,19 @@ if(window.self!==window.top)document.body.classList.add('embed');
     ctx.fillStyle='#faf8f4'; ctx.fillRect(0,0,W,H);
     var g=ax();
 
-    // グリッド & 時間軸
-    ctx.strokeStyle='#e9e3d8'; ctx.lineWidth=1;
-    for(var i=0;i<=4;i++){ var yy=g.y0+Math.round(g.gH*i/4)+0.5; ctx.beginPath(); ctx.moveTo(g.x0,yy); ctx.lineTo(g.x0+g.gW,yy); ctx.stroke(); }
-    ctx.strokeStyle='#c9b8a8'; ctx.lineWidth=1.2;
-    ctx.beginPath(); ctx.moveTo(g.x0,g.base+0.5); ctx.lineTo(g.x0+g.gW,g.base+0.5); ctx.stroke();
-    ctx.fillStyle='#aaa49b'; ctx.font='10px "JetBrains Mono",monospace'; ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+    // ── 縦軸（振幅）を正直に：直接音=1 を基準に目盛りとラベルを振る ──
+    var ampTicks=[1.0,0.5,0];
+    ctx.font='10px "JetBrains Mono",monospace'; ctx.textBaseline='middle'; ctx.textAlign='right';
+    for(var ai=0;ai<ampTicks.length;ai++){
+      var ay=yv(g,ampTicks[ai]);
+      ctx.strokeStyle=(ampTicks[ai]===0)?'#c9b8a8':'#e9e3d8'; ctx.lineWidth=(ampTicks[ai]===0)?1.2:1;
+      ctx.beginPath(); ctx.moveTo(g.x0,ay+0.5); ctx.lineTo(g.x0+g.gW,ay+0.5); ctx.stroke();
+      ctx.fillStyle='#aaa49b'; ctx.fillText(ampTicks[ai].toFixed(1),g.x0-4,ay);
+    }
+    ctx.fillStyle='#7d7568'; ctx.font='10px "Zen Kaku Gothic New",sans-serif'; ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+    ctx.fillText('振幅（直接音=1）',g.x0+1,g.y0-5);
+    // ── 横軸（時間）──
+    ctx.fillStyle='#aaa49b'; ctx.font='10px "JetBrains Mono",monospace'; ctx.textAlign='center';
     for(var tj=0;tj<=4;tj++){ ctx.fillText((T_MAX*tj/4).toFixed(1),g.x0+g.gW*tj/4,g.base+14); }
     ctx.fillStyle='#7d7568'; ctx.fillText('時間 t (s) →',g.x0+g.gW/2,g.base+26);
 
