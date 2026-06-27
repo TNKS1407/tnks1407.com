@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex, nofollow" />
-<title>RCローパスの記憶 — 畳み込みを見る</title>
+<title>RCローパスの記憶 — 充電と畳み込みを見る</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
 <style>
@@ -21,7 +21,6 @@ body{
   background-image:radial-gradient(circle at 1px 1px,#e9e4da 1px,transparent 0);
   background-size:22px 22px;
 }
-/* ── じっくり遊ぶページ枠 ── */
 .wrap{max-width:820px;margin:0 auto;padding:20px 16px 48px;}
 header{display:flex;align-items:flex-end;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
 .brand{font-weight:700;font-size:22px;line-height:1.1;color:var(--text);}
@@ -34,12 +33,10 @@ header{display:flex;align-items:flex-end;gap:10px;margin-bottom:14px;flex-wrap:w
   box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
 .lead p{margin:0 0 .5rem;}.lead p:last-child{margin-bottom:0;}
 .lead b{color:var(--text);}
-/* ── tool card ── */
 .card-tool{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;
   box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
-#stage{position:relative;width:100%;height:clamp(220px,48vw,380px);overflow:hidden;background:var(--surface);}
+#stage{position:relative;width:100%;height:clamp(260px,52vw,420px);overflow:hidden;background:var(--surface);}
 canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair;}
-/* ── 情報バー（canvasの下）── */
 #info{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);
   padding:.45rem .7rem;font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--muted);
   line-height:1.75;min-height:2.4rem;}
@@ -47,7 +44,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair;}
 #info .v-teal{color:var(--teal);font-weight:600;}
 #info .v-red{color:var(--red);font-weight:600;}
 #info .v-amber{color:var(--amber);font-weight:600;}
-/* ── コントロール ── */
+#info .v-blue{color:var(--blue);font-weight:600;}
 .ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);
   padding:.5rem .7rem;display:flex;flex-wrap:wrap;gap:.5rem .8rem;align-items:center;}
 .cg{display:flex;align-items:center;gap:.4rem;font-size:.76rem;}
@@ -64,43 +61,42 @@ button.on{background:var(--teal);color:#fff;border-color:var(--teal);}
 button.sec{border-color:var(--amber);color:var(--amber);}
 button.sec:hover{background:var(--amber);color:#fff;}
 footer{text-align:center;color:var(--faint);font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:12px;}
-/* ── embed mode ── */
 body.embed{height:100%;display:flex;flex-direction:column;overflow:hidden;background-image:none;}
 body.embed .wrap{max-width:none;margin:0;padding:0;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
 body.embed header,body.embed .lead,body.embed footer{display:none;}
 body.embed .card-tool{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;border:none;border-radius:0;box-shadow:none;}
-body.embed #stage{flex:1 1 auto;height:auto;min-height:120px;}
+body.embed #stage{flex:1 1 auto;height:auto;min-height:160px;}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <div class="brand"><span class="a">RC</span>ローパスの記憶</div>
-    <div class="tag">尾＝記憶。いまの出力は過去の叩きの「まだ残っている分」の和</div>
+    <div class="tag">コンデンサに電荷が溜まる＝記憶。叩きの尾は、その溜まりの抜け方だ</div>
   </header>
   <div class="lead">
-    <p>RCローパスに一瞬のインパルスを入れると、出力は <b>h(t) = (1/RC)·e<sup>−t/RC</sup></b> という指数の尾を引く。時定数 <b>RC</b> が大きいほど尾が長く、記憶が長く残る。</p>
-    <p>入力を複数叩くと、<b>それぞれの尾が足し合わさって出力になる</b>。これが畳み込みの「感触」だ ── 上の図の薄い緑の曲線が各インパルスの応答で、太い黒線がその和（実際の出力）。</p>
-    <p style="font-size:12px;color:var(--muted);">canvas をクリック/タップ → インパルスを追加。スライダで RC を変えると尾の長さが変わる。「ステップ」は一定入力（充電カーブ）。</p>
+    <p><b>充電</b>モード：スイッチを入れると、電流が電荷をコンデンサに運び込む。溜まるほど電圧が上がり、<b>運び込む勢い（電流）はだんだん弱る</b>。電圧が最後の63%まで来るのにかかる時間が <b>RC</b>（時定数）。右のカーブ <b>1−e<sup>−t/RC</sup></b> は、この「溜まり方」そのもの。</p>
+    <p><b>インパルス</b>モード：一瞬だけ叩くと、出力は <b>h(t)=(1/RC)·e<sup>−t/RC</sup></b> の尾を引く（溜めた電荷がゆっくり抜ける形）。複数叩くと<b>それぞれの尾が足し合わさる</b>＝畳み込みの感触。</p>
+    <p style="font-size:12px;color:var(--muted);">「⚡充電」＝コンデンサが満ちる様子。「クリックで追加」＝図をタップして叩きを足す。RC を大きくすると、充電も記憶もゆっくりになる。</p>
   </div>
   <div class="card-tool">
     <div id="stage"><canvas id="cv"></canvas></div>
     <div id="info"></div>
     <div class="ctrl">
       <div class="modes" id="modeRow">
-        <button id="bImp" class="on">単発インパルス</button>
+        <button id="bStep" class="on">⚡ 充電</button>
+        <button id="bImp">単発インパルス</button>
         <button id="bMulti">クリックで追加</button>
-        <button id="bStep">ステップ入力</button>
       </div>
       <div class="cg">
         <label><b>RC</b></label>
         <input type="range" id="rcSlider" min="0.05" max="0.8" step="0.01" value="0.25" />
         <span class="val" id="rcVal">0.25 s</span>
       </div>
-      <button id="bClear" class="sec">クリア</button>
+      <button id="bReplay" class="sec">もう一度</button>
     </div>
   </div>
-  <footer>重ね合わせ — インパルス応答</footer>
+  <footer>重ね合わせ — 充電とインパルス応答</footer>
 </div>
 
 <script>
@@ -115,370 +111,276 @@ if(window.self!==window.top)document.body.classList.add('embed');
   var bImp=document.getElementById('bImp');
   var bMulti=document.getElementById('bMulti');
   var bStep=document.getElementById('bStep');
-  var bClear=document.getElementById('bClear');
+  var bReplay=document.getElementById('bReplay');
   var stage=document.getElementById('stage');
 
-  // ── 状態 ──
   var RC=0.25;
-  var mode='imp'; // 'imp' | 'multi' | 'step'
-  var impulses=[]; // {t: 時刻（秒）, amp: 1}
-  // 時間軸：0〜T_MAX（秒），横幅 = T_MAX
+  var mode='step'; // 'step' | 'imp' | 'multi'
+  var impulses=[];
   var T_MAX=2.0;
-  var stepAnim={running:false,animT:2.0,raf:null,startMs:0};
+  var stepAnim={running:false,animT:2.0,dotPhase:0,raf:null,startMs:0,lastMs:0};
 
   var W=0,H=0,DPR=1;
 
   function resize(){
     DPR=Math.min(window.devicePixelRatio||1,2);
     var rect=stage.getBoundingClientRect();
-    W=Math.round(rect.width);
-    H=Math.round(rect.height);
+    W=Math.round(rect.width); H=Math.round(rect.height);
     cv.width=W*DPR; cv.height=H*DPR;
     cv.style.width=W+'px'; cv.style.height=H+'px';
     ctx.setTransform(DPR,0,0,DPR,0,0);
     draw();
   }
 
-  // t（秒）→ px x 座標
-  function tx(t){ return Math.round(t/T_MAX*(W-2)); }
-  // 値（0〜1の正規化）→ px y 座標 (下が0)
-  function vy(v,yTop,yH){ return yTop+yH-(v*yH); }
-
-  // インパルス応答 h(t) = (1/RC)*exp(-t/RC), t>=0
-  function h(t){
-    if(t<0)return 0;
-    return (1/RC)*Math.exp(-t/RC);
-  }
-
-  // ステップ応答 s(t) = 1-exp(-t/RC)
-  function stepResp(t){
-    if(t<0)return 0;
-    return 1-Math.exp(-t/RC);
-  }
+  function h(t){ if(t<0)return 0; return (1/RC)*Math.exp(-t/RC); }
+  function stepResp(t){ if(t<0)return 0; return 1-Math.exp(-t/RC); }
 
   function startStepAnim(){
     if(stepAnim.raf)cancelAnimationFrame(stepAnim.raf);
-    stepAnim.running=true;
-    stepAnim.animT=0;
-    stepAnim.startMs=performance.now();
+    stepAnim.running=true; stepAnim.animT=0; stepAnim.dotPhase=0;
+    stepAnim.startMs=performance.now(); stepAnim.lastMs=stepAnim.startMs;
     (function tick(){
-      var el=(performance.now()-stepAnim.startMs)/1000;
+      var nowMs=performance.now();
+      var el=(nowMs-stepAnim.startMs)/1000;
+      var dt=Math.min(0.05,(nowMs-stepAnim.lastMs)/1000); stepAnim.lastMs=nowMs;
       stepAnim.animT=Math.min(el,T_MAX);
+      var curNorm=Math.exp(-stepAnim.animT/RC);
+      stepAnim.dotPhase=(stepAnim.dotPhase + dt*(0.15+2.6*curNorm))%1;
       draw();
-      if(stepAnim.animT<T_MAX){stepAnim.raf=requestAnimationFrame(tick);}
-      else{stepAnim.running=false;stepAnim.animT=T_MAX;stepAnim.raf=null;draw();}
+      if(stepAnim.animT<T_MAX){ stepAnim.raf=requestAnimationFrame(tick); }
+      else{ stepAnim.running=false; stepAnim.animT=T_MAX; stepAnim.raf=null; draw(); }
     })();
+  }
+
+  // ====== 充電シーン（左）＋ V(t)カーブ（右）======
+  function drawStep(){
+    var dispT=stepAnim.animT;
+    var fillRatio=stepResp(dispT);
+    var curNorm=Math.exp(-dispT/RC);
+
+    var gap=10;
+    var sceneW=Math.max(150,Math.min(W*0.45,250));
+    var cX=sceneW+gap, cW=W-cX-12;
+
+    // ---- 左：コンデンサ ----
+    var capW=Math.min(sceneW*0.5,124);
+    var capCX=sceneW*0.5;
+    var capL=capCX-capW/2;
+    var plateTh=7;
+    var gapH=Math.max(60,H*0.30);
+    var topPlateY=Math.max(46,H*0.34);
+    var botPlateY=topPlateY+plateTh+gapH;
+
+    // 入口ワイヤ（上）＋ 出口ワイヤ（下・接地）
+    ctx.strokeStyle='#b3a795'; ctx.lineWidth=2.5;
+    var wireTopY=16;
+    ctx.beginPath(); ctx.moveTo(capCX,wireTopY); ctx.lineTo(capCX,topPlateY); ctx.stroke();
+    var wireBotY=botPlateY+plateTh+22;
+    ctx.beginPath(); ctx.moveTo(capCX,botPlateY+plateTh); ctx.lineTo(capCX,wireBotY); ctx.stroke();
+    // 接地記号
+    ctx.lineWidth=2;
+    for(var g=0;g<3;g++){ var gw=14-g*4; ctx.beginPath(); ctx.moveTo(capCX-gw,wireBotY+g*4); ctx.lineTo(capCX+gw,wireBotY+g*4); ctx.stroke(); }
+
+    // 電流ドット（上ワイヤを下って極板へ。電流が弱るほど薄く・止まる）
+    var nDots=5, span=topPlateY-wireTopY;
+    for(var di=0;di<nDots;di++){
+      var fr=((stepAnim.dotPhase + di/nDots)%1);
+      var dy=wireTopY+fr*span;
+      ctx.save(); ctx.globalAlpha=0.18+0.82*curNorm; ctx.fillStyle='#c9761f';
+      ctx.beginPath(); ctx.arc(capCX,dy,3.4,0,6.2832); ctx.fill(); ctx.restore();
+    }
+
+    // 極板間：薄く全体＋下から teal が満ちる（電荷の場）
+    ctx.fillStyle='rgba(60,120,118,0.10)';
+    ctx.fillRect(capL,topPlateY+plateTh,capW,gapH);
+    var fillH=gapH*fillRatio;
+    ctx.fillStyle='rgba(60,120,118,0.50)';
+    ctx.fillRect(capL,botPlateY-fillH,capW,fillH);
+
+    // 極板
+    ctx.fillStyle='#5a5550';
+    ctx.fillRect(capL,topPlateY,capW,plateTh);
+    ctx.fillRect(capL,botPlateY,capW,plateTh);
+
+    // ＋／− 電荷（溜まるほど数が増える）
+    var nQ=Math.round(fillRatio*6);
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.font='bold 13px "JetBrains Mono",monospace';
+    ctx.fillStyle='#c2543d';
+    for(var qi=0;qi<nQ;qi++){ ctx.fillText('+',capL+capW*(qi+0.5)/Math.max(nQ,1),topPlateY-8); }
+    ctx.fillStyle='#2563aa';
+    for(var qj=0;qj<nQ;qj++){ ctx.fillText('−',capL+capW*(qj+0.5)/Math.max(nQ,1),botPlateY+plateTh+9); }
+
+    // 大きな％
+    ctx.textBaseline='alphabetic'; ctx.textAlign='center';
+    ctx.fillStyle='#3c7876'; ctx.font='bold 26px "JetBrains Mono",monospace';
+    ctx.fillText((fillRatio*100).toFixed(0)+'%',capCX,wireBotY+34);
+    ctx.fillStyle='#7d7568'; ctx.font='11px "Zen Kaku Gothic New",sans-serif';
+    ctx.fillText('充電',capCX,wireBotY+50);
+
+    // 電流メーター（弱っていく勢い）
+    ctx.textAlign='left'; ctx.fillStyle='#c9761f'; ctx.font='10px "JetBrains Mono",monospace';
+    ctx.fillText('電流 i',8,topPlateY+gapH*0.5-7);
+    var barX=8,barY=topPlateY+gapH*0.5,barW=sceneW*0.18;
+    ctx.fillStyle='#eadfce'; ctx.fillRect(barX,barY,barW,7);
+    ctx.fillStyle='#c9761f'; ctx.fillRect(barX,barY,barW*curNorm,7);
+
+    // ---- 右：V(t) カーブ ----
+    var PAD_T=16,PAD_B=26,PAD_R=8;
+    var gW=cW-PAD_R, gH=H-PAD_T-PAD_B;
+    var gx=cX, gy=PAD_T;
+    // グリッド
+    ctx.strokeStyle='#e3dbd0'; ctx.lineWidth=1;
+    for(var i=0;i<=4;i++){ var yy=gy+Math.round(gH*i/4)+0.5; ctx.beginPath(); ctx.moveTo(gx,yy); ctx.lineTo(gx+gW,yy); ctx.stroke(); }
+    ctx.fillStyle='#aaa49b'; ctx.font='10px "JetBrains Mono",monospace'; ctx.textAlign='right'; ctx.textBaseline='alphabetic';
+    ctx.fillText('1.0',gx-2,gy+8); ctx.fillText('0',gx-2,gy+gH+2);
+    ctx.textAlign='center';
+    for(var ti=0;ti<=4;ti++){ ctx.fillText((T_MAX*ti/4).toFixed(1),gx+gW*ti/4,gy+gH+13); }
+    ctx.fillStyle='#7d7568'; ctx.fillText('時間 t (s)',gx+gW/2,gy+gH+24);
+
+    // 充電カーブ（dispT まで）
+    ctx.strokeStyle='#2563aa'; ctx.lineWidth=2.6; ctx.beginPath();
+    var first=true;
+    for(var px=0;px<=gW;px++){
+      var st=px/gW*T_MAX; if(st>dispT+1e-4)break;
+      var sv=stepResp(st);
+      var sx=gx+px, sy=gy+gH-Math.min(sv,1)*gH;
+      if(first){ctx.moveTo(sx,sy);first=false;} else ctx.lineTo(sx,sy);
+    }
+    ctx.stroke();
+    // 進む点
+    if(dispT>0.001){
+      var dotx=gx+dispT/T_MAX*gW, doty=gy+gH-Math.min(stepResp(dispT),1)*gH;
+      ctx.fillStyle='#2563aa'; ctx.beginPath(); ctx.arc(dotx,doty,4,0,6.2832); ctx.fill();
+    }
+    // t=RC の 63% 目印
+    if(dispT>=RC){
+      var xrc=gx+RC/T_MAX*gW, yrc=gy+gH-(1-Math.exp(-1))*gH;
+      ctx.strokeStyle='#c9761f'; ctx.lineWidth=1; ctx.setLineDash([4,3]);
+      ctx.beginPath(); ctx.moveTo(xrc,gy+gH); ctx.lineTo(xrc,yrc); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(gx,yrc); ctx.lineTo(xrc,yrc); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='#c9761f'; ctx.font='bold 10px "JetBrains Mono",monospace'; ctx.textAlign='left';
+      var lx=xrc+3; if(lx>gx+gW-60)lx=xrc-58;
+      ctx.fillText('t=RC',lx,yrc-3); ctx.fillText('63%',lx,yrc+10);
+    }
+    // 外枠
+    ctx.strokeStyle='#c9b8a8'; ctx.lineWidth=1; ctx.strokeRect(gx+0.5,gy+0.5,gW,gH);
+
+    info.innerHTML='<b>充電</b> <span class="v-teal">'+(fillRatio*100).toFixed(0)+'%</span> ＝ 1−e<sup>−t/RC</sup> '+
+      '&nbsp;|&nbsp; 運び込む勢い <span class="v-amber">電流 '+(curNorm*100).toFixed(0)+'%</span>（溜まるほど弱る）'+
+      '&nbsp;|&nbsp; RC=<span class="v-teal">'+RC.toFixed(2)+'s</span>'+(dispT>=RC?' &nbsp;|&nbsp; <span class="v-amber">t=RC で 63%</span>':'');
+  }
+
+  // ====== インパルス／クリックで追加（畳み込み教材）======
+  function drawCurveAxes(){
+    ctx.fillStyle='#faf8f4'; ctx.fillRect(0,0,W,H);
+    var PAD_L=36,PAD_R=14,PAD_T=14,PAD_B=28;
+    var gW=W-PAD_L-PAD_R, gH=H-PAD_T-PAD_B;
+    ctx.strokeStyle='#e3dbd0'; ctx.lineWidth=1;
+    for(var i=0;i<=4;i++){ var y=PAD_T+Math.round(gH*i/4)+0.5; ctx.beginPath(); ctx.moveTo(PAD_L,y); ctx.lineTo(PAD_L+gW,y); ctx.stroke(); }
+    for(var ti=0;ti<=4;ti++){ var x=PAD_L+Math.round(gW*ti/4)+0.5; ctx.beginPath(); ctx.moveTo(x,PAD_T); ctx.lineTo(x,PAD_T+gH); ctx.stroke(); }
+    ctx.fillStyle='#aaa49b'; ctx.font='10px "JetBrains Mono",monospace'; ctx.textAlign='right'; ctx.textBaseline='alphabetic';
+    ctx.fillText('1.0',PAD_L-3,PAD_T+4); ctx.fillText('0',PAD_L-3,PAD_T+gH+4);
+    ctx.textAlign='center';
+    for(var tj=0;tj<=4;tj++){ ctx.fillText((T_MAX*tj/4).toFixed(2),PAD_L+gW*tj/4,PAD_T+gH+14); }
+    ctx.fillStyle='#7d7568'; ctx.fillText('t (s)',PAD_L+gW/2,PAD_T+gH+26);
+    ctx.strokeStyle='#c9b8a8'; ctx.strokeRect(PAD_L+0.5,PAD_T+0.5,gW,gH);
+    return {PAD_L:PAD_L,PAD_T:PAD_T,gW:gW,gH:gH};
+  }
+  function drawTail(g,tOff,amp,color,lw,alpha){
+    ctx.save(); ctx.globalAlpha=alpha; ctx.strokeStyle=color; ctx.lineWidth=lw; ctx.beginPath();
+    var started=false;
+    for(var px=0;px<=g.gW;px++){
+      var t=px/g.gW*T_MAX; var v=h(t-tOff)*RC*amp;
+      if(v<0||t<tOff){ if(started){ctx.stroke();ctx.beginPath();started=false;} continue; }
+      var sx=g.PAD_L+px, sy=g.PAD_T+g.gH-Math.min(v,1.5)*g.gH;
+      if(!started){ctx.moveTo(sx,sy);started=true;} else ctx.lineTo(sx,sy);
+    }
+    if(started)ctx.stroke(); ctx.restore();
+  }
+  function drawImp(){
+    var g=drawCurveAxes();
+    drawTail(g,0,1,'#3c7876',1,0.25); drawTail(g,0,1,'#3c7876',2.5,1);
+    var xRC=g.PAD_L+RC/T_MAX*g.gW, yRC=g.PAD_T+g.gH-Math.exp(-1)*g.gH;
+    ctx.save(); ctx.strokeStyle='#c9761f'; ctx.lineWidth=1; ctx.setLineDash([4,3]);
+    ctx.beginPath(); ctx.moveTo(xRC,g.PAD_T); ctx.lineTo(xRC,yRC); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(g.PAD_L,yRC); ctx.lineTo(xRC,yRC); ctx.stroke(); ctx.setLineDash([]); ctx.restore();
+    ctx.fillStyle='#c9761f'; ctx.font='bold 10px "JetBrains Mono",monospace'; ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+    var lx=xRC+3; if(lx>W-52)lx=xRC-50;
+    ctx.fillText('t=RC',lx,yRC-3); ctx.font='10px "JetBrains Mono",monospace'; ctx.fillText('1/e≈0.37',lx,yRC+11);
+    info.innerHTML='<b>h(t)</b> = <span class="v-teal">(1/RC)·e<sup>−t/RC</sup></span> ＝ 一瞬の叩きへの応答（溜めた電荷が抜ける尾） &nbsp;|&nbsp; RC=<span class="v-teal">'+RC.toFixed(2)+'s</span>';
+  }
+  function drawMulti(){
+    var g=drawCurveAxes();
+    for(var i=0;i<impulses.length;i++) drawTail(g,impulses[i].t,impulses[i].amp,'#3c7876',1.2,0.35);
+    if(impulses.length>0){
+      ctx.save(); ctx.strokeStyle='#1d1b17'; ctx.lineWidth=2.5; ctx.beginPath();
+      var st=false;
+      for(var px=0;px<=g.gW;px++){
+        var t=px/g.gW*T_MAX, sum=0;
+        for(var k=0;k<impulses.length;k++) sum+=h(t-impulses[k].t)*RC*impulses[k].amp;
+        var sx=g.PAD_L+px, sy=g.PAD_T+g.gH-Math.min(Math.max(sum,0),1.5)*g.gH;
+        if(!st){ctx.moveTo(sx,sy);st=true;} else ctx.lineTo(sx,sy);
+      }
+      ctx.stroke(); ctx.restore();
+    } else {
+      ctx.fillStyle='#aaa49b'; ctx.font='13px "Zen Kaku Gothic New",sans-serif'; ctx.textAlign='center';
+      ctx.fillText('← グラフをクリックして叩きを足す',g.PAD_L+g.gW/2,g.PAD_T+g.gH/2);
+    }
+    for(var m=0;m<impulses.length;m++){
+      var xi=g.PAD_L+impulses[m].t/T_MAX*g.gW;
+      ctx.save(); ctx.strokeStyle='#c9761f'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(xi,g.PAD_T+g.gH); ctx.lineTo(xi,g.PAD_T+g.gH-18); ctx.stroke();
+      ctx.fillStyle='#c9761f'; ctx.beginPath(); ctx.moveTo(xi,g.PAD_T+g.gH-22); ctx.lineTo(xi-4,g.PAD_T+g.gH-14); ctx.lineTo(xi+4,g.PAD_T+g.gH-14); ctx.closePath(); ctx.fill(); ctx.restore();
+    }
+    info.innerHTML='<span class="v-teal">薄い緑</span>＝各叩きの尾 h(t−tᵢ) &nbsp; <b>黒線</b>＝その和（畳み込み） &nbsp; '+(impulses.length>0?'叩き <b>'+impulses.length+'</b> 回':'クリックで足す');
   }
 
   function draw(){
     if(!W||!H)return;
-
-    // クリア
     ctx.clearRect(0,0,W,H);
-
-    // 背景
-    ctx.fillStyle='#faf8f4';
-    ctx.fillRect(0,0,W,H);
-
-    var PAD_L=36,PAD_R=14,PAD_T=14,PAD_B=28;
-    var gW=W-PAD_L-PAD_R;
-    var gH=H-PAD_T-PAD_B;
-
-    // ── グリッド & 軸 ──
-    ctx.strokeStyle='#e3dbd0';
-    ctx.lineWidth=1;
-    // 水平グリッド
-    for(var i=0;i<=4;i++){
-      var y=PAD_T+Math.round(gH*i/4)+0.5;
-      ctx.beginPath();ctx.moveTo(PAD_L,y);ctx.lineTo(PAD_L+gW,y);ctx.stroke();
-    }
-    // 垂直グリッド（0.5s刻み）
-    for(var ti=0;ti<=4;ti++){
-      var x=PAD_L+Math.round(gW*ti/4)+0.5;
-      ctx.beginPath();ctx.moveTo(x,PAD_T);ctx.lineTo(x,PAD_T+gH);ctx.stroke();
-    }
-
-    // 軸ラベル
-    ctx.fillStyle='#aaa49b';
-    ctx.font='10px "JetBrains Mono",monospace';
-    ctx.textAlign='right';
-    ctx.fillText('1.0',PAD_L-3,PAD_T+4);
-    ctx.fillText('0',PAD_L-3,PAD_T+gH+4);
-
-    ctx.textAlign='center';
-    for(var ti=0;ti<=4;ti++){
-      var x=PAD_L+Math.round(gW*ti/4);
-      ctx.fillText((T_MAX*ti/4).toFixed(2),x,PAD_T+gH+14);
-    }
-    ctx.fillStyle='#7d7568';
-    ctx.font='10px "Zen Kaku Gothic New",sans-serif';
-    ctx.fillText('t (s)',PAD_L+gW/2,PAD_T+gH+26);
-
-    // ── h(t) の単発カーブ（参照用）── 入力0でも常に薄く表示
-    // 振幅を正規化：max = h(0) = 1/RC → 正規化係数 RC
-    var NSTEP=gW;
-
-    function drawCurve(tOffsetSec,ampScale,color,lw,alpha){
-      ctx.save();
-      ctx.globalAlpha=alpha;
-      ctx.strokeStyle=color;
-      ctx.lineWidth=lw;
-      ctx.beginPath();
-      var started=false;
-      for(var px=0;px<=NSTEP;px++){
-        var t=px/gW*T_MAX;
-        var v=h(t-tOffsetSec)*RC*ampScale; // normalize by RC so peak=ampScale
-        if(v<0||t<tOffsetSec){
-          if(started){ctx.stroke();ctx.beginPath();started=false;}
-          continue;
-        }
-        var sx=PAD_L+px;
-        var sy=vy(Math.min(v,1.5),PAD_T,gH); // clampして範囲外を抑制
-        if(!started){ctx.moveTo(sx,sy);started=true;}
-        else ctx.lineTo(sx,sy);
-      }
-      if(started)ctx.stroke();
-      ctx.restore();
-    }
-
-    // ── モードごとの描画 ──
-    if(mode==='imp'){
-      // 参照用 h(t) を薄く
-      drawCurve(0,1,'#3c7876',1,0.25);
-      // 太く
-      drawCurve(0,1,'#3c7876',2.5,1);
-      // t=RC の目印
-      var xRC=PAD_L+Math.round(tx(RC));
-      var yRC=vy(Math.exp(-1),PAD_T,gH); // h(RC)*RC = e^-1 ≈ 0.368
-      ctx.save();
-      ctx.strokeStyle='#c9761f';
-      ctx.lineWidth=1;
-      ctx.setLineDash([4,3]);
-      ctx.beginPath();ctx.moveTo(xRC,PAD_T);ctx.lineTo(xRC,yRC);ctx.stroke();
-      ctx.beginPath();ctx.moveTo(PAD_L,yRC);ctx.lineTo(xRC,yRC);ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.restore();
-      // 目印ラベル
-      ctx.save();
-      ctx.fillStyle='#c9761f';
-      ctx.font='bold 10px "JetBrains Mono",monospace';
-      ctx.textAlign='left';
-      var lx=xRC+3;
-      if(lx>W-50)lx=xRC-48;
-      ctx.fillText('t=RC',lx,yRC-3);
-      ctx.font='10px "JetBrains Mono",monospace';
-      ctx.fillText('1/e≈0.37',lx,yRC+11);
-      ctx.restore();
-
-      // 情報バー
-      info.innerHTML='<b>h(t)</b> = <span class="v-teal">(1/RC)·e<sup>−t/RC</sup></span> &nbsp;|&nbsp; RC = <span class="v-teal">'+RC.toFixed(3)+'s</span> &nbsp;|&nbsp; t=RC の高さ = <span class="v-amber">1/e ≈ 0.368</span>';
-
-    } else if(mode==='multi'){
-      // 各インパルスの応答を薄い緑で
-      for(var i=0;i<impulses.length;i++){
-        drawCurve(impulses[i].t,impulses[i].amp,'#3c7876',1.2,0.35);
-      }
-      // 合計を黒線で
-      if(impulses.length>0){
-        ctx.save();
-        ctx.strokeStyle='#1d1b17';
-        ctx.lineWidth=2.5;
-        ctx.beginPath();
-        var started2=false;
-        for(var px=0;px<=NSTEP;px++){
-          var t=px/gW*T_MAX;
-          var sum=0;
-          for(var i=0;i<impulses.length;i++){
-            sum+=h(t-impulses[i].t)*RC*impulses[i].amp;
-          }
-          var sx=PAD_L+px;
-          var sy=vy(Math.min(Math.max(sum,0),1.5),PAD_T,gH);
-          if(!started2){ctx.moveTo(sx,sy);started2=true;}
-          else ctx.lineTo(sx,sy);
-        }
-        ctx.stroke();
-        ctx.restore();
-      } else {
-        // インパルスなし：ヒント
-        ctx.save();
-        ctx.fillStyle='#aaa49b';
-        ctx.font='13px "Zen Kaku Gothic New",sans-serif';
-        ctx.textAlign='center';
-        ctx.fillText('← グラフをクリックしてインパルスを追加',PAD_L+gW/2,PAD_T+gH/2);
-        ctx.restore();
-      }
-      // 各インパルスの縦線
-      for(var i=0;i<impulses.length;i++){
-        var xi=PAD_L+Math.round(tx(impulses[i].t));
-        ctx.save();
-        ctx.strokeStyle='#c9761f';
-        ctx.lineWidth=1.5;
-        ctx.beginPath();ctx.moveTo(xi,PAD_T+gH);ctx.lineTo(xi,PAD_T+gH-18);ctx.stroke();
-        // 矢印
-        ctx.fillStyle='#c9761f';
-        ctx.beginPath();ctx.moveTo(xi,PAD_T+gH-22);ctx.lineTo(xi-4,PAD_T+gH-14);ctx.lineTo(xi+4,PAD_T+gH-14);ctx.closePath();ctx.fill();
-        ctx.restore();
-      }
-      info.innerHTML='<span class="v-teal">薄い緑</span> = 各インパルスの応答 h(t−tᵢ) &nbsp;&nbsp; <b>黒線</b> = 合計 y(t) = Σ h(t−tᵢ) &nbsp;&nbsp; '+(impulses.length>0?'インパルス数 <b>'+impulses.length+'</b>':'グラフをクリックして追加');
-
-    } else { // step
-      var dispT=stepAnim.animT;
-      var fillRatio=stepResp(dispT);
-
-      // ── ステップ応答曲線（dispT まで漸進描画）──
-      ctx.save();
-      ctx.strokeStyle='#2563aa';
-      ctx.lineWidth=2.5;
-      ctx.beginPath();
-      var sfirst=true;
-      for(var px=0;px<=NSTEP;px++){
-        var st=px/gW*T_MAX;
-        if(st>dispT+1e-4)break;
-        var sv=stepResp(st);
-        var ssx=PAD_L+px;
-        var ssy=vy(Math.min(sv,1.0),PAD_T,gH);
-        if(sfirst){ctx.moveTo(ssx,ssy);sfirst=false;}
-        else ctx.lineTo(ssx,ssy);
-      }
-      ctx.stroke();
-      ctx.restore();
-
-      // 移動ドット（アニメ中のみ）
-      if(stepAnim.running&&dispT>0&&dispT<T_MAX){
-        var dotX=PAD_L+Math.round(dispT/T_MAX*gW);
-        var dotY=vy(Math.min(stepResp(dispT),1.0),PAD_T,gH);
-        ctx.save();ctx.fillStyle='#2563aa';
-        ctx.beginPath();ctx.arc(dotX,dotY,4,0,Math.PI*2);ctx.fill();ctx.restore();
-      }
-
-      // t=RC の目印（animT が RC を超えてから表示）
-      if(dispT>=RC){
-        var xRC2=PAD_L+Math.round(tx(RC));
-        var v63=1-Math.exp(-1);
-        var yRC2=vy(v63,PAD_T,gH);
-        ctx.save();ctx.strokeStyle='#c9761f';ctx.lineWidth=1;ctx.setLineDash([4,3]);
-        ctx.beginPath();ctx.moveTo(xRC2,PAD_T+gH);ctx.lineTo(xRC2,yRC2);ctx.stroke();
-        ctx.beginPath();ctx.moveTo(PAD_L,yRC2);ctx.lineTo(xRC2,yRC2);ctx.stroke();
-        ctx.setLineDash([]);ctx.restore();
-        ctx.save();ctx.fillStyle='#c9761f';
-        ctx.font='bold 10px "JetBrains Mono",monospace';ctx.textAlign='left';
-        var lx2=xRC2+3; if(lx2>W-64)lx2=xRC2-66;
-        ctx.fillText('t=RC',lx2,yRC2-3);
-        ctx.fillText('63%充電',lx2,yRC2+11);
-        ctx.restore();
-      }
-
-      // 入力ステップ（薄い橙の点線）
-      ctx.save();ctx.strokeStyle='#c9761f';ctx.lineWidth=1;ctx.globalAlpha=0.45;ctx.setLineDash([3,3]);
-      ctx.beginPath();ctx.moveTo(PAD_L,PAD_T+1);ctx.lineTo(PAD_L+gW,PAD_T+1);ctx.stroke();
-      ctx.setLineDash([]);ctx.restore();
-
-      // ── コンデンサ記号（上右コーナー）──
-      var cBW=36,cGapH=38,cPtH=4,cTermH=8;
-      var cTotalH=cTermH+cPtH+cGapH+cPtH+cTermH; // 62px
-      var cX=PAD_L+gW-cBW-4, cY=PAD_T+6;
-      var cGapTop=cY+cTermH+cPtH, cGapBot=cGapTop+cGapH;
-
-      // 背景白抜き（曲線が透けないよう）
-      ctx.fillStyle='rgba(250,248,244,0.92)';
-      ctx.fillRect(cX-5,cY-5,cBW+10,cTotalH+22);
-
-      // ギャップ背景（薄青）
-      ctx.fillStyle='#e8f0fa';
-      ctx.fillRect(cX,cGapTop,cBW,cGapH);
-
-      // 充電フィル（teal、下から満ちる）
-      var cFillPx=Math.round(cGapH*fillRatio);
-      if(cFillPx>0){
-        ctx.fillStyle='#3c7876';
-        ctx.globalAlpha=0.58;
-        ctx.fillRect(cX,cGapBot-cFillPx,cBW,cFillPx);
-        ctx.globalAlpha=1;
-      }
-
-      // ギャップ枠
-      ctx.strokeStyle='#c9b8a8';ctx.lineWidth=1;
-      ctx.strokeRect(cX,cGapTop,cBW,cGapH);
-
-      // 極板（上下）
-      ctx.fillStyle='#3a3835';
-      ctx.fillRect(cX-3,cY+cTermH,cBW+6,cPtH);
-      ctx.fillRect(cX-3,cGapBot,cBW+6,cPtH);
-
-      // 端子線（上下）
-      ctx.strokeStyle='#666';ctx.lineWidth=1.5;
-      ctx.beginPath();ctx.moveTo(cX+cBW/2,cY);ctx.lineTo(cX+cBW/2,cY+cTermH);ctx.stroke();
-      ctx.beginPath();ctx.moveTo(cX+cBW/2,cGapBot+cPtH);ctx.lineTo(cX+cBW/2,cGapBot+cPtH+cTermH);ctx.stroke();
-
-      // 充電 % ラベル
-      ctx.fillStyle='#3c7876';
-      ctx.font='bold 9px "JetBrains Mono",monospace';
-      ctx.textAlign='center';
-      ctx.fillText((fillRatio*100).toFixed(0)+'%',cX+cBW/2,cGapBot+cPtH+cTermH+11);
-
-      info.innerHTML='<span style="color:var(--blue);font-weight:600">青線</span> = 1−e<sup>−t/RC</sup> &nbsp;|&nbsp; RC = <span class="v-teal">'+RC.toFixed(2)+'s</span> &nbsp;|&nbsp; 充電 <span class="v-teal">'+(fillRatio*100).toFixed(0)+'%</span>'+(dispT>=RC?' &nbsp;|&nbsp; t=RC: <span class="v-amber">63%</span>':'');
-    }
-
-    // 軸（外枠）
-    ctx.strokeStyle='#c9b8a8';
-    ctx.lineWidth=1;
-    ctx.strokeRect(PAD_L+0.5,PAD_T+0.5,gW,gH);
+    ctx.fillStyle='#faf8f4'; ctx.fillRect(0,0,W,H);
+    if(mode==='step') drawStep();
+    else if(mode==='imp') drawImp();
+    else drawMulti();
   }
 
-  // ── インタラクション ──
-  function canvasClick(ev){
+  // ---- インタラクション ----
+  function addImpulseAt(clientX){
     if(mode!=='multi')return;
     var rect=cv.getBoundingClientRect();
-    var px=(ev.clientX-rect.left)*(W/rect.width);
-    var PAD_L=36,PAD_R=14;
-    var gW=W-PAD_L-PAD_R;
-    var tClick=(px-PAD_L)/gW*T_MAX;
-    if(tClick<0||tClick>T_MAX)return;
-    impulses.push({t:tClick,amp:1});
-    draw();
+    var px=(clientX-rect.left)*(W/rect.width);
+    var PAD_L=36,PAD_R=14,gW=W-PAD_L-PAD_R;
+    var t=(px-PAD_L)/gW*T_MAX;
+    if(t<0||t>T_MAX)return;
+    impulses.push({t:t,amp:1}); draw();
   }
-  function canvasTouch(ev){
-    if(mode!=='multi')return;
-    ev.preventDefault();
-    var touch=ev.changedTouches[0];
-    var rect=cv.getBoundingClientRect();
-    var px=(touch.clientX-rect.left)*(W/rect.width);
-    var PAD_L=36,PAD_R=14;
-    var gW=W-PAD_L-PAD_R;
-    var tClick=(px-PAD_L)/gW*T_MAX;
-    if(tClick<0||tClick>T_MAX)return;
-    impulses.push({t:tClick,amp:1});
-    draw();
-  }
+  cv.addEventListener('click',function(e){ addImpulseAt(e.clientX); });
+  cv.addEventListener('touchend',function(e){ if(mode==='multi'){ e.preventDefault(); addImpulseAt(e.changedTouches[0].clientX); } },{passive:false});
 
-  cv.addEventListener('click',canvasClick);
-  cv.addEventListener('touchend',canvasTouch,{passive:false});
-
-  // RC スライダ
   rcSlider.addEventListener('input',function(){
-    RC=+rcSlider.value;
-    rcVal.textContent=RC.toFixed(2)+' s';
+    RC=+rcSlider.value; rcVal.textContent=RC.toFixed(2)+' s';
     if(mode==='step')startStepAnim(); else draw();
   });
 
-  // モード切替
   function setMode(m){
     mode=m;
+    bStep.classList.toggle('on',m==='step');
     bImp.classList.toggle('on',m==='imp');
     bMulti.classList.toggle('on',m==='multi');
-    bStep.classList.toggle('on',m==='step');
     cv.style.cursor=(m==='multi')?'crosshair':'default';
+    bReplay.style.display=(m==='step')?'':'none';
     if(m==='step')startStepAnim(); else draw();
   }
+  bStep.addEventListener('click',function(){setMode('step');});
   bImp.addEventListener('click',function(){setMode('imp');});
   bMulti.addEventListener('click',function(){setMode('multi');});
-  bStep.addEventListener('click',function(){setMode('step');});
-  bClear.addEventListener('click',function(){impulses=[];draw();});
+  bReplay.addEventListener('click',function(){ if(mode==='multi'){impulses=[];draw();} else startStepAnim(); });
 
-  // リサイズ
-  var ro=new ResizeObserver(function(){resize();});
-  ro.observe(stage);
+  var ro=new ResizeObserver(function(){resize();}); ro.observe(stage);
   resize();
+  startStepAnim();
 })();
 </script>
 </body>

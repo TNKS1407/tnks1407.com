@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex, nofollow" />
-<title>部屋の残響 — こだまのインパルス応答</title>
+<title>部屋の残響 — こだまが重なって尾になる</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
 <style>
@@ -35,18 +35,14 @@ header{display:flex;align-items:flex-end;gap:10px;margin-bottom:14px;flex-wrap:w
 .lead b{color:var(--text);}
 .card-tool{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;
   box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
-/* 2ペイン構造：上＝h(t)くし、下＝y(t)出力 */
-#stage{width:100%;overflow:hidden;background:var(--surface);}
-#cvH{display:block;width:100%;touch-action:none;}
-#cvY{display:block;width:100%;touch-action:none;border-top:1px solid var(--border);}
-/* 情報バー */
+#stage{position:relative;width:100%;height:clamp(260px,52vw,420px);overflow:hidden;background:var(--surface);}
+canvas{display:block;width:100%;height:100%;touch-action:none;}
 #info{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);
-  padding:.4rem .7rem;font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--muted);line-height:1.75;}
+  padding:.45rem .7rem;font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--muted);line-height:1.75;min-height:2.4rem;}
 #info b{color:var(--text);}
 #info .v-teal{color:var(--teal);font-weight:600;}
 #info .v-amber{color:var(--amber);font-weight:600;}
 #info .v-red{color:var(--red);font-weight:600;}
-/* コントロール */
 .ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);
   padding:.5rem .7rem;display:flex;flex-wrap:wrap;gap:.5rem .8rem;align-items:center;}
 .cg{display:flex;align-items:center;gap:.4rem;font-size:.76rem;}
@@ -58,358 +54,212 @@ button{font-family:'Zen Kaku Gothic New',sans-serif;font-size:.74rem;font-weight
   color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:8px;
   padding:.28rem .65rem;cursor:pointer;transition:border-color .15s,background .15s,color .15s;}
 button:hover{border-color:var(--teal);}
-button.on{background:var(--teal);color:#fff;border-color:var(--teal);}
 button.pri{background:var(--red);color:#fff;border-color:var(--red);}
 button.pri:hover{background:#a83d28;}
 footer{text-align:center;color:var(--faint);font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:12px;}
-/* embed */
 body.embed{height:100%;display:flex;flex-direction:column;overflow:hidden;background-image:none;}
 body.embed .wrap{max-width:none;margin:0;padding:0;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
 body.embed header,body.embed .lead,body.embed footer{display:none;}
 body.embed .card-tool{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;border:none;border-radius:0;box-shadow:none;}
-body.embed #stage{flex:1 1 auto;overflow:auto;}
+body.embed #stage{flex:1 1 auto;height:auto;min-height:160px;}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
     <div class="brand"><span class="a">こだま</span>の残響</div>
-    <div class="tag">部屋のインパルス応答 = くし形フィルタ</div>
+    <div class="tag">こだまが1個ずつ帰ってきて、余韻が重なって「尾」になる</div>
   </header>
   <div class="lead">
-    <p>部屋でパンと手を叩くと、直音の後に <b>遅れ T ごとに a 倍ずつ小さくなったこだま</b> が続く。インパルス応答は <b>h(t) = δ(t) + a·δ(t−T) + a²·δ(t−2T) + …</b> ── 等間隔の棒が幾何級数的に低くなる「くし」の形をしている。</p>
-    <p>このフィルタに入力を通すと、出力は <b>原音＋遅れて小さくなったコピーの重ね合わせ</b> になる。スライダで <b>a（減衰）</b> と <b>T（こだまの遅れ）</b> を動かすと、くしの形と出力がリアルタイムで変わる。</p>
-    <p style="font-size:12px;color:var(--muted);">「パルスを入れる」ボタン → 出力を描画。「♪ 鳴らす」→ WebAudio でエコーを実際に聴ける。減衰 a を 1 に近づけると尾が長く響く。</p>
+    <p>手を叩くと、まず<b>直接音</b>が届く。少し遅れて、壁で跳ね返った<b>こだま</b>が1個ずつ帰ってくる ── 遅れ <b>T</b> ごとに、<b>a</b> 倍ずつ小さくなりながら。</p>
+    <p>1個1個は小さくても、間隔が詰まっていると<b>余韻が重なり合って、ひと続きの「反響の尾」</b>になる。これが残響（リバーブ）だ。下の塗りつぶしが、その重なった尾。<b>a</b> を 1 に近づけると尾が長く伸び、<b>T</b> を詰めると密になる。</p>
+    <p style="font-size:12px;color:var(--muted);">「♪ 鳴らす」＝音と一緒に、こだまが順に帰ってくる。「パルス」＝全部いっぺんに表示。</p>
   </div>
   <div class="card-tool">
-    <div id="stage">
-      <!-- 上段: h(t) くし -->
-      <canvas id="cvH"></canvas>
-      <!-- 下段: y(t) 出力 -->
-      <canvas id="cvY"></canvas>
-    </div>
+    <div id="stage"><canvas id="cv"></canvas></div>
     <div id="info"></div>
     <div class="ctrl">
       <div class="cg">
-        <label><b>a</b> 減衰</label>
-        <input type="range" id="aSlider" min="0.05" max="0.97" step="0.01" value="0.70" />
-        <span class="val" id="aVal">0.70</span>
+        <label><b>a</b> 残響</label>
+        <input type="range" id="aSlider" min="0.30" max="0.93" step="0.01" value="0.82" />
+        <span class="val" id="aVal">0.82</span>
       </div>
       <div class="cg">
-        <label><b>T</b> 遅れ</label>
-        <input type="range" id="tSlider" min="0.04" max="0.45" step="0.01" value="0.18" />
-        <span class="val" id="tVal">0.18 s</span>
+        <label><b>T</b> 間隔</label>
+        <input type="range" id="tSlider" min="0.04" max="0.20" step="0.005" value="0.09" />
+        <span class="val" id="tVal">0.09 s</span>
       </div>
-      <button id="bPulse" class="pri">パルスを入れる</button>
-      <button id="bPlay">♪ 鳴らす</button>
+      <button id="bPlay" class="pri">♪ 鳴らす</button>
+      <button id="bPulse">パルス</button>
     </div>
   </div>
-  <footer>重ね合わせ — インパルス応答</footer>
+  <footer>重ね合わせ — 残響（こだまの重なり）</footer>
 </div>
 
 <script>
 if(window.self!==window.top)document.body.classList.add('embed');
 
 (function(){
-  var cvH=document.getElementById('cvH');
-  var cvY=document.getElementById('cvY');
-  var ctxH=cvH.getContext('2d');
-  var ctxY=cvY.getContext('2d');
+  var cv=document.getElementById('cv');
+  var ctx=cv.getContext('2d');
   var info=document.getElementById('info');
   var aSlider=document.getElementById('aSlider');
   var aVal=document.getElementById('aVal');
   var tSlider=document.getElementById('tSlider');
   var tVal=document.getElementById('tVal');
-  var bPulse=document.getElementById('bPulse');
   var bPlay=document.getElementById('bPlay');
+  var bPulse=document.getElementById('bPulse');
   var stage=document.getElementById('stage');
 
-  // ── パラメータ ──
-  var a=0.70;  // 減衰係数
-  var T=0.18;  // エコー遅れ（秒）
-  var N_ECHO=64; // 最大エコー数（打ち切り）
+  var a=0.82, T=0.09, T_MAX=2.6, NMAX=90;
+  var AMPMAX=1.7;
+  var anim={running:false,revealed:0,startMs:0,raf:null};
+  var echoes=[];
 
-  // 時間軸：0〜T_MAX
-  var T_MAX=2.0;
-
-  // y(t) の状態
-  // パルス入力：x(t) = δ(t - t0) が入力されたとき
-  // y(t) = Σ_{n=0}^{N} a^n * x(t - nT) = Σ a^n * δ(t - nT - t0)
-  // → 複数入力（t0 は複数かもしれないが、ここでは単発パルスのみ）
-  // 表示は棒グラフ（サンプル離散的に描く）
-
-  // 出力信号 y の棒（{t, amp} の配列）
-  var yBars=[]; // 最後のパルス発射で計算
-  var hasPulse=false;
-  var echoAnim={running:false,revealedN:0,startMs:0,raf:null};
-
-  var W=0,Hh=0,Hy=0,DPR=1;
-
+  var W=0,H=0,DPR=1;
   function resize(){
     DPR=Math.min(window.devicePixelRatio||1,2);
     var rect=stage.getBoundingClientRect();
-    W=Math.round(rect.width);
-    // 上段: h(t) くし → 高さ40%
-    // 下段: y(t) 出力 → 高さ60%
-    // 合計は stage の中で収まるよう設定
-    // stageは高さ固定なし。bodyがscrollできるのでOK
-    // cssで #stage height は指定しないが、canvas の固有サイズで決まる
-    var totalH=Math.round(Math.max(280, Math.min(W*0.55, 420)));
-    Hh=Math.round(totalH*0.40);
-    Hy=totalH-Hh;
-
-    cvH.width=W*DPR; cvH.height=Hh*DPR;
-    cvH.style.width=W+'px'; cvH.style.height=Hh+'px';
-    ctxH.setTransform(DPR,0,0,DPR,0,0);
-
-    cvY.width=W*DPR; cvY.height=Hy*DPR;
-    cvY.style.width=W+'px'; cvY.style.height=Hy+'px';
-    ctxY.setTransform(DPR,0,0,DPR,0,0);
-
-    draw();
+    W=Math.round(rect.width); H=Math.round(rect.height);
+    cv.width=W*DPR; cv.height=H*DPR; cv.style.width=W+'px'; cv.style.height=H+'px';
+    ctx.setTransform(DPR,0,0,DPR,0,0); draw();
   }
 
-  // ── 描画ユーティリティ ──
-  var PAD_L=36,PAD_R=14,PAD_T=12,PAD_B=26;
-
-  function drawAxes(ctx,H,label){
-    var gW=W-PAD_L-PAD_R;
-    var gH=H-PAD_T-PAD_B;
-    // グリッド
-    ctx.strokeStyle='#e3dbd0';
-    ctx.lineWidth=1;
-    for(var i=0;i<=4;i++){
-      var y=PAD_T+Math.round(gH*i/4)+0.5;
-      ctx.beginPath();ctx.moveTo(PAD_L,y);ctx.lineTo(PAD_L+gW,y);ctx.stroke();
+  function computeEchoes(){
+    var arr=[];
+    for(var n=0;n<NMAX;n++){
+      var tn=n*T; if(tn>T_MAX)break;
+      var amp=Math.pow(a,n); if(n>0 && amp<0.012)break;
+      arr.push({t:tn,amp:amp});
     }
-    for(var ti=0;ti<=4;ti++){
-      var x=PAD_L+Math.round(gW*ti/4)+0.5;
-      ctx.beginPath();ctx.moveTo(x,PAD_T);ctx.lineTo(x,PAD_T+gH);ctx.stroke();
+    return arr;
+  }
+  // 余韻つきの重なり（reverb envelope）
+  function envAt(t,upto){
+    var tau=T*1.4, s=0;
+    for(var i=0;i<upto;i++){
+      var e=echoes[i]; if(e.t>t)break;
+      s+=e.amp*Math.exp(-(t-e.t)/tau);
     }
-    // 軸ラベル
-    ctx.fillStyle='#aaa49b';
-    ctx.font='10px "JetBrains Mono",monospace';
-    ctx.textAlign='right';
-    ctx.fillText('1',PAD_L-3,PAD_T+5);
-    ctx.fillText('0',PAD_L-3,PAD_T+gH+4);
-    ctx.textAlign='center';
-    for(var ti=0;ti<=4;ti++){
-      var x=PAD_L+Math.round(gW*ti/4);
-      ctx.fillText((T_MAX*ti/4).toFixed(2),x,PAD_T+gH+14);
-    }
-    ctx.fillStyle='#7d7568';
-    ctx.font='10px "Zen Kaku Gothic New",sans-serif';
-    ctx.fillText(label,PAD_L+gW/2,PAD_T+gH+25);
-    // 外枠
-    ctx.strokeStyle='#c9b8a8';
-    ctx.lineWidth=1;
-    ctx.strokeRect(PAD_L+0.5,PAD_T+0.5,gW,gH);
+    return s;
   }
 
-  // 棒を描く（上向き）
-  function drawBar(ctx,H,tSec,normAmp,color,alpha,lw){
-    var gW=W-PAD_L-PAD_R;
-    var gH=H-PAD_T-PAD_B;
-    var x=PAD_L+tSec/T_MAX*gW;
-    var yBase=PAD_T+gH;
-    var yTop=PAD_T+gH*(1-Math.min(normAmp,1.2));
-    ctx.save();
-    ctx.globalAlpha=alpha||1;
-    ctx.strokeStyle=color;
-    ctx.lineWidth=lw||2;
-    ctx.beginPath();ctx.moveTo(x,yBase);ctx.lineTo(x,yTop);ctx.stroke();
-    // 矢印頭
-    ctx.fillStyle=color;
-    ctx.beginPath();
-    ctx.moveTo(x,yTop-5);
-    ctx.lineTo(x-3,yTop+2);
-    ctx.lineTo(x+3,yTop+2);
-    ctx.closePath();ctx.fill();
-    ctx.restore();
-  }
-
-  function drawH(){
-    if(!W||!Hh)return;
-    ctxH.clearRect(0,0,W,Hh);
-    ctxH.fillStyle='#faf8f4';
-    ctxH.fillRect(0,0,W,Hh);
-
-    // パネルラベル
-    ctxH.fillStyle='#7d7568';
-    ctxH.font='10px "Zen Kaku Gothic New",sans-serif';
-    ctxH.textAlign='left';
-    ctxH.fillText('h(t)：インパルス応答（くし）',PAD_L+2,PAD_T-1);
-
-    drawAxes(ctxH,Hh,'t (s)');
-
-    // こだまの棒を描く
-    // h(0) = 1, h(T) = a, h(2T) = a^2, ...
-    for(var n=0;n<N_ECHO;n++){
-      var tEcho=n*T;
-      if(tEcho>T_MAX)break;
-      var amp=Math.pow(a,n);
-      if(amp<0.005)break;
-      var col=(n===0)?'#1d1b17':'#3c7876';
-      var lw=(n===0)?2.5:1.8;
-      drawBar(ctxH,Hh,tEcho,amp,col,1,lw);
-    }
-
-    // T の目盛り線
-    var gW=W-PAD_L-PAD_R;
-    var gH=Hh-PAD_T-PAD_B;
-    var xT=PAD_L+T/T_MAX*gW;
-    ctxH.save();
-    ctxH.strokeStyle='#c9761f';
-    ctxH.lineWidth=1;
-    ctxH.setLineDash([3,3]);
-    ctxH.beginPath();ctxH.moveTo(xT,PAD_T+gH);ctxH.lineTo(xT,PAD_T+gH+PAD_B*0.5);ctxH.stroke();
-    ctxH.setLineDash([]);
-    ctxH.fillStyle='#c9761f';
-    ctxH.font='bold 9px "JetBrains Mono",monospace';
-    ctxH.textAlign='center';
-    ctxH.fillText('T',xT,PAD_T+gH+22);
-    ctxH.restore();
-  }
-
-  function drawY(){
-    if(!W||!Hy)return;
-    ctxY.clearRect(0,0,W,Hy);
-    ctxY.fillStyle='#faf8f4';
-    ctxY.fillRect(0,0,W,Hy);
-
-    ctxY.fillStyle='#7d7568';
-    ctxY.font='10px "Zen Kaku Gothic New",sans-serif';
-    ctxY.textAlign='left';
-    ctxY.fillText('y(t)：パルス入力への出力（こだまの重ね合わせ）',PAD_L+2,PAD_T-1);
-
-    drawAxes(ctxY,Hy,'t (s)');
-
-    if(!hasPulse){
-      ctxY.fillStyle='#aaa49b';
-      ctxY.font='12px "Zen Kaku Gothic New",sans-serif';
-      ctxY.textAlign='center';
-      ctxY.fillText('← 「パルスを入れる」で出力を描画',PAD_L+(W-PAD_L-PAD_R)/2,PAD_T+(Hy-PAD_T-PAD_B)/2+5);
-      return;
-    }
-
-    // y の棒（アニメ中は revealedN 本まで、それ以外は全本）
-    var showN=echoAnim.running?echoAnim.revealedN:yBars.length;
-    for(var i=0;i<showN;i++){
-      var b=yBars[i];
-      var col=(i===0)?'#1d1b17':'#3c7876';
-      var lw=(i===0)?2.5:1.8;
-      drawBar(ctxY,Hy,b.t,b.amp,col,1,lw);
-    }
-  }
+  var PAD_L=40,PAD_R=14,PAD_T=18,PAD_B=34;
+  function ax(){ return {gW:W-PAD_L-PAD_R, gH:H-PAD_T-PAD_B, x0:PAD_L, y0:PAD_T, base:H-PAD_B}; }
+  function yv(g,v){ return g.base - Math.min(v,AMPMAX)/AMPMAX*g.gH; }
 
   function draw(){
-    drawH();
-    drawY();
-    updateInfo();
-  }
+    if(!W||!H)return;
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle='#faf8f4'; ctx.fillRect(0,0,W,H);
+    var g=ax();
 
-  function updateInfo(){
-    // こだまが-60dBになるまでの本数・時間
-    var n60=Math.ceil(Math.log(0.001)/Math.log(a));
-    var t60=(n60-1)*T;
-    info.innerHTML=
-      'h(t) = δ(t) + <span class="v-teal">'+a.toFixed(2)+'</span>·δ(t−T) + <span class="v-teal">'+a.toFixed(2)+'²</span>·δ(t−2T) + …'+
-      ' &nbsp;|&nbsp; T = <span class="v-amber">'+T.toFixed(2)+'s</span>'+
-      ' &nbsp;|&nbsp; −60dB まで <span class="v-teal">'+Math.min(n60,N_ECHO)+'本</span>（<span class="v-amber">'+Math.min(t60,T_MAX).toFixed(2)+'s</span>）';
-  }
+    // グリッド & 時間軸
+    ctx.strokeStyle='#e9e3d8'; ctx.lineWidth=1;
+    for(var i=0;i<=4;i++){ var yy=g.y0+Math.round(g.gH*i/4)+0.5; ctx.beginPath(); ctx.moveTo(g.x0,yy); ctx.lineTo(g.x0+g.gW,yy); ctx.stroke(); }
+    ctx.strokeStyle='#c9b8a8'; ctx.lineWidth=1.2;
+    ctx.beginPath(); ctx.moveTo(g.x0,g.base+0.5); ctx.lineTo(g.x0+g.gW,g.base+0.5); ctx.stroke();
+    ctx.fillStyle='#aaa49b'; ctx.font='10px "JetBrains Mono",monospace'; ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+    for(var tj=0;tj<=4;tj++){ ctx.fillText((T_MAX*tj/4).toFixed(1),g.x0+g.gW*tj/4,g.base+14); }
+    ctx.fillStyle='#7d7568'; ctx.fillText('時間 t (s) →',g.x0+g.gW/2,g.base+26);
 
-  // ── パルス発射 ──
-  function computeYBars(){
-    yBars=[];
-    for(var n=0;n<N_ECHO;n++){
-      var tEcho=n*T;
-      if(tEcho>T_MAX)break;
-      var amp=Math.pow(a,n);
-      if(amp<0.003)break;
-      yBars.push({t:tEcho,amp:amp});
+    echoes=computeEchoes();
+    var upto = anim.running ? Math.min(anim.revealed,echoes.length) : echoes.length;
+
+    // ---- 重なった「反響の尾」(envelope) を塗る ----
+    if(upto>0){
+      ctx.beginPath();
+      ctx.moveTo(g.x0, g.base);
+      for(var px=0;px<=g.gW;px++){
+        var t=px/g.gW*T_MAX;
+        var E=envAt(t,upto);
+        ctx.lineTo(g.x0+px, yv(g,E));
+      }
+      ctx.lineTo(g.x0+g.gW, g.base); ctx.closePath();
+      var grad=ctx.createLinearGradient(0,g.y0,0,g.base);
+      grad.addColorStop(0,'rgba(60,120,118,0.34)'); grad.addColorStop(1,'rgba(60,120,118,0.06)');
+      ctx.fillStyle=grad; ctx.fill();
+      // 尾の輪郭
+      ctx.beginPath();
+      for(var px2=0;px2<=g.gW;px2++){ var t2=px2/g.gW*T_MAX; var sx=g.x0+px2, sy=yv(g,envAt(t2,upto)); if(px2===0)ctx.moveTo(sx,sy); else ctx.lineTo(sx,sy); }
+      ctx.strokeStyle='rgba(60,120,118,0.55)'; ctx.lineWidth=1.5; ctx.stroke();
     }
+
+    // ---- こだまの棒（1個ずつ）----
+    for(var k=0;k<upto;k++){
+      var e=echoes[k];
+      var ex=g.x0+e.t/T_MAX*g.gW, ey=yv(g,e.amp);
+      var isDirect=(k===0), isNew=(anim.running && k===upto-1);
+      ctx.strokeStyle=isDirect?'#1d1b17':(isNew?'#c9761f':'#3c7876');
+      ctx.lineWidth=isDirect?3:(isNew?2.6:1.8);
+      ctx.beginPath(); ctx.moveTo(ex,g.base); ctx.lineTo(ex,ey); ctx.stroke();
+      // 頭の点
+      ctx.fillStyle=isDirect?'#1d1b17':(isNew?'#c9761f':'#3c7876');
+      ctx.beginPath(); ctx.arc(ex,ey,isDirect?4:(isNew?4:2.6),0,6.2832); ctx.fill();
+      if(isNew){ ctx.save(); ctx.globalAlpha=0.4; ctx.strokeStyle='#c9761f'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(ex,ey,8,0,6.2832); ctx.stroke(); ctx.restore(); }
+    }
+
+    // 直接音ラベル
+    if(upto>0){
+      ctx.fillStyle='#1d1b17'; ctx.font='bold 10px "Zen Kaku Gothic New",sans-serif'; ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+      ctx.fillText('直接音',g.x0+3,yv(g,1)-7);
+      if(upto>2){ var mx=g.x0+(echoes[Math.min(upto-1,echoes.length-1)].t)/T_MAX*g.gW*0.55; ctx.fillStyle='#3c7876'; ctx.fillText('こだまの尾（重なった残響）',Math.min(mx,g.x0+g.gW-150),g.y0+14); }
+    }
+
+    // 読み出し
+    var n60=Math.ceil(Math.log(0.001)/Math.log(a)), t60=Math.min(n60*T,T_MAX);
+    info.innerHTML='<b>直接音</b> ＋ こだま <span class="v-teal">'+Math.max(upto-1,0)+'</span> 本'+
+      ' &nbsp;|&nbsp; 残響 a=<span class="v-teal">'+a.toFixed(2)+'</span>（1に近いほど長い）'+
+      ' &nbsp;|&nbsp; 間隔 T=<span class="v-amber">'+T.toFixed(3)+'s</span>'+
+      ' &nbsp;|&nbsp; 尾の長さ <span class="v-amber">~'+t60.toFixed(2)+'s</span>';
   }
-  function stopEchoAnim(){
-    if(echoAnim.raf){cancelAnimationFrame(echoAnim.raf);echoAnim.raf=null;}
-    echoAnim.running=false;
-  }
-  function startEchoAnim(){
-    stopEchoAnim();
-    echoAnim.running=true;
-    echoAnim.revealedN=0;
-    echoAnim.startMs=performance.now();
+
+  function showAll(){ stopAnim(); anim.running=false; draw(); }
+  function stopAnim(){ if(anim.raf){cancelAnimationFrame(anim.raf);anim.raf=null;} anim.running=false; }
+
+  function startReveal(){
+    echoes=computeEchoes();
+    stopAnim(); anim.running=true; anim.revealed=0; anim.startMs=performance.now();
     (function tick(){
-      var elapsed=(performance.now()-echoAnim.startMs)/1000;
-      var newN=0;
-      for(var n=0;n<yBars.length;n++){if(yBars[n].t<=elapsed+0.025)newN=n+1;}
-      if(newN!==echoAnim.revealedN){echoAnim.revealedN=newN;drawY();}
-      if(echoAnim.revealedN<yBars.length){echoAnim.raf=requestAnimationFrame(tick);}
-      else{stopEchoAnim();}
+      var el=(performance.now()-anim.startMs)/1000;
+      var r=0; for(var i=0;i<echoes.length;i++){ if(echoes[i].t<=el+0.001)r=i+1; }
+      anim.revealed=r; draw();
+      if(r<echoes.length){ anim.raf=requestAnimationFrame(tick); }
+      else{ stopAnim(); draw(); }
     })();
   }
-  function firePulse(){
-    computeYBars();
-    hasPulse=true;
-    stopEchoAnim();
-    echoAnim.revealedN=yBars.length; // 即座に全本表示
-    draw();
-  }
 
-  // ── WebAudio エコー ──
+  // ---- WebAudio：こだまを実際に鳴らす ----
   var audioCtx=null;
   function playEcho(){
-    if(!audioCtx){
-      try{ audioCtx=new (window.AudioContext||window.webkitAudioContext)(); }
-      catch(e){ alert('WebAudio が使えません'); return; }
-    }
+    echoes=computeEchoes();
+    if(!audioCtx){ try{ audioCtx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ startReveal(); return; } }
     if(audioCtx.state==='suspended') audioCtx.resume();
-    // yBars を最新パラメータで再計算（音と映像を必ず同期）
-    computeYBars();
-    hasPulse=true;
     var now=audioCtx.currentTime;
-    for(var n=0;n<yBars.length;n++){
-      var tOff=yBars[n].t;
-      var amp=yBars[n].amp*0.4;
-      if(amp<0.005)break;
-      var osc=audioCtx.createOscillator();
-      var gain=audioCtx.createGain();
-      osc.type='sine';
-      osc.frequency.value=880;
-      gain.gain.setValueAtTime(0,now+tOff);
-      gain.gain.linearRampToValueAtTime(amp,now+tOff+0.003);
-      gain.gain.linearRampToValueAtTime(0,now+tOff+0.025);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start(now+tOff);
-      osc.stop(now+tOff+0.06);
+    for(var n=0;n<echoes.length;n++){
+      var tOff=echoes[n].t, amp=echoes[n].amp*0.32; if(amp<0.004)continue;
+      var osc=audioCtx.createOscillator(), gn=audioCtx.createGain();
+      osc.type='triangle'; osc.frequency.value=560;
+      gn.gain.setValueAtTime(0,now+tOff);
+      gn.gain.linearRampToValueAtTime(amp,now+tOff+0.004);
+      gn.gain.exponentialRampToValueAtTime(0.0008,now+tOff+0.10);
+      osc.connect(gn); gn.connect(audioCtx.destination);
+      osc.start(now+tOff); osc.stop(now+tOff+0.14);
     }
-    // 映像アニメ：音と同時スタート（performance.now()基準で棒を順に出す）
-    startEchoAnim();
+    startReveal();
     bPlay.textContent='♪ 再生中…';
-    var totalT=yBars.length>0?yBars[yBars.length-1].t+0.15:T_MAX;
-    setTimeout(function(){bPlay.textContent='♪ 鳴らす';},Math.min(totalT,T_MAX)*1000+300);
+    var total=echoes.length?echoes[echoes.length-1].t+0.2:1;
+    setTimeout(function(){ bPlay.textContent='♪ 鳴らす'; }, Math.min(total,T_MAX)*1000+250);
   }
 
-  // ── イベント ──
-  aSlider.addEventListener('input',function(){
-    a=+aSlider.value;
-    aVal.textContent=a.toFixed(2);
-    if(hasPulse)firePulse();
-    else draw();
-  });
-  tSlider.addEventListener('input',function(){
-    T=+tSlider.value;
-    tVal.textContent=T.toFixed(2)+' s';
-    if(hasPulse)firePulse();
-    else draw();
-  });
-  bPulse.addEventListener('click',firePulse);
+  aSlider.addEventListener('input',function(){ a=+aSlider.value; aVal.textContent=a.toFixed(2); showAll(); });
+  tSlider.addEventListener('input',function(){ T=+tSlider.value; tVal.textContent=T.toFixed(3)+' s'; showAll(); });
+  bPulse.addEventListener('click',showAll);
   bPlay.addEventListener('click',playEcho);
 
-  // リサイズ
-  var ro=new ResizeObserver(function(){resize();});
-  ro.observe(stage);
+  var ro=new ResizeObserver(function(){resize();}); ro.observe(stage);
   resize();
+  showAll();
 })();
 </script>
 </body>
