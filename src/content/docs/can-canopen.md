@@ -1,0 +1,75 @@
+---
+title: "CAN と CANopen ── 衝突しない、優先度つきのバス"
+description: "RS-485 は親分が1台ずつ聞いて回った。CAN はそこを飛び越える ── 誰でも喋れる多マスタなのに、複数が同時に話し出しても衝突せず、優先度の高いメッセージが自動で勝つ。鍵は『0 が 1 に勝つ』という一つのルール（非破壊アービトレーション）。車の中で鍛えられたこの仕組みと、その上の辞書 CANopen（EtherCAT の CoE の元）を開けてみる。"
+pubDate: 2026-06-29
+tags: ["通信", "CAN", "CANopen", "アービトレーション", "多マスタ", "車載"]
+demo: "/can-arbitration/"
+demoLabel: "CAN アービトレーションのラボを全画面で開く"
+---
+
+<style>
+.code-sample{background:#fbf8f2;border:1px solid #e3dbd0;border-radius:8px;padding:.85rem 1rem;margin:1.3rem 0;font-family:'JetBrains Mono',monospace;font-size:.82rem;line-height:1.8;overflow-x:auto;color:#3a3835;white-space:pre;}
+.code-sample .ck{color:#7a5ea8;}.code-sample .cf{color:#2563aa;}.code-sample .cs{color:#3c7876;}.code-sample .cn{color:#c9761f;}.code-sample .cc{color:#aaa49b;font-style:italic;}
+.code-cap{font-size:.74rem;color:#aaa49b;font-family:'JetBrains Mono',monospace;margin:-.7rem 0 1.3rem;}
+</style>
+
+[RS-485 と Modbus](/docs/rs485-modbus/) では、親分（master）が子を1台ずつ順番に聞いて回った（ポーリング）。堅実だけど、台数が増えると遅いし、親分が一人居ないと回らない。今日の **CAN** は、そこを飛び越える ── **誰でも好きに喋れる（多マスタ）。なのに、複数が同時に話し出しても衝突しない。** しかも、優先度の高いメッセージが自動的に勝つ。
+
+これ、よく考えると魔法みたいだ。共有バスで二人が同時に喋れば、普通は混信して両方ダメになる（だから RS-485 は親分が交通整理した）。CAN は、その「同時に喋る」を、**壊さずに勝者を決める**仕組みでまるごと解いてしまう。車の中 ── エンジンもブレーキもエアコンも、一本のバスで待ったなしに通信する世界 ── で鍛えられた知恵だ。
+
+## 1. 衝突しないバス ── アービトレーション
+
+種明かしは、たった一つのルールから始まる。CAN のバスは、**「0 が 1 に勝つ」**。
+
+CAN のビットには強弱がある。**dominant（0）は強くて押し通す。recessive（1）は弱くて引っ込む。** バスは、誰か一人でも 0 を出せば 0 になる（残り全員が 1 でも）── 論理積（AND）みたいな線だ。この非対称が、すべての鍵になる。
+
+各ノードは、自分のメッセージの先頭に **ID** を付けて送る。そして送りながら、**同時にバスを読んでいる**。ここで、こう振る舞う：
+
+> 自分は recessive（1）を出したのに、バスが dominant（0）になっていたら ── 「より強い（ID の小さい）相手が居る」と悟って、**その場で身を引く**（送信をやめ、受信に回る）。
+
+すると何が起きるか。複数のノードが同時に ID を送り始めても、ビットを上位から1つずつ比べていくうちに、ID の小さい（＝0 が多い＝優先度の高い）ノードだけが残り、最後の1台が勝つ。**負けたノードのメッセージは壊れない** ── ただ送るのをやめて、勝者の番が終わるのを待つだけ。だからこれを **非破壊アービトレーション**（衝突を壊さずに捌く調停）と呼ぶ。下の widget で、3台が同時に喋り出して、ID の小さい1台が勝ち残るまでを、1ビットずつ追ってみてほしい。
+
+<div class="demo-embed">
+  <iframe src="/can-arbitration/" title="CAN アービトレーションのラボ" loading="lazy"></iframe>
+  <div class="cap"><span>can-arbitration</span><a href="/can-arbitration/" target="_blank" rel="noopener noreferrer">全画面で開く ↗</a></div>
+</div>
+
+物理は RS-485 と同じ **差動2本**（CAN High / CAN Low）。[前回](/docs/rs485-modbus/)の「差で送るとノイズが消える」が、ここでもそのまま効いている。CAN が足したのは、その2本のバスに「0 が 1 に勝つ」という強弱を持たせて、**ぶつからない交通ルール**にしたことだ。
+
+## 2. 宛先でなく、ID ── メッセージ指向
+
+もう一つ、CAN は相手の選び方が独特だ。Modbus は「アドレス○番に聞く」だったけれど、CAN は **宛先を書かない**。メッセージに ID を付けてバスに流すと、**全員に届く**（ブロードキャスト）。各ノードは、自分の欲しい ID だけを **フィルタ**で拾う。
+
+そして ── さっきのアービトレーションで分かったとおり、**その ID が、そのまま優先度になっている**。ID は「これは何のメッセージか（内容）」と「どれだけ急ぐか（優先度）」を、一つで兼ねているわけだ。下の widget（python-can）で、送り方・拾い方を1行ずつ。
+
+<div class="demo-embed">
+  <iframe src="/can-code/" title="CAN をコードで" loading="lazy"></iframe>
+  <div class="cap"><span>can-code</span><a href="/can-code/" target="_blank" rel="noopener noreferrer">全画面で開く ↗</a></div>
+</div>
+
+この「宛先を指定しない」が、多マスタと相性がいい。送り手は誰が聞いているか知らなくていいし、受け手は何台居ても勝手に取捨選択できる。新しいセンサを1個バスに足しても、配線は2本に割り込ませるだけ、既存のノードのコードは何も変えなくていい ── 車のように、後から機能が増え続ける世界に、よく合っている。
+
+<pre class="code-sample"><span class="cc"># 速い周期データは ID を小さく（優先度高）、ログ等は大きく</span>
+brake = can.<span class="cf">Message</span>(arbitration_id=<span class="cn">0x080</span>, data=[...])  <span class="cc"># 急ぐ＝強い</span>
+temp  = can.<span class="cf">Message</span>(arbitration_id=<span class="cn">0x300</span>, data=[...])  <span class="cc"># 急がない＝弱い</span>
+<span class="cc"># 同時に出ても、brake(0x080) が temp(0x300) に必ず勝つ ── 設計でID順に意味を込める</span></pre>
+<div class="code-cap">ID の付け方が、そのまま優先度設計になる。「急ぐものほど小さいID」を割り当てるのが定石。</div>
+
+## 3. CANopen ── ID に、意味の辞書を与える
+
+CAN そのものは「ID 付きのメッセージが、ぶつからずに流れる」までしか決めていない。じゃあ「ID 0x180 は何を意味するの？」「モータの目標速度は、どのメッセージのどのバイト？」── そういう **意味の取り決め**は、上に一枚、層を重ねて決める。その代表が **CANopen** だ。
+
+CANopen の背骨は **オブジェクト辞書**（object dictionary）。機器の中のあらゆるパラメータ（目標位置、制御ワード、温度…）に、`インデックス:サブインデックス`（例 `0x6040:0` ＝制御ワード）という**住所**を振る。そして、
+
+- **PDO**（プロセスデータ）── 速い周期で回す、リアルタイムの入出力。
+- **SDO**（サービスデータ）── 設定やパラメータの読み書き（起動時など、急がない方）。
+
+この「速い実データ（PDO）」と「設定（SDO）」を分ける発想 ── どこかで見たと思わないだろうか。そう、[EtherCAT](/docs/ethercat/) でやった「毎周期のプロセスデータ」と「別腹のメールボックス設定」、あれの素性がこれだ。EtherCAT の **CoE（CANopen over EtherCAT）** は、文字どおり **CANopen の辞書の仕組みを、EtherCAT の上でそのまま使う**もの。制御ワード `0x6040` が EtherCAT のサーボでも出てきたのは、偶然じゃなかった ── 産業界が CAN で育てた「辞書」を、新しい速い線の上に持ち込んだんだ。
+
+## 4. どこに居るのか ── 賢いバスの、ひとつの頂点
+
+CAN は、**共有バス**の系譜（RS-485 と同じ「2本を皆で使う」）の中で、いちばん賢くまとまった一つだと思う。差動で頑丈、多マスタで柔軟、非破壊アービトレーションで衝突しらず、メッセージ指向で増設に強い。車載で広く使われ、産業でも CANopen として根を張った。
+
+ただし、共有バスである以上、根っこの速度（古典 CAN で 1Mbps 程度、CAN FD でも数 Mbps）と、一度に1メッセージ、という枠からは出られない。「もっと速く・もっと太く」を求めると、**バスを共有するのをやめて、Ethernet の物理に載せ替える**という、次の大きな段が来る。
+
+そこで次回からは、いよいよ **Ethernet** に入る。まず Ethernet そのもの（線・MAC・スイッチ・あの MLT-3 の波形）を開けて、その上に TCP/IP を積み、最後に EtherCAT のような産業 Ethernet へ ── 通信の梯子を、ここから一気に上りはじめよう。共有バスで握った「アドレス／ID で選ぶ」「優先度」「実データと設定を分ける」は、上の階でも、ぜんぶ顔を出す。

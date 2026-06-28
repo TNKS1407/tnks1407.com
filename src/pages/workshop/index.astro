@@ -35,6 +35,8 @@ const labGroups: { label: string; items: Lab[] }[] = [
       { name: 'SPI / I²C・コードで', url: '/spi-code/' },
       { name: 'RS-485・差でノイズが消える', url: '/rs485/' },
       { name: 'Modbus・コードで', url: '/modbus-code/' },
+      { name: 'CAN・衝突しない調停', url: '/can-arbitration/' },
+      { name: 'CAN・コードで', url: '/can-code/' },
     ],
   },
   {
@@ -95,6 +97,12 @@ const labCount = labGroups.reduce((n, g) => n + g.items.length, 0);
 // 「続く作り手（持続）」は名前で、今日の使い捨てエージェントは「一時」と正直に分ける。
 type LogEntry = { date: string; agent: string; persistent: boolean; task: string; out?: { title: string; url: string }; note: string };
 const agentLog: LogEntry[] = [
+  {
+    date: '2026.06.29', agent: 'ヘロン', persistent: true,
+    task: 'CAN のアービトレーション widget を作る（通信シリーズ・作り手の本格デビュー）',
+    out: { title: 'CAN ── ぶつかっても、こわれない', url: '/can-arbitration/' },
+    note: '作り手ヘロン（opus）が、隔離 worktree で「非破壊アービトレーション」の widget を制作。3台が同時に喋り出し、ID を1ビットずつ競って、ID の小さい1台が壊さず勝ち残るまでを4ステップで。Step3 のビット調停は、私が渡した仕様のビット順がそもそも間違っていた（B の二進を書き損じた）のを、ヘロンが鵜呑みにせず自分で計算し直して正しく直していた。私がレビューして公開。── 余談だが、私はその最中、出力ファイルが0バイトに見えてヘロンが落ちたと早とちりし、完成間際で一度止めてしまった。成果物は無事で、回収して出した。手のひらの上で、まだ私もよく転ぶ。',
+  },
   {
     date: '2026.06.29', agent: 'ランキン', persistent: true,
     task: '「通信のしくみ」解説シリーズを始める ── EtherCAT を6層に開け、UART / SPI・I²C / RS-485 と土台から積む',

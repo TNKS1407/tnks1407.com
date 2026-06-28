@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>CAN ── ぶつかっても、こわれない</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;--teal:#3c7876;--red:#c2543d;--amber:#c9761f;--blue:#2563aa;--purple:#7a5ea8;--text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{overflow-x:hidden;max-width:100%;}
+body{font-family:'Zen Kaku Gothic New',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;background-image:radial-gradient(circle at 1px 1px,#e9e4da 1px,transparent 0);background-size:22px 22px;}
+.wrap{max-width:860px;margin:0 auto;padding:20px 16px 48px;}
+header{display:flex;align-items:flex-end;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.brand{font-weight:700;font-size:22px;line-height:1.1;color:var(--text);}.brand .a{color:var(--teal);}
+.tag{font-size:12px;color:var(--muted);padding-bottom:2px;}
+.lead{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 16px;margin-bottom:16px;font-size:13px;color:#3a3a36;line-height:1.78;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.lead p{margin:0;}.lead b{color:var(--text);}
+.card-tool{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.stephead{display:flex;align-items:center;gap:.6rem;padding:.6rem .8rem;border-bottom:1px solid var(--border);background:var(--surface);}
+.stepno{font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;color:#fff;background:var(--teal);border-radius:999px;padding:.18rem .6rem;white-space:nowrap;}
+.steptitle{font-weight:700;font-size:.92rem;color:var(--text);}
+#stage{position:relative;width:100%;height:clamp(300px,52vw,420px);overflow:hidden;background:var(--surface);}
+canvas{display:block;width:100%;height:100%;}
+#info{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.5rem .8rem;font-size:.8rem;color:#3a3a36;line-height:1.7;min-height:3rem;}
+#info b{color:var(--text);}#info code{font-family:'JetBrains Mono',monospace;background:#efe9df;border-radius:3px;padding:0 4px;color:var(--blue);}#info .v-red{color:var(--red);font-weight:600;}#info .v-teal{color:var(--teal);font-weight:600;}#info .v-amber{color:var(--amber);font-weight:600;}#info .v-blue{color:var(--blue);font-weight:600;}#info .v-purple{color:var(--purple);font-weight:600;}
+.ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.5rem .7rem;display:flex;gap:.5rem;align-items:center;}
+.dots{display:flex;gap:.3rem;align-items:center;}.dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:.15s;}.dot.on{background:var(--teal);transform:scale(1.3);}
+button{font-family:'Zen Kaku Gothic New',sans-serif;font-size:.78rem;font-weight:700;color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.32rem .8rem;cursor:pointer;transition:.15s;}
+button:hover{border-color:var(--teal);}button.pri{background:var(--teal);color:#fff;border-color:var(--teal);}button:disabled{opacity:.4;cursor:default;}
+footer{text-align:center;color:var(--faint);font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:12px;}
+body.embed{height:100%;display:flex;flex-direction:column;overflow:hidden;background-image:none;}
+body.embed .wrap{max-width:none;margin:0;padding:0;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
+body.embed header,body.embed .lead,body.embed footer{display:none;}
+body.embed .card-tool{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;border:none;border-radius:0;box-shadow:none;}
+body.embed #stage{flex:1 1 auto;height:auto;min-height:150px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><div class="brand"><span class="a">CAN</span> ── ぶつかっても、こわれない</div><div class="tag">多マスタなのに衝突しない ── 非破壊アービトレーション</div></header>
+  <div class="lead"><p>RS-485 は線を2本にしてノイズに勝った。次の難所は ── <b>みんなで1本のバスを共有する</b>と、複数のノードが同時に喋ったとき衝突してしまうこと。CAN（車載で生まれた多マスタ・バス）は、ここを驚くやり方で解く。ぶつかった瞬間、<b>優先度の高い1台が自動で勝ち残り、ほかは自分から引っ込む</b>。しかも勝った側のデータは1ビットも壊れない ── <b>非破壊アービトレーション</b>。4ステップで、その仕掛けを開けてみよう。</p></div>
+  <div class="card-tool">
+    <div class="stephead"><span class="stepno" id="stepno">STEP 1 / 4</span><span class="steptitle" id="steptitle">—</span></div>
+    <div id="stage"><canvas id="cv"></canvas></div>
+    <div id="info"></div>
+    <div class="ctrl"><button id="bPrev">◀ 戻る</button><button id="bNext" class="pri">次へ ▶</button><div class="dots" id="dots"></div></div>
+  </div>
+  <footer>ブラックボックスを開く — 非破壊アービトレーション</footer>
+</div>
+<script>
+if(window.self!==window.top)document.body.classList.add('embed');
+(function(){
+  var cv=document.getElementById('cv'),ctx=cv.getContext('2d'),info=document.getElementById('info'),stage=document.getElementById('stage');
+  var stepno=document.getElementById('stepno'),steptitle=document.getElementById('steptitle'),dotsEl=document.getElementById('dots');
+  var bPrev=document.getElementById('bPrev'),bNext=document.getElementById('bNext');
+  var TEAL='#3c7876',RED='#c2543d',AMBER='#c9761f',BLUE='#2563aa',PURPLE='#7a5ea8',TEXT='#1d1b17',MUTED='#7d7568',FAINT='#aaa49b';
+  var DOMFILL='#2c2926'; // dominant(0) ＝ 強い・塗りつぶし
+
+  var STEPS=[{t:'3台が同時に、喋り出したら？'},{t:'0 が 1 に勝つ ── dominant / recessive'},{t:'アービトレーション本番 ── ID で競る'},{t:'勝者のメッセージは、そのまま流れる'}];
+
+  // ── ノードと、アービトレーションの計算（描く前に、IDから実際に求める）──
+  var NB=11;
+  function toBits(id){var a=[];for(var i=NB-1;i>=0;i--)a.push((id>>i)&1);return a;}
+  var NODES=[
+    {n:'A',id:0x0C0,hex:'0x0C0',col:AMBER},
+    {n:'B',id:0x100,hex:'0x100',col:BLUE},
+    {n:'C',id:0x080,hex:'0x080',col:TEAL}
+  ];
+  NODES.forEach(function(o){o.bits=toBits(o.id);});
+  var loseCol=[-1,-1,-1],busBits=[],winnerIdx=-1;
+  (function(){
+    var active=[true,true,true];
+    for(var c=0;c<NB;c++){
+      var b=1;
+      for(var k=0;k<3;k++){ if(active[k]) b=b & NODES[k].bits[c]; }
+      busBits.push(b);
+      for(var k=0;k<3;k++){ if(active[k] && NODES[k].bits[c]===1 && b===0){ active[k]=false; loseCol[k]=c; } }
+    }
+    for(var k=0;k<3;k++){ if(loseCol[k]<0) winnerIdx=k; }
+  })();
+
+  var step=0,W=0,H=0,DPR=1;
+  function resize(){DPR=Math.min(window.devicePixelRatio||1,2);var r=stage.getBoundingClientRect();W=Math.round(r.width);H=Math.round(r.height);cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);draw();}
+  function clearBg(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#faf8f4';ctx.fillRect(0,0,W,H);}
+  function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+  function rgba(hex,a){var h=hex.replace('#','');return 'rgba('+parseInt(h.substr(0,2),16)+','+parseInt(h.substr(2,2),16)+','+parseInt(h.substr(4,2),16)+','+a+')';}
+
+  // ビットを表す四角。mode で見た目を変える。
+  function cell(x,y,s,v,mode,col){
+    var r=4;
+    roundRect(x-s/2,y-s/2,s,s,r);
+    if(mode==='dom'){ // バス／凡例：0=塗り(強) / 1=白(弱)
+      ctx.fillStyle=(v===0)?DOMFILL:'#fff';ctx.fill();
+      if(v!==0){ctx.strokeStyle='#cdbfa8';ctx.lineWidth=1.3;ctx.stroke();}
+      ctx.fillStyle=(v===0)?'#fff':'#a99e8c';
+    } else if(mode==='node'){ // 各ノード：自色。0(dominant)は薄塗りで「押している」感
+      ctx.fillStyle=(v===0)?rgba(col,0.15):'#fff';ctx.fill();
+      ctx.strokeStyle=col;ctx.lineWidth=1.6;ctx.stroke();
+      ctx.fillStyle=col;
+    } else if(mode==='lost'){ // 脱落した瞬間のセル
+      ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle=RED;ctx.lineWidth=1.6;ctx.stroke();
+      ctx.fillStyle=rgba(RED,0.55);
+    } else if(mode==='idle'){ // 降りた後（送信せず聞いている）
+      ctx.fillStyle='#f1ece3';ctx.fill();ctx.strokeStyle='#e3dccf';ctx.lineWidth=1;ctx.stroke();
+      ctx.strokeStyle='#cbc0b0';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x-s*0.2,y);ctx.lineTo(x+s*0.2,y);ctx.stroke();
+      return;
+    }
+    ctx.font='bold 12px "JetBrains Mono",monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(v,x,y+0.5);
+    if(mode==='lost'){ // 上に赤い×
+      ctx.strokeStyle=rgba(RED,0.9);ctx.lineWidth=2.2;var q=s*0.32;
+      ctx.beginPath();ctx.moveTo(x-q,y-q);ctx.lineTo(x+q,y+q);ctx.moveTo(x+q,y-q);ctx.lineTo(x-q,y+q);ctx.stroke();
+    }
+  }
+
+  // ============ STEP 1 ============
+  function drawStep1(){
+    var x0=72,x1=W-72,busY=H*0.30,hY=busY-4,lY=busY+4;
+    // 終端抵抗（120Ω）：両端で CAN_H と CAN_L を結ぶ
+    [x0,x1].forEach(function(tx){
+      ctx.fillStyle='#efe9df';ctx.strokeStyle='#b3a692';ctx.lineWidth=1.3;
+      roundRect(tx-9,hY-1,18,(lY-hY)+2,3);ctx.fill();ctx.stroke();
+      ctx.fillStyle=FAINT;ctx.font='8px "JetBrains Mono",monospace';ctx.textAlign='center';ctx.textBaseline='bottom';
+      ctx.fillText('120Ω',tx,hY-3);
+    });
+    // バス（差動2線）
+    ctx.strokeStyle='#8a7f6e';ctx.lineWidth=2.4;
+    ctx.beginPath();ctx.moveTo(x0,hY);ctx.lineTo(x1,hY);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(x0,lY);ctx.lineTo(x1,lY);ctx.stroke();
+    ctx.fillStyle=MUTED;ctx.font='9px "JetBrains Mono",monospace';ctx.textAlign='left';ctx.textBaseline='middle';
+    ctx.fillText('CAN_H',x0+22,hY-9);ctx.fillText('CAN_L',x0+22,lY+9);
+    // 中央：衝突？マーク
+    ctx.fillStyle=rgba(RED,0.9);ctx.font='bold 13px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('⚡ ぶつかる？',W*0.5,busY-24);
+    // 3ノード
+    var nx=[W*0.24,W*0.5,W*0.76],ny=H*0.68,bw=Math.min(W*0.22,96),bh=Math.min(H*0.2,74);
+    for(var i=0;i<3;i++){
+      var nd=NODES[i],cxp=nx[i];
+      // スタブ（バスへ）
+      ctx.strokeStyle=rgba(nd.col,0.55);ctx.lineWidth=1.6;
+      ctx.beginPath();ctx.moveTo(cxp,ny-bh/2);ctx.lineTo(cxp,busY+4);ctx.stroke();
+      ctx.fillStyle=nd.col;ctx.beginPath();ctx.arc(cxp,busY+4,2.6,0,6.2832);ctx.fill();
+      // 箱
+      ctx.fillStyle='#fff';ctx.strokeStyle=nd.col;ctx.lineWidth=1.8;
+      roundRect(cxp-bw/2,ny-bh/2,bw,bh,8);ctx.fill();ctx.stroke();
+      ctx.fillStyle=nd.col;ctx.font='bold 12px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('Node '+nd.n,cxp,ny-bh/2+16);
+      ctx.font='10px "JetBrains Mono",monospace';ctx.fillStyle=MUTED;
+      ctx.fillText('ID '+nd.hex,cxp,ny);
+      // 「送信したい！」バッジ
+      ctx.fillStyle=nd.col;roundRect(cxp-26,ny+bh/2-16,52,15,7);ctx.fill();
+      ctx.fillStyle='#fff';ctx.font='bold 9px "Zen Kaku Gothic New",sans-serif';
+      ctx.fillText('送信したい',cxp,ny+bh/2-8);
+    }
+    info.innerHTML='3台のノード（<span class="v-amber">A</span>・<span class="v-blue">B</span>・<span class="v-teal">C</span>）が、1本のバスを共有している。もし全員が<b>同時に</b>喋り出したら？ ── ふつうの共有バスなら信号がぶつかって<b>全部こわれる</b>。だから順番待ちの仕組みが要る。でも CAN は順番待ちすらしない。ぶつかっても壊れない ── <b>なぜ</b>か。次から、その仕掛けを開けていくよ。';
+  }
+
+  // ============ STEP 2 ============
+  function drawStep2(){
+    var lx=22;
+    ctx.textAlign='left';ctx.textBaseline='middle';
+    ctx.fillStyle='#3a3a36';ctx.font='bold 12px "Zen Kaku Gothic New",sans-serif';
+    ctx.fillText('バス＝ワイヤードAND：誰か一人でも 0 を出すと、バスは 0',lx,H*0.10);
+    // 凡例
+    var s=24,gy=H*0.27,gy2=gy+H*0.135;
+    cell(lx+13,gy,s,0,'dom');
+    ctx.fillStyle=TEXT;ctx.font='12px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';
+    ctx.fillText('= dominant（優勢・強い・押し通す）',lx+34,gy);
+    cell(lx+13,gy2,s,1,'dom');
+    ctx.fillStyle=TEXT;ctx.font='12px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';
+    ctx.fillText('= recessive（劣勢・弱い・引っ込む）',lx+34,gy2);
+    // 真理値の3行： in1 & in2 = bus
+    var rows=[[1,1,1],[1,0,0],[0,0,0]];
+    var caps=['全員 recessive → バス 1','一人でも dominant → バス 0','全員 dominant → バス 0'];
+    var hot=[false,true,false];
+    var s2=28,ry0=H*0.60,dy=H*0.165;
+    var x1=lx+18,xand=x1+34,x2=xand+34,xeq=x2+34,xbus=xeq+34,xcap=xbus+30;
+    for(var i=0;i<3;i++){
+      var y=ry0+i*dy;
+      if(hot[i]){ctx.fillStyle=rgba(RED,0.07);roundRect(lx,y-s2/2-5,W-lx-12,s2+10,8);ctx.fill();}
+      cell(x1,y,s2,rows[i][0],'dom');
+      ctx.fillStyle=MUTED;ctx.font='bold 15px "JetBrains Mono",monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('&',xand,y);
+      cell(x2,y,s2,rows[i][1],'dom');
+      ctx.fillStyle=MUTED;ctx.fillText('=',xeq,y);
+      cell(xbus,y,s2,rows[i][2],'dom');
+      ctx.fillStyle=hot[i]?RED:MUTED;ctx.font=(hot[i]?'bold ':'')+'11px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='left';
+      ctx.fillText(caps[i],xcap,y);
+    }
+    info.innerHTML='鍵はバスの電気的な性質。CAN のバスは <b>ワイヤードAND</b> ── 各ノードは線を <code>0</code> に<b>引っぱる</b>か、手を離して <code>1</code> に<b>任せる</b>かのどちらか。だから <span class="v-red">誰か一人でも 0 を出せば、バスは 0</span>。0 を <b>dominant（優勢）</b>、1 を <b>recessive（劣勢）</b>と呼ぶ ── まさに入力の <b>AND</b> だ（<code>1&1=1</code>, <code>1&0=0</code>, <code>0&0=0</code>）。この一点が、次の調停の土台になる。';
+  }
+
+  // ============ STEP 3 ============
+  function gridCAN(){var lx=60,x0=lx+4,x1=W-12,bw=(x1-x0)/NB;return{lx:lx,x0:x0,bw:bw};}
+  function cx(g,i){return g.x0+i*g.bw+g.bw*0.5;}
+  function drawStep3(){
+    var g=gridCAN();
+    var topY=H*0.075,hdrY=H*0.17,rowY=[H*0.315,H*0.45,H*0.585],divY=H*0.665,busY=H*0.78,noteY=H*0.915;
+    var s=Math.min(g.bw*0.74,26);
+    // 上の説明
+    ctx.fillStyle=MUTED;ctx.font='10px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';
+    ctx.fillText('ID(11bit) を 上位ビットから、左→右へ同時送信。送りながらバスを読む。',8,topY);
+    // 脱落した列に、淡い赤の縦ガイド
+    for(var d=0;d<3;d++){ if(loseCol[d]<0) continue; var c=loseCol[d];
+      ctx.strokeStyle=rgba(RED,0.22);ctx.lineWidth=1;ctx.setLineDash([3,3]);
+      ctx.beginPath();ctx.moveTo(cx(g,c),rowY[0]-s*0.75);ctx.lineTo(cx(g,c),busY+s*0.75);ctx.stroke();ctx.setLineDash([]);
+    }
+    // bit番号ヘッダ
+    ctx.fillStyle=FAINT;ctx.font='8px "JetBrains Mono",monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    for(var c2=0;c2<NB;c2++){ctx.fillText(String(10-c2),cx(g,c2),hdrY);}
+    ctx.textAlign='right';ctx.fillText('bit',g.lx,hdrY);
+    // ノード3行
+    for(var k=0;k<3;k++){
+      var nd=NODES[k],lc=loseCol[k],lost=lc>=0;
+      ctx.textAlign='right';ctx.textBaseline='middle';
+      ctx.fillStyle=lost?'#bcb3a4':nd.col;ctx.font='bold 11px "JetBrains Mono",monospace';
+      ctx.fillText(nd.n,g.lx,rowY[k]-6);
+      ctx.font='9px "JetBrains Mono",monospace';ctx.fillStyle=lost?'#c3bbac':rgba(nd.col,0.9);
+      ctx.fillText(nd.hex,g.lx,rowY[k]+7);
+      for(var c=0;c<NB;c++){
+        var x=cx(g,c);
+        if(!lost||c<lc) cell(x,rowY[k],s,nd.bits[c],'node',nd.col);
+        else if(c===lc) cell(x,rowY[k],s,nd.bits[c],'lost');
+        else cell(x,rowY[k],s,0,'idle');
+      }
+    }
+    // 区切り
+    ctx.strokeStyle='#ded3c3';ctx.lineWidth=1;ctx.setLineDash([4,3]);
+    ctx.beginPath();ctx.moveTo(8,divY);ctx.lineTo(W-8,divY);ctx.stroke();ctx.setLineDash([]);
+    // バス行
+    ctx.textAlign='right';ctx.textBaseline='middle';ctx.fillStyle=TEXT;ctx.font='bold 11px "JetBrains Mono",monospace';
+    ctx.fillText('BUS',g.lx,busY);
+    for(var c3=0;c3<NB;c3++) cell(cx(g,c3),busY,s,busBits[c3],'dom');
+    // 注記（脱落・勝者）
+    ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='bold 9px "Zen Kaku Gothic New",sans-serif';
+    for(var m=0;m<3;m++){ if(loseCol[m]<0) continue; var cc=loseCol[m];
+      ctx.fillStyle=RED;ctx.fillText('▲',cx(g,cc),noteY-7);ctx.fillText(NODES[m].n+' 脱落',cx(g,cc),noteY+5);
+    }
+    ctx.fillStyle=TEAL;ctx.textAlign='right';ctx.fillText('→ C 勝者',W-8,noteY);
+    info.innerHTML='本番。3台が一斉に自分の <b>ID（11ビット）</b>を上位ビットから送り、同時にバスを読む。<b>自分は 1 を出したのにバスが 0</b> なら「より強い相手がいる」と悟って<b>すぐ降りる</b>（受信に回る＝以降グレー）。<code>bit8</code> で <span class="v-blue">B</span> が 1 を出すも A・C の 0 に負けて<span class="v-red">脱落</span>。<code>bit7</code> は A・C とも 1（バス 1・互角）。<code>bit6</code> で <span class="v-amber">A</span> が 1、しかし <span class="v-teal">C</span> は 0 ── A が<span class="v-red">脱落</span>し、<span class="v-teal">C が勝ち残る</span>。バスに並んだ結果は、そのまま C の ID（<code>0x080</code>）だ。';
+  }
+
+  // ============ STEP 4 ============
+  function drawStep4(){
+    var x0=20,x1=W-20,fy=H*0.30,fh=Math.min(H*0.15,52);
+    var fields=[
+      {n:'SOF',w:0.5},
+      {n:'ID = 0x080',w:3.0,hi:true},
+      {n:'ctrl',w:0.9},
+      {n:'データ',w:2.4},
+      {n:'CRC',w:1.2},
+      {n:'ACK',w:0.5},
+      {n:'EOF',w:0.7}
+    ];
+    var tot=0;fields.forEach(function(f){tot+=f.w;});
+    // タイトル
+    ctx.fillStyle='#3a3a36';ctx.font='bold 12px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';
+    ctx.fillText('勝者 C のフレームは、止まらずそのまま流れる',x0,H*0.13);
+    // フレーム帯
+    var px=x0,idSeg=null;
+    for(var i=0;i<fields.length;i++){
+      var f=fields[i],fw=(x1-x0)*f.w/tot;
+      ctx.fillStyle=f.hi?rgba(TEAL,0.16):'#efe9df';
+      ctx.strokeStyle=f.hi?TEAL:'#c9bca8';ctx.lineWidth=f.hi?1.8:1.2;
+      roundRect(px+1,fy,fw-2,fh,4);ctx.fill();ctx.stroke();
+      ctx.fillStyle=f.hi?TEAL:MUTED;ctx.font=(f.hi?'bold ':'')+'10px "JetBrains Mono",monospace';
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(f.n,px+fw/2,fy+fh/2);
+      if(f.hi)idSeg={x:px,w:fw};
+      px+=fw;
+    }
+    // 継続の矢印
+    ctx.fillStyle=TEAL;ctx.font='bold 13px "JetBrains Mono",monospace';ctx.textAlign='left';ctx.textBaseline='middle';
+    // IDフィールドの括弧と注記
+    if(idSeg){
+      ctx.strokeStyle=TEAL;ctx.lineWidth=1.4;
+      var by=fy-9;
+      ctx.beginPath();ctx.moveTo(idSeg.x+3,by+5);ctx.lineTo(idSeg.x+3,by);ctx.lineTo(idSeg.x+idSeg.w-3,by);ctx.lineTo(idSeg.x+idSeg.w-3,by+5);ctx.stroke();
+      ctx.fillStyle=TEAL;ctx.font='9px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='bottom';
+      ctx.fillText('さっき競った 11ビット ＝ そのまま先頭',idSeg.x+idSeg.w/2,by-1);
+    }
+    ctx.fillStyle=MUTED;ctx.font='9px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='top';
+    ctx.fillText('→ データ・CRC まで1ビットも途切れず続く（無傷）',W*0.5,fy+fh+8);
+    // 下段：3ノードの行方
+    var ny=H*0.70,bw=Math.min(W*0.27,120),gap=(W-bw*3-40)/2,sx=20;
+    var states=[
+      {nd:NODES[2],t:'送信を継続',bright:true},
+      {nd:NODES[0],t:'待機→再送',bright:false},
+      {nd:NODES[1],t:'待機→再送',bright:false}
+    ];
+    for(var j=0;j<3;j++){
+      var st=states[j],nd=st.nd,bx=sx+j*(bw+gap);
+      ctx.globalAlpha=st.bright?1:0.5;
+      ctx.fillStyle='#fff';ctx.strokeStyle=nd.col;ctx.lineWidth=st.bright?2:1.4;
+      roundRect(bx,ny-18,bw,40,8);ctx.fill();ctx.stroke();
+      ctx.fillStyle=nd.col;ctx.font='bold 11px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('Node '+nd.n+'  '+nd.hex,bx+bw/2,ny-4);
+      ctx.font='10px "Zen Kaku Gothic New",sans-serif';ctx.fillStyle=st.bright?TEAL:MUTED;
+      ctx.fillText(st.t,bx+bw/2,ny+12);
+      ctx.globalAlpha=1;
+    }
+    // 優先度スケール
+    ctx.fillStyle=MUTED;ctx.font='10px "JetBrains Mono",monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('優先度（小さいIDほど強い）：  0x080  <  0x0C0  <  0x100',W*0.5,H*0.90);
+    info.innerHTML='勝ったのは <span class="v-teal">C（ID = 0x080）</span>。すごいのはここから ── 競り合いで送った 11 ビットは、そのまま<b>本物のメッセージの先頭</b>。C は止まらず、続きのデータ・CRC まで<b>そのまま流れる</b>（再送いらず）。負けた <span class="v-amber">A</span>・<span class="v-blue">B</span> はバスが空くのを待って<b>自動で再送</b>する。<b>優先度＝ID（小さいほど強い）</b>。多マスタなのに衝突しない、この調停が、車載で何十年も鍛えられた CAN の核だ。上に載る <code>CANopen</code>（オブジェクト辞書）は、EtherCAT の <code>CoE</code> の母でもある。';
+  }
+
+  function drawStep(){
+    clearBg();
+    if(step===0)drawStep1();
+    else if(step===1)drawStep2();
+    else if(step===2)drawStep3();
+    else drawStep4();
+  }
+  function draw(){if(W&&H)drawStep();}
+  function updateHash(){try{history.replaceState(null,'','#step'+(step+1));}catch(e){}}
+  function syncUI(){stepno.textContent='STEP '+(step+1)+' / 4';steptitle.textContent=STEPS[step].t;bPrev.disabled=(step===0);bNext.disabled=(step===3);for(var i=0;i<dotsEl.children.length;i++)dotsEl.children[i].classList.toggle('on',i===step);}
+  function go(n){step=Math.max(0,Math.min(3,n));updateHash();syncUI();draw();}
+  for(var i=0;i<4;i++){var d=document.createElement('span');d.className='dot';d.addEventListener('click',(function(x){return function(){go(x);};})(i));dotsEl.appendChild(d);}
+  bPrev.addEventListener('click',function(){if(step>0)go(step-1);});
+  bNext.addEventListener('click',function(){if(step<3)go(step+1);});
+  (function(){var m=/step([1-4])/.exec(location.hash);if(m)step=+m[1]-1;})();
+  var ro=new ResizeObserver(function(){resize();});ro.observe(stage);
+  syncUI();resize();
+})();
+</script>
+</body>
+</html>
