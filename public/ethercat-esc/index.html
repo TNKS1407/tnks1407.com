@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>ESC ── 通り抜けながら、書き換える</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;--teal:#3c7876;--red:#c2543d;--amber:#c9761f;--blue:#2563aa;--text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{overflow-x:hidden;max-width:100%;}
+body{font-family:'Zen Kaku Gothic New',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;background-image:radial-gradient(circle at 1px 1px,#e9e4da 1px,transparent 0);background-size:22px 22px;}
+.wrap{max-width:860px;margin:0 auto;padding:20px 16px 48px;}
+header{display:flex;align-items:flex-end;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.brand{font-weight:700;font-size:22px;line-height:1.1;color:var(--text);}.brand .a{color:var(--teal);}
+.tag{font-size:12px;color:var(--muted);padding-bottom:2px;}
+.lead{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 16px;margin-bottom:16px;font-size:13px;color:#3a3a36;line-height:1.78;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.lead p{margin:0;}.lead b{color:var(--text);}
+.card-tool{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.stephead{display:flex;align-items:center;gap:.6rem;padding:.6rem .8rem;border-bottom:1px solid var(--border);background:var(--surface);}
+.stepno{font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;color:#fff;background:var(--teal);border-radius:999px;padding:.18rem .6rem;white-space:nowrap;}
+.steptitle{font-weight:700;font-size:.92rem;color:var(--text);}
+#stage{position:relative;width:100%;height:clamp(280px,52vw,420px);overflow:hidden;background:var(--surface);}
+canvas{display:block;width:100%;height:100%;}
+#info{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.5rem .8rem;font-size:.8rem;color:#3a3a36;line-height:1.7;min-height:3rem;}
+#info b{color:var(--text);}#info .v-teal{color:var(--teal);font-weight:600;}#info .v-red{color:var(--red);font-weight:600;}#info .v-amber{color:var(--amber);font-weight:600;}
+.ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.5rem .7rem;display:flex;gap:.5rem;align-items:center;}
+.dots{display:flex;gap:.3rem;align-items:center;}.dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:.15s;}.dot.on{background:var(--teal);transform:scale(1.3);}
+button{font-family:'Zen Kaku Gothic New',sans-serif;font-size:.78rem;font-weight:700;color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.32rem .8rem;cursor:pointer;transition:.15s;}
+button:hover{border-color:var(--teal);}button.pri{background:var(--teal);color:#fff;border-color:var(--teal);}button:disabled{opacity:.4;cursor:default;}button.ghost{border-color:var(--amber);color:var(--amber);}
+footer{text-align:center;color:var(--faint);font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:12px;}
+body.embed{height:100%;display:flex;flex-direction:column;overflow:hidden;background-image:none;}
+body.embed .wrap{max-width:none;margin:0;padding:0;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
+body.embed header,body.embed .lead,body.embed footer{display:none;}
+body.embed .card-tool{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;border:none;border-radius:0;box-shadow:none;}
+body.embed #stage{flex:1 1 auto;height:auto;min-height:150px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><div class="brand"><span class="a">ESC</span> ── 通り抜けながら、書き換える</div><div class="tag">なぜ EtherCAT スレーブだけ、特別なチップが要るのか</div></header>
+  <div class="lead"><p>EtherCAT の“速さ”の正体は、スレーブの中の専用チップ <b>ESC</b>（EtherCAT Slave Controller）。普通の通信チップ（MAC）は<b>「全部受け切ってから」</b>しか中身に触れない。ESC は <b>流れていくフレームを、通り抜けるその場で読んで・書き換える</b>。その差を、一歩ずつ。</p></div>
+  <div class="card-tool">
+    <div class="stephead"><span class="stepno" id="stepno">STEP 1 / 3</span><span class="steptitle" id="steptitle">—</span></div>
+    <div id="stage"><canvas id="cv"></canvas></div>
+    <div id="info"></div>
+    <div class="ctrl"><button id="bPrev">◀ 戻る</button><button id="bNext" class="pri">次へ ▶</button><button id="bPlay" class="ghost">⏸</button><div class="dots" id="dots"></div></div>
+  </div>
+  <footer>ブラックボックスを開く — 専用シリコンの中身</footer>
+</div>
+<script>
+if(window.self!==window.top)document.body.classList.add('embed');
+(function(){
+  var cv=document.getElementById('cv'),ctx=cv.getContext('2d'),info=document.getElementById('info'),stage=document.getElementById('stage');
+  var stepno=document.getElementById('stepno'),steptitle=document.getElementById('steptitle'),dotsEl=document.getElementById('dots');
+  var bPrev=document.getElementById('bPrev'),bNext=document.getElementById('bNext'),bPlay=document.getElementById('bPlay');
+  var STEPS=[{t:'普通の MAC ── 全部受け切ってから'},{t:'ESC ── 通り抜けながら、その場で'},{t:'なぜ MAC にはできないか'}];
+  var step=0,playing=true,phase=0,last=0,W=0,H=0,DPR=1;
+  var NCELL=6, SIDX=3; // フレームのセル数 / このスレーブの番地
+
+  function resize(){DPR=Math.min(window.devicePixelRatio||1,2);var r=stage.getBoundingClientRect();W=Math.round(r.width);H=Math.round(r.height);cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);draw();}
+  function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+  function clearBg(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#faf8f4';ctx.fillRect(0,0,W,H);}
+  // フレーム（セル列）を leadX を右端に描く。subVal!=null なら SIDX を書き換え済みに。
+  function drawFrame(leadX,y,cw,subVal,hiPass){
+    var fw=NCELL*cw, fx=leadX-fw;
+    for(var i=0;i<NCELL;i++){
+      var cx=fx+i*cw, isS=(i===SIDX), done=(subVal!=null&&isS), passing=(hiPass===i);
+      ctx.fillStyle=isS?(done?'#3c7876':'#fdeede'):'#f0ebe1';
+      ctx.strokeStyle=isS?'#c9761f':'#c9b8a8';ctx.lineWidth=passing?2.2:1;roundRect(cx+1,y,cw-2,22,3);ctx.fill();ctx.stroke();
+      ctx.fillStyle=isS?(done?'#fff':'#c9761f'):'#b3a795';ctx.font='bold 10px "JetBrains Mono",monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(isS?(done?subVal:'??'):'··',cx+cw/2,y+11);
+    }
+    return {fx:fx,fw:fw};
+  }
+
+  function drawStep(){
+    clearBg();
+    var midX=W*0.5, cw=Math.min(34,W/16), wireY=H*0.32;
+    if(step===0){ // MAC: 受信バッファに丸ごと貯めてから出す
+      var bufW=NCELL*cw+16, bx=midX-bufW/2, by=wireY-14;
+      // フレームの動き：入る→（全部内側で)待つ→出る
+      var p=phase, leadX;
+      var inEnd=0.4, wait=0.62; // 0..inEnd 入る, inEnd..wait 待ち, wait..1 出る
+      if(p<inEnd){ leadX = (bx-NCELL*cw) + (bufW+NCELL*cw)*(p/inEnd); }
+      else if(p<wait){ leadX = bx+bufW; }
+      else { leadX = bx+bufW + (W-(bx+bufW)+NCELL*cw)*((p-wait)/(1-wait)); }
+      // 入線/出線
+      ctx.strokeStyle='#d8cdbd';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(0,wireY);ctx.lineTo(bx,wireY);ctx.moveTo(bx+bufW,wireY);ctx.lineTo(W,wireY);ctx.stroke();
+      // バッファ箱
+      var waiting=(p>=inEnd&&p<wait);
+      ctx.fillStyle='#fdecec';ctx.strokeStyle='#c2543d';ctx.lineWidth=1.6;roundRect(bx,by,bufW,28,7);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#c2543d';ctx.font='bold 11px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText('MAC 受信バッファ',midX,by-8);
+      drawFrame(leadX,wireY-11,cw,null,-1);
+      if(waiting){ctx.fillStyle='#c2543d';ctx.font='12px "Zen Kaku Gothic New",sans-serif';ctx.fillText('全部そろうまで待つ…（CRC確認）',midX,by+46);}
+      info.innerHTML='普通の通信チップ（MAC）は <b>store-and-forward</b> ── フレームを<b>丸ごとバッファに受け切って</b>、CRC を確かめてから次へ送る。だから①各ホップで<span class="v-red">全長ぶん待つ</span>（遅い）②受け切るまで<b>流れの中身に触れない</b>。';
+    } else if(step===1){ // ESC: 通り抜けながら自分のバイトを読み書き
+      var escW=88, ex=midX-escW/2, ey=wireY-26, escH=52;
+      // 入出力線
+      ctx.strokeStyle='#d8cdbd';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(0,wireY);ctx.lineTo(ex,wireY);ctx.moveTo(ex+escW,wireY);ctx.lineTo(W,wireY);ctx.stroke();
+      ctx.fillStyle='#aaa49b';ctx.font='9px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText('IN →',ex-16,wireY-6);ctx.fillText('→ OUT',ex+escW+16,wireY-6);
+      // ESC箱
+      ctx.fillStyle='#e6f0ef';ctx.strokeStyle='#3c7876';ctx.lineWidth=2;roundRect(ex,ey,escW,escH,8);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#3c7876';ctx.font='bold 12px "JetBrains Mono",monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('ESC',midX,ey+escH/2);
+      // DPRAM（下）
+      var memY=H*0.66;
+      ctx.fillStyle='#7d7568';ctx.font='10px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='alphabetic';
+      ctx.fillStyle='#f0ebe1';ctx.strokeStyle='#9a8f7e';ctx.lineWidth=1;roundRect(midX-78,memY,68,24,4);ctx.fill();ctx.stroke();roundRect(midX+10,memY,68,24,4);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#5a5550';ctx.font='9px "Zen Kaku Gothic New",sans-serif';ctx.textBaseline='middle';ctx.fillText('出力(受取)',midX-44,memY+12);ctx.fillText('入力=センサ',midX+44,memY+12);
+      // フレーム位相
+      var p=phase, leadX=(midX-NCELL*cw-30)+ (W-(midX-NCELL*cw-30)+NCELL*cw+30)*p;
+      var cellCenter=function(i){return leadX-NCELL*cw + i*cw + cw/2;};
+      var passing = (cellCenter(SIDX)>=ex && cellCenter(SIDX)<=ex+escW);
+      var done = (cellCenter(SIDX) > midX); // ESC中心を過ぎたら書換済み
+      drawFrame(leadX,wireY-11,cw,done?'42':null,passing?SIDX:-1);
+      // 通過中：読み(下向き)・書き(上向き)矢印＋WKC
+      if(passing){
+        ctx.strokeStyle='#2563aa';ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(midX-6,wireY+4);ctx.lineTo(midX-6,memY-2);ctx.stroke();
+        ctx.fillStyle='#2563aa';ctx.beginPath();ctx.moveTo(midX-6,memY-2);ctx.lineTo(midX-10,memY-9);ctx.lineTo(midX-2,memY-9);ctx.closePath();ctx.fill();
+        ctx.strokeStyle='#c9761f';ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(midX+6,memY-2);ctx.lineTo(midX+6,wireY+4);ctx.stroke();
+        ctx.fillStyle='#c9761f';ctx.beginPath();ctx.moveTo(midX+6,wireY+4);ctx.lineTo(midX+2,wireY+11);ctx.lineTo(midX+10,wireY+11);ctx.closePath();ctx.fill();
+        ctx.fillStyle='#3a3835';ctx.font='9px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='left';ctx.fillText('読み',midX-30,memY-14);ctx.textAlign='right';ctx.fillText('書き',midX+30,memY-14);
+      }
+      // WKC
+      ctx.fillStyle=(done?'#3c7876':'#aaa49b');ctx.font='bold 11px "JetBrains Mono",monospace';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText('WKC: '+(done?1:0),midX,ey-10);
+      ctx.fillStyle='#7d7568';ctx.font='10px "Zen Kaku Gothic New",sans-serif';ctx.fillText('遅れは ns 級（止まらない）',midX,H*0.90);
+      info.innerHTML='ESC は <b>cut-through</b> ── 止めずに通す。流れていく“その最中”に、自分の番地（橙）のバイトが来たら、<span class="v-blue">マスタの出力を読み取り</span>、<span class="v-amber">自分のセンサ値(=42)を書き込んで差し替え</span>、<span class="v-teal">WKC を +1</span>。バイトを書き換えたので CRC も流れの中で直す。全部、線速で、ns 級の遅れだけ。';
+    } else { // なぜMACにできない
+      var items=['流れているフレームから“自分のバイト”を、止めずに見つける','通り抜ける途中で、バイトを差し替える','書き換えたぶん、末尾の CRC を流れの中で直す','どんな時も同じ・ごく小さい遅れ（決定論）を保つ'];
+      ctx.fillStyle='#1d1b17';ctx.font='bold 12px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='left';ctx.textBaseline='alphabetic';
+      ctx.fillText('ESC が持つ“専用回路”── 普通の MAC には無いもの：',W*0.08,H*0.18);
+      for(var i=0;i<items.length;i++){var y=H*0.30+i*H*0.155;
+        ctx.fillStyle='#3c7876';ctx.beginPath();ctx.arc(W*0.10,y-4,4,0,6.2832);ctx.fill();
+        ctx.fillStyle='#3a3835';ctx.font='12px "Zen Kaku Gothic New",sans-serif';ctx.fillText(items[i],W*0.13,y);}
+      info.innerHTML='MAC は「受け切って→確かめて→渡す」用に作られてる。上の4つ ── 流れの中で<b>見つけ・差し替え・CRC を直し・一定の小ささを保つ</b>回路を、MAC は持っていない。だから EtherCAT スレーブには、必ず <b>ESC（ET1100 / LAN9252 / FPGA）</b>という専用シリコンが要る。<b>ハードの差が、速さと同期の差そのもの</b>。';
+    }
+  }
+  function draw(){if(W&&H)drawStep();}
+  function syncUI(){stepno.textContent='STEP '+(step+1)+' / 3';steptitle.textContent=STEPS[step].t;bPrev.disabled=(step===0);bNext.disabled=(step===2);for(var i=0;i<dotsEl.children.length;i++)dotsEl.children[i].classList.toggle('on',i===step);phase=0;}
+  for(var i=0;i<3;i++){var d=document.createElement('span');d.className='dot';d.addEventListener('click',(function(x){return function(){step=x;syncUI();draw();};})(i));dotsEl.appendChild(d);}
+  function tick(ts){var dt=last?Math.min(0.05,(ts-last)/1000):0;last=ts;if(playing&&step<2){phase+=dt*0.3;if(phase>1.05)phase=0;draw();}requestAnimationFrame(tick);}
+  bPrev.addEventListener('click',function(){if(step>0){step--;syncUI();draw();}});
+  bNext.addEventListener('click',function(){if(step<2){step++;syncUI();draw();}});
+  bPlay.addEventListener('click',function(){playing=!playing;bPlay.textContent=playing?'⏸':'▶';});
+  var ro=new ResizeObserver(function(){resize();});ro.observe(stage);
+  syncUI();resize();requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
