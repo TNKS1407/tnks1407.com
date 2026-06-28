@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>SPI ── 時計の線を、引く</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;--teal:#3c7876;--red:#c2543d;--amber:#c9761f;--blue:#2563aa;--text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{overflow-x:hidden;max-width:100%;}
+body{font-family:'Zen Kaku Gothic New',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;background-image:radial-gradient(circle at 1px 1px,#e9e4da 1px,transparent 0);background-size:22px 22px;}
+.wrap{max-width:860px;margin:0 auto;padding:20px 16px 48px;}
+header{display:flex;align-items:flex-end;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.brand{font-weight:700;font-size:22px;line-height:1.1;color:var(--text);}.brand .a{color:var(--teal);}
+.tag{font-size:12px;color:var(--muted);padding-bottom:2px;}
+.lead{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 16px;margin-bottom:16px;font-size:13px;color:#3a3a36;line-height:1.78;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.lead p{margin:0;}.lead b{color:var(--text);}
+.card-tool{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.stephead{display:flex;align-items:center;gap:.6rem;padding:.6rem .8rem;border-bottom:1px solid var(--border);background:var(--surface);}
+.stepno{font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;color:#fff;background:var(--teal);border-radius:999px;padding:.18rem .6rem;white-space:nowrap;}
+.steptitle{font-weight:700;font-size:.92rem;color:var(--text);}
+#stage{position:relative;width:100%;height:clamp(300px,52vw,420px);overflow:hidden;background:var(--surface);}
+canvas{display:block;width:100%;height:100%;}
+#info{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.5rem .8rem;font-size:.8rem;color:#3a3a36;line-height:1.7;min-height:3rem;}
+#info b{color:var(--text);}#info code{font-family:'JetBrains Mono',monospace;background:#efe9df;border-radius:3px;padding:0 4px;color:var(--blue);}#info .v-teal{color:var(--teal);font-weight:600;}#info .v-amber{color:var(--amber);font-weight:600;}#info .v-blue{color:var(--blue);font-weight:600;}
+.ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.5rem .7rem;display:flex;gap:.5rem;align-items:center;}
+.dots{display:flex;gap:.3rem;align-items:center;}.dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:.15s;}.dot.on{background:var(--teal);transform:scale(1.3);}
+button{font-family:'Zen Kaku Gothic New',sans-serif;font-size:.78rem;font-weight:700;color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.32rem .8rem;cursor:pointer;transition:.15s;}
+button:hover{border-color:var(--teal);}button.pri{background:var(--teal);color:#fff;border-color:var(--teal);}button:disabled{opacity:.4;cursor:default;}
+footer{text-align:center;color:var(--faint);font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:12px;}
+body.embed{height:100%;display:flex;flex-direction:column;overflow:hidden;background-image:none;}
+body.embed .wrap{max-width:none;margin:0;padding:0;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
+body.embed header,body.embed .lead,body.embed footer{display:none;}
+body.embed .card-tool{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;border:none;border-radius:0;box-shadow:none;}
+body.embed #stage{flex:1 1 auto;height:auto;min-height:150px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><div class="brand"><span class="a">SPI</span> ── 時計の線を、引く</div><div class="tag">UART との分かれ目は「クロックを共有するか」だ</div></header>
+  <div class="lead"><p>UART は時計の線を引かなかった。SPI は逆 ── <b>クロック（SCLK）の線を1本、専用に引く</b>。すると「速さの約束」も「真ん中で読む」も要らなくなる。時計が「いま読め」と全部教えてくれるからだ。基板の中で、チップとチップを結ぶときの定番。線は4本、データは時計のエッジに合わせて、送りながら同時に受ける。</p></div>
+  <div class="card-tool">
+    <div class="stephead"><span class="stepno" id="stepno">STEP 1 / 4</span><span class="steptitle" id="steptitle">—</span></div>
+    <div id="stage"><canvas id="cv"></canvas></div>
+    <div id="info"></div>
+    <div class="ctrl"><button id="bPrev">◀ 戻る</button><button id="bNext" class="pri">次へ ▶</button><div class="dots" id="dots"></div></div>
+  </div>
+  <footer>ブラックボックスを開く — 同期式シリアル</footer>
+</div>
+<script>
+if(window.self!==window.top)document.body.classList.add('embed');
+(function(){
+  var cv=document.getElementById('cv'),ctx=cv.getContext('2d'),info=document.getElementById('info'),stage=document.getElementById('stage');
+  var stepno=document.getElementById('stepno'),steptitle=document.getElementById('steptitle'),dotsEl=document.getElementById('dots');
+  var bPrev=document.getElementById('bPrev'),bNext=document.getElementById('bNext');
+  var MOSI=[1,0,1,0,0,1,0,1]; // 0xA5 MSB先
+  var MISO=[0,0,1,1,1,1,0,0]; // 0x3C MSB先
+  var STEPS=[{t:'4本の線 ── CS / SCLK / MOSI / MISO'},{t:'クロックが、時を刻む'},{t:'エッジで読む ── MOSI（送る）'},{t:'同時に受ける ── MISO（全二重）'}];
+  var step=0,W=0,H=0,DPR=1;
+  function resize(){DPR=Math.min(window.devicePixelRatio||1,2);var r=stage.getBoundingClientRect();W=Math.round(r.width);H=Math.round(r.height);cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);draw();}
+  function clearBg(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#faf8f4';ctx.fillRect(0,0,W,H);}
+  function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+  // 時間グリッド: 左ラベル域 + 0.5col lead + 8col + 0.5col trail
+  function grid(){var lx=64,px0=lx+8,px1=W-24,bw=(px1-px0)/9;return{lx:lx,x0:px0+bw*0.5,bw:bw};}
+  function colX(g,i){return g.x0+i*g.bw;}
+  function band(name,yc,hh){return{yc:yc,yHi:yc-hh,yLo:yc+hh};}
+  function rowLabel(g,b,name,col){ctx.fillStyle=col;ctx.font='bold 11px "JetBrains Mono",monospace';ctx.textAlign='right';ctx.textBaseline='middle';ctx.fillText(name,g.lx,b.yc);}
+  // SCLK: 各bit列で 低→高（立ち上がりが列中央）
+  function drawSCLK(g,b){ctx.strokeStyle='#7a5ea8';ctx.lineWidth=2.2;ctx.beginPath();var x=colX(g,0);ctx.moveTo(x,b.yLo);
+    for(var i=0;i<8;i++){var xa=colX(g,i),xm=xa+g.bw*0.5,xb=xa+g.bw;ctx.lineTo(xa,b.yLo);ctx.lineTo(xm,b.yLo);ctx.lineTo(xm,b.yHi);ctx.lineTo(xb,b.yHi);ctx.lineTo(xb,b.yLo);}ctx.stroke();}
+  // データ行: 各列でビット値を保持
+  function drawData(g,b,bits,col,sample){ctx.strokeStyle=col;ctx.lineWidth=2.2;ctx.beginPath();
+    for(var i=0;i<8;i++){var xa=colX(g,i),xb=xa+g.bw,y=bits[i]?b.yHi:b.yLo;if(i===0)ctx.moveTo(xa,y);else ctx.lineTo(xa,y);ctx.lineTo(xb,y);}ctx.stroke();
+    // ビット値
+    ctx.fillStyle=col;ctx.font='9px "JetBrains Mono",monospace';ctx.textAlign='center';ctx.textBaseline='alphabetic';
+    for(var k=0;k<8;k++){ctx.fillText(bits[k],colX(g,k)+g.bw*0.5,b.yHi-5);}
+    // サンプル点（立ち上がり＝列中央）
+    if(sample){for(var s=0;s<8;s++){var xm=colX(g,s)+g.bw*0.5,ys=bits[s]?b.yHi:b.yLo;ctx.fillStyle='#c9761f';ctx.beginPath();ctx.arc(xm,ys,3.2,0,6.2832);ctx.fill();}}}
+  function csLine(g,b){ctx.strokeStyle='#c2543d';ctx.lineWidth=2;ctx.beginPath();var x0=colX(g,0),x1=colX(g,8);
+    ctx.moveTo(g.x0-g.bw*0.5,b.yHi);ctx.lineTo(x0,b.yHi);ctx.lineTo(x0,b.yLo);ctx.lineTo(x1,b.yLo);ctx.lineTo(x1,b.yHi);ctx.lineTo(W-24,b.yHi);ctx.stroke();
+    ctx.fillStyle='#c2543d';ctx.font='8px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText('選択中(Low)',(x0+x1)/2,b.yLo+13);}
+  function sampleTicks(g){ctx.strokeStyle='#e0b97f';ctx.lineWidth=1;ctx.setLineDash([2,3]);for(var s=0;s<8;s++){var xm=colX(g,s)+g.bw*0.5;ctx.beginPath();ctx.moveTo(xm,H*0.30);ctx.lineTo(xm,H*0.96);ctx.stroke();}ctx.setLineDash([]);}
+
+  function drawStep(){
+    clearBg();
+    if(step===0){
+      // 4本の線の結線図
+      var mx=W*0.13,sx=W*0.74,bw2=66,y=H*0.12,gap=(H*0.78)/4;
+      ctx.fillStyle='#efe9df';ctx.strokeStyle='#9a8f7e';ctx.lineWidth=1.5;roundRect(mx,H*0.30,bw2,H*0.4,8);ctx.fill();ctx.stroke();roundRect(sx,H*0.30,bw2,H*0.4,8);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#5a5550';ctx.font='bold 12px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('master',mx+bw2/2,H*0.5);ctx.fillText('slave',sx+bw2/2,H*0.5);
+      var lines=[{n:'CS',c:'#c2543d',d:'→ 相手を選ぶ'},{n:'SCLK',c:'#7a5ea8',d:'→ 時計（master が刻む）'},{n:'MOSI',c:'#3c7876',d:'→ master が送る'},{n:'MISO',c:'#2563aa',d:'← slave が送る'}];
+      for(var i=0;i<4;i++){var ly=H*0.34+i*gap*0.92, L=lines[i];
+        ctx.strokeStyle=L.c;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(mx+bw2,ly);ctx.lineTo(sx,ly);ctx.stroke();
+        ctx.fillStyle=L.c;ctx.font='bold 10px "JetBrains Mono",monospace';ctx.textAlign='left';ctx.textBaseline='alphabetic';ctx.fillText(L.n,mx+bw2+6,ly-4);
+        ctx.fillStyle='#7d7568';ctx.font='9px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='right';ctx.fillText(L.d,sx-4,ly-4);}
+      info.innerHTML='SPI は線が<b>4本</b>：<span class="v-amber">CS</span>（相手を選ぶ）、<b style="color:#7a5ea8">SCLK</b>（クロック＝master が刻む時計）、<span class="v-teal">MOSI</span>（master→slave）、<span class="v-blue">MISO</span>（slave→master）。UART と違って<b>時計の線がある</b>のが決定的。これが「同期式」だ。';
+    } else {
+      var g=grid();
+      var bCS=band('CS',H*0.20,12),bCK=band('SCLK',H*0.42,15),bMO=band('MOSI',H*0.64,15),bMI=band('MISO',H*0.85,15);
+      if(step>=2)sampleTicks(g);
+      rowLabel(g,bCS,'CS','#c2543d');csLine(g,bCS);
+      rowLabel(g,bCK,'SCLK','#7a5ea8');drawSCLK(g,bCK);
+      if(step>=2){rowLabel(g,bMO,'MOSI','#3c7876');drawData(g,bMO,MOSI,'#3c7876',step>=2);}
+      if(step>=3){rowLabel(g,bMI,'MISO','#2563aa');drawData(g,bMI,MISO,'#2563aa',true);}
+      if(step===1)info.innerHTML='master が <b style="color:#7a5ea8">SCLK</b> で時を刻む（CS を Low に落として相手を選んでから）。1バイト＝クロック8発。<b>速さを前もって約束する必要がない</b> ── 何 Hz で叩こうが、時計のエッジが「いま」を全部決めるから、受け手はただ従えばいい。ここが UART と決定的に違う所だ。';
+      else if(step===2)info.innerHTML='<span class="v-teal">MOSI</span> に master がビットを載せ、各クロックの<b>立ち上がり（橙の点）</b>で slave が読む。UART は1ビットの“真ん中”で読んだけど、SPI は<b>クロックのエッジ</b>で読む ── 時計があるから、迷いがない。並びは <b>MSB から先</b>（0xA5 = 1,0,1,0,0,1,0,1）。';
+      else if(step===3)info.innerHTML='そして <span class="v-blue">MISO</span>。master が送る同じ8クロックで、slave も<b>同時に</b>ビットを返す ── <b>全二重</b>だ。master と slave のシフトレジスタが輪のように繋がって、1ビットずつ<b>入れ替わって</b>いる（送る＝受ける）。<span class="v-amber">CS</span> が Low の間だけ有効＝<b>アドレスは要らない、線で相手を選ぶ</b>。複数の slave は CS を別々に引く。';
+    }
+  }
+  function draw(){if(W&&H)drawStep();}
+  function syncUI(){stepno.textContent='STEP '+(step+1)+' / 4';steptitle.textContent=STEPS[step].t;bPrev.disabled=(step===0);bNext.disabled=(step===3);for(var i=0;i<dotsEl.children.length;i++)dotsEl.children[i].classList.toggle('on',i===step);}
+  for(var i=0;i<4;i++){var d=document.createElement('span');d.className='dot';d.addEventListener('click',(function(x){return function(){step=x;syncUI();draw();};})(i));dotsEl.appendChild(d);}
+  bPrev.addEventListener('click',function(){if(step>0){step--;syncUI();draw();}});
+  bNext.addEventListener('click',function(){if(step<3){step++;syncUI();draw();}});
+  var ro=new ResizeObserver(function(){resize();});ro.observe(stage);
+  syncUI();resize();
+})();
+</script>
+</body>
+</html>
