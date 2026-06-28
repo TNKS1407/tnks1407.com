@@ -66,7 +66,7 @@ if(window.self!==window.top)document.body.classList.add('embed');
   // コード行： s=属するステップ(数字を含む文字列), base=常時うっすら表示
   var LINES=[
     {h:'<span class="kw">import</span> struct',base:1},
-    {h:'nic = open_raw_socket(<span class="str">"eth0"</span>)   <span class="cm"># 生イーサのNIC（ライブラリが用意）</span>',base:1},
+    {h:'nic = open_raw_socket(<span class="str">"eth0"</span>)   <span class="cm"># nic=イーサの口(チップ)。raw=IP/TCP抜きで生で出す</span>',base:1},
     {h:'',base:1},
     {h:'<span class="cm"># ① 値を決める ── ただの数</span>',s:'1'},
     {h:'cmd, idx     = <span class="num">0x0C</span>, <span class="num">1</span>          <span class="cm"># 0x0C = LRW（読んで書く）</span>',s:'1'},
@@ -95,7 +95,7 @@ if(window.self!==window.top)document.body.classList.add('embed');
   ];
   var STEPS=[
     {t:'値を決める', expl:'まず「<b>何を・どこに・何を出力するか</b>」を、ただの数で決める。<code>0x0C</code>=LRW（読んで書く）、<code>0x1000</code>=論理アドレス、<code>outputs</code>=各スレーブへ送る中身。ここはまだ“設定”。ハードでいう「どのレジスタに何を」と同じ感覚。'},
-    {t:'バイトに詰める', bytes:true, expl:'<code>struct.pack</code> が、数を<b>バイト列</b>に変換する。書式の頭の <code>&#39;&lt;&#39;</code> が<b>リトルエンディアン</b>＝下位バイトが先。だから <code>addr=0x1000</code> は <b>00 10 00 00</b> と並ぶ（橙の所）。<code>B</code>=1バイト, <code>I</code>=4バイト, <code>H</code>=2バイト。これが“フレームを組み立てる”＝下のバイトが、さっき図で見た中身そのもの。'},
+    {t:'バイトに詰める', bytes:true, expl:'<code>struct.pack</code> が、数を<b>バイト列</b>に変換する。書式 <code>&#39;&lt;BBIH&#39;</code> は“詰め方のレシピ”で、<b>1文字＝1つの値のバイト幅</b>：<code>B</code>=1, <code>H</code>=2, <code>I</code>=4バイト。だから <code>&#39;&lt;BBIH&#39;</code> ＝ cmd(B:1)・idx(B:1)・addr(I:4)・length(H:2)。頭の <code>&#39;&lt;&#39;</code> は<b>リトルエンディアン</b>＝下位バイトが先で、<code>addr=0x1000</code> は <b>00 10 00 00</b>（橙）。これが“フレームを組み立てる”＝下のバイトが、図で見た中身そのもの。'},
     {t:'毎周期、回す', expl:'本体はこの <code>while</code> ループだけ：<b>送る → 帰りを待つ → WKC と入力を読む → 次の出力を詰める</b>、を毎周期くり返す。<code>unpack</code> は pack の逆＝バイトを数に戻す。難しい構文はどこにも無い ── “埋めて・送って・読む”の輪が、そのままコードになってる。'},
     {t:'＝さっきの図の正体', bytes:true, expl:'この <code>frame</code> という<b>1本のバイト列</b>が、図で見た「鎖を通り抜けるフレーム」そのもの。── <b>コード（このページ）と、線の上のバイト（下）と、ハードの動き（前の図）は、同じものの“別の顔”</b>だよ。ここまで来れば、SOEM みたいな実装も「あ、芯はこの輪か」と読めるはず。'}
   ];
