@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>スイッチ ── どこへ送るかを、学習する</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;--teal:#3c7876;--red:#c2543d;--amber:#c9761f;--blue:#2563aa;--purple:#7a5ea8;--text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{overflow-x:hidden;max-width:100%;}
+body{font-family:'Zen Kaku Gothic New',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;background-image:radial-gradient(circle at 1px 1px,#e9e4da 1px,transparent 0);background-size:22px 22px;}
+.wrap{max-width:860px;margin:0 auto;padding:20px 16px 48px;}
+header{display:flex;align-items:flex-end;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.brand{font-weight:700;font-size:22px;line-height:1.1;color:var(--text);}.brand .a{color:var(--teal);}
+.tag{font-size:12px;color:var(--muted);padding-bottom:2px;}
+.lead{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 16px;margin-bottom:16px;font-size:13px;color:#3a3a36;line-height:1.78;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.lead p{margin:0;}.lead b{color:var(--text);}
+.card-tool{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.stephead{display:flex;align-items:center;gap:.6rem;padding:.6rem .8rem;border-bottom:1px solid var(--border);background:var(--surface);}
+.stepno{font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;color:#fff;background:var(--teal);border-radius:999px;padding:.18rem .6rem;white-space:nowrap;}
+.steptitle{font-weight:700;font-size:.92rem;color:var(--text);}
+#stage{position:relative;width:100%;height:clamp(300px,54vw,430px);overflow:hidden;background:var(--surface);}
+canvas{display:block;width:100%;height:100%;}
+#info{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.5rem .8rem;font-size:.8rem;color:#3a3a36;line-height:1.7;min-height:3rem;}
+#info b{color:var(--text);}#info code{font-family:'JetBrains Mono',monospace;background:#efe9df;border-radius:3px;padding:0 4px;color:var(--blue);}#info .v-teal{color:var(--teal);font-weight:600;}#info .v-amber{color:var(--amber);font-weight:600;}#info .v-red{color:var(--red);font-weight:600;}
+.ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.5rem .7rem;display:flex;gap:.5rem;align-items:center;}
+.dots{display:flex;gap:.3rem;align-items:center;}.dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:.15s;}.dot.on{background:var(--teal);transform:scale(1.3);}
+button{font-family:'Zen Kaku Gothic New',sans-serif;font-size:.78rem;font-weight:700;color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.32rem .8rem;cursor:pointer;transition:.15s;}
+button:hover{border-color:var(--teal);}button.pri{background:var(--teal);color:#fff;border-color:var(--teal);}button:disabled{opacity:.4;cursor:default;}
+footer{text-align:center;color:var(--faint);font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:12px;}
+body.embed{height:100%;display:flex;flex-direction:column;overflow:hidden;background-image:none;}
+body.embed .wrap{max-width:none;margin:0;padding:0;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
+body.embed header,body.embed .lead,body.embed footer{display:none;}
+body.embed .card-tool{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;border:none;border-radius:0;box-shadow:none;}
+body.embed #stage{flex:1 1 auto;height:auto;min-height:150px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><div class="brand"><span class="a">スイッチ</span> ── どこへ送るかを、学習する</div><div class="tag">フレームの宛先 MAC を、どの口へ運べばいい？</div></header>
+  <div class="lead"><p>フレームに「宛先 MAC」を書いた ── でも、その MAC を持つ機器は、<b>どの線の先に居る</b>のか？ ネットワークはそれをどう知るのか。昔の「ハブ」は知らずに全員へばらまいた。<b>スイッチ</b>は、流れるフレームから「どの MAC がどの口に居るか」を<b>学習</b>して、その口だけへ運ぶ。空っぽの表が育っていく様子を、一歩ずつ。</p></div>
+  <div class="card-tool">
+    <div class="stephead"><span class="stepno" id="stepno">STEP 1 / 4</span><span class="steptitle" id="steptitle">—</span></div>
+    <div id="stage"><canvas id="cv"></canvas></div>
+    <div id="info"></div>
+    <div class="ctrl"><button id="bPrev">◀ 戻る</button><button id="bNext" class="pri">次へ ▶</button><div class="dots" id="dots"></div></div>
+  </div>
+  <footer>ブラックボックスを開く — スイッチング</footer>
+</div>
+<script>
+if(window.self!==window.top)document.body.classList.add('embed');
+(function(){
+  var cv=document.getElementById('cv'),ctx=cv.getContext('2d'),info=document.getElementById('info'),stage=document.getElementById('stage');
+  var stepno=document.getElementById('stepno'),steptitle=document.getElementById('steptitle'),dotsEl=document.getElementById('dots');
+  var bPrev=document.getElementById('bPrev'),bNext=document.getElementById('bNext');
+  var DEV=[{n:'A',mac:'…:01',c:'#3c7876'},{n:'B',mac:'…:02',c:'#2563aa'},{n:'C',mac:'…:03',c:'#c9761f'},{n:'D',mac:'…:04',c:'#7a5ea8'}];
+  var STEPS=[{t:'ハブ時代 ── 全員に配る'},{t:'スイッチ ── MAC アドレスの表を持つ'},{t:'学習 ── 来たフレームの“送信元”から覚える'},{t:'転送 ── 表を見て、その口だけへ'}];
+  var step=0,W=0,H=0,DPR=1;
+  function resize(){DPR=Math.min(window.devicePixelRatio||1,2);var r=stage.getBoundingClientRect();W=Math.round(r.width);H=Math.round(r.height);cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);draw();}
+  function clearBg(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#faf8f4';ctx.fillRect(0,0,W,H);}
+  function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+  // ports/devices layout
+  function layout(){
+    var lx=20, swArea=W*0.60, swL=lx+8, swR=swArea-8, swT=H*0.12, swH=H*0.17, swB=swT+swH;
+    var px=[]; for(var i=0;i<4;i++)px.push(swL+(i+0.5)*((swR-swL)/4));
+    var devT=H*0.70, devH=H*0.20;
+    return {swL:swL,swR:swR,swT:swT,swB:swB,swH:swH,px:px,devT:devT,devH:devH,tblX:W*0.64};
+  }
+  // litPorts: 光らせるポートindex配列, label: 箱名
+  function drawScene(label,litPorts,srcPort){
+    var g=layout();
+    // connections
+    for(var i=0;i<4;i++){var on=litPorts.indexOf(i)>=0, isSrc=(i===srcPort);
+      ctx.strokeStyle=on?(isSrc?'#3c7876':'#c9761f'):'#d8cdbd';ctx.lineWidth=on?2.4:1.6;
+      ctx.beginPath();ctx.moveTo(g.px[i],g.swB);ctx.lineTo(g.px[i],g.devT);ctx.stroke();}
+    // switch box
+    ctx.fillStyle='#e6f0ef';ctx.strokeStyle='#3c7876';ctx.lineWidth=1.8;roundRect(g.swL,g.swT,g.swR-g.swL,g.swH,9);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#3c7876';ctx.font='bold 13px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(label,(g.swL+g.swR)/2,g.swT+g.swH/2-2);
+    // ports
+    for(var p=0;p<4;p++){ctx.fillStyle='#9a8f7e';ctx.font='8px "JetBrains Mono",monospace';ctx.textBaseline='alphabetic';ctx.fillText('口'+(p+1),g.px[p],g.swB-4);}
+    // devices
+    for(var d=0;d<4;d++){var D=DEV[d],x=g.px[d],on2=litPorts.indexOf(d)>=0,isS=(d===srcPort);
+      ctx.fillStyle=on2?(isS?'#e6f0ef':'#fdf3e3'):'#fff';ctx.strokeStyle=D.c;ctx.lineWidth=1.6;roundRect(x-26,g.devT,52,g.devH,7);ctx.fill();ctx.stroke();
+      ctx.fillStyle=D.c;ctx.font='bold 13px "JetBrains Mono",monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(D.n,x,g.devT+g.devH*0.36);
+      ctx.fillStyle='#7d7568';ctx.font='8.5px "JetBrains Mono",monospace';ctx.fillText(D.mac,x,g.devT+g.devH*0.74);
+      if(on2&&!isS){ctx.fillStyle='#c9761f';ctx.font='8px "Zen Kaku Gothic New",sans-serif';ctx.fillText('受信',x,g.devT-5);}
+      if(isS){ctx.fillStyle='#3c7876';ctx.font='8px "Zen Kaku Gothic New",sans-serif';ctx.fillText('送信',x,g.devT-5);}}
+    return g;
+  }
+  // MACテーブル描画。rows=[{mac,port}], hi=強調index
+  function drawTable(g,rows,hi,title){
+    var x=g.tblX, y=H*0.12, w=W-16-x, rh=22;
+    ctx.fillStyle='#5a5550';ctx.font='bold 10px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='left';ctx.textBaseline='alphabetic';ctx.fillText(title||'MAC アドレス表',x,y-6);
+    ctx.fillStyle='#faf6ef';ctx.strokeStyle='#c9b8a8';ctx.lineWidth=1;roundRect(x,y,w,rh*4+4,5);ctx.fill();ctx.stroke();
+    // header
+    ctx.fillStyle='#9a8f7e';ctx.font='8.5px "JetBrains Mono",monospace';ctx.fillText('MAC',x+8,y+15);ctx.fillText('→口',x+w-30,y+15);
+    ctx.strokeStyle='#e3dbd0';ctx.beginPath();ctx.moveTo(x,y+rh);ctx.lineTo(x+w,y+rh);ctx.stroke();
+    if(!rows.length){ctx.fillStyle='#bbb2a4';ctx.font='10px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.fillText('（空）',x+w/2,y+rh*2.2);}
+    for(var i=0;i<rows.length;i++){var ry=y+rh*(i+1),R=rows[i],on=(i===hi);
+      if(on){ctx.fillStyle='rgba(60,120,118,.12)';ctx.fillRect(x+1,ry+1,w-2,rh-2);}
+      ctx.fillStyle=on?'#3c7876':'#5a5550';ctx.font=(on?'bold ':'')+'10px "JetBrains Mono",monospace';ctx.textAlign='left';ctx.fillText(R.mac,x+8,ry+15);ctx.textAlign='right';ctx.fillText(R.port,x+w-12,ry+15);}
+  }
+
+  function drawStep(){
+    clearBg();var g;
+    if(step===0){
+      g=drawScene('ハブ',[0,1,2,3],0); // A送信→全員へ
+      info.innerHTML='昔の「ハブ」は、ある口から来たフレームを<b>残り全部の口へそのまま流す</b>（フラッディング）。A が送ると、宛先がどこだろうと <span class="v-amber">B も C も D も受け取る</span>。誰宛かを知らないから、全員にばらまくだけ ── 無駄だし、皆で一本を共有＝<span class="v-red">衝突</span>もする。RS-485 や CAN の「共有バス」に近い世界だ。';
+    } else if(step===1){
+      g=drawScene('スイッチ',[],-1);drawTable(g,[],-1);
+      info.innerHTML='<b>スイッチ</b>は、中に「<b>MAC アドレス → どの口</b>」の対応表を持っている。最初は、まだ何も知らないので<b>空っぽ</b>だ。これから、フレームが流れるたびに、この表を育てていく。';
+    } else if(step===2){
+      g=drawScene('スイッチ',[0,1,2,3],0);drawTable(g,[{mac:'…:01 (A)',port:'1'}],0,'学習した！');
+      info.innerHTML='A（口1）から、C 宛のフレームが届いた。スイッチは、フレームの<b>送信元 MAC＝A</b> と、入ってきた<b>口1</b>を見て、表に「<span class="v-teal">A → 口1</span>」と書き込む（<b>学習</b>）。── ただし宛先 C はまだ表に無いので、<b>この回はフラッディング</b>（B/C/D 全部へ）。学習に使うのは“送信元”だ、というのがミソ。';
+    } else {
+      g=drawScene('スイッチ',[0],0);drawTable(g,[{mac:'…:01 (A)',port:'1'}],0,'表を引いた');
+      info.innerHTML='今度は、誰かが <b>A 宛</b>のフレームを送ると ── スイッチは表で <code>A = 口1</code> を引いて、<span class="v-teal">口1 だけ</span>に送る（他の口へは流さない）。転送に使うのは“宛先”MAC。表に在れば一点へ、無ければ全員へ。<b>フレームが流れるほど表が育ち、無駄なばらまきが消えていく</b> ── これが「スイッチング」だよ。';
+    }
+  }
+  function draw(){if(W&&H)drawStep();}
+  function syncUI(){stepno.textContent='STEP '+(step+1)+' / 4';steptitle.textContent=STEPS[step].t;bPrev.disabled=(step===0);bNext.disabled=(step===3);for(var i=0;i<dotsEl.children.length;i++)dotsEl.children[i].classList.toggle('on',i===step);}
+  for(var i=0;i<4;i++){var d=document.createElement('span');d.className='dot';d.addEventListener('click',(function(x){return function(){step=x;syncUI();draw();};})(i));dotsEl.appendChild(d);}
+  bPrev.addEventListener('click',function(){if(step>0){step--;syncUI();draw();}});
+  bNext.addEventListener('click',function(){if(step<3){step++;syncUI();draw();}});
+  var ro=new ResizeObserver(function(){resize();});ro.observe(stage);
+  syncUI();resize();
+})();
+</script>
+</body>
+</html>

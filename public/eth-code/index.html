@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Ethernet をコードで ── フレームを組んで、流して、覗く</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;--teal:#3c7876;--red:#c2543d;--amber:#c9761f;--blue:#2563aa;--purple:#7a5ea8;--text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{overflow-x:hidden;max-width:100%;}
+body{font-family:'Zen Kaku Gothic New',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;background-image:radial-gradient(circle at 1px 1px,#e9e4da 1px,transparent 0);background-size:22px 22px;}
+.wrap{max-width:820px;margin:0 auto;padding:20px 16px 48px;}
+header{display:flex;align-items:flex-end;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.brand{font-weight:700;font-size:22px;line-height:1.1;color:var(--text);}.brand .a{color:var(--teal);}
+.tag{font-size:12px;color:var(--muted);padding-bottom:2px;}
+.lead{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 16px;margin-bottom:16px;font-size:13px;color:#3a3a36;line-height:1.78;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.lead p{margin:0;}.lead b{color:var(--text);}
+.card-tool{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.stephead{display:flex;align-items:center;gap:.6rem;padding:.6rem .8rem;border-bottom:1px solid var(--border);background:var(--surface);}
+.stepno{font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;color:#fff;background:var(--teal);border-radius:999px;padding:.18rem .6rem;white-space:nowrap;}
+.steptitle{font-weight:700;font-size:.92rem;color:var(--text);}
+.code{background:#fbf8f2;padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.85;overflow-x:auto;border-bottom:1px solid var(--border);}
+.ln{display:block;white-space:pre;border-left:3px solid transparent;padding-left:8px;margin-left:-8px;transition:background .2s,opacity .2s,border-color .2s;border-radius:0 4px 4px 0;opacity:.42;}
+.ln.on{opacity:1;background:rgba(60,120,118,.10);border-left-color:var(--teal);}
+.ln.base{opacity:.78;}
+.kw{color:#7a5ea8;}.fn{color:#2563aa;}.str{color:#3c7876;}.num{color:#c9761f;}.cm{color:#aaa49b;font-style:italic;}
+.expl{padding:.7rem .9rem;font-size:.82rem;color:#3a3a36;line-height:1.75;background:var(--surface);border-bottom:1px solid var(--border);min-height:3.6rem;}
+.expl b{color:var(--text);}.expl code{font-family:'JetBrains Mono',monospace;background:#efe9df;border-radius:3px;padding:0 4px;color:var(--blue);}
+.ctrl{flex-shrink:0;background:var(--surface);padding:.5rem .7rem;display:flex;gap:.5rem;align-items:center;}
+.dots{display:flex;gap:.3rem;align-items:center;}.dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:.15s;}.dot.on{background:var(--teal);transform:scale(1.3);}
+button{font-family:'Zen Kaku Gothic New',sans-serif;font-size:.78rem;font-weight:700;color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.32rem .8rem;cursor:pointer;transition:.15s;}
+button:hover{border-color:var(--teal);}button.pri{background:var(--teal);color:#fff;border-color:var(--teal);}button:disabled{opacity:.4;cursor:default;}
+footer{text-align:center;color:var(--faint);font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:12px;}
+body.embed{height:100%;display:flex;flex-direction:column;overflow:auto;background-image:none;}
+body.embed .wrap{max-width:none;margin:0;padding:0;}
+body.embed header,body.embed .lead,body.embed footer{display:none;}
+body.embed .card-tool{border:none;border-radius:0;box-shadow:none;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><div class="brand"><span class="a">Ethernet</span> をコードで</div><div class="tag">フレームを組んで、生のイーサに流して、覗く</div></header>
+  <div class="lead"><p>Ethernet のフレームは、結局「宛先 MAC ＋ 送信元 MAC ＋ 中身の種類（EtherType）＋ データ」だ。Python の <b>scapy</b> を使うと、それを手で組み立てて、生のイーサに流して、流れてるのを覗ける ── ネットワークの最下層を、文字どおり手で触れる。1行ずつ。</p></div>
+  <div class="card-tool">
+    <div class="stephead"><span class="stepno" id="stepno">STEP 1 / 4</span><span class="steptitle" id="steptitle">—</span></div>
+    <div class="code" id="code"></div>
+    <div class="expl" id="expl"></div>
+    <div class="ctrl"><button id="bPrev">◀ 戻る</button><button id="bNext" class="pri">次へ ▶</button><div class="dots" id="dots"></div></div>
+  </div>
+  <footer>ブラックボックスを開く — Ethernet の素</footer>
+</div>
+<script>
+if(window.self!==window.top)document.body.classList.add('embed');
+(function(){
+  var LINES=[
+    {h:'<span class="kw">from</span> scapy.all <span class="kw">import</span> Ether, sendp, sniff',s:'1'},
+    {h:'',base:1},
+    {h:'<span class="cm"># ① Ethernet フレームを組み立てる</span>',s:'1'},
+    {h:'frame = <span class="fn">Ether</span>(dst=<span class="str">&quot;aa:bb:cc:00:00:03&quot;</span>,    <span class="cm"># 宛先 MAC（誰へ）</span>',s:'1'},
+    {h:'              src=<span class="str">&quot;aa:bb:cc:00:00:01&quot;</span>,    <span class="cm"># 送信元 MAC（誰から）</span>',s:'1'},
+    {h:'              type=<span class="num">0x88A4</span>)               <span class="cm"># EtherType＝中身の種類</span>',s:'1'},
+    {h:'',base:1},
+    {h:'<span class="cm"># ② 生のイーサに流す（IP / TCP を通さない）</span>',s:'2'},
+    {h:'<span class="fn">sendp</span>(frame, iface=<span class="str">&quot;eth0&quot;</span>)',s:'2'},
+    {h:'',base:1},
+    {h:'<span class="cm"># ③ 流れてるフレームを覗く</span>',s:'3'},
+    {h:'pkts = <span class="fn">sniff</span>(iface=<span class="str">&quot;eth0&quot;</span>, count=<span class="num">1</span>)',s:'3'},
+    {h:'<span class="fn">print</span>(pkts[<span class="num">0</span>].dst, pkts[<span class="num">0</span>].src, <span class="fn">hex</span>(pkts[<span class="num">0</span>].type))',s:'34'}
+  ];
+  var STEPS=[
+    {t:'フレームを組み立てる', expl:'<code>Ether(dst, src, type)</code> ── Ethernet フレームの正体は、たったこれだけ。<b>宛先 MAC</b>（誰へ）、<b>送信元 MAC</b>（誰から）、<b>EtherType</b>（中身が何か）。MAC は機器ごとに世界で一意な48ビットの番地。<code>type=0x88A4</code> は EtherCAT の印 ── <a href="/docs/ethercat/" style="color:#3c7876">前に出てきた</a>あの番号だ。もし普通のネットなら、ここは <code>0x0800</code>（中身は IP だよ、の印）になる。'},
+    {t:'生のイーサに流す', expl:'<code>sendp</code>（p＝物理）は、<b>IP も TCP も通さず、生の Ethernet フレームを直接</b>線に流す。スイッチは、このフレームの<b>宛先 MAC</b> を見て、<a href="/eth-switch/" style="color:#3c7876">学習した表</a>の口へ転送する。EtherCAT が IP を積まずに動けたのも、この「生のイーサ」の層を直に使ったからだ。'},
+    {t:'流れてるフレームを覗く', expl:'<code>sniff</code> で、線を流れているフレームを拾って中を見る ── <code>tcpdump</code> や Wireshark のパケットキャプチャの、素の姿だ。<code>.dst .src .type</code> で、さっき組み立てた三つを読み出せる。ネットワークが「見えない配管」でなく、<b>中を覗ける箱</b>になる瞬間だよ。'},
+    {t:'＝ MAC は配達先、EtherType は中身の種類', expl:'まとめ ── Ethernet の枠は <b>MAC（どこへ）＋ EtherType（中身は何か）</b>。素朴だけど、これが全ネットワークの土台になる。次回は、この EtherType を <code>0x0800</code>（＝IP）にして、その「中身」の側に <b>IP（住所と経路）→ TCP（再送と順番）</b>を積んでいく。土台は、もう君の手の内にある。'}
+  ];
+  var step=0;
+  var codeEl=document.getElementById('code'),explEl=document.getElementById('expl');
+  var stepno=document.getElementById('stepno'),steptitle=document.getElementById('steptitle'),dotsEl=document.getElementById('dots');
+  var bPrev=document.getElementById('bPrev'),bNext=document.getElementById('bNext');
+  LINES.forEach(function(L){var d=document.createElement('span');d.className='ln'+(L.base?' base':'');d.dataset.s=L.s||'';d.innerHTML=L.h||' ';codeEl.appendChild(d);});
+  for(var i=0;i<4;i++){var dt=document.createElement('span');dt.className='dot';dt.addEventListener('click',(function(x){return function(){step=x;render();};})(i));dotsEl.appendChild(dt);}
+  function render(){
+    var S=String(step+1);
+    stepno.textContent='STEP '+(step+1)+' / 4';steptitle.textContent=STEPS[step].t;
+    Array.prototype.forEach.call(codeEl.children,function(ln){var s=ln.dataset.s||'';ln.classList.toggle('on',s.indexOf(S)>=0);});
+    explEl.innerHTML=STEPS[step].expl;
+    bPrev.disabled=(step===0);bNext.disabled=(step===3);
+    for(var i=0;i<dotsEl.children.length;i++)dotsEl.children[i].classList.toggle('on',i===step);
+  }
+  bPrev.addEventListener('click',function(){if(step>0){step--;render();}});
+  bNext.addEventListener('click',function(){if(step<3){step++;render();}});
+  render();
+})();
+</script>
+</body>
+</html>
