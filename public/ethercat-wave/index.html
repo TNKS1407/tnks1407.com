@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>バイトを、線の波形で ── 0x0C が電圧になる</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;--teal:#3c7876;--red:#c2543d;--amber:#c9761f;--blue:#2563aa;--text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{overflow-x:hidden;max-width:100%;}
+body{font-family:'Zen Kaku Gothic New',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;background-image:radial-gradient(circle at 1px 1px,#e9e4da 1px,transparent 0);background-size:22px 22px;}
+.wrap{max-width:840px;margin:0 auto;padding:20px 16px 48px;}
+header{display:flex;align-items:flex-end;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.brand{font-weight:700;font-size:22px;line-height:1.1;color:var(--text);}.brand .a{color:var(--teal);}
+.tag{font-size:12px;color:var(--muted);padding-bottom:2px;}
+.lead{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 16px;margin-bottom:16px;font-size:13px;color:#3a3a36;line-height:1.78;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.lead p{margin:0;}.lead b{color:var(--text);}
+.card-tool{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.stephead{display:flex;align-items:center;gap:.6rem;padding:.6rem .8rem;border-bottom:1px solid var(--border);background:var(--surface);}
+.stepno{font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;color:#fff;background:var(--teal);border-radius:999px;padding:.18rem .6rem;white-space:nowrap;}
+.steptitle{font-weight:700;font-size:.92rem;color:var(--text);}
+#stage{position:relative;width:100%;height:clamp(290px,52vw,420px);overflow:hidden;background:var(--surface);}
+canvas{display:block;width:100%;height:100%;}
+#info{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.5rem .8rem;font-size:.8rem;color:#3a3a36;line-height:1.7;min-height:3rem;}
+#info b{color:var(--text);}#info code{font-family:'JetBrains Mono',monospace;background:#efe9df;border-radius:3px;padding:0 4px;color:var(--blue);}#info .v-amber{color:var(--amber);font-weight:600;}#info .v-teal{color:var(--teal);font-weight:600;}
+.ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.5rem .7rem;display:flex;gap:.5rem;align-items:center;}
+.dots{display:flex;gap:.3rem;align-items:center;}.dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:.15s;}.dot.on{background:var(--teal);transform:scale(1.3);}
+button{font-family:'Zen Kaku Gothic New',sans-serif;font-size:.78rem;font-weight:700;color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.32rem .8rem;cursor:pointer;transition:.15s;}
+button:hover{border-color:var(--teal);}button.pri{background:var(--teal);color:#fff;border-color:var(--teal);}button:disabled{opacity:.4;cursor:default;}button.ghost{border-color:var(--amber);color:var(--amber);}
+footer{text-align:center;color:var(--faint);font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:12px;}
+body.embed{height:100%;display:flex;flex-direction:column;overflow:hidden;background-image:none;}
+body.embed .wrap{max-width:none;margin:0;padding:0;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
+body.embed header,body.embed .lead,body.embed footer{display:none;}
+body.embed .card-tool{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;border:none;border-radius:0;box-shadow:none;}
+body.embed #stage{flex:1 1 auto;height:auto;min-height:150px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><div class="brand"><span class="a">バイト</span>を、線の波形で</div><div class="tag">0x0C も、線の上では“電圧の高い/低い”が時間で流れる信号</div></header>
+  <div class="lead"><p>バイトは抽象じゃない ── 線の上では、<b>電圧の高い(=1)／低い(=0)が、1ビットぶんの時間ずつ並んだ波形</b>だ。ハードで波形を見てきた君なら、ここが一番しっくり来るはず。<code>struct.pack</code> の <code>BBIH</code> や<b>エンディアン</b>も、波形にすると“時間の順”として目で掴める。</p></div>
+  <div class="card-tool">
+    <div class="stephead"><span class="stepno" id="stepno">STEP 1 / 4</span><span class="steptitle" id="steptitle">—</span></div>
+    <div id="stage"><canvas id="cv"></canvas></div>
+    <div id="info"></div>
+    <div class="ctrl"><button id="bPrev">◀ 戻る</button><button id="bNext" class="pri">次へ ▶</button><div class="dots" id="dots"></div></div>
+  </div>
+  <footer>ブラックボックスを開く — バイトと信号は同じもの</footer>
+</div>
+<script>
+if(window.self!==window.top)document.body.classList.add('embed');
+(function(){
+  var cv=document.getElementById('cv'),ctx=cv.getContext('2d'),info=document.getElementById('info'),stage=document.getElementById('stage');
+  var stepno=document.getElementById('stepno'),steptitle=document.getElementById('steptitle'),dotsEl=document.getElementById('dots');
+  var bPrev=document.getElementById('bPrev'),bNext=document.getElementById('bNext');
+  // 代表バイト列（cmd idx + addr 4B）。addr=0x1000 を 00 10 00 00（リトルエンディアン）で。
+  var FRAME=[{v:0x0C,lab:'cmd',c:'#2563aa'},{v:0x01,lab:'idx',c:'#2563aa'},
+    {v:0x00,lab:'addr',c:'#c9761f',addr:1},{v:0x10,lab:'',c:'#c9761f',addr:1},{v:0x00,lab:'',c:'#c9761f',addr:1},{v:0x00,lab:'',c:'#c9761f',addr:1}];
+  var STEPS=[{t:'1バイトを波形に'},{t:'フレームを、ビットの川で'},{t:'エンディアンが“時間の順”に見える'},{t:'正直に ── 本物の線はもう一段ある'}];
+  var step=0,playing=true,phase=0,last=0,W=0,H=0,DPR=1;
+
+  function resize(){DPR=Math.min(window.devicePixelRatio||1,2);var r=stage.getBoundingClientRect();W=Math.round(r.width);H=Math.round(r.height);cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);draw();}
+  function bitsOf(v){var a=[];for(var i=7;i>=0;i--)a.push((v>>i)&1);return a;} // MSB先頭（読みやすさ優先）
+  function hex(v){return ('0'+v.toString(16)).slice(-2).toUpperCase();}
+  function clearBg(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#faf8f4';ctx.fillRect(0,0,W,H);}
+
+  // bits配列を波形（NRZ）で [x0,wv幅] / yHi,yLo に描く。colors=各ビットの色(配列 or 単色)
+  function drawWave(x0,wv,yHi,yLo,bits,colorAt,markEvery,glowTo){
+    var n=bits.length,bw=wv/n;
+    // 目盛り（ビット境界・薄）
+    ctx.strokeStyle='#ece5da';ctx.lineWidth=1;
+    for(var i=0;i<=n;i++){var x=x0+i*bw;ctx.beginPath();ctx.moveTo(x,yHi-8);ctx.lineTo(x,yLo+8);ctx.stroke();}
+    // 1/0 基準線
+    ctx.strokeStyle='#ded3c3';ctx.setLineDash([2,3]);ctx.beginPath();ctx.moveTo(x0,yHi);ctx.lineTo(x0+wv,yHi);ctx.moveTo(x0,yLo);ctx.lineTo(x0+wv,yLo);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='#aaa49b';ctx.font='9px "JetBrains Mono",monospace';ctx.textAlign='right';ctx.textBaseline='middle';ctx.fillText('1',x0-3,yHi);ctx.fillText('0',x0-3,yLo);
+    // glow（強調区間）
+    if(glowTo){ctx.fillStyle='rgba(201,118,31,.10)';ctx.fillRect(x0+glowTo[0]*bw,yHi-10,(glowTo[1]-glowTo[0])*bw,(yLo-yHi)+20);}
+    // 波形
+    ctx.lineWidth=2.4;var prevY=bits[0]?yHi:yLo;
+    for(var k=0;k<n;k++){var y=bits[k]?yHi:yLo,xa=x0+k*bw,xb=x0+(k+1)*bw,col=(typeof colorAt==='function')?colorAt(k):colorAt;
+      ctx.strokeStyle=col;ctx.beginPath();if(y!==prevY){ctx.moveTo(xa,prevY);ctx.lineTo(xa,y);}else ctx.moveTo(xa,y);ctx.lineTo(xb,y);ctx.stroke();prevY=y;}
+    // バイト境界（濃いめ）
+    if(markEvery){ctx.strokeStyle='#9a8f7e';ctx.lineWidth=1.2;for(var b=0;b<=n;b+=markEvery){var x=x0+b*bw;ctx.beginPath();ctx.moveTo(x,yHi-12);ctx.lineTo(x,yLo+12);ctx.stroke();}}
+    // ビット値（小さく上に）
+    ctx.fillStyle='#b3a795';ctx.font='9px "JetBrains Mono",monospace';ctx.textAlign='center';ctx.textBaseline='alphabetic';
+    for(var m=0;m<n;m++){ctx.fillText(bits[m],x0+(m+0.5)*bw,yHi-12);}
+  }
+
+  function drawStep(){
+    clearBg();
+    var PAD=46;
+    if(step===0){
+      var bits=bitsOf(0x0C);
+      // バイト＋ビット
+      ctx.fillStyle='#1d1b17';ctx.font='bold 16px "JetBrains Mono",monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('0x0C',W*0.5,H*0.16);
+      ctx.fillStyle='#7d7568';ctx.font='11px "Zen Kaku Gothic New",sans-serif';ctx.fillText('＝ ビット 0 0 0 0 1 1 0 0',W*0.5,H*0.27);
+      drawWave(PAD,W-PAD*1.6,H*0.42,H*0.74,bits,'#3c7876',8);
+      ctx.fillStyle='#7d7568';ctx.font='10px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.fillText('← 時間 →',W*0.5,H*0.86);
+      info.innerHTML='1バイト <code>0x0C</code> は、8つのビット <span class="v-teal">0 0 0 0 1 1 0 0</span>。線の上では、それが <b>電圧の高い(1)/低い(0)</b> として、<b>1ビットぶんの時間ずつ</b>並ぶ。これが波形。バイトは紙の上の記号じゃなく、線を流れる“信号”なんだ。';
+    } else if(step===1 || step===2){
+      // 全バイトを連結
+      var allbits=[],bcounds=[];FRAME.forEach(function(F){bitsOf(F.v).forEach(function(b){allbits.push(b);});});
+      var addrStart=16,addrEnd=48; // cmd(8)+idx(8)=16 から addr 4B=32bit
+      var colorAt=function(k){var byteI=Math.floor(k/8);return FRAME[byteI].c;};
+      var glow=(step===2)?[addrStart,addrEnd]:null;
+      drawWave(PAD,W-PAD*1.4,H*0.40,H*0.72,allbits,colorAt,8,glow);
+      // バイトのラベル（境界の下）
+      var n=allbits.length,bw=(W-PAD*1.4)/n;
+      ctx.textAlign='center';ctx.textBaseline='alphabetic';
+      FRAME.forEach(function(F,i){var cx=PAD+(i*8+4)*bw;ctx.fillStyle=F.c;ctx.font='bold 10px "JetBrains Mono",monospace';ctx.fillText(hex(F.v),cx,H*0.80);
+        if(F.lab){ctx.fillStyle='#7d7568';ctx.font='9px "Zen Kaku Gothic New",sans-serif';ctx.fillText(F.lab,cx + (F.addr?bw*16:0),H*0.90);}});
+      if(step===1){
+        info.innerHTML='バイトを並べると、ビットの“川”がずっと流れる。色＝フィールド（青 cmd/idx・橙 addr）。濃い縦線が<b>1バイトの区切り</b>。<code>struct.pack</code> が作ったのは、結局この<b>高低の時間パターン</b>そのもの。';
+      } else {
+        info.innerHTML='ここが本題 ── <code>addr</code> は<b>数では 0x1000</b>。でも線の上（橙の区間）では <span class="v-amber">00 → 10 → 00 → 00</span> の順に流れる。<b>下位バイト(00)が先、上位(10)が後</b>＝<b>リトルエンディアン</b>が、波形の“<span class="v-amber">時間の左→右</span>”として、そのまま目に見える。';
+      }
+    } else {
+      // 正直に：NRZ vs 本物(MLT-3っぽい3値)
+      ctx.fillStyle='#7d7568';ctx.font='11px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='left';ctx.textBaseline='alphabetic';
+      ctx.fillText('ここまで見せた「高/低の2値」＝筋を掴むための波形：',PAD,H*0.16);
+      var bits=bitsOf(0x0C).concat(bitsOf(0x01));
+      drawWave(PAD,W-PAD*1.4,H*0.24,H*0.44,bits,'#3c7876',8);
+      ctx.fillStyle='#7d7568';ctx.font='11px "Zen Kaku Gothic New",sans-serif';ctx.fillText('本物の 100BASE-TX は、3値(MLT-3)＋4B5B＋スクランブルで符号化される：',PAD,H*0.60);
+      // 3値の squiggle（イメージ）
+      var x0=PAD,wv=W-PAD*1.4,yC=H*0.78,amp=H*0.10,seq=[0,1,0,-1,0,1,-1,0,1,0,-1,1,0,-1,0,1],bw=wv/seq.length;
+      ctx.strokeStyle='#c2543d';ctx.lineWidth=2.2;var py=yC-seq[0]*amp;ctx.beginPath();ctx.moveTo(x0,py);
+      for(var i=0;i<seq.length;i++){var y=yC-seq[i]*amp,xa=x0+i*bw,xb=x0+(i+1)*bw;if(y!==py)ctx.lineTo(xa,y);ctx.lineTo(xb,y);py=y;}ctx.stroke();
+      ctx.strokeStyle='#e3dbd0';ctx.setLineDash([2,3]);[yC-amp,yC,yC+amp].forEach(function(yy){ctx.beginPath();ctx.moveTo(x0,yy);ctx.lineTo(x0+wv,yy);ctx.stroke();});ctx.setLineDash([]);
+      ctx.fillStyle='#aaa49b';ctx.font='9px "JetBrains Mono",monospace';ctx.textAlign='right';ctx.textBaseline='middle';ctx.fillText('+',x0-3,yC-amp);ctx.fillText('0',x0-3,yC);ctx.fillText('−',x0-3,yC+amp);
+      info.innerHTML='正直に：実際のケーブルは、いま見せた素の高/低（NRZ）じゃない ── <b>3つの電圧(MLT-3)</b>で、しかも <b>4B5B</b> で4ビットを5ビットに直し、スクランブルもかける（直流を避け・同期を保つため）。でも安心して、<b>「バイト＝信号が時間で流れる」という芯は本当</b>。ここはさらに一段下の“符号化”の層、というだけ。';
+    }
+  }
+  function draw(){if(W&&H)drawStep();}
+  function syncUI(){stepno.textContent='STEP '+(step+1)+' / 4';steptitle.textContent=STEPS[step].t;bPrev.disabled=(step===0);bNext.disabled=(step===3);for(var i=0;i<dotsEl.children.length;i++)dotsEl.children[i].classList.toggle('on',i===step);}
+  for(var i=0;i<4;i++){var d=document.createElement('span');d.className='dot';d.addEventListener('click',(function(x){return function(){step=x;syncUI();draw();};})(i));dotsEl.appendChild(d);}
+  function tick(ts){last=ts;requestAnimationFrame(tick);} // 静止図（再生は将来スクロール用に確保）
+  bPrev.addEventListener('click',function(){if(step>0){step--;syncUI();draw();}});
+  bNext.addEventListener('click',function(){if(step<3){step++;syncUI();draw();}});
+  var ro=new ResizeObserver(function(){resize();});ro.observe(stage);
+  syncUI();resize();
+})();
+</script>
+</body>
+</html>
