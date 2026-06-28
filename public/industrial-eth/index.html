@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>産業Ethernet ── EtherNet/IP・PROFINET・EtherCAT、三つの行き方</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;--teal:#3c7876;--red:#c2543d;--amber:#c9761f;--blue:#2563aa;--purple:#7a5ea8;--text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{overflow-x:hidden;max-width:100%;}
+body{font-family:'Zen Kaku Gothic New',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;background-image:radial-gradient(circle at 1px 1px,#e9e4da 1px,transparent 0);background-size:22px 22px;}
+.wrap{max-width:860px;margin:0 auto;padding:20px 16px 48px;}
+header{display:flex;align-items:flex-end;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.brand{font-weight:700;font-size:22px;line-height:1.1;color:var(--text);}.brand .a{color:var(--teal);}
+.tag{font-size:12px;color:var(--muted);padding-bottom:2px;}
+.lead{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 16px;margin-bottom:16px;font-size:13px;color:#3a3a36;line-height:1.78;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.lead p{margin:0;}.lead b{color:var(--text);}
+.card-tool{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.stephead{display:flex;align-items:center;gap:.6rem;padding:.6rem .8rem;border-bottom:1px solid var(--border);background:var(--surface);}
+.stepno{font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;color:#fff;background:var(--teal);border-radius:999px;padding:.18rem .6rem;white-space:nowrap;}
+.steptitle{font-weight:700;font-size:.92rem;color:var(--text);}
+#stage{position:relative;width:100%;height:clamp(350px,60vw,480px);overflow:hidden;background:var(--surface);}
+canvas{display:block;width:100%;height:100%;}
+#info{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.5rem .8rem;font-size:.8rem;color:#3a3a36;line-height:1.7;min-height:3rem;}
+#info b{color:var(--text);}#info code{font-family:'JetBrains Mono',monospace;background:#efe9df;border-radius:3px;padding:0 4px;color:var(--blue);}#info .v-teal{color:var(--teal);font-weight:600;}#info .v-amber{color:var(--amber);font-weight:600;}#info .v-red{color:var(--red);font-weight:600;}#info .v-blue{color:var(--blue);font-weight:600;}
+.ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.5rem .7rem;display:flex;gap:.5rem;align-items:center;}
+.dots{display:flex;gap:.3rem;align-items:center;}.dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:.15s;}.dot.on{background:var(--teal);transform:scale(1.3);}
+button{font-family:'Zen Kaku Gothic New',sans-serif;font-size:.78rem;font-weight:700;color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.32rem .8rem;cursor:pointer;transition:.15s;}
+button:hover{border-color:var(--teal);}button.pri{background:var(--teal);color:#fff;border-color:var(--teal);}button:disabled{opacity:.4;cursor:default;}
+footer{text-align:center;color:var(--faint);font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:12px;}
+body.embed{height:100%;display:flex;flex-direction:column;overflow:hidden;background-image:none;}
+body.embed .wrap{max-width:none;margin:0;padding:0;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
+body.embed header,body.embed .lead,body.embed footer{display:none;}
+body.embed .card-tool{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;border:none;border-radius:0;box-shadow:none;}
+body.embed #stage{flex:1 1 auto;height:auto;min-height:150px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><div class="brand"><span class="a">産業Ethernet</span> ── 三つの行き方</div><div class="tag">標準をどれだけ残すか、決定論をどれだけハードに焼くか</div></header>
+  <div class="lead"><p>工場の機械を動かすネットワークは、いまほとんど Ethernet の上に乗っている。けれど普通の Ethernet＋TCP/IP は「<b>いつ届くか</b>」が揺れて、毎周期きっかりの制御には向かない。この弱点をどう御すか ── 産業界の答えは大きく <b>3通り</b>に分かれた。<b>EtherNet/IP</b>・<b>PROFINET</b>・<b>EtherCAT</b>。三つを「どれだけ標準を残すか ⇄ どれだけ決定論をハードに焼くか」という<b>一本の線</b>の上に並べて見てみよう。優劣ではなく、目的の違いだよ。</p></div>
+  <div class="card-tool">
+    <div class="stephead"><span class="stepno" id="stepno">STEP 1 / 4</span><span class="steptitle" id="steptitle">—</span></div>
+    <div id="stage"><canvas id="cv"></canvas></div>
+    <div id="info"></div>
+    <div class="ctrl"><button id="bPrev">◀ 戻る</button><button id="bNext" class="pri">次へ ▶</button><div class="dots" id="dots"></div></div>
+  </div>
+  <footer>ブラックボックスを開く — 産業Ethernet の三つの行き方</footer>
+</div>
+<script>
+if(window.self!==window.top)document.body.classList.add('embed');
+(function(){
+  var cv=document.getElementById('cv'),ctx=cv.getContext('2d'),info=document.getElementById('info'),stage=document.getElementById('stage');
+  var stepno=document.getElementById('stepno'),steptitle=document.getElementById('steptitle'),dotsEl=document.getElementById('dots');
+  var bPrev=document.getElementById('bPrev'),bNext=document.getElementById('bNext');
+  var STEPS=[
+    {t:'問い ── 普通のネットは「いつ届くか」が揺れる'},
+    {t:'EtherNet/IP ── 標準を全部残す'},
+    {t:'PROFINET ── 賢く割り込む（RT / IRT）'},
+    {t:'EtherCAT ── ハードに焼く ＋ 三者の地図'}
+  ];
+  var step=0,W=0,H=0,DPR=1;
+  function resize(){DPR=Math.min(window.devicePixelRatio||1,2);var r=stage.getBoundingClientRect();W=Math.round(r.width);H=Math.round(r.height);cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);draw();}
+  function clearBg(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#faf8f4';ctx.fillRect(0,0,W,H);}
+  function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+  function arrowhead(x0,y0,x1,y1,col){var ang=Math.atan2(y1-y0,x1-x0),s=7.5;ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x1-s*Math.cos(ang-0.42),y1-s*Math.sin(ang-0.42));ctx.lineTo(x1-s*Math.cos(ang+0.42),y1-s*Math.sin(ang+0.42));ctx.closePath();ctx.fill();}
+  function title(t){ctx.fillStyle='#5a5550';ctx.font='bold 13px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(t,W/2,Math.round(H*0.115));}
+  // 層ボックス：名前(左上・mono)＋役割(左下・小)
+  function layerBox(x,y,w,h,bg,st,name,role,nc,rc){
+    ctx.fillStyle=bg;ctx.strokeStyle=st;ctx.lineWidth=1.6;roundRect(x,y,w,h,7);ctx.fill();ctx.stroke();
+    ctx.textAlign='left';
+    ctx.fillStyle=nc;ctx.font='bold 12px "JetBrains Mono",monospace';ctx.textBaseline='alphabetic';ctx.fillText(name,x+12,y+h*0.42);
+    ctx.fillStyle=rc;ctx.font='10px "Zen Kaku Gothic New",sans-serif';ctx.fillText(role,x+12,y+h*0.80);
+  }
+  function clock(cx,cy,r,col){
+    ctx.strokeStyle=col;ctx.lineWidth=1.6;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx,cy-r*0.6);ctx.moveTo(cx,cy);ctx.lineTo(cx+r*0.5,cy+r*0.18);ctx.stroke();
+  }
+
+  function drawStep(){
+    clearBg();
+    if(step===0){
+      title('送ってから「届いた」まで ── その時刻が、毎周期ずれる');
+      var x0=Math.round(W*0.10),x1=Math.round(W*0.90),nC=5,cw=(x1-x0)/nC;
+      var yA=Math.round(H*0.42),yB=Math.round(H*0.72);
+      // 周期の境界（縦・破線）
+      ctx.strokeStyle='#e0d6c7';ctx.lineWidth=1;ctx.setLineDash([3,4]);
+      for(var i=0;i<=nC;i++){var bx=x0+cw*i;ctx.beginPath();ctx.moveTo(bx,yA-30);ctx.lineTo(bx,yB+26);ctx.stroke();}
+      ctx.setLineDash([]);
+      ctx.fillStyle='#aaa49b';ctx.font='9px "JetBrains Mono",monospace';ctx.textAlign='center';ctx.textBaseline='alphabetic';
+      ctx.fillText('1 周期（例 1ms）',x0+cw*0.5,yA-34);
+      // 基準線
+      ctx.strokeStyle='#ded3c3';ctx.lineWidth=1.2;
+      ctx.beginPath();ctx.moveTo(x0,yA);ctx.lineTo(x1,yA);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(x0,yB);ctx.lineTo(x1,yB);ctx.stroke();
+      // A：理想（毎周期きっかり同じ位相）
+      ctx.fillStyle='#3c7876';ctx.font='bold 10px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='left';ctx.fillText('理想：毎周期きっかり、同じ位置で届く',x0,yA-13);
+      for(i=0;i<nC;i++){var px=x0+cw*i+cw*0.20;
+        ctx.strokeStyle='#3c7876';ctx.lineWidth=2.4;ctx.beginPath();ctx.moveTo(px,yA-9);ctx.lineTo(px,yA+9);ctx.stroke();
+        ctx.fillStyle='#3c7876';ctx.beginPath();ctx.arc(px,yA,3,0,Math.PI*2);ctx.fill();}
+      // B：実際（揺れる）
+      ctx.fillStyle='#c2543d';ctx.font='bold 10px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='left';ctx.fillText('普通の Ethernet＋TCP/IP：再送などで、時刻が揺れる',x0,yB-13);
+      var jit=[0.20,0.58,0.34,1.16,0.46];
+      for(i=0;i<nC;i++){
+        var ix=x0+cw*i+cw*0.20;            // 理想位置（ゴースト）
+        var ax=x0+cw*i+cw*jit[i];          // 実際の到着
+        var miss=jit[i]>1;
+        // ゴースト（理想位置）
+        ctx.strokeStyle='#d8cdbd';ctx.lineWidth=1.4;ctx.setLineDash([2,3]);ctx.beginPath();ctx.moveTo(ix,yB-8);ctx.lineTo(ix,yB+8);ctx.stroke();ctx.setLineDash([]);
+        // ずれ（理想→実際）
+        var col=miss?'#c2543d':'#c9761f';
+        ctx.strokeStyle=col;ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(ix,yB);ctx.lineTo(ax,yB);ctx.stroke();
+        arrowhead(ix,yB,ax,yB,col);
+        // 実際の到着マーク
+        ctx.strokeStyle=col;ctx.lineWidth=miss?3:2.4;ctx.beginPath();ctx.moveTo(ax,yB-9);ctx.lineTo(ax,yB+9);ctx.stroke();
+        ctx.fillStyle=col;ctx.beginPath();ctx.arc(ax,yB,miss?4:3,0,Math.PI*2);ctx.fill();
+        if(miss){ctx.fillStyle='#c2543d';ctx.font='bold 9px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';var mtw=ctx.measureText('✗ 周期に間に合わない').width,mcx=Math.max(4+mtw/2,Math.min(W-4-mtw/2,ax));ctx.fillText('✗ 周期に間に合わない',mcx,yB-15);}
+      }
+      ctx.fillStyle='#7d7568';ctx.font='10px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.fillText('「毎周期きっかり」が作れない ── これが普通のネットの弱点',W/2,Math.round(H*0.92));
+      info.innerHTML='産業の現場は「<b>1ms ごとに全軸を同時に</b>」が要る。けれど普通の Ethernet＋<code>TCP/IP</code> は、混雑や<span class="v-red">再送</span>で到達時刻が<b>毎回ずれる</b>（ジッタ）。きっかり毎周期、が作れないんだ。── この「揺れ」をどう御すか、産業界の答えが <b>3通り</b>ある。';
+    } else if(step===1){
+      title('EtherNet/IP ── 標準の上に「産業の言葉」をのせるだけ');
+      var lx=Math.round(W*0.12),lw=Math.round(W*0.76);
+      var defs=[
+        {n:'CIP',           r:'産業の言葉（ものの名前・命令）', bg:'#f6e8d2',st:'#c9761f',nc:'#c9761f',rc:'#9a6a2a'},
+        {n:'TCP / UDP',     r:'標準のトランスポート ── そのまま', bg:'#dce7f3',st:'#2563aa',nc:'#2563aa',rc:'#3a5f86'},
+        {n:'IP',            r:'標準の IP ── そのまま',         bg:'#dce7f3',st:'#2563aa',nc:'#2563aa',rc:'#3a5f86'},
+        {n:'Ethernet 物理/MAC',r:'普通の Ethernet ── みんな共通', bg:'#d7e6e3',st:'#3c7876',nc:'#3c7876',rc:'#3d6360'}
+      ];
+      var topY=Math.round(H*0.18),bh=Math.round(H*0.145),gap=Math.round(H*0.025);
+      for(var k=0;k<4;k++){layerBox(lx,topY+k*(bh+gap),lw,bh,defs[k].bg,defs[k].st,defs[k].n,defs[k].r,defs[k].nc,defs[k].rc);}
+      // 右側に「標準のまま」ブラケット（IP+TCP/UDP）
+      var by0=topY+1*(bh+gap),by1=topY+2*(bh+gap)+bh,bx=lx+lw+6;
+      if(bx<W-70){
+        ctx.strokeStyle='#9bb4d4';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(bx,by0);ctx.lineTo(bx+6,by0);ctx.lineTo(bx+6,by1);ctx.lineTo(bx,by1);ctx.stroke();
+        ctx.fillStyle='#2563aa';ctx.font='9px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('そのまま',bx+9,(by0+by1)/2);
+      }
+      ctx.fillStyle='#7d7568';ctx.font='9.5px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='alphabetic';
+      ctx.fillText('※ "IP" は Industrial Protocol。Internet Protocol ではない。',W/2,Math.round(H*0.95));
+      info.innerHTML='<b>EtherNet/IP</b> は、標準の <code>TCP</code>・<code>UDP</code>・<code>IP</code> を<b>そのまま</b>使い、その上に産業の言葉 <span class="v-amber">CIP</span>（ものの名前と命令）を載せるだけ。だから<b>普通のスイッチでそのまま動く</b>・いちばん導入が楽・柔軟。代わりにリアルタイムは“ソフト”（緩い）。── ちなみに "IP" は <b>Industrial Protocol</b>、Internet Protocol ではないよ。';
+    } else if(step===2){
+      title('PROFINET ── Ethernet は残し、リアルタイムだけ特別扱い');
+      var lx2=Math.round(W*0.20),lw2=Math.round(W*0.46);
+      var d2=[
+        {n:'PROFINET アプリ',  r:'実データ（毎周期）',      bg:'#f6e8d2',st:'#c9761f',nc:'#c9761f',rc:'#9a6a2a'},
+        {n:'TCP / UDP',        r:'標準（設定など）',         bg:'#dce7f3',st:'#2563aa',nc:'#2563aa',rc:'#3a5f86'},
+        {n:'IP',               r:'標準（設定など）',         bg:'#dce7f3',st:'#2563aa',nc:'#2563aa',rc:'#3a5f86'},
+        {n:'Ethernet 物理',    r:'普通の Ethernet ── 共通',  bg:'#d7e6e3',st:'#3c7876',nc:'#3c7876',rc:'#3d6360'}
+      ];
+      var topY2=Math.round(H*0.16),bh2=Math.round(H*0.125),gap2=Math.round(H*0.02);
+      for(var m=0;m<4;m++){layerBox(lx2,topY2+m*(bh2+gap2),lw2,bh2,d2[m].bg,d2[m].st,d2[m].n,d2[m].r,d2[m].nc,d2[m].rc);}
+      var appMidY=topY2+bh2*0.5;
+      var ethTopY=topY2+3*(bh2+gap2), ethMidY=ethTopY+bh2*0.5;
+      // 標準の便り：左を縦に通る（IP/TCP を経由）
+      var leftX=lx2-12;
+      ctx.strokeStyle='#2563aa';ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(leftX,appMidY);ctx.lineTo(leftX,ethMidY-6);ctx.stroke();arrowhead(leftX,appMidY,leftX,ethMidY-6,'#2563aa');
+      ctx.fillStyle='#2563aa';ctx.font='9px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='right';ctx.textBaseline='middle';ctx.fillText('ふつうの便り',leftX-4,(appMidY+ethMidY)/2);
+      // RT：右を大きく回り込んで TCP/IP を迂回（bezier）
+      var rgt=lx2+lw2, cxr=Math.min(W-14,rgt+Math.round(W*0.16));
+      ctx.strokeStyle='#c9761f';ctx.lineWidth=3;ctx.beginPath();
+      ctx.moveTo(rgt-6,appMidY);
+      ctx.bezierCurveTo(cxr,appMidY,cxr,ethMidY,rgt-6,ethMidY);
+      ctx.stroke();arrowhead(cxr*0.5+rgt*0.5,ethMidY,rgt-6,ethMidY,'#c9761f');
+      ctx.fillStyle='#c9761f';ctx.font='bold 9.5px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText('RT',cxr-2,(appMidY+ethMidY)/2-7);ctx.font='9px "Zen Kaku Gothic New",sans-serif';ctx.fillText('迂回',cxr-2,(appMidY+ethMidY)/2+7);
+      // IRT：Ethernet に時計
+      clock(lx2-14,ethMidY,7,'#3c7876');
+      ctx.fillStyle='#3c7876';ctx.font='9px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='right';ctx.fillText('IRT',lx2-24,ethMidY);
+      // 凡例
+      var lgY=Math.round(H*0.86);
+      ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.font='10px "Zen Kaku Gothic New",sans-serif';
+      ctx.fillStyle='#c9761f';ctx.fillText('● RT：周期データは TCP/IP を迂回し、優先で直行（速い）',W/2,lgY);
+      ctx.fillStyle='#3c7876';ctx.fillText('● IRT：スイッチを時間で割り当て、到着をハードに揃える（TSN 的）',W/2,lgY+16);
+      info.innerHTML='<b>PROFINET</b> は Ethernet の土俵に残しつつ、周期的な実データだけ特別扱いする。<span class="v-amber">RT</span> は <code>TCP/IP</code> を<b>迂回</b>して優先フレームで直行（速い）。さらに <span class="v-teal">IRT</span> は<b>スイッチを時間でスケジュール</b>して到着をハードに揃える（TSN 的）。RT〜IRT で、欲しい硬さを選べるよ。';
+    } else {
+      title('三つの行き方を、一本の線に並べる');
+      var sx0=Math.round(W*0.13),sx1=Math.round(W*0.85),lineY=Math.round(H*0.50);
+      // スペクトル線（青→橙→teal のグラデーション）
+      var grad=ctx.createLinearGradient(sx0,0,sx1,0);
+      grad.addColorStop(0,'#2563aa');grad.addColorStop(0.5,'#c9761f');grad.addColorStop(1,'#3c7876');
+      ctx.strokeStyle=grad;ctx.lineWidth=4;ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(sx0,lineY);ctx.lineTo(sx1,lineY);ctx.stroke();ctx.lineCap='butt';
+      arrowhead(sx1-10,lineY,sx1,lineY,'#3c7876');
+      // 軸の意味（線の上）
+      ctx.fillStyle='#7d7568';ctx.font='10px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='alphabetic';
+      ctx.fillText('標準を全部残す　⇄　決定論をハードに焼く',W/2,Math.round(H*0.22));
+      // 端のラベル
+      ctx.font='9px "JetBrains Mono",monospace';ctx.textBaseline='alphabetic';
+      ctx.fillStyle='#2563aa';ctx.textAlign='left';ctx.fillText('柔・ソフトRT',sx0-4,lineY+22);
+      ctx.fillStyle='#3c7876';ctx.textAlign='right';ctx.fillText('硬・最も硬い',sx1,lineY+22);
+      // 3点
+      function specPoint(t,name,tag,col){
+        var x=sx0+(sx1-sx0)*t;
+        ctx.strokeStyle=col;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x,lineY-8);ctx.lineTo(x,lineY+8);ctx.stroke();
+        ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(x,lineY,5.5,0,Math.PI*2);ctx.fill();
+        ctx.strokeStyle=col;ctx.lineWidth=2.4;ctx.beginPath();ctx.arc(x,lineY,5.5,0,Math.PI*2);ctx.stroke();
+        // 名前ボックス（線の上）
+        ctx.font='bold 12px "JetBrains Mono",monospace';var tw=ctx.measureText(name).width,bw=tw+16,bx=Math.max(4,Math.min(W-4-bw,x-bw/2)),by=lineY-46;
+        ctx.fillStyle='#fff';ctx.strokeStyle=col;ctx.lineWidth=1.6;roundRect(bx,by,bw,24,7);ctx.fill();ctx.stroke();
+        ctx.fillStyle=col;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(name,bx+bw/2,by+12);
+        // ステム
+        ctx.strokeStyle=col;ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(x,by+24);ctx.lineTo(x,lineY-8);ctx.stroke();
+        // タグ（線の下）
+        ctx.font='10px "Zen Kaku Gothic New",sans-serif';ctx.fillStyle=col;ctx.textBaseline='alphabetic';
+        var ttw=ctx.measureText(tag).width,tcx=Math.max(4+ttw/2,Math.min(W-4-ttw/2,x));ctx.textAlign='center';ctx.fillText(tag,tcx,lineY+38);
+      }
+      specPoint(0.05,'EtherNet/IP','全部標準・柔','#2563aa');
+      specPoint(0.50,'PROFINET','RT/IRT で選ぶ','#c9761f');
+      specPoint(0.92,'EtherCAT','ハードで最硬','#3c7876');
+      // 効きどころ
+      ctx.textAlign='center';ctx.textBaseline='alphabetic';
+      ctx.fillStyle='#1d1b17';ctx.font='bold 11px "Zen Kaku Gothic New",sans-serif';
+      ctx.fillText('物理はみな同じ Ethernet。違うのは「どこまで標準を残すか」だけ。',W/2,Math.round(H*0.78));
+      ctx.fillStyle='#7d7568';ctx.font='10px "Zen Kaku Gothic New",sans-serif';
+      ctx.fillText('上下（優劣）ではなく、目的の違い。',W/2,Math.round(H*0.86));
+      info.innerHTML='<b>EtherCAT</b> は <code>IP</code>/<code>TCP</code> を積まず、専用ハード <span class="v-teal">ESC</span> がフレームを<b>通り道で処理</b>（on-the-fly）── 最も硬い。三者を一本の線に並べると、左＝<span class="v-blue">EtherNet/IP</span>（標準を全部残す・柔）、中＝<span class="v-amber">PROFINET</span>（Ethernet 残し RT/IRT）、右＝<span class="v-teal">EtherCAT</span>（ハードに焼く・最硬）。物理はみな同じ Ethernet。違うのは<b>どこまで標準を残すか</b>だけ ── 上下でなく、目的の違いだよ。';
+    }
+  }
+  function draw(){if(W&&H)drawStep();}
+  function setHash(){try{history.replaceState(null,'','#step='+(step+1));}catch(e){}}
+  function readHash(){var m=/step=(\d)/.exec(location.hash||'');if(m){var n=parseInt(m[1],10)-1;if(n>=0&&n<=3)step=n;}}
+  function go(n){step=n;syncUI();draw();setHash();}
+  function syncUI(){stepno.textContent='STEP '+(step+1)+' / 4';steptitle.textContent=STEPS[step].t;bPrev.disabled=(step===0);bNext.disabled=(step===3);for(var i=0;i<dotsEl.children.length;i++)dotsEl.children[i].classList.toggle('on',i===step);}
+  for(var i=0;i<4;i++){var d=document.createElement('span');d.className='dot';d.addEventListener('click',(function(x){return function(){go(x);};})(i));dotsEl.appendChild(d);}
+  bPrev.addEventListener('click',function(){if(step>0)go(step-1);});
+  bNext.addEventListener('click',function(){if(step<3)go(step+1);});
+  window.addEventListener('hashchange',function(){readHash();syncUI();draw();});
+  var ro=new ResizeObserver(function(){resize();});ro.observe(stage);
+  readHash();syncUI();resize();
+})();
+</script>
+</body>
+</html>
