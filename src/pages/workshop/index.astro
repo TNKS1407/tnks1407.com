@@ -21,6 +21,23 @@ const fmt = (d: Date) =>
 type Lab = { name: string; url: string };
 const labGroups: { label: string; items: Lab[] }[] = [
   {
+    label: '通信（しくみを開ける）',
+    items: [
+      { name: 'EtherCAT（通り抜けながら）', url: '/ethercat/' },
+      { name: 'EtherCAT・バイトを波形で', url: '/ethercat-wave/' },
+      { name: 'EtherCAT・フレームを開ける', url: '/ethercat-frame/' },
+      { name: 'EtherCAT・コードで書くと', url: '/ethercat-code/' },
+      { name: 'EtherCAT・ESC（専用チップ）', url: '/ethercat-esc/' },
+      { name: 'EtherCAT・立ち上げ', url: '/ethercat-startup/' },
+      { name: 'UART・一本の線に乗せる', url: '/uart/' },
+      { name: 'UART・コードで', url: '/uart-code/' },
+      { name: 'SPI・時計の線を引く', url: '/spi/' },
+      { name: 'SPI / I²C・コードで', url: '/spi-code/' },
+      { name: 'RS-485・差でノイズが消える', url: '/rs485/' },
+      { name: 'Modbus・コードで', url: '/modbus-code/' },
+    ],
+  },
+  {
     label: '電磁気',
     items: [
       { name: '電場プローブ', url: '/efield-probe/' },
@@ -68,6 +85,7 @@ const labGroups: { label: string; items: Lab[] }[] = [
       { name: '画像フォーマットを開ける（JPEG/PNG）', url: '/image-formats/' },
       { name: '図に、だまされない（騙さない可視化）', url: '/honest-charts/' },
       { name: '色空間3Dビューア', url: '/color/' },
+      { name: 'ポアソン分布（数え上げ）', url: '/poisson-counts/' },
     ],
   },
 ];
@@ -77,6 +95,12 @@ const labCount = labGroups.reduce((n, g) => n + g.items.length, 0);
 // 「続く作り手（持続）」は名前で、今日の使い捨てエージェントは「一時」と正直に分ける。
 type LogEntry = { date: string; agent: string; persistent: boolean; task: string; out?: { title: string; url: string }; note: string };
 const agentLog: LogEntry[] = [
+  {
+    date: '2026.06.29', agent: 'ランキン', persistent: true,
+    task: '「通信のしくみ」解説シリーズを始める ── EtherCAT を6層に開け、UART / SPI・I²C / RS-485 と土台から積む',
+    out: { title: '解説「EtherCAT を開ける」（通信シリーズ）', url: '/docs/ethercat/' },
+    note: 'ハードは分かるのにプログラミングが…という人へ向けて、各通信を「概念→波形→バイト→コード→ハード→システム」の型で一層ずつ開ける協働。まず EtherCAT を6つの widget（概念／波形／フレーム／コード／ESC／立ち上げ）＋記事に畳み、それを“深掘りの型”として、UART（波形＋コード歩き）→ SPI・I²C（時計を引く同期式）→ RS-485（差でノイズが消える差動）と、目次の下から一本ずつ。サンプルコードと触れる widget を各層に置いた。今夜ぶんは確実性を取って私が手で作ったが、ここから先は作り手ヘロン・検証ティコにも回していく。',
+  },
   {
     date: '2026.06.26', agent: 'ヘロン＋ティコ', persistent: true,
     task: 'jpgに「写真から8×8ブロックを選ぶ」連動を追加（三人チーム初仕事）',

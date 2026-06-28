@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>RS-485 ── 差で送ると、ノイズが消える</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;--teal:#3c7876;--red:#c2543d;--amber:#c9761f;--blue:#2563aa;--purple:#7a5ea8;--text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{overflow-x:hidden;max-width:100%;}
+body{font-family:'Zen Kaku Gothic New',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;background-image:radial-gradient(circle at 1px 1px,#e9e4da 1px,transparent 0);background-size:22px 22px;}
+.wrap{max-width:860px;margin:0 auto;padding:20px 16px 48px;}
+header{display:flex;align-items:flex-end;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.brand{font-weight:700;font-size:22px;line-height:1.1;color:var(--text);}.brand .a{color:var(--teal);}
+.tag{font-size:12px;color:var(--muted);padding-bottom:2px;}
+.lead{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 16px;margin-bottom:16px;font-size:13px;color:#3a3a36;line-height:1.78;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.lead p{margin:0;}.lead b{color:var(--text);}
+.card-tool{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.stephead{display:flex;align-items:center;gap:.6rem;padding:.6rem .8rem;border-bottom:1px solid var(--border);background:var(--surface);}
+.stepno{font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;color:#fff;background:var(--teal);border-radius:999px;padding:.18rem .6rem;white-space:nowrap;}
+.steptitle{font-weight:700;font-size:.92rem;color:var(--text);}
+#stage{position:relative;width:100%;height:clamp(290px,52vw,410px);overflow:hidden;background:var(--surface);}
+canvas{display:block;width:100%;height:100%;}
+#info{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.5rem .8rem;font-size:.8rem;color:#3a3a36;line-height:1.7;min-height:3rem;}
+#info b{color:var(--text);}#info code{font-family:'JetBrains Mono',monospace;background:#efe9df;border-radius:3px;padding:0 4px;color:var(--blue);}#info .v-red{color:var(--red);font-weight:600;}#info .v-teal{color:var(--teal);font-weight:600;}#info .v-blue{color:var(--blue);font-weight:600;}
+.ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.5rem .7rem;display:flex;gap:.5rem;align-items:center;}
+.dots{display:flex;gap:.3rem;align-items:center;}.dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:.15s;}.dot.on{background:var(--teal);transform:scale(1.3);}
+button{font-family:'Zen Kaku Gothic New',sans-serif;font-size:.78rem;font-weight:700;color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.32rem .8rem;cursor:pointer;transition:.15s;}
+button:hover{border-color:var(--teal);}button.pri{background:var(--teal);color:#fff;border-color:var(--teal);}button:disabled{opacity:.4;cursor:default;}
+footer{text-align:center;color:var(--faint);font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:12px;}
+body.embed{height:100%;display:flex;flex-direction:column;overflow:hidden;background-image:none;}
+body.embed .wrap{max-width:none;margin:0;padding:0;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
+body.embed header,body.embed .lead,body.embed footer{display:none;}
+body.embed .card-tool{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;border:none;border-radius:0;box-shadow:none;}
+body.embed #stage{flex:1 1 auto;height:auto;min-height:150px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><div class="brand"><span class="a">RS-485</span> ── 差で送ると、ノイズが消える</div><div class="tag">なぜ、遠くまで・速く・ノイズに強いのか</div></header>
+  <div class="lead"><p>UART の信号は「1本の線の電圧」で 1/0 を表した（シングルエンド）。これは近くなら十分だけど、線が長くなると<b>ノイズに弱い</b>。RS-485 は、ここを賢く変える ── <b>2本の線に、逆向きの信号を流して、受け手は“差”を読む</b>。すると、両方に等しく乗ったノイズが、引き算でまるごと消える。この一手だけで、1200m 先まで届く線になる。手で確かめてみよう。</p></div>
+  <div class="card-tool">
+    <div class="stephead"><span class="stepno" id="stepno">STEP 1 / 4</span><span class="steptitle" id="steptitle">—</span></div>
+    <div id="stage"><canvas id="cv"></canvas></div>
+    <div id="info"></div>
+    <div class="ctrl"><button id="bPrev">◀ 戻る</button><button id="bNext" class="pri">次へ ▶</button><div class="dots" id="dots"></div></div>
+  </div>
+  <footer>ブラックボックスを開く — 差動信号</footer>
+</div>
+<script>
+if(window.self!==window.top)document.body.classList.add('embed');
+(function(){
+  var cv=document.getElementById('cv'),ctx=cv.getContext('2d'),info=document.getElementById('info'),stage=document.getElementById('stage');
+  var stepno=document.getElementById('stepno'),steptitle=document.getElementById('steptitle'),dotsEl=document.getElementById('dots');
+  var bPrev=document.getElementById('bPrev'),bNext=document.getElementById('bNext');
+  var SIG=[1,0,1,1,0,0,1,0];
+  var STEPS=[{t:'シングルエンド ── 1本の線の電圧で'},{t:'ノイズが乗ると、誤読する'},{t:'差動 ── A と B に、逆向きに流す'},{t:'差を取ると、ノイズが消える'}];
+  var step=0,W=0,H=0,DPR=1;
+  function resize(){DPR=Math.min(window.devicePixelRatio||1,2);var r=stage.getBoundingClientRect();W=Math.round(r.width);H=Math.round(r.height);cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);draw();}
+  function clearBg(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#faf8f4';ctx.fillRect(0,0,W,H);}
+  function sig(x){var c=Math.min(7,Math.floor(x*8));return SIG[c]?1:-1;}
+  function noise(x){return 1.3*Math.sin(x*2*Math.PI*1.7+0.7)+0.4*Math.sin(x*2*Math.PI*5.0+1.3);}
+  // f(x)→値[-2..2]を、[x0,x1]×中心yc・振幅amp で描く
+  function trace(fn,x0,x1,yc,amp,col,wide){ctx.strokeStyle=col;ctx.lineWidth=wide||2;ctx.beginPath();var N=260;
+    for(var i=0;i<=N;i++){var x=i/N,px=x0+(x1-x0)*x,py=yc-fn(x)*amp;if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);}ctx.stroke();}
+  function axis(x0,x1,yc,amp,lab){ctx.strokeStyle='#ded3c3';ctx.setLineDash([2,3]);ctx.beginPath();ctx.moveTo(x0,yc);ctx.lineTo(x1,yc);ctx.stroke();ctx.setLineDash([]);
+    if(lab){ctx.fillStyle='#aaa49b';ctx.font='9px "JetBrains Mono",monospace';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(lab,x1+4,yc);}}
+  function label(x,y,t,col){ctx.fillStyle=col;ctx.font='bold 11px "JetBrains Mono",monospace';ctx.textAlign='left';ctx.textBaseline='alphabetic';ctx.fillText(t,x,y);}
+
+  function drawStep(){
+    clearBg();
+    var x0=70,x1=W-80,amp=26;
+    if(step===0){
+      var yc=H*0.55;
+      label(70,H*0.18,'信号（1本の線の電圧）','#3c7876');
+      axis(x0,x1,yc,amp,'0V');trace(sig,x0,x1,yc,amp,'#3c7876',2.4);
+      ctx.fillStyle='#7d7568';ctx.font='10px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='left';ctx.fillText('受け手は「0V より上か下か」で 1/0 を判定する',70,H*0.82);
+      info.innerHTML='UART/RS-232 と同じ<b>シングルエンド</b>＝1本の線の電圧で 1/0 を表す。受け手は「0V を境に、上か下か」で判定する。近距離なら、これで何の問題もない。きれいな波形だ。';
+    } else if(step===1){
+      var yc=H*0.5;
+      label(70,H*0.16,'信号 ＋ ノイズ','#c2543d');
+      axis(x0,x1,yc,amp,'0V');
+      trace(function(x){return sig(x);},x0,x1,yc,amp,'#cbb9a6',1.4); // 元信号(薄)
+      trace(function(x){return sig(x)+noise(x);},x0,x1,yc,amp,'#c2543d',2.2);
+      // 誤読マーク：sig>0 だが sig+noise<0 の所
+      ctx.fillStyle='#c2543d';ctx.font='9px "Zen Kaku Gothic New",sans-serif';
+      for(var i=0;i<=40;i++){var x=i/40,v=sig(x)+noise(x);if(sig(x)>0&&v<0||sig(x)<0&&v>0){var px=x0+(x1-x0)*x;ctx.fillStyle='#c2543d22';ctx.fillRect(px-3,yc-amp*2,6,amp*4);}}
+      info.innerHTML='ところが線が長いと、外来<b>ノイズ</b>が乗る。信号にノイズが足し算され、波形がうねる。<b>0V の境を、ノイズが逆に押し越える瞬間</b>（赤い帯）が出ると、受け手はそこを <span class="v-red">読み間違える</span>。シングルエンドが遠距離に弱いのは、これだ。';
+    } else if(step===2){
+      var yA=H*0.34,yB=H*0.68;
+      label(70,yA-amp-6,'A（＝ 信号）','#2563aa');label(70,yB-amp-6,'B（＝ 信号を反転）','#7a5ea8');
+      axis(x0,x1,yA,amp,'');trace(sig,x0,x1,yA,amp,'#2563aa',2.2);
+      axis(x0,x1,yB,amp,'');trace(function(x){return -sig(x);},x0,x1,yB,amp,'#7a5ea8',2.2);
+      info.innerHTML='RS-485 は線を <b>2本</b>（A と B）使う。同じ信号を、<span class="v-blue">A はそのまま</span>、<b style="color:#7a5ea8">B は上下反転</b>して、逆向きに流す。── まだノイズは入れていない。次で、両方に同じノイズを乗せてみる。';
+    } else {
+      var yA=H*0.26,yB=H*0.52,yD=H*0.82;
+      label(70,yA-amp-4,'A ＝ 信号＋ノイズ','#2563aa');label(70,yB-amp-4,'B ＝ −信号＋ノイズ','#7a5ea8');label(70,yD-amp-4,'A − B ＝ ノイズが消えて、信号は2倍','#3c7876');
+      axis(x0,x1,yA,amp,'');trace(function(x){return sig(x)+noise(x);},x0,x1,yA,amp*0.9,'#2563aa',2);
+      axis(x0,x1,yB,amp,'');trace(function(x){return -sig(x)+noise(x);},x0,x1,yB,amp*0.9,'#7a5ea8',2);
+      axis(x0,x1,yD,amp,'0V');trace(function(x){return 2*sig(x);},x0,x1,yD,amp*0.6,'#3c7876',2.6);
+      info.innerHTML='ノイズは2本の線に<b>等しく</b>乗る（A も B も同じだけ持ち上がる＝コモンモード）。受け手が <b>A − B</b> を取ると ── <code>(信号+ノイズ) − (−信号+ノイズ)</code> ＝ <b>2×信号</b>。<span class="v-teal">ノイズはきれいに引き算で消え</span>、信号はむしろ2倍に。だから RS-485 は、<b>遠くまで・速く・ノイズに強い</b>。差で送る、というたった一つの工夫だよ。';
+    }
+  }
+  function draw(){if(W&&H)drawStep();}
+  function syncUI(){stepno.textContent='STEP '+(step+1)+' / 4';steptitle.textContent=STEPS[step].t;bPrev.disabled=(step===0);bNext.disabled=(step===3);for(var i=0;i<dotsEl.children.length;i++)dotsEl.children[i].classList.toggle('on',i===step);}
+  for(var i=0;i<4;i++){var d=document.createElement('span');d.className='dot';d.addEventListener('click',(function(x){return function(){step=x;syncUI();draw();};})(i));dotsEl.appendChild(d);}
+  bPrev.addEventListener('click',function(){if(step>0){step--;syncUI();draw();}});
+  bNext.addEventListener('click',function(){if(step<3){step++;syncUI();draw();}});
+  var ro=new ResizeObserver(function(){resize();});ro.observe(stage);
+  syncUI();resize();
+})();
+</script>
+</body>
+</html>
