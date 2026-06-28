@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>崩壊を数える — ポアソンと、重なるガウス</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
+  --teal:#3c7876;--red:#c2543d;--amber:#c9761f;--blue:#2563aa;
+  --text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{overflow-x:hidden;max-width:100%;}
+body{font-family:'Zen Kaku Gothic New',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;
+  background-image:radial-gradient(circle at 1px 1px,#e9e4da 1px,transparent 0);background-size:22px 22px;}
+.wrap{max-width:820px;margin:0 auto;padding:20px 16px 48px;}
+header{display:flex;align-items:flex-end;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.brand{font-weight:700;font-size:22px;line-height:1.1;color:var(--text);}
+.brand .a{color:var(--teal);}
+.tag{font-size:12px;color:var(--muted);padding-bottom:2px;}
+.lead{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 16px;margin-bottom:16px;
+  font-size:13px;color:#3a3a36;line-height:1.78;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.lead p{margin:0 0 .5rem;}.lead p:last-child{margin-bottom:0;}.lead b{color:var(--text);}
+.card-tool{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+#stage{position:relative;width:100%;height:clamp(280px,54vw,440px);overflow:hidden;background:var(--surface);}
+canvas{display:block;width:100%;height:100%;}
+#info{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.45rem .7rem;
+  font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--muted);line-height:1.75;min-height:2.4rem;}
+#info b{color:var(--text);}#info .v-teal{color:var(--teal);font-weight:600;}#info .v-blue{color:var(--blue);font-weight:600;}#info .v-amber{color:var(--amber);font-weight:600;}
+.ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.5rem .7rem;display:flex;flex-wrap:wrap;gap:.5rem .8rem;align-items:center;}
+.cg{display:flex;align-items:center;gap:.4rem;font-size:.76rem;}
+.cg label{color:var(--muted);white-space:nowrap;font-weight:500;}.cg label b{color:var(--text);}
+.cg input[type=range]{width:clamp(80px,18vw,150px);accent-color:var(--teal);}
+.cg .val{font-family:'JetBrains Mono',monospace;color:var(--teal);font-size:.72rem;font-weight:600;min-width:3ch;}
+button{font-family:'Zen Kaku Gothic New',sans-serif;font-size:.74rem;font-weight:700;color:var(--text);background:var(--card);
+  border:1px solid var(--border);border-radius:8px;padding:.28rem .65rem;cursor:pointer;transition:border-color .15s,background .15s,color .15s;}
+button:hover{border-color:var(--teal);}button.on{background:var(--teal);color:#fff;border-color:var(--teal);}
+button.sec{border-color:var(--amber);color:var(--amber);}button.sec:hover{background:var(--amber);color:#fff;}
+footer{text-align:center;color:var(--faint);font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:12px;}
+body.embed{height:100%;display:flex;flex-direction:column;overflow:hidden;background-image:none;}
+body.embed .wrap{max-width:none;margin:0;padding:0;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
+body.embed header,body.embed .lead,body.embed footer{display:none;}
+body.embed .card-tool{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;border:none;border-radius:0;box-shadow:none;}
+body.embed #stage{flex:1 1 auto;height:auto;min-height:160px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><span class="a">崩壊</span>を数える</div>
+    <div class="tag">ランダムなカチッを「窓ごとに数える」と、分布が立ち上がる</div>
+  </header>
+  <div class="lead">
+    <p>放射性崩壊は、いつ鳴るか分からない ── でも「一定時間に何回鳴るか」を数えると、回数のばらつきは <b>ポアソン分布</b> という決まった形になる。窓を数えるほど、棒（実測）が理論のポアソン（●）に<b>重なっていく</b>。</p>
+    <p>平均回数 <b>λ</b> を上げると、ポアソンは右へ太り、やがて <b>ガウス（釣鐘）</b>の線と重なる ── 「まれな出来事でも、たくさん集めれば釣鐘になる」。平均 ≈ 分散 ≈ λ になるのも、ポアソンの目印だよ。</p>
+    <p style="font-size:12px;color:var(--muted);">いまは“シミュのカチッ”。本物のガイガー計数管をつないだら、同じ画面に実測が積もる予定。</p>
+  </div>
+  <div class="card-tool">
+    <div id="stage"><canvas id="cv"></canvas></div>
+    <div id="info"></div>
+    <div class="ctrl">
+      <div class="cg"><label>平均 <b>λ</b></label><input type="range" id="lam" min="1" max="40" step="1" value="4" /><span class="val" id="lamV">4</span></div>
+      <div class="cg"><label>速さ</label><input type="range" id="spd" min="1" max="80" step="1" value="12" /><span class="val" id="spdV">12</span></div>
+      <button id="bRun" class="on">⏸ 一時停止</button>
+      <button id="bReset" class="sec">リセット</button>
+    </div>
+  </div>
+  <footer>素朴な物理 — 計数とポアソン</footer>
+</div>
+
+<script>
+if(window.self!==window.top)document.body.classList.add('embed');
+(function(){
+  var cv=document.getElementById('cv'),ctx=cv.getContext('2d'),info=document.getElementById('info'),stage=document.getElementById('stage');
+  var lamEl=document.getElementById('lam'),lamV=document.getElementById('lamV'),spdEl=document.getElementById('spd'),spdV=document.getElementById('spdV');
+  var bRun=document.getElementById('bRun'),bReset=document.getElementById('bReset');
+
+  var lam=4, speed=12, running=true;
+  var hist=[], N=0, sum=0, sum2=0, latest=0, flash=0;
+  var W=0,H=0,DPR=1,raf=null;
+
+  function resize(){
+    DPR=Math.min(window.devicePixelRatio||1,2);
+    var r=stage.getBoundingClientRect();W=Math.round(r.width);H=Math.round(r.height);
+    cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);draw();
+  }
+  function reset(){ hist=[];N=0;sum=0;sum2=0;latest=0;flash=0;draw(); }
+
+  // ポアソン乱数（Knuth）。λ≤40 の範囲なので素直で十分。
+  function poisson(L){ var e=Math.exp(-L),k=0,p=1; do{k++;p*=Math.random();}while(p>e); return k-1; }
+  function pmf(k,L){ // e^-L L^k / k!
+    var lp=-L+k*Math.log(L); for(var i=2;i<=k;i++)lp-=Math.log(i); return Math.exp(lp);
+  }
+  function addWindow(){ var k=poisson(lam); hist[k]=(hist[k]||0)+1; N++; sum+=k; sum2+=k*k; latest=k; flash=1; }
+
+  function draw(){
+    if(!W||!H)return;
+    ctx.clearRect(0,0,W,H);ctx.fillStyle='#faf8f4';ctx.fillRect(0,0,W,H);
+    var PAD_L=44,PAD_R=14,PAD_T=34,PAD_B=34;
+    var gW=W-PAD_L-PAD_R,gH=H-PAD_T-PAD_B,base=H-PAD_B;
+    var Kmax=Math.max(8,Math.ceil(lam+4*Math.sqrt(lam)+3));
+    // y最大＝理論ピークと実測ピークの大きいほう
+    var maxP=0; for(var k=0;k<=Kmax;k++){var pk=pmf(k,lam);if(pk>maxP)maxP=pk;}
+    var maxE=0; for(var k2=0;k2<=Kmax;k2++){var e=(hist[k2]||0)/Math.max(N,1);if(e>maxE)maxE=e;}
+    var ymax=Math.max(maxP,maxE)*1.18||0.3;
+    var bx=function(k){return PAD_L+(k+0.5)/(Kmax+1)*gW;};
+    var by=function(p){return base-Math.min(p/ymax,1)*gH;};
+
+    // y軸（確率）目盛り
+    ctx.strokeStyle='#e9e3d8';ctx.lineWidth=1;ctx.fillStyle='#aaa49b';
+    ctx.font='10px "JetBrains Mono",monospace';ctx.textAlign='right';ctx.textBaseline='middle';
+    for(var yi=0;yi<=3;yi++){var pv=ymax*yi/3,yy=by(pv);ctx.strokeStyle=(yi===0)?'#c9b8a8':'#e9e3d8';ctx.lineWidth=(yi===0)?1.2:1;
+      ctx.beginPath();ctx.moveTo(PAD_L,yy+0.5);ctx.lineTo(PAD_L+gW,yy+0.5);ctx.stroke();ctx.fillStyle='#aaa49b';ctx.fillText(pv.toFixed(2),PAD_L-4,yy);}
+    ctx.fillStyle='#7d7568';ctx.font='10px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='left';ctx.textBaseline='alphabetic';
+    ctx.fillText('確率',PAD_L+1,PAD_T-18);
+    // x軸（k）目盛り
+    ctx.fillStyle='#aaa49b';ctx.font='10px "JetBrains Mono",monospace';ctx.textAlign='center';
+    var step=Kmax<=12?1:(Kmax<=24?2:5);
+    for(var kx=0;kx<=Kmax;kx+=step){ctx.fillText(kx,bx(kx),base+14);}
+    ctx.fillStyle='#7d7568';ctx.font='10px "Zen Kaku Gothic New",sans-serif';ctx.fillText('1窓あたりの計数 k →',PAD_L+gW/2,base+27);
+
+    // 実測ヒストグラム（棒）
+    var bw=gW/(Kmax+1)*0.7;
+    for(var k=0;k<=Kmax;k++){
+      var e=(hist[k]||0)/Math.max(N,1);if(e<=0)continue;
+      var x=bx(k),y=by(e);
+      ctx.fillStyle=(k===latest&&flash>0)?'rgba(201,118,31,.55)':'rgba(60,120,118,.42)';
+      ctx.fillRect(x-bw/2,y,bw,base-y);
+      ctx.strokeStyle=(k===latest&&flash>0)?'#c9761f':'rgba(60,120,118,.7)';ctx.lineWidth=1;ctx.strokeRect(x-bw/2,y,bw,base-y);
+    }
+    // ガウス近似 N(λ,λ) の線
+    ctx.strokeStyle='#2563aa';ctx.lineWidth=2;ctx.beginPath();var first=true;
+    for(var px=0;px<=gW;px++){
+      var kk=px/gW*(Kmax+1)-0.5;var g=Math.exp(-(kk-lam)*(kk-lam)/(2*lam))/Math.sqrt(2*Math.PI*lam);
+      var sx=PAD_L+px,sy=by(g);if(first){ctx.moveTo(sx,sy);first=false;}else ctx.lineTo(sx,sy);
+    }
+    ctx.stroke();
+    // ポアソン理論（●＋細い茎）
+    for(var k3=0;k3<=Kmax;k3++){
+      var p=pmf(k3,lam);if(p<1e-4)continue;var x3=bx(k3),y3=by(p);
+      ctx.strokeStyle='rgba(29,27,23,.25)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x3,base);ctx.lineTo(x3,y3);ctx.stroke();
+      ctx.fillStyle='#1d1b17';ctx.beginPath();ctx.arc(x3,y3,3,0,6.2832);ctx.fill();
+    }
+    // 凡例
+    ctx.font='10px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';
+    var lx=PAD_L+8,ly=PAD_T-6;
+    ctx.fillStyle='rgba(60,120,118,.45)';ctx.fillRect(lx,ly-5,12,10);ctx.fillStyle='#7d7568';ctx.fillText('実測（窓を数えた）',lx+16,ly);
+    var lx2=lx+150;ctx.fillStyle='#1d1b17';ctx.beginPath();ctx.arc(lx2+5,ly,3,0,6.2832);ctx.fill();ctx.fillStyle='#7d7568';ctx.fillText('ポアソン',lx2+14,ly);
+    var lx3=lx2+92;ctx.strokeStyle='#2563aa';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(lx3,ly);ctx.lineTo(lx3+14,ly);ctx.stroke();ctx.fillStyle='#7d7568';ctx.fillText('ガウス',lx3+18,ly);
+
+    var mean=N>0?sum/N:0, varr=N>0?sum2/N-mean*mean:0;
+    info.innerHTML='λ=<span class="v-teal">'+lam+'</span> ＆ 窓数 <b>'+N+'</b> ｜ 直近の窓 <span class="v-amber">'+latest+' 回</span> ｜ 実測 平均 <span class="v-teal">'+mean.toFixed(2)+'</span> ・ 分散 <span class="v-teal">'+varr.toFixed(2)+'</span>（理論はどちらも λ）｜ <span class="v-blue">青線</span>＝ガウス近似';
+  }
+
+  function tick(){
+    if(running){ for(var i=0;i<speed;i++)addWindow(); if(flash>0)flash-=0.5; draw(); }
+    raf=requestAnimationFrame(tick);
+  }
+  lamEl.addEventListener('input',function(){lam=+lamEl.value;lamV.textContent=lam;reset();});
+  spdEl.addEventListener('input',function(){speed=+spdEl.value;spdV.textContent=speed;});
+  bRun.addEventListener('click',function(){running=!running;bRun.textContent=running?'⏸ 一時停止':'▶ 再開';bRun.classList.toggle('on',running);});
+  bReset.addEventListener('click',reset);
+
+  var ro=new ResizeObserver(function(){resize();});ro.observe(stage);
+  resize();
+  tick();
+})();
+</script>
+</body>
+</html>
