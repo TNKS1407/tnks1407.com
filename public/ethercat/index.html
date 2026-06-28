@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>EtherCAT ── 通り抜けながら、読み書きする</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;--teal:#3c7876;--red:#c2543d;--amber:#c9761f;--blue:#2563aa;--purple:#7a5ea8;--text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{overflow-x:hidden;max-width:100%;}
+body{font-family:'Zen Kaku Gothic New',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;
+  background-image:radial-gradient(circle at 1px 1px,#e9e4da 1px,transparent 0);background-size:22px 22px;}
+.wrap{max-width:860px;margin:0 auto;padding:20px 16px 48px;}
+header{display:flex;align-items:flex-end;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.brand{font-weight:700;font-size:22px;line-height:1.1;color:var(--text);}.brand .a{color:var(--teal);}
+.tag{font-size:12px;color:var(--muted);padding-bottom:2px;}
+.lead{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 16px;margin-bottom:16px;font-size:13px;color:#3a3a36;line-height:1.78;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.lead p{margin:0;}.lead b{color:var(--text);}
+.card-tool{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.stephead{display:flex;align-items:center;gap:.6rem;padding:.6rem .8rem;border-bottom:1px solid var(--border);background:var(--surface);}
+.stepno{font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;color:#fff;background:var(--teal);border-radius:999px;padding:.18rem .6rem;white-space:nowrap;}
+.steptitle{font-weight:700;font-size:.92rem;color:var(--text);}
+#stage{position:relative;width:100%;height:clamp(280px,52vw,420px);overflow:hidden;background:var(--surface);}
+canvas{display:block;width:100%;height:100%;}
+#info{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.5rem .8rem;font-size:.8rem;color:#3a3a36;line-height:1.7;min-height:2.8rem;}
+#info b{color:var(--text);}#info .v-teal{color:var(--teal);font-weight:600;}#info .v-amber{color:var(--amber);font-weight:600;}#info .v-red{color:var(--red);font-weight:600;}
+.ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.5rem .7rem;display:flex;flex-wrap:wrap;gap:.5rem .7rem;align-items:center;}
+.spacer{flex:1;}
+.cg{display:flex;align-items:center;gap:.4rem;font-size:.76rem;}.cg label{color:var(--muted);white-space:nowrap;}
+.cg input[type=range]{width:clamp(70px,16vw,120px);accent-color:var(--teal);}.cg .val{font-family:'JetBrains Mono',monospace;color:var(--teal);font-weight:600;min-width:2ch;}
+.dots{display:flex;gap:.3rem;align-items:center;}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:background .15s,transform .15s;}
+.dot.on{background:var(--teal);transform:scale(1.3);}
+button{font-family:'Zen Kaku Gothic New',sans-serif;font-size:.78rem;font-weight:700;color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.32rem .8rem;cursor:pointer;transition:border-color .15s,background .15s,color .15s;}
+button:hover{border-color:var(--teal);}button.pri{background:var(--teal);color:#fff;border-color:var(--teal);}button.pri:hover{background:#2f615f;}
+button:disabled{opacity:.4;cursor:default;}
+button.ghost{border-color:var(--amber);color:var(--amber);}button.ghost:hover{background:var(--amber);color:#fff;}
+footer{text-align:center;color:var(--faint);font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:12px;}
+body.embed{height:100%;display:flex;flex-direction:column;overflow:hidden;background-image:none;}
+body.embed .wrap{max-width:none;margin:0;padding:0;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
+body.embed header,body.embed .lead,body.embed footer{display:none;}
+body.embed .card-tool{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;border:none;border-radius:0;box-shadow:none;}
+body.embed #stage{flex:1 1 auto;height:auto;min-height:150px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><span class="a">EtherCAT</span> を一歩ずつ</div>
+    <div class="tag">1本のフレームが、駅を通り抜けながら、めいめいのバイトを出し入れする</div>
+  </header>
+  <div class="lead"><p>産業用モータを“同じ瞬間に”動かすための通信、EtherCAT。心臓は <b>「受け切ってから転送」ではなく「通り抜けながら、その場で読み書き」</b> という一手だ。下の <b>▶ 次へ</b> で、一段ずつ開けていこう。</p></div>
+  <div class="card-tool">
+    <div class="stephead"><span class="stepno" id="stepno">STEP 1 / 6</span><span class="steptitle" id="steptitle">—</span></div>
+    <div id="stage"><canvas id="cv"></canvas></div>
+    <div id="info"></div>
+    <div class="ctrl">
+      <button id="bPrev">◀ 戻る</button>
+      <button id="bNext" class="pri">次へ ▶</button>
+      <button id="bPlay" class="ghost">⏸</button>
+      <div class="dots" id="dots"></div>
+      <div class="spacer"></div>
+      <div class="cg" id="ngrp" style="display:none"><label>スレーブ <b id="nlab">4</b></label><input type="range" id="nsl" min="2" max="8" step="1" value="4" /></div>
+    </div>
+  </div>
+  <footer>ブラックボックスを開く — 産業イーサネット</footer>
+</div>
+
+<script>
+if(window.self!==window.top)document.body.classList.add('embed');
+(function(){
+  var cv=document.getElementById('cv'),ctx=cv.getContext('2d'),info=document.getElementById('info'),stage=document.getElementById('stage');
+  var stepno=document.getElementById('stepno'),steptitle=document.getElementById('steptitle'),dotsEl=document.getElementById('dots');
+  var bPrev=document.getElementById('bPrev'),bNext=document.getElementById('bNext'),bPlay=document.getElementById('bPlay');
+  var ngrp=document.getElementById('ngrp'),nsl=document.getElementById('nsl'),nlab=document.getElementById('nlab');
+  var COL=['#3c7876','#2563aa','#c9761f','#c2543d','#7a5ea8','#3c7876','#2563aa','#c9761f'];
+
+  var STEPS=[
+    {t:'通り抜けながら、読み書きする', n:1},
+    {t:'鎖にする ── 1本で全員ぶん', n:4},
+    {t:'往って復って、マスタに帰る', n:4},
+    {t:'なぜ速い ── 受け切る方式との競走', n:4},
+    {t:'分散クロック ── 全員、同じ瞬間に', n:4},
+    {t:'自分でいじる', n:4}
+  ];
+  var step=0, playing=true, phase=0, N=1, last=0;
+  var W=0,H=0,DPR=1;
+
+  function resize(){
+    DPR=Math.min(window.devicePixelRatio||1,2);var r=stage.getBoundingClientRect();
+    W=Math.round(r.width);H=Math.round(r.height);cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';
+    ctx.setTransform(DPR,0,0,DPR,0,0);draw();
+  }
+
+  function layout(n){
+    var mX=64,endX=W-44,y=Math.round(H*0.42);
+    var first=mX+78,lastx=endX-58,xs=[];
+    for(var k=0;k<n;k++)xs.push(n>1?first+(lastx-first)*k/(n-1):(first+lastx)/2);
+    return {mX:mX,endX:endX,y:y,xs:xs};
+  }
+  function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+
+  // マスタ＋スレーブ列＋レール。filledTo = フレーム先端が通過したスレーブ数。passing=いま通過中のindex
+  function drawNet(n,L,opts){
+    opts=opts||{};var g=layout(n),y=g.y;
+    // レール
+    ctx.strokeStyle='#d8cdbd';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(g.mX,y);ctx.lineTo(g.endX,y);ctx.stroke();
+    // マスタ
+    ctx.fillStyle='#efe9df';ctx.strokeStyle='#9a8f7e';ctx.lineWidth=1.5;roundRect(g.mX-46,y-20,46,40,7);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#5a5550';ctx.font='bold 11px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('マスタ',g.mX-23,y);
+    // 終端
+    ctx.strokeStyle='#9a8f7e';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(g.endX,y-12);ctx.lineTo(g.endX,y+12);ctx.stroke();
+    ctx.fillStyle='#aaa49b';ctx.font='9px "JetBrains Mono",monospace';ctx.fillText('終端',g.endX,y+24);
+    // スレーブ
+    for(var k=0;k<n;k++){
+      var x=g.xs[k],c=COL[k%COL.length],done=(L>=x),near=(Math.abs(L-x)<26);
+      ctx.save();
+      if(near){ctx.shadowColor=c;ctx.shadowBlur=16;}
+      ctx.fillStyle=done?c:'#f2ece2';ctx.strokeStyle=c;ctx.lineWidth=near?2.5:1.5;roundRect(x-22,y-22,44,44,8);ctx.fill();ctx.stroke();ctx.restore();
+      ctx.fillStyle=done?'#fff':c;ctx.font='bold 12px "JetBrains Mono",monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('S'+(k+1),x,y);
+      // モータ的な丸（下に）
+      if(opts.motor){ctx.strokeStyle=c;ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(x,y+44,9,0,6.2832);ctx.stroke();
+        var ang=opts.motorAng?opts.motorAng[k]:0;ctx.beginPath();ctx.moveTo(x,y+44);ctx.lineTo(x+8*Math.cos(ang),y+44+8*Math.sin(ang));ctx.stroke();}
+    }
+    // フレーム（セル列）= L を右端に、N セル
+    var cw=18,fw=n*cw+10,fx=L-fw;
+    ctx.save();
+    if(L>g.mX-30 && fx<g.endX){
+      ctx.fillStyle='rgba(29,27,23,.06)';roundRect(fx,y-58,fw,26,6);ctx.fill();
+      ctx.strokeStyle='#b9ad9b';ctx.lineWidth=1;roundRect(fx,y-58,fw,26,6);ctx.stroke();
+      ctx.font='9px "JetBrains Mono",monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      for(var c2=0;c2<n;c2++){
+        var cx=fx+5+c2*cw+cw/2,filled=(L>=g.xs[c2]);
+        ctx.fillStyle=filled?COL[c2%COL.length]:'#e6ddcf';roundRect(cx-cw/2+2,y-55,cw-4,20,3);ctx.fill();
+        ctx.fillStyle=filled?'#fff':'#b3a795';ctx.fillText('S'+(c2+1),cx,y-45);
+      }
+      // フレーム→スレーブ への“読み書き”を、いま通過中のセルで示す
+      for(var k2=0;k2<n;k2++){var x2=g.xs[k2];if(Math.abs(L-x2)<26){
+        ctx.strokeStyle=COL[k2%COL.length];ctx.lineWidth=1.6;ctx.setLineDash([3,2]);
+        ctx.beginPath();ctx.moveTo(x2,y-32);ctx.lineTo(x2,y-22);ctx.stroke();ctx.setLineDash([]);
+        ctx.fillStyle=COL[k2%COL.length];ctx.font='9px "Zen Kaku Gothic New",sans-serif';ctx.fillText('読み書き',x2,y-66);}}
+    }
+    ctx.restore();
+    return g;
+  }
+
+  // 進行位相 p(0..1) → フレーム先端 L（左の外から右の終端へ）
+  function leadFrom(p,g,n){var cw=18,fw=n*cw+10;return g.mX-fw+ p*(g.endX - g.mX + fw + 20);}
+
+  function clearBg(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#faf8f4';ctx.fillRect(0,0,W,H);}
+
+  // ====== 各ステップ ======
+  function drawStep(){
+    clearBg();
+    var n=STEPS[step].n;
+    if(step===0){ // 1台・通過しながら
+      var g=layout(1),L=leadFrom(phase,g,1);drawNet(1,L);
+      ctx.fillStyle='#7d7568';ctx.font='11px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';
+      ctx.fillText('フレームが「通り抜けるその場で」自分のバイトを読み書きする（受け切ってからではない）',W/2,H-22);
+      info.innerHTML='1台のスレーブ。<b>フレームが通過する一瞬</b>に、スレーブは自分の番地のバイトを <span class="v-teal">読み（入力をフレームへ）・書き（出力をフレームから取る）</span>。遅れは“通り抜ける時間”だけ ── <b>ns 級</b>。';
+    } else if(step===1){ // 鎖
+      var g=layout(n),L=leadFrom(phase,g,n);drawNet(n,L);
+      info.innerHTML='スレーブを鎖につなぐ。<b>1本のフレーム</b>が端から順に各駅を通り抜け、めいめいが<span class="v-teal">自分のセルだけ</span>を出し入れする。フレームのセルが、通った順に色づいていく ── <b>1往きで全員ぶん</b>を運ぶ。';
+    } else if(step===2){ // 往復
+      var g=layout(n);var p2=phase, L, ret=false;
+      if(p2<0.55){L=leadFrom(p2/0.55,g,n);} else {ret=true;L=g.endX+30;} // 往路で処理→復路は搬送
+      drawNet(n,L);
+      if(ret){ // 復路レール
+        var ry=g.y+72;ctx.strokeStyle='#bcd0cf';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(g.endX,ry);ctx.lineTo(g.mX-23,ry);ctx.stroke();
+        var rp=(p2-0.55)/0.45,rx=g.endX-(g.endX-(g.mX-23))*rp;
+        ctx.fillStyle='#3c7876';roundRect(rx-14,ry-9,28,18,5);ctx.fill();ctx.fillStyle='#fff';ctx.font='9px "JetBrains Mono",monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('帰路',rx,ry);
+        ctx.strokeStyle='#9a8f7e';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(g.endX,g.y+12);ctx.lineTo(g.endX,ry-9);ctx.stroke();
+      }
+      info.innerHTML='往路で全スレーブを処理し終えたフレームは、終端で折り返して<b>マスタに帰る</b>（論理的にはひと続きの輪）。<span class="v-teal">この1往復＝1サイクル</span>。マスタは帰ってきたフレームから、全員の入力を一度に受け取る。';
+    } else if(step===3){ // 速さ比べ
+      drawRace();
+    } else if(step===4){ // 分散クロック
+      drawDC();
+    } else if(step===5){ // 自由
+      var g=layout(n),L=leadFrom(phase,g,n);drawNet(n,L);
+      var perHop=0.05,frame=0.3+n*0.02,cyc=(frame+n*perHop).toFixed(2);
+      info.innerHTML='スレーブ数 <b>'+n+'</b>。1サイクル時間 ≈ フレーム長＋（スレーブ数×通過遅延）。通過遅延は ns 級だから、<b>台数を増やしてもサイクルはほとんど伸びない</b> ── これが多軸を同期で回せる理由。<span class="v-amber">同じ盤に、後で本物の数字も流せる</span>。';
+    }
+  }
+
+  // Step4: 受け切り(store&forward) vs 通り抜け の競走
+  var raceT=0;
+  function drawRace(){
+    var n=4,g=layout(n),topY=Math.round(H*0.30),botY=Math.round(H*0.66);
+    var T=raceT; // 0..1+ 経過
+    function lane(y,label,color,storeFwd){
+      ctx.strokeStyle='#d8cdbd';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(g.mX,y);ctx.lineTo(g.endX,y);ctx.stroke();
+      for(var k=0;k<n;k++){var x=g.xs[k];ctx.fillStyle='#f2ece2';ctx.strokeStyle=color;ctx.lineWidth=1.5;roundRect(x-16,y-16,32,32,6);ctx.fill();ctx.stroke();
+        ctx.fillStyle=color;ctx.font='bold 10px "JetBrains Mono",monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('S'+(k+1),x,y);}
+      // フレーム位置：store&forward は各駅で全長ぶん待つ→区間ごとに段。通り抜けはほぼ一定速。
+      var prog,done;
+      if(storeFwd){
+        // 5区間(マスタ→S1→..→S4→終端)、各区間で「丸ごと受信(待ち)＋送出」
+        var seg=Math.min(Math.floor(T/0.22),4); var within=(T/0.22)-seg; prog=seg/5 + Math.max(0,within-0.6)/0.4/5; done=T>=1.1;
+      } else { prog=Math.min(T/0.35,1); done=T>=0.35; }
+      var x=g.mX+(g.endX-g.mX)*Math.min(prog,1);
+      ctx.fillStyle=color;roundRect(x-13,y-26,26,16,4);ctx.fill();ctx.fillStyle='#fff';ctx.font='8px "JetBrains Mono",monospace';ctx.fillText('frame',x,y-18);
+      ctx.fillStyle='#5a5550';ctx.font='11px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='left';ctx.fillText(label,g.mX-46,y-30);
+      ctx.fillStyle=done?'#3c7876':'#aaa49b';ctx.font='bold 11px "JetBrains Mono",monospace';ctx.textAlign='right';ctx.fillText(done?'✓ 到着':'…',g.endX,y-30);
+    }
+    lane(topY,'受け切ってから転送（普通のスイッチ）','#c2543d',true);
+    lane(botY,'通り抜けながら（EtherCAT）','#3c7876',false);
+    info.innerHTML='同じ4台。<span class="v-red">上＝受け切り方式</span>は各駅でフレームを丸ごと受信してから送る→<b>駅の数だけ全長を待つ</b>。<span class="v-teal">下＝EtherCAT</span>は通り抜けるだけ→ほぼ一気に終わる。<b>同じ仕事が、何倍も速い。</b>';
+  }
+
+  // Step5: 分散クロック ── そろえないと到着順にバラつく / そろえると同じtickで一斉
+  function drawDC(){
+    var n=4,g=layout(n),L=g.endX+40;
+    // 上段：DCなし（到着順に発火＝バラバラ）
+    var topY=Math.round(H*0.30);
+    drawRow(topY,'DC なし：フレーム到着順に動く→ズレる',n,g,false);
+    var botY=Math.round(H*0.66);
+    drawRow(botY,'分散クロックあり：全員、同じ瞬間に動く',n,g,true);
+    info.innerHTML='各スレーブの時計を一つの基準にそろえる（<b>分散クロック</b>）。そろえないと、フレームが届いた順に動いて<span class="v-red">タイミングがズレる</span>。そろえると、全軸が<span class="v-teal">同じ瞬間</span>に動く ── 多軸モータの同期は、これで成り立つ。';
+  }
+  function drawRow(y,label,n,g,sync){
+    var t=phase*2*Math.PI;
+    ctx.fillStyle='#5a5550';ctx.font='11px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='left';ctx.textBaseline='alphabetic';ctx.fillText(label,g.mX-46,y-34);
+    for(var k=0;k<n;k++){var x=g.xs[k],c=COL[k%COL.length];
+      ctx.fillStyle='#f2ece2';ctx.strokeStyle=c;ctx.lineWidth=1.5;roundRect(x-16,y-16,32,32,6);ctx.fill();ctx.stroke();
+      ctx.fillStyle=c;ctx.font='bold 10px "JetBrains Mono",monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('S'+(k+1),x,y);
+      // モータ：sync なら全員同位相、なし なら到着遅れぶん位相シフト
+      var ph=sync?t:(t-k*0.7);ctx.strokeStyle=c;ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y+30,11,0,6.2832);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(x,y+30);ctx.lineTo(x+9*Math.cos(ph),y+30+9*Math.sin(ph));ctx.stroke();}
+    if(sync){ // 共通tickの縦線
+      ctx.strokeStyle='rgba(60,120,118,.4)';ctx.lineWidth=1;ctx.setLineDash([3,3]);
+      ctx.beginPath();ctx.moveTo(g.xs[0]-30,y+30);ctx.lineTo(g.xs[n-1]+30,y+30);ctx.stroke();ctx.setLineDash([]);}
+  }
+
+  function draw(){ if(!W||!H)return; drawStep(); }
+
+  function syncUI(){
+    stepno.textContent='STEP '+(step+1)+' / '+STEPS.length;
+    steptitle.textContent=STEPS[step].t;
+    N=STEPS[step].n; if(step===5)N=+nsl.value;
+    ngrp.style.display=(step===5)?'flex':'none';
+    bPrev.disabled=(step===0);bNext.disabled=(step===STEPS.length-1);
+    for(var i=0;i<dotsEl.children.length;i++)dotsEl.children[i].classList.toggle('on',i===step);
+    phase=0;raceT=0;
+  }
+  // dots
+  for(var i=0;i<6;i++){var d=document.createElement('span');d.className='dot';d.addEventListener('click',(function(idx){return function(){step=idx;syncUI();draw();};})(i));dotsEl.appendChild(d);}
+
+  function tick(ts){
+    var dt=last?Math.min(0.05,(ts-last)/1000):0;last=ts;
+    if(playing){
+      var sp=(step===3)?0.5:(step===4?0.5:0.45);
+      phase+=dt*sp; if(phase>1)phase-=1;
+      if(step===3){raceT+=dt*0.6; if(raceT>1.6)raceT=0;}
+      draw();
+    }
+    requestAnimationFrame(tick);
+  }
+  bPrev.addEventListener('click',function(){if(step>0){step--;syncUI();draw();}});
+  bNext.addEventListener('click',function(){if(step<STEPS.length-1){step++;syncUI();draw();}});
+  bPlay.addEventListener('click',function(){playing=!playing;bPlay.textContent=playing?'⏸':'▶';});
+  nsl.addEventListener('input',function(){nlab.textContent=nsl.value;N=+nsl.value;draw();});
+
+  var ro=new ResizeObserver(function(){resize();});ro.observe(stage);
+  syncUI();resize();requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
