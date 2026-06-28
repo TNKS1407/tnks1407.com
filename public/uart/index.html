@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>UART ── 一本の線に、バイトを乗せる</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;--teal:#3c7876;--red:#c2543d;--amber:#c9761f;--blue:#2563aa;--text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{overflow-x:hidden;max-width:100%;}
+body{font-family:'Zen Kaku Gothic New',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;background-image:radial-gradient(circle at 1px 1px,#e9e4da 1px,transparent 0);background-size:22px 22px;}
+.wrap{max-width:860px;margin:0 auto;padding:20px 16px 48px;}
+header{display:flex;align-items:flex-end;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.brand{font-weight:700;font-size:22px;line-height:1.1;color:var(--text);}.brand .a{color:var(--teal);}
+.tag{font-size:12px;color:var(--muted);padding-bottom:2px;}
+.lead{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 16px;margin-bottom:16px;font-size:13px;color:#3a3a36;line-height:1.78;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.lead p{margin:0;}.lead b{color:var(--text);}
+.card-tool{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.stephead{display:flex;align-items:center;gap:.6rem;padding:.6rem .8rem;border-bottom:1px solid var(--border);background:var(--surface);}
+.stepno{font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;color:#fff;background:var(--teal);border-radius:999px;padding:.18rem .6rem;white-space:nowrap;}
+.steptitle{font-weight:700;font-size:.92rem;color:var(--text);}
+#stage{position:relative;width:100%;height:clamp(280px,50vw,400px);overflow:hidden;background:var(--surface);}
+canvas{display:block;width:100%;height:100%;}
+#info{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.5rem .8rem;font-size:.8rem;color:#3a3a36;line-height:1.7;min-height:3rem;}
+#info b{color:var(--text);}#info code{font-family:'JetBrains Mono',monospace;background:#efe9df;border-radius:3px;padding:0 4px;color:var(--blue);}#info .v-red{color:var(--red);font-weight:600;}#info .v-teal{color:var(--teal);font-weight:600;}#info .v-blue{color:var(--blue);font-weight:600;}
+.ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.5rem .7rem;display:flex;gap:.5rem;align-items:center;}
+.dots{display:flex;gap:.3rem;align-items:center;}.dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:.15s;}.dot.on{background:var(--teal);transform:scale(1.3);}
+button{font-family:'Zen Kaku Gothic New',sans-serif;font-size:.78rem;font-weight:700;color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.32rem .8rem;cursor:pointer;transition:.15s;}
+button:hover{border-color:var(--teal);}button.pri{background:var(--teal);color:#fff;border-color:var(--teal);}button:disabled{opacity:.4;cursor:default;}
+footer{text-align:center;color:var(--faint);font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:12px;}
+body.embed{height:100%;display:flex;flex-direction:column;overflow:hidden;background-image:none;}
+body.embed .wrap{max-width:none;margin:0;padding:0;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
+body.embed header,body.embed .lead,body.embed footer{display:none;}
+body.embed .card-tool{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;border:none;border-radius:0;box-shadow:none;}
+body.embed #stage{flex:1 1 auto;height:auto;min-height:150px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><div class="brand"><span class="a">UART</span> ── 一本の線に、バイトを乗せる</div><div class="tag">時計の線なしで、文字 'A' を波形にして送る</div></header>
+  <div class="lead"><p>いちばん素朴なディジタル通信が UART（シリアル）だ。<b>線は一本、ビットは時間で順番に</b>。しかも<b>時計（クロック）の線を共有しない</b> ── 速さ（ボーレート）を前もって約束しておいて、各バイトの頭に合図をつけることで、時計なしでも受信側が読み解ける。文字 <code>'A'</code>（= 0x41）を、枠にはめて波形にして送ってみよう。</p></div>
+  <div class="card-tool">
+    <div class="stephead"><span class="stepno" id="stepno">STEP 1 / 4</span><span class="steptitle" id="steptitle">—</span></div>
+    <div id="stage"><canvas id="cv"></canvas></div>
+    <div id="info"></div>
+    <div class="ctrl"><button id="bPrev">◀ 戻る</button><button id="bNext" class="pri">次へ ▶</button><div class="dots" id="dots"></div></div>
+  </div>
+  <footer>ブラックボックスを開く — シリアルの芯</footer>
+</div>
+<script>
+if(window.self!==window.top)document.body.classList.add('embed');
+(function(){
+  var cv=document.getElementById('cv'),ctx=cv.getContext('2d'),info=document.getElementById('info'),stage=document.getElementById('stage');
+  var stepno=document.getElementById('stepno'),steptitle=document.getElementById('steptitle'),dotsEl=document.getElementById('dots');
+  var bPrev=document.getElementById('bPrev'),bNext=document.getElementById('bNext');
+  // 'A' = 0x41 = 0100 0001 → LSB先（下位ビットから）= 1,0,0,0,0,0,1,0
+  var DATA=[1,0,0,0,0,0,1,0];
+  // フレーム＝ idle, start(0), 8データ, stop(1), idle
+  var FR=[{t:'idle',lv:1},{t:'start',lv:0,lab:'start'}];
+  for(var i=0;i<8;i++)FR.push({t:'data',lv:DATA[i],lab:'d'+i});
+  FR.push({t:'stop',lv:1,lab:'stop'});FR.push({t:'idle',lv:1});
+  var COL={idle:'#aaa49b',start:'#c2543d',data:'#3c7876',stop:'#2563aa'};
+  var STEPS=[{t:'一本の線 ── 待っている時は High'},{t:'枠にはめる ── start と stop'},{t:'波形で送る ── ボーレートが幅を決める'},{t:'受信側 ── 各ビットの“真ん中”で読む'}];
+  var step=0,W=0,H=0,DPR=1;
+  function resize(){DPR=Math.min(window.devicePixelRatio||1,2);var r=stage.getBoundingClientRect();W=Math.round(r.width);H=Math.round(r.height);cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);draw();}
+  function clearBg(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#faf8f4';ctx.fillRect(0,0,W,H);}
+  // フレームを波形で。sample=true で各データ中央にサンプル点。
+  function drawWave(sample){
+    var PAD=44, x0=PAD, wv=W-PAD*1.5, n=FR.length, bw=wv/n;
+    var yHi=H*0.34, yLo=H*0.66;
+    // 領域の薄い色帯＋区切り
+    for(var i=0;i<n;i++){var c=FR[i],x=x0+i*bw;
+      if(c.t!=='idle'){ctx.fillStyle=COL[c.t]+'14';ctx.fillRect(x,yHi-16,bw,(yLo-yHi)+32);}
+      ctx.strokeStyle='#e6ddd0';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,yHi-16);ctx.lineTo(x,yLo+16);ctx.stroke();}
+    // 1/0 基準線
+    ctx.strokeStyle='#ded3c3';ctx.setLineDash([2,3]);ctx.beginPath();ctx.moveTo(x0,yHi);ctx.lineTo(x0+wv,yHi);ctx.moveTo(x0,yLo);ctx.lineTo(x0+wv,yLo);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='#aaa49b';ctx.font='9px "JetBrains Mono",monospace';ctx.textAlign='right';ctx.textBaseline='middle';
+    ctx.fillText("High 1",x0-4,yHi);ctx.fillText("Low 0",x0-4,yLo);
+    // 波形（色は領域ごと）
+    ctx.lineWidth=2.6;var prevY=FR[0].lv?yHi:yLo;
+    for(var k=0;k<n;k++){var y=FR[k].lv?yHi:yLo,xa=x0+k*bw,xb=x0+(k+1)*bw;
+      ctx.strokeStyle=COL[FR[k].t]==='#aaa49b'?'#9a8f7e':COL[FR[k].t];
+      ctx.beginPath();if(y!==prevY){ctx.moveTo(xa,prevY);ctx.lineTo(xa,y);}else ctx.moveTo(xa,y);ctx.lineTo(xb,y);ctx.stroke();prevY=y;}
+    // ラベル＋ビット値
+    ctx.textAlign='center';
+    for(var m=0;m<n;m++){var c2=FR[m],cx=x0+(m+0.5)*bw;
+      if(c2.t==='data'){ctx.fillStyle='#b3a795';ctx.font='9px "JetBrains Mono",monospace';ctx.textBaseline='alphabetic';ctx.fillText(c2.lv,cx,yHi-20);}
+      if(c2.lab){ctx.fillStyle=COL[c2.t]==='#aaa49b'?'#9a8f7e':COL[c2.t];ctx.font=(c2.t==='data'?'9px':'bold 9px')+' "JetBrains Mono",monospace';ctx.textBaseline='alphabetic';ctx.fillText(c2.lab,cx,yLo+28);}}
+    // サンプル点
+    if(sample){for(var s=0;s<n;s++){if(FR[s].t!=='data'&&FR[s].t!=='start')continue;var cx2=x0+(s+0.5)*bw,y2=FR[s].lv?yHi:yLo;
+      ctx.strokeStyle='#c9761f';ctx.lineWidth=1;ctx.setLineDash([2,2]);ctx.beginPath();ctx.moveTo(cx2,yHi-16);ctx.lineTo(cx2,yLo+16);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle='#c9761f';ctx.beginPath();ctx.arc(cx2,y2,3.5,0,6.2832);ctx.fill();}
+      ctx.fillStyle='#c9761f';ctx.font='9px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText('↑ 各ビットの真ん中で読む',W*0.5,H*0.92);}
+    // 時間矢印
+    ctx.fillStyle='#7d7568';ctx.font='10px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='left';ctx.fillText('時間 →',x0,H*0.92);
+    return {x0:x0,bw:bw,yHi:yHi,yLo:yLo};
+  }
+  function drawStep(){
+    clearBg();
+    if(step===0){
+      // 一本の線、idle High
+      var y=H*0.42;
+      ctx.fillStyle='#efe9df';ctx.strokeStyle='#9a8f7e';ctx.lineWidth=1.4;ctx.beginPath();ctx.rect(W*0.10,y-18,60,36);ctx.fill();ctx.stroke();
+      ctx.beginPath();ctx.rect(W*0.74,y-18,60,36);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#5a5550';ctx.font='bold 11px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('TX',W*0.10+30,y);ctx.fillText('RX',W*0.74+30,y);
+      ctx.strokeStyle='#3c7876';ctx.lineWidth=2.4;ctx.beginPath();ctx.moveTo(W*0.10+60,y-8);ctx.lineTo(W*0.74,y-8);ctx.stroke();
+      ctx.fillStyle='#3c7876';ctx.font='10px "Zen Kaku Gothic New",sans-serif';ctx.textBaseline='alphabetic';ctx.fillText('データ線（1本）',W*0.5,y-16);
+      ctx.strokeStyle='#cfc9be';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(W*0.10+60,y+8);ctx.lineTo(W*0.74,y+8);ctx.stroke();
+      ctx.fillStyle='#aaa49b';ctx.fillText('GND',W*0.5,y+22);
+      ctx.fillStyle='#7d7568';ctx.font='11px "Zen Kaku Gothic New",sans-serif';ctx.fillText('何も送っていない時、線は High のまま待つ（idle）',W*0.5,H*0.74);
+      info.innerHTML='UART は線が<b>一本</b>（＋GND）。<b>クロックの線が無い</b>のがポイント ── SPI や I²C は別に時計線を引くけど、UART は引かない。代わりに、送る側と受ける側が<b>同じ速さ（ボーレート）を前もって約束</b>しておく。何も送っていない待機状態（idle）では、線は <span class="v-teal">High</span> に保つ、と決めてある。';
+    } else if(step===1){
+      // バイト→ビット→枠
+      ctx.fillStyle='#1d1b17';ctx.font='bold 15px "JetBrains Mono",monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText("'A'  =  0x41",W*0.5,H*0.16);
+      ctx.fillStyle='#7d7568';ctx.font='11px "Zen Kaku Gothic New",sans-serif';ctx.fillText('ビット 0100 0001 を、下位から並べ替え（LSB 先）',W*0.5,H*0.27);
+      // 枠セル
+      var cells=[{lab:'start',v:'0',t:'start'}];
+      for(var i=0;i<8;i++)cells.push({lab:'d'+i,v:''+DATA[i],t:'data'});
+      cells.push({lab:'stop',v:'1',t:'stop'});
+      var n=cells.length, cw=Math.min(46,(W-40)/n), x0=(W-cw*n)/2, y=H*0.46;
+      for(var k=0;k<n;k++){var c=cells[k],x=x0+k*cw;
+        ctx.fillStyle=COL[c.t]+'1c';ctx.strokeStyle=COL[c.t];ctx.lineWidth=1.4;ctx.beginPath();ctx.rect(x+2,y,cw-4,40);ctx.fill();ctx.stroke();
+        ctx.fillStyle=COL[c.t];ctx.font='bold 14px "JetBrains Mono",monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(c.v,x+cw/2,y+20);
+        ctx.fillStyle='#7d7568';ctx.font='9px "Zen Kaku Gothic New",sans-serif';ctx.textBaseline='alphabetic';ctx.fillText(c.lab,x+cw/2,y+54);}
+      ctx.fillStyle='#7d7568';ctx.font='11px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.fillText('← 送る順（時間）→',W*0.5,y+76);
+      info.innerHTML="受信側が「ここから1バイト」と分かるように、データを枠にはめる。頭に <span class=\"v-red\">start ビット（Low）</span>、お尻に <span class=\"v-blue\">stop ビット（High）</span>。その間に8ビットのデータ ── ただし<b>下位ビット（LSB）から先</b>に送るのが UART の流儀。だから <code>0x41</code> = <code>0100 0001</code> は、線の上では <span class=\"v-teal\">1,0,0,0,0,0,1,0</span> の順になる。";
+    } else if(step===2){
+      drawWave(false);
+      info.innerHTML='これを波形にすると、こうなる。idle(High) から <span class="v-red">start で Low に落ちる</span>のが「始まるよ」の合図。続けて8データ（LSB 先）、最後に <span class="v-blue">stop で High に戻る</span>。── 1ビットの<b>幅</b>を決めるのが<b>ボーレート</b>だ。例えば 9600 baud なら 1ビット ≈ <code>104µs</code>。速さの約束さえ合っていれば、時計線なしでこの形を送れる。';
+    } else {
+      drawWave(true);
+      info.innerHTML='受信側の時計は、送信側とは<b>別物</b>。なのにどう合わせる？ ── <span class="v-red">start の下りエッジ</span>を見つけた瞬間に「いま始まった」と同期して、あとは1ビットぶんずつ進み、各ビットの<b>真ん中</b>（橙の点）で電圧を読む。端っこでなく中央で読むから、多少クロックがずれても拾い間違えない。これが「時計を共有しない」を成り立たせる仕掛けだよ。';
+    }
+  }
+  function draw(){if(W&&H)drawStep();}
+  function syncUI(){stepno.textContent='STEP '+(step+1)+' / 4';steptitle.textContent=STEPS[step].t;bPrev.disabled=(step===0);bNext.disabled=(step===3);for(var i=0;i<dotsEl.children.length;i++)dotsEl.children[i].classList.toggle('on',i===step);}
+  for(var i=0;i<4;i++){var d=document.createElement('span');d.className='dot';d.addEventListener('click',(function(x){return function(){step=x;syncUI();draw();};})(i));dotsEl.appendChild(d);}
+  bPrev.addEventListener('click',function(){if(step>0){step--;syncUI();draw();}});
+  bNext.addEventListener('click',function(){if(step<3){step++;syncUI();draw();}});
+  var ro=new ResizeObserver(function(){resize();});ro.observe(stage);
+  syncUI();resize();
+})();
+</script>
+</body>
+</html>
