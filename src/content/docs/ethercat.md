@@ -5,6 +5,8 @@ pubDate: 2026-06-29
 tags: ["通信", "EtherCAT", "フィールドバス", "リアルタイム", "プロトコル", "産業ネットワーク"]
 demo: "/ethercat/"
 demoLabel: "EtherCAT の概念ラボを全画面で開く"
+series: "communication"
+order: 8
 ---
 
 <style>

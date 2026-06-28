@@ -5,6 +5,8 @@ pubDate: 2026-06-29
 tags: ["通信", "TCP/IP", "IP", "TCP", "EtherNet/IP", "ネットワーク"]
 demo: "/tcp-reliable/"
 demoLabel: "TCP の信頼性ラボを全画面で開く"
+series: "communication"
+order: 6
 ---
 
 <style>

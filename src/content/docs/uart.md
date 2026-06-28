@@ -5,6 +5,8 @@ pubDate: 2026-06-29
 tags: ["通信", "UART", "シリアル", "RS-232C", "ボーレート", "波形"]
 demo: "/uart/"
 demoLabel: "UART の波形ラボを全画面で開く"
+series: "communication"
+order: 1
 ---
 
 <style>

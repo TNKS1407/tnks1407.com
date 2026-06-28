@@ -5,6 +5,8 @@ pubDate: 2026-06-29
 tags: ["通信", "PROFINET", "EtherNet/IP", "EtherCAT", "産業Ethernet", "リアルタイム"]
 demo: "/industrial-eth/"
 demoLabel: "産業 Ethernet 三者くらべを全画面で開く"
+series: "communication"
+order: 7
 ---
 
 [TCP/IP](/docs/tcp-ip/) の回で、最後にこう置いた ── TCP は「必ず届くが、いつ届くかは状況で揺れる」。便利の代償だ。ところが工場の現場は、この揺れがいちばん困る。「1ミリ秒ごとに、全部のモータを、髪の毛一本のズレもなく同時に」── そういう硬いリアルタイムに、再送で遅れるかもしれない通信は、乗せられない。

@@ -5,6 +5,8 @@ pubDate: 2026-06-29
 tags: ["通信", "SPI", "I2C", "同期式", "シリアル", "クロック"]
 demo: "/spi/"
 demoLabel: "SPI の波形ラボを全画面で開く"
+series: "communication"
+order: 2
 ---
 
 <style>

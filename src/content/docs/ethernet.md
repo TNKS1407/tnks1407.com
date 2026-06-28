@@ -5,6 +5,8 @@ pubDate: 2026-06-29
 tags: ["通信", "Ethernet", "MAC", "スイッチ", "イーサネット", "物理層"]
 demo: "/eth-switch/"
 demoLabel: "スイッチの MAC 学習ラボを全画面で開く"
+series: "communication"
+order: 5
 ---
 
 <style>

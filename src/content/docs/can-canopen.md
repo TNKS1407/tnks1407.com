@@ -5,6 +5,8 @@ pubDate: 2026-06-29
 tags: ["通信", "CAN", "CANopen", "アービトレーション", "多マスタ", "車載"]
 demo: "/can-arbitration/"
 demoLabel: "CAN アービトレーションのラボを全画面で開く"
+series: "communication"
+order: 4
 ---
 
 <style>

@@ -5,6 +5,8 @@ pubDate: 2026-06-29
 tags: ["通信", "RS-485", "Modbus", "差動", "マルチドロップ", "フィールドバス"]
 demo: "/rs485/"
 demoLabel: "差動信号のラボを全画面で開く"
+series: "communication"
+order: 3
 ---
 
 <style>
