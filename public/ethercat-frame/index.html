@@ -42,7 +42,7 @@ body.embed #stage{flex:1 1 auto;height:auto;min-height:160px;}
 <body>
 <div class="wrap">
   <header><div class="brand"><span class="a">フレーム</span>を開ける</div><div class="tag">プロトコル＝「どの位置が何の意味か」を約束したバイトの並び</div></header>
-  <div class="lead"><p>ハードは分かるのにプログラミングが…という人へ。安心して ── <b>バイト＝線の上の8ビット（君が知ってるやつ）</b>。プロトコルは、そのバイトを並べて「この位置はこの意味」と決めただけ。マスタは、その箱を<b>埋めて・送って・読む</b>プログラム。魔法はない。実物の EtherCAT フレームを、1バイトずつ開けてみよう。（※要点が見えるよう簡略化してある）</p></div>
+  <div class="lead"><p>ハードは分かるのにプログラミングが…という人へ。安心して ── <b>バイト＝線の上の8ビット（君が知ってるやつ）</b>。プロトコルは、そのバイトを並べて「この位置はこの意味」と決めただけ。マスタは、その箱を<b>埋めて・送って・読む</b>プログラム。魔法はない。実物の EtherCAT フレームを、1バイトずつ開けてみよう。（複数バイトの数＝アドレス等は“下位バイトが先”＝<b>リトルエンディアン</b>。例: 0x1000 は <b>00 10 00 00</b> と並ぶ。※要点が見えるよう簡略化してある）</p></div>
   <div class="card-tool">
     <div class="stephead"><span class="stepno" id="stepno">STEP 1 / 3</span><span class="steptitle" id="steptitle">—</span></div>
     <div id="stage"><canvas id="cv"></canvas></div>
