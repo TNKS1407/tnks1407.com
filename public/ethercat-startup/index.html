@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>立ち上げ ── 数えて、名乗らせて、段を上げる</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;--teal:#3c7876;--red:#c2543d;--amber:#c9761f;--blue:#2563aa;--purple:#7a5ea8;--text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{overflow-x:hidden;max-width:100%;}
+body{font-family:'Zen Kaku Gothic New',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;background-image:radial-gradient(circle at 1px 1px,#e9e4da 1px,transparent 0);background-size:22px 22px;}
+.wrap{max-width:860px;margin:0 auto;padding:20px 16px 48px;}
+header{display:flex;align-items:flex-end;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.brand{font-weight:700;font-size:22px;line-height:1.1;color:var(--text);}.brand .a{color:var(--teal);}
+.tag{font-size:12px;color:var(--muted);padding-bottom:2px;}
+.lead{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 16px;margin-bottom:16px;font-size:13px;color:#3a3a36;line-height:1.78;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.lead p{margin:0;}.lead b{color:var(--text);}
+.card-tool{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.stephead{display:flex;align-items:center;gap:.6rem;padding:.6rem .8rem;border-bottom:1px solid var(--border);background:var(--surface);}
+.stepno{font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;color:#fff;background:var(--teal);border-radius:999px;padding:.18rem .6rem;white-space:nowrap;}
+.steptitle{font-weight:700;font-size:.92rem;color:var(--text);}
+#stage{position:relative;width:100%;height:clamp(300px,54vw,440px);overflow:hidden;background:var(--surface);}
+canvas{display:block;width:100%;height:100%;}
+#info{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.5rem .8rem;font-size:.8rem;color:#3a3a36;line-height:1.7;min-height:3rem;}
+#info b{color:var(--text);}#info .v-teal{color:var(--teal);font-weight:600;}#info .v-amber{color:var(--amber);font-weight:600;}#info .v-blue{color:var(--blue);font-weight:600;}
+.ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.5rem .7rem;display:flex;gap:.5rem;align-items:center;}
+.dots{display:flex;gap:.3rem;align-items:center;}.dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:.15s;}.dot.on{background:var(--teal);transform:scale(1.3);}
+button{font-family:'Zen Kaku Gothic New',sans-serif;font-size:.78rem;font-weight:700;color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.32rem .8rem;cursor:pointer;transition:.15s;}
+button:hover{border-color:var(--teal);}button.pri{background:var(--teal);color:#fff;border-color:var(--teal);}button:disabled{opacity:.4;cursor:default;}
+footer{text-align:center;color:var(--faint);font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:12px;}
+body.embed{height:100%;display:flex;flex-direction:column;overflow:hidden;background-image:none;}
+body.embed .wrap{max-width:none;margin:0;padding:0;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
+body.embed header,body.embed .lead,body.embed footer{display:none;}
+body.embed .card-tool{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;border:none;border-radius:0;box-shadow:none;}
+body.embed #stage{flex:1 1 auto;height:auto;min-height:150px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><div class="brand"><span class="a">立ち上げ</span> ── 数えて、名乗らせて、段を上げる</div><div class="tag">毎周期のループが回り出す“前”に、マスタがやること</div></header>
+  <div class="lead"><p>コードで見た「毎周期のループ」は、実は<b>立ち上げが済んだ後</b>の話。電源を入れてから運転までに、マスタは ①誰が何台いて何者か数えて同定し → ②各スレーブの番地（FMMU）や設定を書き込み → ③状態の階段（Init→Op）を上らせる。ここが“本体の長さ”で、SOEM みたいなライブラリが肩代わりしてくれる部分だよ。</p></div>
+  <div class="card-tool">
+    <div class="stephead"><span class="stepno" id="stepno">STEP 1 / 3</span><span class="steptitle" id="steptitle">—</span></div>
+    <div id="stage"><canvas id="cv"></canvas></div>
+    <div id="info"></div>
+    <div class="ctrl"><button id="bPrev">◀ 戻る</button><button id="bNext" class="pri">次へ ▶</button><div class="dots" id="dots"></div></div>
+  </div>
+  <footer>ブラックボックスを開く — 運転までの段取り</footer>
+</div>
+<script>
+if(window.self!==window.top)document.body.classList.add('embed');
+(function(){
+  var cv=document.getElementById('cv'),ctx=cv.getContext('2d'),info=document.getElementById('info'),stage=document.getElementById('stage');
+  var stepno=document.getElementById('stepno'),steptitle=document.getElementById('steptitle'),dotsEl=document.getElementById('dots');
+  var bPrev=document.getElementById('bPrev'),bNext=document.getElementById('bNext');
+  var SCOL=['#3c7876','#2563aa','#c9761f'];
+  var STEPS=[{t:'数え上げ＆同定 ── 何台・何者か'},{t:'設定 ── どのバイトが誰の番地か（FMMU）'},{t:'状態の階段 ── Init から Op へ'}];
+  var step=0,W=0,H=0,DPR=1;
+  function resize(){DPR=Math.min(window.devicePixelRatio||1,2);var r=stage.getBoundingClientRect();W=Math.round(r.width);H=Math.round(r.height);cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);draw();}
+  function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+  function clearBg(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#faf8f4';ctx.fillRect(0,0,W,H);}
+  function chain(y,withId,withMem){
+    var mX=64,endX=W-44,n=3,xs=[];for(var k=0;k<n;k++)xs.push(mX+90+(endX-90-mX)*k/(n-1));
+    ctx.strokeStyle='#d8cdbd';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(mX,y);ctx.lineTo(endX,y);ctx.stroke();
+    ctx.fillStyle='#efe9df';ctx.strokeStyle='#9a8f7e';ctx.lineWidth=1.5;roundRect(mX-46,y-20,46,40,7);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#5a5550';ctx.font='bold 11px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('マスタ',mX-23,y);
+    var ids=['Beckhoff\nEL2008',' st\nservo','Acme\nIO'];
+    for(var k=0;k<n;k++){var x=xs[k],c=SCOL[k];
+      ctx.fillStyle=c;ctx.strokeStyle=c;ctx.lineWidth=1.5;roundRect(x-22,y-22,44,44,8);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#fff';ctx.font='bold 12px "JetBrains Mono",monospace';ctx.textBaseline='middle';ctx.fillText('S'+(k+1),x,y);
+      if(withId){ctx.fillStyle='#7d7568';ctx.font='9px "Zen Kaku Gothic New",sans-serif';ctx.textBaseline='alphabetic';
+        var parts=ids[k].split('\n');ctx.fillText('「'+parts[0],x,y+38);ctx.fillText(parts[1]+'」',x,y+50);}
+      if(withMem){ctx.fillStyle='#f0ebe1';ctx.strokeStyle=c;ctx.lineWidth=1;roundRect(x-20,y+30,40,16,3);ctx.fill();ctx.stroke();
+        ctx.fillStyle=c;ctx.font='9px "JetBrains Mono",monospace';ctx.textBaseline='middle';ctx.fillText('番地'+(k+1),x,y+38);}}
+    return {mX:mX,endX:endX,xs:xs,n:n};
+  }
+  function drawStep(){
+    clearBg();
+    if(step===0){
+      var g=chain(H*0.40,true,false);
+      // 位置アドレスの“数え”を矢印で
+      ctx.strokeStyle='#c9761f';ctx.lineWidth=1.4;ctx.setLineDash([4,3]);
+      ctx.beginPath();ctx.moveTo(g.mX,H*0.40-30);for(var k=0;k<g.n;k++){ctx.lineTo(g.xs[k],H*0.40-30);}ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle='#c9761f';ctx.font='10px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='alphabetic';
+      for(var k2=0;k2<g.n;k2++){ctx.fillText('#'+(k2+1),g.xs[k2],H*0.40-34);}
+      info.innerHTML='電源を入れた直後、マスタは<b>位置アドレス（鎖の順番）</b>で1台ずつ当てて<b>数える</b>。同時に各スレーブの ESC の <b>EEPROM</b> から「ベンダ/製品コード/版」を読み、<b>ESI ファイル</b>と突き合わせて<span class="v-teal">「これは○○のサーボだ」</span>と<b>同定</b>する。何台・どこに・何者か、をまず掴む。';
+    } else if(step===1){
+      var g=chain(H*0.62,false,true);
+      // 論理アドレス空間（上の帯）→ 各スレーブの番地へ割当
+      var bx=g.mX, bw=g.endX-g.mX, by=H*0.18, bh=22;
+      ctx.fillStyle='#eaf1f0';ctx.strokeStyle='#3c7876';ctx.lineWidth=1.2;roundRect(bx,by,bw,bh,5);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#3c7876';ctx.font='10px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('論理アドレス空間（マスタの大きな1枚）',bx+6,by+bh/2);
+      // 帯を3分割→各スレーブへ矢印
+      for(var k=0;k<g.n;k++){var sx=bx+bw*(k+0.5)/g.n;
+        ctx.strokeStyle=SCOL[k];ctx.lineWidth=1.5;ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(sx,by+bh);ctx.lineTo(g.xs[k],H*0.62+30);ctx.stroke();ctx.setLineDash([]);
+        ctx.strokeStyle=SCOL[k];ctx.lineWidth=1;ctx.strokeRect(bx+bw*k/g.n,by,bw/g.n,bh);}
+      info.innerHTML='次に<b>設定</b>。各スレーブの <b>FMMU</b> に「マスタの大きな論理アドレス空間の、この一切れが自分の番地」と割り当てる（色の矢印）。これで運転中、<b>1個のデータグラムが全員ぶんを一度に出し入れ</b>できる。あわせて <b>同期マネージャ</b>や<b>メールボックス</b>も設定する。';
+    } else {
+      // 状態の階段
+      var rungs=[
+        {name:'Init',sub:'電源入っただけ。レジスタ設定のみ。'},
+        {name:'Pre-Op',sub:'メールボックス有効＝CoE でパラメータ/PDO 設定。'},
+        {name:'Safe-Op',sub:'入力が有効（スレーブが入力を送る）。出力はまだ。'},
+        {name:'Op',sub:'出力も適用＝毎周期のプロセスデータ。運転！'}];
+      var n=rungs.length, x0=W*0.10, x1=W*0.62, h=Math.min((H*0.62)/n,46), top=H*0.16;
+      for(var i=0;i<n;i++){var ri=n-1-i; // 下=Init, 上=Op
+        var y=top+ri*(h+8), reached=true, isOp=(i===n-1);
+        ctx.fillStyle=isOp?'#3c7876':'#eef3ee';ctx.strokeStyle='#3c7876';ctx.lineWidth=isOp?2:1.3;roundRect(x0,y,x1-x0,h,7);ctx.fill();ctx.stroke();
+        ctx.fillStyle=isOp?'#fff':'#3c7876';ctx.font='bold 13px "JetBrains Mono",monospace';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText(rungs[i].name,x0+12,y+h/2);
+        ctx.fillStyle=isOp?'#eafaf8':'#5a5550';ctx.font='10px "Zen Kaku Gothic New",sans-serif';ctx.fillText(rungs[i].sub,x0+78,y+h/2);
+        if(i<n-1){ctx.fillStyle='#c9761f';ctx.font='12px "JetBrains Mono",monospace';ctx.textAlign='center';ctx.fillText('↑',x0+(x1-x0)/2,y-2);}}
+      info.innerHTML='最後に、マスタは全スレーブを<b>状態の階段</b>で上らせる：<b>Init → Pre-Op → Safe-Op → Op</b>。段を上がるごとに“できること”が増える ── Pre-Op で設定、Safe-Op で入力が見え、<b>Op で出力も動いて、毎周期のプロセスデータ（あのループ）が流れ出す</b>。ここまでが「立ち上げ」。以降は、コードで見たループが、ずっと回り続ける。';
+    }
+  }
+  function draw(){if(W&&H)drawStep();}
+  function syncUI(){stepno.textContent='STEP '+(step+1)+' / 3';steptitle.textContent=STEPS[step].t;bPrev.disabled=(step===0);bNext.disabled=(step===2);for(var i=0;i<dotsEl.children.length;i++)dotsEl.children[i].classList.toggle('on',i===step);}
+  for(var i=0;i<3;i++){var d=document.createElement('span');d.className='dot';d.addEventListener('click',(function(x){return function(){step=x;syncUI();draw();};})(i));dotsEl.appendChild(d);}
+  bPrev.addEventListener('click',function(){if(step>0){step--;syncUI();draw();}});
+  bNext.addEventListener('click',function(){if(step<2){step++;syncUI();draw();}});
+  var ro=new ResizeObserver(function(){resize();});ro.observe(stage);
+  syncUI();resize();
+})();
+</script>
+</body>
+</html>
