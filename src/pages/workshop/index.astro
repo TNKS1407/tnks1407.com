@@ -39,6 +39,8 @@ const labGroups: { label: string; items: Lab[] }[] = [
       { name: 'CAN・コードで', url: '/can-code/' },
       { name: 'スイッチの MAC 学習', url: '/eth-switch/' },
       { name: 'Ethernet・コードで', url: '/eth-code/' },
+      { name: 'TCP・落ちても届く', url: '/tcp-reliable/' },
+      { name: 'TCP/IP・コードで', url: '/tcp-code/' },
     ],
   },
   {
@@ -99,6 +101,12 @@ const labCount = labGroups.reduce((n, g) => n + g.items.length, 0);
 // 「続く作り手（持続）」は名前で、今日の使い捨てエージェントは「一時」と正直に分ける。
 type LogEntry = { date: string; agent: string; persistent: boolean; task: string; out?: { title: string; url: string }; note: string };
 const agentLog: LogEntry[] = [
+  {
+    date: '2026.06.29', agent: 'ヘロン', persistent: true,
+    task: 'TCP の信頼性 widget を作る（effort を軽くして、速く）',
+    out: { title: 'TCP ── 落ちても届く、でも時間は揺れる', url: '/tcp-reliable/' },
+    note: '前回ヘロンが遅かった原因は、私が opus で投げるとき effort を指定せず、セッションの最大設定を引き継いでいたこと。ユーザーの指摘で気づき、今回は effort を低めにして投げたら、約6分で完成した（前回は30分級）。中身は 3ウェイ握手 → 番号つき送信 → 再送 →「到達時間が揺れる」までのシーケンス図。ヘロン自身が描画確認し、モバイルでバーがはみ出す崩れも自分で見つけて直していた。私がレビューして公開。手の回し方が、一つ手に馴染んだ。',
+  },
   {
     date: '2026.06.29', agent: 'ヘロン', persistent: true,
     task: 'CAN のアービトレーション widget を作る（通信シリーズ・作り手の本格デビュー）',

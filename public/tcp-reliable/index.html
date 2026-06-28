@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>TCP ── 落ちても届く、順番も守る。でも時間は揺れる</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;--teal:#3c7876;--red:#c2543d;--amber:#c9761f;--blue:#2563aa;--purple:#7a5ea8;--text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{overflow-x:hidden;max-width:100%;}
+body{font-family:'Zen Kaku Gothic New',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;background-image:radial-gradient(circle at 1px 1px,#e9e4da 1px,transparent 0);background-size:22px 22px;}
+.wrap{max-width:860px;margin:0 auto;padding:20px 16px 48px;}
+header{display:flex;align-items:flex-end;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.brand{font-weight:700;font-size:22px;line-height:1.1;color:var(--text);}.brand .a{color:var(--teal);}
+.tag{font-size:12px;color:var(--muted);padding-bottom:2px;}
+.lead{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 16px;margin-bottom:16px;font-size:13px;color:#3a3a36;line-height:1.78;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.lead p{margin:0;}.lead b{color:var(--text);}
+.card-tool{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.stephead{display:flex;align-items:center;gap:.6rem;padding:.6rem .8rem;border-bottom:1px solid var(--border);background:var(--surface);}
+.stepno{font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;color:#fff;background:var(--teal);border-radius:999px;padding:.18rem .6rem;white-space:nowrap;}
+.steptitle{font-weight:700;font-size:.92rem;color:var(--text);}
+#stage{position:relative;width:100%;height:clamp(320px,56vw,450px);overflow:hidden;background:var(--surface);}
+canvas{display:block;width:100%;height:100%;}
+#info{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.5rem .8rem;font-size:.8rem;color:#3a3a36;line-height:1.7;min-height:3rem;}
+#info b{color:var(--text);}#info code{font-family:'JetBrains Mono',monospace;background:#efe9df;border-radius:3px;padding:0 4px;color:var(--blue);}#info .v-teal{color:var(--teal);font-weight:600;}#info .v-amber{color:var(--amber);font-weight:600;}#info .v-red{color:var(--red);font-weight:600;}#info .v-blue{color:var(--blue);font-weight:600;}
+.ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.5rem .7rem;display:flex;gap:.5rem;align-items:center;}
+.dots{display:flex;gap:.3rem;align-items:center;}.dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:.15s;}.dot.on{background:var(--teal);transform:scale(1.3);}
+button{font-family:'Zen Kaku Gothic New',sans-serif;font-size:.78rem;font-weight:700;color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.32rem .8rem;cursor:pointer;transition:.15s;}
+button:hover{border-color:var(--teal);}button.pri{background:var(--teal);color:#fff;border-color:var(--teal);}button:disabled{opacity:.4;cursor:default;}
+footer{text-align:center;color:var(--faint);font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:12px;}
+body.embed{height:100%;display:flex;flex-direction:column;overflow:hidden;background-image:none;}
+body.embed .wrap{max-width:none;margin:0;padding:0;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
+body.embed header,body.embed .lead,body.embed footer{display:none;}
+body.embed .card-tool{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;border:none;border-radius:0;box-shadow:none;}
+body.embed #stage{flex:1 1 auto;height:auto;min-height:150px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><div class="brand"><span class="a">TCP</span> ── 落ちても届く、順番も守る。でも時間は揺れる</div><div class="tag">信頼性は、どうやって作られている？</div></header>
+  <div class="lead"><p>下の層（IP）は、パケットを<b>投げるだけ</b>だ ── 落ちることも、追い越して順番が狂うこともある。その上に乗る <b>TCP</b> は、たった3つの仕掛けで「<b>必ず・順番どおりに届く</b>」を作り出す。握手で接続を張り、番号をつけて送り、返事が来なければ送り直す。その代わり一つ犠牲になるものがある ── <b>いつ届くか</b>だ。一歩ずつ、図で追ってみよう。</p></div>
+  <div class="card-tool">
+    <div class="stephead"><span class="stepno" id="stepno">STEP 1 / 4</span><span class="steptitle" id="steptitle">—</span></div>
+    <div id="stage"><canvas id="cv"></canvas></div>
+    <div id="info"></div>
+    <div class="ctrl"><button id="bPrev">◀ 戻る</button><button id="bNext" class="pri">次へ ▶</button><div class="dots" id="dots"></div></div>
+  </div>
+  <footer>ブラックボックスを開く — TCP の信頼性</footer>
+</div>
+<script>
+if(window.self!==window.top)document.body.classList.add('embed');
+(function(){
+  var cv=document.getElementById('cv'),ctx=cv.getContext('2d'),info=document.getElementById('info'),stage=document.getElementById('stage');
+  var stepno=document.getElementById('stepno'),steptitle=document.getElementById('steptitle'),dotsEl=document.getElementById('dots');
+  var bPrev=document.getElementById('bPrev'),bNext=document.getElementById('bNext');
+  var STEPS=[{t:'3ウェイ・ハンドシェイク'},{t:'番号をつけて送る ── seq / ack'},{t:'落ちたら、送り直す ── 再送'},{t:'でも、時間は揺れる'}];
+  var step=0,W=0,H=0,DPR=1;
+  function resize(){DPR=Math.min(window.devicePixelRatio||1,2);var r=stage.getBoundingClientRect();W=Math.round(r.width);H=Math.round(r.height);cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);draw();}
+  function clearBg(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#faf8f4';ctx.fillRect(0,0,W,H);}
+  function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+
+  // ── シーケンス図の土台（左:送り手 / 右:受け手, 時間=上→下）
+  function lanes(){
+    var cx=Math.max(58,Math.round(W*0.21)), sx=Math.min(W-58,Math.round(W*0.79));
+    var headTop=Math.round(H*0.03), headH=30, top=headTop+headH+8, bot=Math.round(H*0.95);
+    return {cx:cx,sx:sx,top:top,bot:bot,headTop:headTop,headH:headH};
+  }
+  function Y(L,f){return L.top+(L.bot-L.top)*f;}
+  function headBox(x,name,sub,col){
+    var w=88,h=30,y=lanes().headTop;
+    ctx.fillStyle='#fff';ctx.strokeStyle=col;ctx.lineWidth=1.8;roundRect(x-w/2,y,w,h,8);ctx.fill();ctx.stroke();
+    ctx.fillStyle=col;ctx.font='bold 12px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(name,x,y+11);
+    ctx.fillStyle='#7d7568';ctx.font='9px "JetBrains Mono",monospace';ctx.fillText(sub,x,y+22);
+  }
+  function drawLanes(){
+    var L=lanes();
+    ctx.strokeStyle='#d8cdbd';ctx.lineWidth=1.4;ctx.setLineDash([3,4]);
+    ctx.beginPath();ctx.moveTo(L.cx,L.top);ctx.lineTo(L.cx,L.bot);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(L.sx,L.top);ctx.lineTo(L.sx,L.bot);ctx.stroke();
+    ctx.setLineDash([]);
+    headBox(L.cx,'送り手','client','#3c7876');
+    headBox(L.sx,'受け手','server','#2563aa');
+    ctx.fillStyle='#bbb2a4';ctx.font='9px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';
+    ctx.fillText('時間 ↓',8,L.top+10);
+    return L;
+  }
+  function arrowhead(x0,y0,x1,y1,col){var ang=Math.atan2(y1-y0,x1-x0),s=7.5;ctx.fillStyle=col;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x1-s*Math.cos(ang-0.42),y1-s*Math.sin(ang-0.42));ctx.lineTo(x1-s*Math.cos(ang+0.42),y1-s*Math.sin(ang+0.42));ctx.closePath();ctx.fill();}
+  // セグメント矢印＋ラベル。opt:{w,dash,head(既定true)}
+  function seg(x0,y0,x1,y1,col,text,opt){
+    opt=opt||{};
+    ctx.strokeStyle=col;ctx.lineWidth=opt.w||2.2;if(opt.dash)ctx.setLineDash(opt.dash);
+    ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x1,y1);ctx.stroke();ctx.setLineDash([]);
+    if(opt.head!==false)arrowhead(x0,y0,x1,y1,col);
+    if(text){var mx=(x0+x1)/2,my=(y0+y1)/2-10;ctx.font='bold 11px "JetBrains Mono",monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+      var tw=ctx.measureText(text).width;ctx.fillStyle='#faf8f4';roundRect(mx-tw/2-5,my-8,tw+10,16,4);ctx.fill();
+      ctx.fillStyle=col;ctx.fillText(text,mx,my);}
+  }
+  function note(x,y,text,col,bold){ctx.fillStyle=col;ctx.font=(bold?'bold ':'')+'11px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,x,y);}
+  function xmark(x,y,col){var s=8;ctx.strokeStyle=col;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x-s,y-s);ctx.lineTo(x+s,y+s);ctx.moveTo(x+s,y-s);ctx.lineTo(x-s,y+s);ctx.stroke();}
+
+  function drawStep(){
+    clearBg();
+    if(step===0){
+      var L=drawLanes();
+      seg(L.cx,Y(L,0.10),L.sx,Y(L,0.26),'#3c7876','SYN');
+      seg(L.sx,Y(L,0.34),L.cx,Y(L,0.50),'#2563aa','SYN-ACK');
+      seg(L.cx,Y(L,0.58),L.sx,Y(L,0.74),'#3c7876','ACK');
+      // 確立マーク
+      ctx.strokeStyle='#3c7876';ctx.lineWidth=1.4;ctx.setLineDash([4,4]);
+      ctx.beginPath();ctx.moveTo(L.cx,Y(L,0.86));ctx.lineTo(L.sx,Y(L,0.86));ctx.stroke();ctx.setLineDash([]);
+      note((L.cx+L.sx)/2,Y(L,0.93),'接続 確立 ✓ ── ここから本番のデータ','#3c7876',true);
+      info.innerHTML='通信の前に、まず<b>握手</b>して接続を張る。送り手が <code>SYN</code>（つなぎたい）、受け手が <code>SYN-ACK</code>（いいよ＋了解）、送り手が <code>ACK</code>（こちらも了解）── この<span class="v-teal">SYN → SYN-ACK → ACK</span> の3往復半で、両者が「つながった」状態を合意する。これが <b>3ウェイ・ハンドシェイク</b>だよ。';
+    } else if(step===1){
+      var L=drawLanes();
+      var ys=[0.10,0.34,0.58];
+      for(var i=0;i<3;i++){var n=i+1,t=ys[i];
+        seg(L.cx,Y(L,t),L.sx,Y(L,t+0.08),'#3c7876','seq='+n);
+        seg(L.sx,Y(L,t+0.08),L.cx,Y(L,t+0.16),'#2563aa','ack: '+n+' ✓');
+      }
+      info.innerHTML='本番のデータは、1つ送るごとに通し<b>番号 (seq)</b> を付ける。受け手は届くたびに「<b>ここまで来た</b>」と <code>ack</code> を返す（<span class="v-blue">ack: 1</span> なら 1 まで受領）。番号があるから、たとえ下の層で<b>追い越しが起きて順番が狂っても</b>、受け手は番号順に並べ直せる ── <span class="v-teal">順序が保証される</span>のは、この番号のおかげ。';
+    } else if(step===2){
+      var L=drawLanes();
+      // seq=2 を送る → 途中でロスト
+      var ya=0.12, lostf=0.55;
+      var lx=L.cx+(L.sx-L.cx)*lostf, ly=Y(L,ya+(0.10)*lostf);
+      seg(L.cx,Y(L,ya),lx,ly,'#c9761f','seq=2',{head:false});
+      xmark(lx,ly,'#c2543d');
+      note(lx,ly-18,'✗ ロスト','#c2543d',true);
+      // タイムアウト待ち（client 側の縦ブラケット）
+      var tw0=Y(L,ya), tw1=Y(L,0.56);
+      ctx.strokeStyle='#c9761f';ctx.lineWidth=1.6;ctx.setLineDash([3,3]);
+      ctx.beginPath();ctx.moveTo(L.cx,tw0);ctx.lineTo(L.cx,tw1);ctx.stroke();ctx.setLineDash([]);
+      ctx.beginPath();ctx.moveTo(L.cx-5,tw0);ctx.lineTo(L.cx+5,tw0);ctx.moveTo(L.cx-5,tw1);ctx.lineTo(L.cx+5,tw1);ctx.stroke();
+      var midy=(tw0+tw1)/2;ctx.font='bold 10px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      var t1='ACK が返らない…';var t2='タイムアウト ⏱';var bx=(L.cx+L.sx)/2;
+      var bw=Math.max(ctx.measureText(t1).width,ctx.measureText(t2).width)+14;
+      ctx.fillStyle='#fdf3e3';ctx.strokeStyle='#e3c79a';ctx.lineWidth=1;roundRect(bx-bw/2,midy-16,bw,32,6);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#c9761f';ctx.fillText(t1,bx,midy-7);ctx.fillText(t2,bx,midy+8);
+      // 再送 → 今度は届く
+      seg(L.cx,Y(L,0.58),L.sx,Y(L,0.70),'#c2543d','seq=2（再送）',{w:2.6});
+      seg(L.sx,Y(L,0.70),L.cx,Y(L,0.80),'#2563aa','ack: 2 ✓');
+      note((L.cx+L.sx)/2,Y(L,0.92),'落ちても、最終的に必ず届く','#3c7876',true);
+      info.innerHTML='送った <code>seq=2</code> が途中で<span class="v-red">落ちた</span>（✗）。すると受け手から ACK が返ってこない。送り手は一定時間待って ── <span class="v-amber">時間切れ（タイムアウト）</span>になったら、<b>同じ <code>seq=2</code> を送り直す</b>（再送）。今度は届いて ack が返る。返事が来るまで送り直すから、途中で落ちても<b>最終的に必ず届く＝信頼できる</b>。';
+    } else {
+      // Step4: 到達時間の比較バー
+      var bx0=Math.round(W*0.20), bx1=Math.round(W*0.74), unit=bx1-bx0;
+      var nW=unit*0.22, waitW=unit*0.52, reW=unit*0.20;
+      var nEnd=bx0+nW, reEnd=bx0+waitW+reW;
+      var r1=Math.round(H*0.36), r2=Math.round(H*0.58), bh=24;
+      ctx.textAlign='center';ctx.textBaseline='alphabetic';
+      ctx.fillStyle='#5a5550';ctx.font='bold 13px "Zen Kaku Gothic New",sans-serif';ctx.fillText('送ってから「届いた」までの時間',W/2,Math.round(H*0.18));
+      // 行ラベル
+      ctx.textAlign='left';ctx.textBaseline='middle';ctx.font='11px "Zen Kaku Gothic New",sans-serif';
+      ctx.fillStyle='#3c7876';ctx.fillText('正常な往復',12,r1+bh/2);
+      ctx.fillStyle='#c2543d';ctx.fillText('再送あり',12,r2+bh/2);
+      // 正常バー（短い・一定）
+      ctx.fillStyle='#cfe2e0';ctx.strokeStyle='#3c7876';ctx.lineWidth=1.6;roundRect(bx0,r1,nW,bh,5);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#3c7876';ctx.font='8.5px "JetBrains Mono",monospace';ctx.textAlign='left';ctx.fillText('送る',bx0+4,r1-7);
+      ctx.textAlign='left';ctx.fillStyle='#3c7876';ctx.font='10px "Zen Kaku Gothic New",sans-serif';ctx.textBaseline='middle';ctx.fillText('✓ 届く（速い・一定）',nEnd+8,r1+bh/2);
+      // 再送バー：タイムアウト待ち(amber) + 再送(red)
+      ctx.fillStyle='#f5e3c4';ctx.strokeStyle='#c9761f';ctx.lineWidth=1.4;roundRect(bx0,r2,waitW,bh,5);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#c9761f';ctx.font='9px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('タイムアウト待ち',bx0+waitW/2,r2+bh/2);
+      ctx.fillStyle='#e6b9ac';ctx.strokeStyle='#c2543d';ctx.lineWidth=1.6;roundRect(bx0+waitW,r2,reW,bh,5);ctx.fill();ctx.stroke();
+      ctx.fillStyle='#c2543d';ctx.font='9px "Zen Kaku Gothic New",sans-serif';ctx.fillText('再送',bx0+waitW+reW/2,r2+bh/2);
+      ctx.fillStyle='#c2543d';ctx.font='8.5px "JetBrains Mono",monospace';ctx.textAlign='left';ctx.fillText('送る',bx0+4,r2-7);
+      ctx.textAlign='left';ctx.fillStyle='#c2543d';ctx.font='10px "Zen Kaku Gothic New",sans-serif';ctx.textBaseline='middle';ctx.fillText('✓ 届く（やっと）',reEnd+8,r2+bh/2);
+      // 「理想：ここで届く」基準線
+      ctx.strokeStyle='#3c7876';ctx.lineWidth=1.2;ctx.setLineDash([4,4]);
+      ctx.beginPath();ctx.moveTo(nEnd,r1-4);ctx.lineTo(nEnd,r2+bh+24);ctx.stroke();ctx.setLineDash([]);
+      // Δ ばらつきブラケット
+      var dy=r2+bh+16;
+      ctx.strokeStyle='#c2543d';ctx.lineWidth=1.4;
+      ctx.beginPath();ctx.moveTo(nEnd,dy-5);ctx.lineTo(nEnd,dy+5);ctx.moveTo(reEnd,dy-5);ctx.lineTo(reEnd,dy+5);ctx.moveTo(nEnd,dy);ctx.lineTo(reEnd,dy);ctx.stroke();
+      ctx.fillStyle='#c2543d';ctx.font='bold 10px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('このぶん、遅れる（揺れ）',(nEnd+reEnd)/2,dy+15);
+      info.innerHTML='信頼の代償＝<b>いつ届くかが、状況で変わる</b>。何事もなければ往復は速くて一定。でも一度落ちれば、タイムアウト待ち＋再送のぶん、到達は<span class="v-red">大きく遅れる</span>。この<b>揺れ（ジッタ）</b>があるから、"きっかり毎周期"が要る産業のリアルタイム制御に TCP は向かない ── <a href="/docs/ethercat/" style="color:#3c7876;font-weight:600;">EtherCAT</a> が IP/TCP を積まずに動いたのは、まさにこの揺れを避けるためだった。';
+    }
+  }
+  function draw(){if(W&&H)drawStep();}
+  function syncUI(){stepno.textContent='STEP '+(step+1)+' / 4';steptitle.textContent=STEPS[step].t;bPrev.disabled=(step===0);bNext.disabled=(step===3);for(var i=0;i<dotsEl.children.length;i++)dotsEl.children[i].classList.toggle('on',i===step);}
+  for(var i=0;i<4;i++){var d=document.createElement('span');d.className='dot';d.addEventListener('click',(function(x){return function(){step=x;syncUI();draw();};})(i));dotsEl.appendChild(d);}
+  bPrev.addEventListener('click',function(){if(step>0){step--;syncUI();draw();}});
+  bNext.addEventListener('click',function(){if(step<3){step++;syncUI();draw();}});
+  var ro=new ResizeObserver(function(){resize();});ro.observe(stage);
+  syncUI();resize();
+})();
+</script>
+</body>
+</html>
