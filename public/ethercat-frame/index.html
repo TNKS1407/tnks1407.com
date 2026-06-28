@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>EtherCAT のフレームを開ける ── プロトコル＝バイトの並び</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;--teal:#3c7876;--red:#c2543d;--amber:#c9761f;--blue:#2563aa;--purple:#7a5ea8;--text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{overflow-x:hidden;max-width:100%;}
+body{font-family:'Zen Kaku Gothic New',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;background-image:radial-gradient(circle at 1px 1px,#e9e4da 1px,transparent 0);background-size:22px 22px;}
+.wrap{max-width:860px;margin:0 auto;padding:20px 16px 48px;}
+header{display:flex;align-items:flex-end;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.brand{font-weight:700;font-size:22px;line-height:1.1;color:var(--text);}.brand .a{color:var(--teal);}
+.tag{font-size:12px;color:var(--muted);padding-bottom:2px;}
+.lead{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 16px;margin-bottom:16px;font-size:13px;color:#3a3a36;line-height:1.78;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.lead p{margin:0;}.lead b{color:var(--text);}
+.card-tool{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.stephead{display:flex;align-items:center;gap:.6rem;padding:.6rem .8rem;border-bottom:1px solid var(--border);background:var(--surface);}
+.stepno{font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;color:#fff;background:var(--teal);border-radius:999px;padding:.18rem .6rem;white-space:nowrap;}
+.steptitle{font-weight:700;font-size:.92rem;color:var(--text);}
+#stage{position:relative;width:100%;height:clamp(300px,54vw,440px);overflow:hidden;background:var(--surface);}
+canvas{display:block;width:100%;height:100%;}
+#info{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.5rem .8rem;font-size:.8rem;color:#3a3a36;line-height:1.7;min-height:3rem;}
+#info b{color:var(--text);}#info code{font-family:'JetBrains Mono',monospace;background:#efe9df;border-radius:3px;padding:0 4px;color:var(--blue);}
+#info .v-teal{color:var(--teal);font-weight:600;}#info .v-amber{color:var(--amber);font-weight:600;}
+.ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.5rem .7rem;display:flex;flex-wrap:wrap;gap:.5rem .7rem;align-items:center;}
+.dots{display:flex;gap:.3rem;align-items:center;}.dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:.15s;}.dot.on{background:var(--teal);transform:scale(1.3);}
+button{font-family:'Zen Kaku Gothic New',sans-serif;font-size:.78rem;font-weight:700;color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.32rem .8rem;cursor:pointer;transition:.15s;}
+button:hover{border-color:var(--teal);}button.pri{background:var(--teal);color:#fff;border-color:var(--teal);}button.pri:hover{background:#2f615f;}button:disabled{opacity:.4;cursor:default;}button.ghost{border-color:var(--amber);color:var(--amber);}
+footer{text-align:center;color:var(--faint);font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:12px;}
+body.embed{height:100%;display:flex;flex-direction:column;overflow:hidden;background-image:none;}
+body.embed .wrap{max-width:none;margin:0;padding:0;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
+body.embed header,body.embed .lead,body.embed footer{display:none;}
+body.embed .card-tool{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;border:none;border-radius:0;box-shadow:none;}
+body.embed #stage{flex:1 1 auto;height:auto;min-height:160px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><div class="brand"><span class="a">フレーム</span>を開ける</div><div class="tag">プロトコル＝「どの位置が何の意味か」を約束したバイトの並び</div></header>
+  <div class="lead"><p>ハードは分かるのにプログラミングが…という人へ。安心して ── <b>バイト＝線の上の8ビット（君が知ってるやつ）</b>。プロトコルは、そのバイトを並べて「この位置はこの意味」と決めただけ。マスタは、その箱を<b>埋めて・送って・読む</b>プログラム。魔法はない。実物の EtherCAT フレームを、1バイトずつ開けてみよう。（※要点が見えるよう簡略化してある）</p></div>
+  <div class="card-tool">
+    <div class="stephead"><span class="stepno" id="stepno">STEP 1 / 3</span><span class="steptitle" id="steptitle">—</span></div>
+    <div id="stage"><canvas id="cv"></canvas></div>
+    <div id="info"></div>
+    <div class="ctrl"><button id="bPrev">◀ 戻る</button><button id="bNext" class="pri">次へ ▶</button><button id="bPlay" class="ghost">⏸</button><div class="dots" id="dots"></div></div>
+  </div>
+  <footer>ブラックボックスを開く — バイトから掴むプロトコル</footer>
+</div>
+<script>
+if(window.self!==window.top)document.body.classList.add('embed');
+(function(){
+  var cv=document.getElementById('cv'),ctx=cv.getContext('2d'),info=document.getElementById('info'),stage=document.getElementById('stage');
+  var stepno=document.getElementById('stepno'),steptitle=document.getElementById('steptitle'),dotsEl=document.getElementById('dots');
+  var bPrev=document.getElementById('bPrev'),bNext=document.getElementById('bNext'),bPlay=document.getElementById('bPlay');
+  var SCOL=['#3c7876','#2563aa','#c9761f'];
+  // フィールド定義（簡略・代表）。w=セル幅単位、type で色。
+  var FIELDS=[
+    {lab:'宛先/送信元 MAC',sub:'誰から誰へ',cells:['MAC … (12B)'],wide:true,c:'#c9b8a8'},
+    {lab:'0x88A4',sub:'「これはEtherCAT」の合図',cells:['88','A4'],c:'#c9761f'},
+    {lab:'ECATヘッダ',sub:'長さ＋種別',cells:['1C','10'],c:'#c9b8a8'},
+    {lab:'cmd',sub:'何をする(0C=LRW:読んで書く)',cells:['0C'],c:'#2563aa'},
+    {lab:'idx',sub:'通し番号',cells:['01'],c:'#2563aa'},
+    {lab:'アドレス',sub:'どこに(論理。FMMUが各スレーブへ割る)',cells:['00','00','10','00'],c:'#2563aa'},
+    {lab:'長さ',sub:'データ長',cells:['03','00'],c:'#2563aa'},
+    {lab:'データ',sub:'本体。各スレーブの1バイト',cells:['S1','S2','S3'],c:'slave'},
+    {lab:'WKC',sub:'処理した台数の数え',cells:['00','00'],c:'#3c7876'}
+  ];
+  var DATAI=7, WKCI=8; // フィールドindex
+  var STEPS=[{t:'プロトコル＝バイトの並び'},{t:'流す ── 各駅で書いて、WKCを+1'},{t:'マスタ＝埋めて送って読む“ループ”'}];
+  var step=0,playing=true,phase=0,hi=0,hiT=0,last=0,W=0,H=0,DPR=1;
+
+  function resize(){DPR=Math.min(window.devicePixelRatio||1,2);var r=stage.getBoundingClientRect();W=Math.round(r.width);H=Math.round(r.height);cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);draw();}
+  function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+
+  // バイト行を (cx,cy) 中央基準で描く。filledData=データを色で埋めるか, wkc=表示するWKC値, hiField=強調index(-1なし)
+  function drawBytes(cx,cy,opt){
+    opt=opt||{};var cw=Math.min(26,Math.max(18,W/26)),ch=26,gap=3,wideW=cw*3.2;
+    // 総幅
+    var tot=0;for(var f=0;f<FIELDS.length;f++){tot+=(FIELDS[f].wide?wideW:FIELDS[f].cells.length*cw)+gap;}
+    var x=cx-tot/2,labels=[];
+    for(var fi=0;fi<FIELDS.length;fi++){
+      var F=FIELDS[fi],fw=F.wide?wideW:F.cells.length*cw,x0=x,col=F.c,strong=(opt.hiField===fi);
+      // フィールド上の色帯
+      ctx.fillStyle=col;ctx.globalAlpha=strong?1:.85;roundRect(x0,cy-ch/2-9,fw,5,2);ctx.fill();ctx.globalAlpha=1;
+      // セル
+      if(F.wide){
+        ctx.fillStyle='#f0ebe1';ctx.strokeStyle='#c9b8a8';ctx.lineWidth=1;roundRect(x0,cy-ch/2,fw,ch,4);ctx.fill();ctx.stroke();
+        ctx.fillStyle='#9a8f7e';ctx.font='10px "JetBrains Mono",monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('MAC …',x0+fw/2,cy);
+      } else {
+        for(var ci=0;ci<F.cells.length;ci++){
+          var v=F.cells[ci],cxp=x0+ci*cw;
+          var isData=(fi===DATAI),filled=isData&&opt.filledData&&opt.filledData>ci;
+          var cellCol=isData?(filled?SCOL[ci%3]:'#efe9df'):(strong?col:'#fff');
+          var txt=v;
+          if(fi===WKCI){ // WKC は数値を表示
+            var wk=opt.wkc||0; if(ci===0)txt=('0'+(wk&0xff).toString(16)).slice(-2).toUpperCase(); else txt='00';
+            cellCol=strong?col:'#eaf1f0';
+          }
+          ctx.fillStyle=cellCol;ctx.strokeStyle=isData?SCOL[ci%3]:(fi===WKCI?'#3c7876':(strong?col:'#c9b8a8'));
+          ctx.lineWidth=strong?1.8:1;roundRect(cxp,cy-ch/2,cw-2,ch,3);ctx.fill();ctx.stroke();
+          ctx.fillStyle=(isData&&filled)?'#fff':(isData?'#b3a795':(fi===WKCI?'#3c7876':'#3a3835'));
+          ctx.font='bold 10px "JetBrains Mono",monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(txt,cxp+(cw-2)/2,cy);
+        }
+      }
+      labels.push({x:x0+fw/2,lab:F.lab,sub:F.sub,fi:fi,strong:strong});
+      x+=fw+gap;
+    }
+    // ラベル（下）
+    ctx.textAlign='center';ctx.textBaseline='top';
+    for(var L=0;L<labels.length;L++){var lb=labels[L];
+      ctx.fillStyle=lb.strong?'#1d1b17':'#7d7568';ctx.font=(lb.strong?'bold ':'')+'9px "Zen Kaku Gothic New",sans-serif';
+      ctx.fillText(lb.lab,lb.x,cy+ch/2+5);
+    }
+  }
+
+  function clearBg(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#faf8f4';ctx.fillRect(0,0,W,H);}
+
+  function drawStep(){
+    clearBg();
+    if(step===0){
+      drawBytes(W/2,H*0.40,{hiField:hi});
+      var F=FIELDS[hi];
+      info.innerHTML='<b>'+F.lab+'</b>：'+F.sub+'。── プロトコルは“約束された位置に意味がある”だけ。<code>0x88A4</code> が立ってたら「これは TCP/IP じゃなく EtherCAT」、<code>cmd</code> が「何をするか」、<code>WKC</code> が「何台が処理したか」。位置と意味の対応表、それがプロトコルだよ。';
+    } else if(step===1){
+      // 上にバイト行（コンパクト）、下に鎖。phaseで列車が進み、データ充填＋WKC++
+      var p=phase, n=3, mX=70,endX=W-50,ry=H*0.72;
+      var xs=[];for(var k=0;k<n;k++)xs.push(mX+90+(endX-90-mX)*k/(n-1));
+      var L=mX-40+p*(endX-mX+60);
+      var filled=0,wkc=0;for(var k2=0;k2<n;k2++){if(L>=xs[k2]){filled=k2+1;wkc=k2+1;}}
+      drawBytes(W/2,H*0.30,{filledData:filled,wkc:wkc,hiField:(L>=xs[0]&&L<endX)?DATAI:-1});
+      // 鎖
+      ctx.strokeStyle='#d8cdbd';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(mX,ry);ctx.lineTo(endX,ry);ctx.stroke();
+      ctx.fillStyle='#efe9df';ctx.strokeStyle='#9a8f7e';ctx.lineWidth=1.5;roundRect(mX-44,ry-18,44,36,6);ctx.fill();ctx.stroke();ctx.fillStyle='#5a5550';ctx.font='bold 10px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('マスタ',mX-22,ry);
+      for(var k3=0;k3<n;k3++){var x=xs[k3],c=SCOL[k3],done=(L>=x),near=Math.abs(L-x)<24;
+        ctx.save();if(near){ctx.shadowColor=c;ctx.shadowBlur=14;}ctx.fillStyle=done?c:'#f2ece2';ctx.strokeStyle=c;ctx.lineWidth=near?2.4:1.5;roundRect(x-20,ry-20,40,40,7);ctx.fill();ctx.stroke();ctx.restore();
+        ctx.fillStyle=done?'#fff':c;ctx.font='bold 11px "JetBrains Mono",monospace';ctx.fillText('S'+(k3+1),x,ry);
+        if(near){ctx.fillStyle=c;ctx.font='9px "Zen Kaku Gothic New",sans-serif';ctx.fillText('自分の所を書く＋WKC+1',x,ry-30);}
+      }
+      // フレーム列車
+      var fx=L;ctx.fillStyle='#3c7876';roundRect(fx-16,ry-46,30,16,4);ctx.fill();ctx.fillStyle='#fff';ctx.font='8px "JetBrains Mono",monospace';ctx.fillText('frame',fx-1,ry-38);
+      info.innerHTML='1枚のフレームが鎖を通り抜ける。各駅 S<i>k</i> で、スレーブが<b>データ欄の自分の1バイト</b>を書き込み（青く埋まる）、<b><span class="v-teal">WKC を +1</span></b>する。帰ってきた時、WKC が <span class="v-teal">'+wkc+'</span> ＝「<b>'+wkc+'台が処理した</b>」の証拠。マスタはこれで“全員ちゃんと居た”を確認する。';
+    } else {
+      // マスタ＝ループ
+      var cx=W/2,cy=H*0.46,r=Math.min(W*0.30,118);
+      var steps=['① 0 を埋める','② 送る','③ 帰りを待つ','④ WKC と入力を読む'];
+      ctx.strokeStyle='#d8cdbd';ctx.lineWidth=2;ctx.beginPath();ctx.arc(cx,cy,r,0,6.2832);ctx.stroke();
+      // 矢印（時計回り）
+      for(var a=0;a<4;a++){var ang=-Math.PI/2+a*Math.PI/2,x=cx+r*Math.cos(ang),y=cy+r*Math.sin(ang);
+        var active=(Math.floor(phase*4)%4)===a;
+        ctx.save();if(active){ctx.shadowColor='#3c7876';ctx.shadowBlur=14;}
+        ctx.fillStyle=active?'#3c7876':'#fff';ctx.strokeStyle='#3c7876';ctx.lineWidth=1.5;roundRect(x-66,y-17,132,34,8);ctx.fill();ctx.stroke();ctx.restore();
+        ctx.fillStyle=active?'#fff':'#3a3835';ctx.font='bold 11px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(steps[a],x,y);}
+      // 回るトークン
+      var tang=-Math.PI/2+phase*2*Math.PI;ctx.fillStyle='#c9761f';ctx.beginPath();ctx.arc(cx+r*Math.cos(tang),cy+r*Math.sin(tang),6,0,6.2832);ctx.fill();
+      ctx.fillStyle='#9a8f7e';ctx.font='11px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('回すだけ',cx,cy);
+      info.innerHTML='これが“プログラム”の正体 ── マスタは <b>①箱(フレーム)に出力を書く →②生イーサで送る →③帰りを待つ →④WKCと入力を読む</b> を、ただ<b>毎周期くり返す</b>。難しい魔法じゃなく、<b>埋めて・送って・読むループ</b>。SOEM みたいな実装も、芯はこの輪だよ。';
+    }
+  }
+  function draw(){if(W&&H)drawStep();}
+
+  function syncUI(){stepno.textContent='STEP '+(step+1)+' / 3';steptitle.textContent=STEPS[step].t;bPrev.disabled=(step===0);bNext.disabled=(step===2);for(var i=0;i<dotsEl.children.length;i++)dotsEl.children[i].classList.toggle('on',i===step);phase=0;hi=0;hiT=0;}
+  for(var i=0;i<3;i++){var d=document.createElement('span');d.className='dot';d.addEventListener('click',(function(x){return function(){step=x;syncUI();draw();};})(i));dotsEl.appendChild(d);}
+
+  function tick(ts){var dt=last?Math.min(0.05,(ts-last)/1000):0;last=ts;
+    if(playing){
+      if(step===0){hiT+=dt; if(hiT>1.4){hiT=0;hi=(hi+1)%FIELDS.length;} draw();}
+      else if(step===1){phase+=dt*0.32; if(phase>1.05)phase=0; draw();}
+      else {phase+=dt*0.22; if(phase>1)phase-=1; draw();}
+    }
+    requestAnimationFrame(tick);}
+  bPrev.addEventListener('click',function(){if(step>0){step--;syncUI();draw();}});
+  bNext.addEventListener('click',function(){if(step<2){step++;syncUI();draw();}});
+  bPlay.addEventListener('click',function(){playing=!playing;bPlay.textContent=playing?'⏸':'▶';});
+  var ro=new ResizeObserver(function(){resize();});ro.observe(stage);
+  syncUI();resize();requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>
