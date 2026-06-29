@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>節点と連続の式 ── 電荷は、たまらない</title>
+<style>
+  :root{
+    --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
+    --teal:#3c7876;--red:#c2543d;--amber:#c9761f;--blue:#2563aa;
+    --text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;}
+  body{font-family:'Zen Kaku Gothic New',system-ui,sans-serif;background:var(--bg);color:var(--text);
+    display:flex;flex-direction:column;overflow:hidden;}
+  #stage{flex:1;position:relative;min-height:0;}
+  canvas{display:block;width:100%;height:100%;}
+  .readout{position:absolute;right:10px;top:8px;font-size:.7rem;color:var(--muted);text-align:right;
+    font-family:'JetBrains Mono',monospace;line-height:1.55;pointer-events:none;background:rgba(250,248,244,.72);
+    border-radius:6px;padding:.3rem .5rem;}
+  .readout b{color:var(--text);font-weight:700;}
+  .status{position:absolute;left:10px;top:8px;font-size:.74rem;font-weight:700;
+    font-family:'JetBrains Mono',monospace;padding:.22rem .5rem;border-radius:6px;pointer-events:none;}
+  .status.ok{color:var(--teal);background:rgba(60,120,118,.10);}
+  .status.bad{color:var(--red);background:rgba(194,84,61,.10);}
+  .ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.55rem .8rem;
+    display:flex;flex-wrap:wrap;gap:.5rem 1.1rem;align-items:center;}
+  .row{display:flex;align-items:center;gap:.45rem;font-size:.76rem;color:var(--muted);}
+  .row label{font-weight:700;white-space:nowrap;}
+  .row .lin{color:var(--teal);}.row .la{color:var(--amber);}.row .lb{color:var(--blue);}
+  input[type=range]{width:108px;}
+  .iin{accent-color:var(--teal);}.ia{accent-color:var(--amber);}.ib{accent-color:var(--blue);}
+  .val{font-family:'JetBrains Mono',monospace;font-weight:700;min-width:3.1em;color:var(--text);}
+  button{font:inherit;font-size:.74rem;font-weight:700;color:var(--text);background:var(--card);
+    border:1px solid var(--border);border-radius:8px;padding:.3rem .6rem;cursor:pointer;}
+  button:hover{border-color:var(--teal);}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="c"></canvas>
+  <div class="status ok" id="st">定常</div>
+  <div class="readout" id="ro"></div>
+</div>
+<div class="ctrl">
+  <div class="row"><label class="lin">流入 I</label>
+    <input id="iin" class="iin" type="range" min="0" max="6" step="0.1" value="4" />
+    <span class="val" id="vin">4.0</span></div>
+  <div class="row"><label class="la">流出 a</label>
+    <input id="ia" class="ia" type="range" min="0" max="6" step="0.1" value="2.5" />
+    <span class="val" id="va">2.5</span></div>
+  <div class="row"><label class="lb">流出 b</label>
+    <input id="ib" class="ib" type="range" min="0" max="6" step="0.1" value="1.5" />
+    <span class="val" id="vb">1.5</span></div>
+  <button id="bal">釣り合わせる</button>
+  <button id="reset">リセット</button>
+</div>
+<script>
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const ro=document.getElementById('ro'), st=document.getElementById('st');
+const iin=document.getElementById('iin'), ia=document.getElementById('ia'), ib=document.getElementById('ib');
+const vin=document.getElementById('vin'), va=document.getElementById('va'), vb=document.getElementById('vb');
+let W=0,H=0,DPR=1, node={x:0,y:0};
+let Iin=4, Ia=2.5, Ib=1.5;     // currents (arbitrary A)
+let Q=0;                        // accumulated charge at node (arbitrary C)
+let last=0;
+// three wires: each {ang, dir(+1 toward node / -1 away), cur fn, phase, color}
+let wires=[];
+
+function setupWires(){
+  node={x:W*0.46, y:H/2};
+  // endpoints at frame edges
+  wires=[
+    {name:'in',  end:{x:8,      y:H/2},      toNode:true,  color:'#3c7876', cur:()=>Iin, ph:0},
+    {name:'a',   end:{x:W-8,    y:H*0.27},    toNode:false, color:'#c9761f', cur:()=>Ia,  ph:0},
+    {name:'b',   end:{x:W-8,    y:H*0.73},    toNode:false, color:'#2563aa', cur:()=>Ib,  ph:0},
+  ];
+}
+function resize(){
+  const r=cv.getBoundingClientRect();
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  W=r.width; H=r.height;
+  cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  setupWires();
+}
+function arrowHead(x,y,ang,col,s){
+  ctx.fillStyle=col; ctx.beginPath();
+  ctx.moveTo(x,y);
+  ctx.lineTo(x-s*Math.cos(ang-0.42), y-s*Math.sin(ang-0.42));
+  ctx.lineTo(x-s*Math.cos(ang+0.42), y-s*Math.sin(ang+0.42));
+  ctx.closePath(); ctx.fill();
+}
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  // wires
+  for(const wi of wires){
+    const a=node, b=wi.end;
+    const ang=Math.atan2(b.y-a.y, b.x-a.x); // node -> end
+    ctx.strokeStyle='#d8cfc1'; ctx.lineWidth=6; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+    // flowing charge dots: param t in [0,1] along node->end
+    const I=wi.cur(); const L=Math.hypot(b.x-a.x,b.y-a.y);
+    const n=Math.max(2, Math.round(L/34));
+    for(let k=0;k<n;k++){
+      let t=(k/n + wi.ph) % 1; if(t<0)t+=1;
+      // 'in' wire flows end->node (so reverse t); out wires flow node->end
+      let tt = wi.toNode ? (1-t) : t;
+      const x=a.x+(b.x-a.x)*tt, y=a.y+(b.y-a.y)*tt;
+      ctx.fillStyle=wi.color; ctx.globalAlpha=0.85;
+      ctx.beginPath(); ctx.arc(x,y,3.4,0,7); ctx.fill();
+    }
+    ctx.globalAlpha=1;
+    // direction arrow near mid
+    const mx=a.x+(b.x-a.x)*0.62, my=a.y+(b.y-a.y)*0.62;
+    const dirAng = wi.toNode ? ang+Math.PI : ang; // flow direction
+    arrowHead(mx + 9*Math.cos(dirAng), my + 9*Math.sin(dirAng), dirAng, wi.color, 9);
+    // label
+    ctx.fillStyle=wi.color; ctx.font='bold 12px JetBrains Mono, monospace';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    const lx=b.x + (wi.name==='in'? 16 : -16), ly=b.y + (wi.name==='in'? -12 : (wi.name==='a'? -12: 14));
+    const lab = wi.name==='in' ? 'I' : (wi.name==='a'?'a':'b');
+    ctx.fillText(lab, lx, ly);
+  }
+  // node ball: radius grows with |Q|
+  const dQ = Iin - Ia - Ib;
+  const baseR=15;
+  const rad=Math.min(54, baseR + Math.min(40, Math.abs(Q)*2.2));
+  const pile = Q>0.05, drain = Q<-0.05;
+  let fill='rgba(125,117,104,0.12)', stroke='#7d7568';
+  if(pile){ fill='rgba(194,84,61,0.16)'; stroke='#c2543d'; }
+  else if(drain){ fill='rgba(37,99,170,0.16)'; stroke='#2563aa'; }
+  ctx.beginPath(); ctx.arc(node.x,node.y,rad,0,7);
+  ctx.fillStyle=fill; ctx.fill(); ctx.lineWidth=2.4; ctx.strokeStyle=stroke; ctx.stroke();
+  ctx.fillStyle=stroke; ctx.font='bold 12px JetBrains Mono, monospace';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('節点', node.x, node.y);
+  // readouts
+  ro.innerHTML='流入 = <b>'+Iin.toFixed(1)+'</b><br>'+
+    '流出 = '+Ia.toFixed(1)+' + '+Ib.toFixed(1)+' = <b>'+(Ia+Ib).toFixed(1)+'</b><br>'+
+    'dQ/dt = 流入−流出 = <b>'+(dQ>=0?'+':'')+dQ.toFixed(1)+'</b><br>'+
+    '溜まった電荷 Q = <b>'+(Q>=0?'+':'')+Q.toFixed(1)+'</b>';
+  if(Math.abs(dQ)<0.05){ st.className='status ok'; st.textContent='✓ 定常：流入＝流出（キルヒホッフ）'; }
+  else { st.className='status bad'; st.textContent='⚠ 釣り合ってない → 節点に電荷が溜まる（保存が破れる）'; }
+}
+function tick(now){
+  if(!last) last=now;
+  let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05;
+  // advance flow phases by current
+  for(const wi of wires){ wi.ph = (wi.ph + wi.cur()*dt*0.18); }
+  // integrate charge at node
+  const dQ = Iin - Ia - Ib;
+  Q += dQ*dt*1.4;
+  if(Q>22)Q=22; if(Q<-22)Q=-22;          // clamp visual
+  draw();
+  requestAnimationFrame(tick);
+}
+function syncLabels(){ vin.textContent=Iin.toFixed(1); va.textContent=Ia.toFixed(1); vb.textContent=Ib.toFixed(1); }
+iin.addEventListener('input',()=>{ Iin=parseFloat(iin.value); syncLabels(); });
+ia.addEventListener('input',()=>{ Ia=parseFloat(ia.value); syncLabels(); });
+ib.addEventListener('input',()=>{ Ib=parseFloat(ib.value); syncLabels(); });
+document.getElementById('bal').addEventListener('click',()=>{
+  // set b so that in = a + b  (balance), clamp 0..6
+  let nb=Math.max(0,Math.min(6, Iin-Ia));
+  Ib=nb; ib.value=nb; Q=0; syncLabels();
+});
+document.getElementById('reset').addEventListener('click',()=>{
+  Iin=4;Ia=2.5;Ib=1.5;Q=0; iin.value=4;ia.value=2.5;ib.value=1.5; syncLabels();
+});
+window.addEventListener('resize',resize);
+resize(); syncLabels(); requestAnimationFrame(tick);
+</script>
+</body>
+</html>
