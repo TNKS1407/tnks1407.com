@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>パケットの旅 ── 各機器は、どこまで開けるか</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+:root{--bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;--teal:#3c7876;--red:#c2543d;--amber:#c9761f;--blue:#2563aa;--purple:#7a5ea8;--text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{overflow-x:hidden;max-width:100%;}
+body{font-family:'Zen Kaku Gothic New',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;background-image:radial-gradient(circle at 1px 1px,#e9e4da 1px,transparent 0);background-size:22px 22px;}
+.wrap{max-width:860px;margin:0 auto;padding:20px 16px 48px;}
+header{display:flex;align-items:flex-end;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.brand{font-weight:700;font-size:22px;line-height:1.1;color:var(--text);}.brand .a{color:var(--teal);}
+.tag{font-size:12px;color:var(--muted);padding-bottom:2px;}
+.lead{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 16px;margin-bottom:16px;font-size:13px;color:#3a3a36;line-height:1.78;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.lead p{margin:0;}.lead b{color:var(--text);}
+.card-tool{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.stephead{display:flex;align-items:center;gap:.6rem;padding:.6rem .8rem;border-bottom:1px solid var(--border);background:var(--surface);}
+.stepno{font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:700;color:#fff;background:var(--teal);border-radius:999px;padding:.18rem .6rem;white-space:nowrap;}
+.steptitle{font-weight:700;font-size:.92rem;color:var(--text);}
+#stage{position:relative;width:100%;height:clamp(330px,56vw,460px);overflow:hidden;background:var(--surface);}
+canvas{display:block;width:100%;height:100%;}
+#info{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.5rem .8rem;font-size:.8rem;color:#3a3a36;line-height:1.7;min-height:3.2rem;}
+#info b{color:var(--text);}#info code{font-family:'JetBrains Mono',monospace;background:#efe9df;border-radius:3px;padding:0 4px;color:var(--blue);}
+#info .v-teal{color:var(--teal);font-weight:600;}#info .v-amber{color:var(--amber);font-weight:600;}#info .v-blue{color:var(--blue);font-weight:600;}#info .v-purple{color:var(--purple);font-weight:600;}
+.ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.5rem .7rem;display:flex;gap:.5rem;align-items:center;}
+.dots{display:flex;gap:.3rem;align-items:center;}.dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:.15s;}.dot.on{background:var(--teal);transform:scale(1.3);}
+button{font-family:'Zen Kaku Gothic New',sans-serif;font-size:.78rem;font-weight:700;color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.32rem .8rem;cursor:pointer;transition:.15s;}
+button:hover{border-color:var(--teal);}button.pri{background:var(--teal);color:#fff;border-color:var(--teal);}button:disabled{opacity:.4;cursor:default;}
+footer{text-align:center;color:var(--faint);font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:12px;}
+body.embed{height:100%;display:flex;flex-direction:column;overflow:hidden;background-image:none;}
+body.embed .wrap{max-width:none;margin:0;padding:0;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
+body.embed header,body.embed .lead,body.embed footer{display:none;}
+body.embed .card-tool{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;border:none;border-radius:0;box-shadow:none;}
+body.embed #stage{flex:1 1 auto;height:auto;min-height:180px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><div class="brand"><span class="a">パケットの旅</span> ── 各機器は、どこまで開けるか</div><div class="tag">マトリョーシカが、世界へ送られていく</div></header>
+  <div class="lead"><p>あなたの PC が送り出すデータは、<b>層が層を包んだ入れ子（マトリョーシカ）</b>になっている ── いちばん外が Ethernet（宛先 MAC）、その中に IP（世界の住所）、その中に TCP（順番）、芯にデータ。これが PC → スイッチ → ルータ → インターネット → サーバ と旅していく。面白いのは、<b>通る機器ごとに「開ける深さ」が違う</b>こと。スイッチは外だけ、ルータは IP まで、相手のサーバが芯まで。<b>▶ 再生</b>で、旅の一部始終を見てほしい。</p></div>
+  <div class="card-tool">
+    <div class="stephead"><span class="stepno" id="stepno">STEP 1 / 5</span><span class="steptitle" id="steptitle">—</span></div>
+    <div id="stage"><canvas id="cv"></canvas></div>
+    <div id="info"></div>
+    <div class="ctrl"><button id="bPrev">◀ 戻る</button><button id="bNext" class="pri">次へ ▶</button><button id="bPlay">▶ 旅を再生</button><div class="dots" id="dots"></div></div>
+  </div>
+  <footer>ブラックボックスを開く — カプセル化とルーティング</footer>
+</div>
+<script>
+if(window.self!==window.top)document.body.classList.add('embed');
+(function(){
+  var cv=document.getElementById('cv'),ctx=cv.getContext('2d'),info=document.getElementById('info'),stage=document.getElementById('stage');
+  var stepno=document.getElementById('stepno'),steptitle=document.getElementById('steptitle'),dotsEl=document.getElementById('dots');
+  var bPrev=document.getElementById('bPrev'),bNext=document.getElementById('bNext'),bPlay=document.getElementById('bPlay');
+  var ETH='#3c7876',IP='#2563aa',TCP='#7a5ea8',DATA='#c9761f',DIM='#cfc9be';
+  // 層（外→内）
+  var LAYERS=[{n:'Ethernet',s:'MAC',c:ETH},{n:'IP',s:'IP',c:IP},{n:'TCP',s:'TCP',c:TCP},{n:'データ',s:'DATA',c:DATA}];
+  // ノード（5）。read=外から何層まで開けるか。mac=外のEthernetを貼り替えるか。
+  var NODES=[
+    {name:'PC（あなた）',icon:'■',read:4,mac:false,t:'詰めて送り出す'},
+    {name:'スイッチ',icon:'⇄',read:1,mac:false,t:'宛先 MAC だけ見る'},
+    {name:'ルータ',icon:'⇆',read:2,mac:true,t:'IP で経路、MAC を貼り替え'},
+    {name:'インターネット',icon:'☁',read:2,mac:true,t:'ルータからルータへ'},
+    {name:'サーバ',icon:'▣',read:4,mac:false,t:'外から順にむく'}
+  ];
+  var N=NODES.length;
+  var STEPINFO=[
+    'あなたの PC が、データを全部の層で包んで送り出す。芯の<span class="v-amber">データ</span>を <span class="v-purple">TCP</span>（順番）が包み、それを <span class="v-blue">IP</span>（世界の住所）が包み、いちばん外を <b style="color:#3c7876">Ethernet</b>（隣へ運ぶ宛先 MAC）が包む。この入れ子のまま、線へ出ていく。',
+    '最初の関門、<b>スイッチ</b>。スイッチが見るのは<b>いちばん外の Ethernet（宛先 MAC）だけ</b>。「この MAC はどの口だっけ」を見て、その口へ流す ── それだけ。<b>中の IP も TCP も開けない</b>（鍵マークの層は閉じたまま）。だから速い。スイッチは“同じご近所”の中で配るだけの係だ。',
+    'ご近所の外へ出る扉、<b>ルータ</b>。ルータは<b>IP まで開けて</b>、宛先 IP から「次はどっちへ渡すか」を決める。ここで大事 ── ルータは<b style="color:#3c7876">外の Ethernet(MAC) を、次の相手用に貼り替える</b>。でも<span class="v-blue">IP</span>・<span class="v-purple">TCP</span>・<span class="v-amber">データ</span>には<b>触らない</b>。MAC は“隣へ”の使い捨て、IP は“最終目的地”まで不変。',
+    'インターネットは、<b>ルータの連鎖</b>だ。ホップのたびに外の <b style="color:#3c7876">MAC は貼り替わり</b>、でも中の <span class="v-blue">IP</span> は宛先までずっと同じ。各ルータは世界地図を持たず「次へ」だけ知っていて、それを繰り返すと地球の裏まで届く ── <b>MAC＝隣ごと（ホップ単位）、IP＝端から端まで（エンド・ツー・エンド）</b>、この役割分担が効いている。',
+    'やっと相手の<b>サーバ</b>。ここで初めて、<b>外から順に全部むく</b> ── Ethernet を外し（自分宛だ）、IP を外し（自分宛だ）、TCP が順番を整えて、芯の<span class="v-amber">データ</span>をアプリへ渡す。旅の途中、芯のデータを開けたのは送り主と受け手だけ。間の機器は、自分の仕事に必要な層しか開けなかった ── これがマトリョーシカの効きどころだ。'
+  ];
+  var step=0,W=0,H=0,DPR=1;
+  var playing=false,playT=0,rafId=0,rafLast=0;
+
+  function resize(){DPR=Math.min(window.devicePixelRatio||1,2);var r=stage.getBoundingClientRect();W=Math.round(r.width);H=Math.round(r.height);cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);draw();}
+  function clearBg(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#faf8f4';ctx.fillRect(0,0,W,H);}
+  function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+  function nodeX(i){var m=W*0.10,sp=(W-2*m)/(N-1);return m+i*sp;}
+  var pathY,nodeR;
+
+  // ミニ・パケット（旅するトークン）＝4色の積み重ね。macHueShift で外のEthが貼り替わった色に。
+  function miniPacket(cx,cy,hopMac){
+    var pw=Math.min(46,W*0.10),ph=20,x=cx-pw/2,y=cy-ph/2;
+    for(var L=0;L<4;L++){var seg=pw/4,sx=x+L*seg;ctx.fillStyle=(L===0&&hopMac)?'#2e5f5d':LAYERS[L].c;rr(sx,y,seg-0.5,ph,2);ctx.fill();}
+    ctx.strokeStyle='#1d1b17';ctx.globalAlpha=.15;rr(x,y,pw,ph,3);ctx.stroke();ctx.globalAlpha=1;
+  }
+
+  // 下半分：注目ノードが「どこまで開けるか」をネストの箱で。read未満の層はDIM＋鍵。
+  function zoomPacket(node){
+    var cx=W/2,top=H*0.56,bot=H*0.95,fullW=Math.min(W*0.82,470);
+    var x0=cx-fullW/2,y0=top,boxH=bot-top;
+    var labels=['Ethernet (MAC)','IP (住所)','TCP (順番)','データ'];
+    var insetX=[0,W*0.055,W*0.105,W*0.16],insetY=[0,boxH*0.13,boxH*0.27,boxH*0.40];
+    for(var L=0;L<4;L++){
+      var ix=Math.min(insetX[L],fullW*0.18*L), iy=insetY[L];
+      var bx=x0+ix, by=y0+iy, bw=fullW-2*ix, bh=boxH-2*iy;
+      var open=(L<node.read);
+      ctx.fillStyle=open?(L===0?'#eef3ee':L===1?'#eaf1f0':L===2?'#f3eef7':'#fdf3e3'):'#f0ece6';
+      ctx.strokeStyle=open?LAYERS[L].c:DIM;ctx.lineWidth=open?1.6:1.2;
+      rr(bx,by,bw,bh,7);ctx.fill();ctx.stroke();
+      ctx.fillStyle=open?LAYERS[L].c:'#b3a89a';ctx.font='bold 10.5px "JetBrains Mono",monospace';ctx.textAlign='left';ctx.textBaseline='top';
+      ctx.fillText((open?'':'🔒 ')+labels[L],bx+8,by+6);
+    }
+    // ルータ/インターネット：外のEthに「↻ MAC貼り替え」バッジ
+    if(node.mac){ctx.fillStyle=ETH;ctx.font='bold 9.5px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='right';ctx.textBaseline='top';ctx.fillText('↻ MAC を次の相手用に貼り替え',x0+fullW-8,y0+6);}
+    // 注釈：開けた深さ
+    ctx.fillStyle='#7d7568';ctx.font='9px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='top';
+    var msg=node.read>=4?'芯まで開ける（送り主／受け手）':'外から '+node.read+' 層まで。奥は閉じたまま';
+    ctx.fillText(msg,cx,bot-2);
+  }
+
+  function drawScene(pos){
+    clearBg();
+    pathY=H*0.30;nodeR=Math.min(26,W*0.05);
+    // 経路の線
+    ctx.strokeStyle='#d8d0c4';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(nodeX(0),pathY);ctx.lineTo(nodeX(N-1),pathY);ctx.stroke();
+    // ノード
+    for(var i=0;i<N;i++){var x=nodeX(i),nd=NODES[i],cur=(Math.round(pos)===i);
+      ctx.fillStyle=cur?'#e6f0ef':'#faf8f4';ctx.strokeStyle=cur?ETH:'#b6ab99';ctx.lineWidth=cur?2.2:1.4;
+      rr(x-nodeR,pathY-nodeR,nodeR*2,nodeR*2,9);ctx.fill();ctx.stroke();
+      ctx.fillStyle=cur?ETH:'#7d7568';ctx.font='bold 15px "JetBrains Mono",monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(nd.icon,x,pathY);
+      ctx.fillStyle=cur?'#1d1b17':'#7d7568';ctx.font='bold 10px "Zen Kaku Gothic New",sans-serif';ctx.textBaseline='top';
+      ctx.fillText(nd.name,x,pathY+nodeR+5);
+      // 開ける深さの小バッジ
+      ctx.fillStyle=nd.read>=4?'#c2543d':'#9a8f7e';ctx.font='8px "JetBrains Mono",monospace';
+      ctx.fillText(nd.read>=4?'全部むく':('外'+nd.read+'層'),x,pathY+nodeR+19);
+    }
+    // 旅するパケット（トークン）
+    var fi=Math.floor(pos),fr=pos-fi,xa=nodeX(Math.min(fi,N-1)),xb=nodeX(Math.min(fi+1,N-1));
+    var tx=xa+(xb-xa)*fr, ty=pathY-nodeR-16;
+    var hopMac=(pos>1.05); // ルータ以降は外MACが貼り替わった色
+    miniPacket(tx,ty,hopMac);
+    // 下半分のズーム（注目ノード）
+    var focus=NODES[Math.max(0,Math.min(N-1,Math.round(pos)))];
+    zoomPacket(focus);
+    // 区切り線
+    ctx.strokeStyle='#ece6dc';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(W*0.06,H*0.50);ctx.lineTo(W*0.94,H*0.50);ctx.stroke();
+    ctx.fillStyle='#aaa49b';ctx.font='9px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('↓ いまの機器から見たパケット（開けられる層／閉じた層）',W*0.06,H*0.53);
+  }
+
+  function draw(){if(!W||!H)return;var pos=playing?playT:step;drawScene(pos);}
+  function setInfo(){info.innerHTML=STEPINFO[step];}
+  function syncUI(){stepno.textContent='STEP '+(step+1)+' / '+N;steptitle.textContent=NODES[step].name+' ── '+NODES[step].t;bPrev.disabled=(step===0);bNext.disabled=(step===N-1);for(var i=0;i<dotsEl.children.length;i++)dotsEl.children[i].classList.toggle('on',i===step);setInfo();}
+  function stopAnim(){playing=false;if(rafId){cancelAnimationFrame(rafId);rafId=0;}}
+  function tick(now){if(!playing)return;var dt=now-rafLast;rafLast=now;playT+=dt/900; // 1ノード≒900ms
+    var ni=Math.min(N-1,Math.round(playT));if(ni!==step){step=ni;syncUI();}
+    if(playT>=N-1){playT=N-1;playing=false;rafId=0;step=N-1;syncUI();draw();return;}
+    draw();rafId=requestAnimationFrame(tick);}
+  function play(){stopAnim();playT=0;step=0;syncUI();playing=true;rafLast=(window.performance&&performance.now)?performance.now():Date.now();rafId=requestAnimationFrame(tick);}
+  function gotoStep(x){stopAnim();step=x;syncUI();draw();}
+  for(var i=0;i<N;i++){var d=document.createElement('span');d.className='dot';d.addEventListener('click',(function(x){return function(){gotoStep(x);};})(i));dotsEl.appendChild(d);}
+  bPrev.addEventListener('click',function(){if(step>0)gotoStep(step-1);});
+  bNext.addEventListener('click',function(){if(step<N-1)gotoStep(step+1);});
+  bPlay.addEventListener('click',function(){play();});
+  var ro=new ResizeObserver(function(){resize();});ro.observe(stage);
+  syncUI();resize();
+})();
+</script>
+</body>
+</html>
