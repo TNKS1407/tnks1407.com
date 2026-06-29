@@ -6,7 +6,7 @@ tags: ["通信", "CAN", "CANopen", "アービトレーション", "多マスタ"
 demo: "/can-arbitration/"
 demoLabel: "CAN アービトレーションのラボを全画面で開く"
 series: "communication"
-order: 4
+order: 5
 ---
 
 <style>

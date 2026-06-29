@@ -3,6 +3,7 @@ import { getCollection } from 'astro:content';
 
 const explainers = await getCollection('docs');
 const isAdvanced = (d: any) => (d.data.tags ?? []).includes('発展');
+const isMap = (d: any) => (d.data.tags ?? []).includes('地図');  // 番号を振らない「見取り図」記事
 
 // 読む順の「コース」。各記事の frontmatter の series/order でグルーピングする。
 const CHAPTERS = [
@@ -11,7 +12,7 @@ const CHAPTERS = [
   { key: 'conservation', label: '足し合わせと保存で、場を掴む',  desc: '波・場・力を貫く2つの素朴な動き ──「足し合わせる」と「湧かない・消えない（保存する量）」。後半は、掴んだ骨に名前をつけて、少しずつ抽象的になっていく。' },
   { key: 'crystal',      label: '結晶と対称 ── 並進という約束',   desc: 'まず扱う周期結晶では、根本にある約束は「同じ模様が並進でくり返す」こと。そこから、許される対称・許されない対称（五角形がない理由）・そして並進周期性を手放した準結晶までを、触れる play を埋め込みながら一歩ずつ。' },
   { key: 'electromagnetism', label: '電磁気への扉 ── 場を、測れる力として', desc: 'マクスウェルの4本からは入らない。2つの電荷が押し合う “測れる力” から出発して、それを電荷で割るだけで「場」を立ち上げる。クーロン→場→電位→ガウス→電流、と地面（測った力）に錨を下ろしたまま、一歩ずつ扉を開けていく。執筆中。' },
-  { key: 'communication',    label: '通信のしくみ ── 線一本から、工場のリアルタイムまで', desc: 'ここだけ毛色が違う、工学の一本道。ハードは分かるのにプログラミングや通信となると急にブラックボックス…という人へ。線一本に流れるビット（UART）から始めて、クロック・差動・衝突しない調停・スイッチ・IP と一段ずつ積み、最後は工場の硬いリアルタイム（産業 Ethernet）と、その底で“通り抜けながら書き換える”専用チップ（EtherCAT）まで。下に積んだ石が上の回で何度も顔を出す ──「あ、これさっきのだ」を辿れるよう、触れる widget とサンプルコードを各回に置いた。' },
+  { key: 'communication',    label: '通信のしくみ ── 線一本から、工場のリアルタイムまで', desc: 'ここだけ毛色が違う、工学の一本道。ハードは分かるのにプログラミングや通信となると急にブラックボックス…という人へ。線一本に流れるビット（UART）から始めて、クロック・点対点のスマートセンサ・差動・衝突しない調停・スイッチ・IP と一段ずつ積み、最後は工場の硬いリアルタイム（産業 Ethernet）と、その底で“通り抜けながら書き換える”専用チップ（EtherCAT）まで。下に積んだ石が上の回で何度も顔を出す ──「あ、これさっきのだ」を辿れるよう、触れる widget とサンプルコードを各回に置いた。冒頭の「地図」は、紛らわしい名前（Ethernet／EtherNet/IP／EtherCAT…）の見取り図。' },
 ] as const;
 
 // 第3章後半（⑥〜⑨＝発展）も全て公開済み。⑤と⑥のあいだに「ここから発展」の区切りを置く。
@@ -22,8 +23,9 @@ const chapters = CHAPTERS.map(c => {
   let n = 0;
   const steps = docs.map(doc => {
     const adv = isAdvanced(doc);
-    if (!adv) n++;
-    return { doc, adv, num: adv ? null : n };
+    const map = isMap(doc);
+    if (!adv && !map) n++;
+    return { doc, adv, map, num: (adv || map) ? null : n };
   });
   return { ...c, steps };
 }).filter(c => c.steps.length > 0);
@@ -86,6 +88,7 @@ const total = explainers.length;
         font-family:'JetBrains Mono',monospace;font-weight:700;font-size:.92rem;box-shadow:0 2px 6px var(--shadow);position:relative;z-index:1;}
       .step-flag{margin-top:5px;padding:.18rem .5rem;border-radius:999px;background:var(--surface2);border:1px solid var(--border);
         color:var(--text-muted);font-family:'JetBrains Mono',monospace;font-weight:700;font-size:.58rem;position:relative;z-index:1;}
+      .step-map-flag{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);}
       .step-card{flex:1;min-width:0;background:var(--card);border:1px solid var(--border);border-radius:13px;padding:.8rem 1.05rem;
         box-shadow:0 1px 6px var(--shadow);transition:border-color .2s,transform .2s,box-shadow .2s;}
       .step:hover .step-card{border-color:var(--accent);transform:translateX(3px);box-shadow:0 4px 14px var(--shadow);}
@@ -132,7 +135,7 @@ const total = explainers.length;
         <span class="kicker">解説 — ROADMAP</span>
         <h1>見える物理を、触りながら一歩ずつ</h1>
         <p>読むだけで終わらないように、ほとんどの記事に「動かせる遊び場」を添えてある。下の順番に辿ると、力学の基礎から始まって、波と共鳴を抜け、「足し合わせ」と「保存」で場までを、一本の道として掴めるようにしてあるよ。そして第3章の後半からは、掴んだ骨に名前をつけて、少しずつ発展的・抽象的になっていく（発散・ガウスの法則・ポアソン方程式・グリーン関数へ）。もちろん、気になった所からつまんでも大丈夫。<br />── それとは別の入口として、いちばん下に「通信のしくみ」のコースも生やした。物理とは毛色が違うけれど、線一本のビットから工場のリアルタイムまでを下から一段ずつ積む作りは、ここでも同じだよ。</p>
-        <div class="meta">{total} 本 ・ {chapters.length} 章 ── 物理は第3章まで完結＋第4章「電磁気への扉」執筆中、別コースに「通信のしくみ」全8回</div>
+        <div class="meta">{total} 本 ・ {chapters.length} 章 ── 物理は第3章まで完結＋第4章「電磁気への扉」執筆中、別コースに「通信のしくみ」全9回＋見取り図</div>
       </div>
 
       {chapters.map(c => (
@@ -142,17 +145,17 @@ const total = explainers.length;
             <div class="chapter-desc">{c.desc}</div>
           </div>
           <div class="track">
-            {c.steps.map(({ doc, adv, num }) => (
+            {c.steps.map(({ doc, adv, map, num }) => (
               <Fragment>
                 {c.key === 'conservation' && num === 6 && (
                   <div class="upcoming-divider"><span>ここから発展 ── 掴んだ骨に、名前をつけていく</span></div>
                 )}
-                {c.key === 'communication' && num === 8 && (
+                {c.key === 'communication' && num === 9 && (
                   <div class="upcoming-divider"><span>ここから、ひとつだけ底まで ── 最初に開けた規格を、シリコンへ</span></div>
                 )}
-                <a class={`step${adv ? ' step-adv' : ''}`} href={`/docs/${doc.id}/`}>
+                <a class={`step${adv || map ? ' step-adv' : ''}`} href={`/docs/${doc.id}/`}>
                   <div class="step-node">
-                    {adv ? <span class="step-flag">発展</span> : <span class="step-num">{num}</span>}
+                    {map ? <span class="step-flag step-map-flag">地図</span> : adv ? <span class="step-flag">発展</span> : <span class="step-num">{num}</span>}
                   </div>
                   <div class="step-card">
                     <div class="step-title-row">
