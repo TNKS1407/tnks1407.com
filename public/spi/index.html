@@ -46,7 +46,7 @@ body.embed #stage{flex:1 1 auto;height:auto;min-height:150px;}
     <div class="stephead"><span class="stepno" id="stepno">STEP 1 / 4</span><span class="steptitle" id="steptitle">—</span></div>
     <div id="stage"><canvas id="cv"></canvas></div>
     <div id="info"></div>
-    <div class="ctrl"><button id="bPrev">◀ 戻る</button><button id="bNext" class="pri">次へ ▶</button><div class="dots" id="dots"></div></div>
+    <div class="ctrl"><button id="bPrev">◀ 戻る</button><button id="bNext" class="pri">次へ ▶</button><button id="bPlay">▶ 再生</button><div class="dots" id="dots"></div></div>
   </div>
   <footer>ブラックボックスを開く — 同期式シリアル</footer>
 </div>
@@ -55,11 +55,12 @@ if(window.self!==window.top)document.body.classList.add('embed');
 (function(){
   var cv=document.getElementById('cv'),ctx=cv.getContext('2d'),info=document.getElementById('info'),stage=document.getElementById('stage');
   var stepno=document.getElementById('stepno'),steptitle=document.getElementById('steptitle'),dotsEl=document.getElementById('dots');
-  var bPrev=document.getElementById('bPrev'),bNext=document.getElementById('bNext');
+  var bPrev=document.getElementById('bPrev'),bNext=document.getElementById('bNext'),bPlay=document.getElementById('bPlay');
   var MOSI=[1,0,1,0,0,1,0,1]; // 0xA5 MSB先
   var MISO=[0,0,1,1,1,1,0,0]; // 0x3C MSB先
   var STEPS=[{t:'4本の線 ── CS / SCLK / MOSI / MISO'},{t:'クロックが、時を刻む'},{t:'エッジで読む ── MOSI（送る）'},{t:'同時に受ける ── MISO（全二重）'}];
   var step=0,W=0,H=0,DPR=1;
+  var anim=8,playing=false,rafId=0,rafLast=0; // anim=露出したクロック数(0..8)。8=全表示(静止)
   function resize(){DPR=Math.min(window.devicePixelRatio||1,2);var r=stage.getBoundingClientRect();W=Math.round(r.width);H=Math.round(r.height);cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);draw();}
   function clearBg(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#faf8f4';ctx.fillRect(0,0,W,H);}
   function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
@@ -72,13 +73,17 @@ if(window.self!==window.top)document.body.classList.add('embed');
   function drawSCLK(g,b){ctx.strokeStyle='#7a5ea8';ctx.lineWidth=2.2;ctx.beginPath();var x=colX(g,0);ctx.moveTo(x,b.yLo);
     for(var i=0;i<8;i++){var xa=colX(g,i),xm=xa+g.bw*0.5,xb=xa+g.bw;ctx.lineTo(xa,b.yLo);ctx.lineTo(xm,b.yLo);ctx.lineTo(xm,b.yHi);ctx.lineTo(xb,b.yHi);ctx.lineTo(xb,b.yLo);}ctx.stroke();}
   // データ行: 各列でビット値を保持
-  function drawData(g,b,bits,col,sample){ctx.strokeStyle=col;ctx.lineWidth=2.2;ctx.beginPath();
+  function drawData(g,b,bits,col,sample,nDots){ctx.strokeStyle=col;ctx.lineWidth=2.2;ctx.beginPath();
     for(var i=0;i<8;i++){var xa=colX(g,i),xb=xa+g.bw,y=bits[i]?b.yHi:b.yLo;if(i===0)ctx.moveTo(xa,y);else ctx.lineTo(xa,y);ctx.lineTo(xb,y);}ctx.stroke();
     // ビット値
     ctx.fillStyle=col;ctx.font='9px "JetBrains Mono",monospace';ctx.textAlign='center';ctx.textBaseline='alphabetic';
     for(var k=0;k<8;k++){ctx.fillText(bits[k],colX(g,k)+g.bw*0.5,b.yHi-5);}
-    // サンプル点（立ち上がり＝列中央）
-    if(sample){for(var s=0;s<8;s++){var xm=colX(g,s)+g.bw*0.5,ys=bits[s]?b.yHi:b.yLo;ctx.fillStyle='#c9761f';ctx.beginPath();ctx.arc(xm,ys,3.2,0,6.2832);ctx.fill();}}}
+    // サンプル点（立ち上がり＝列中央）。nDots 個まで（アニメで順に増える）
+    if(sample){var nn=(nDots===undefined?8:nDots);for(var s=0;s<nn;s++){var xm=colX(g,s)+g.bw*0.5,ys=bits[s]?b.yHi:b.yLo;ctx.fillStyle='#c9761f';ctx.beginPath();ctx.arc(xm,ys,3.4,0,6.2832);ctx.fill();}}}
+  // 再生中、プレイヘッドより右（未来）を背景色で隠し、縦カーソルを引く
+  function revealMask(g){if(anim>=8)return;var px=g.x0+anim*g.bw;ctx.fillStyle='#faf8f4';ctx.fillRect(px,0,W-px,H);
+    ctx.strokeStyle='#c9761f';ctx.lineWidth=1.5;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(px,H*0.07);ctx.lineTo(px,H*0.99);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='#c9761f';ctx.beginPath();ctx.arc(px,H*0.07,3.4,0,6.2832);ctx.fill();}
   function csLine(g,b){ctx.strokeStyle='#c2543d';ctx.lineWidth=2;ctx.beginPath();var x0=colX(g,0),x1=colX(g,8);
     ctx.moveTo(g.x0-g.bw*0.5,b.yHi);ctx.lineTo(x0,b.yHi);ctx.lineTo(x0,b.yLo);ctx.lineTo(x1,b.yLo);ctx.lineTo(x1,b.yHi);ctx.lineTo(W-24,b.yHi);ctx.stroke();
     ctx.fillStyle='#c2543d';ctx.font='8px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText('選択中(Low)',(x0+x1)/2,b.yLo+13);}
@@ -99,22 +104,29 @@ if(window.self!==window.top)document.body.classList.add('embed');
       info.innerHTML='SPI は線が<b>4本</b>：<span class="v-amber">CS</span>（相手を選ぶ）、<b style="color:#7a5ea8">SCLK</b>（クロック＝master が刻む時計）、<span class="v-teal">MOSI</span>（master→slave）、<span class="v-blue">MISO</span>（slave→master）。UART と違って<b>時計の線がある</b>のが決定的。これが「同期式」だ。';
     } else {
       var g=grid();
+      var nDots=Math.max(0,Math.min(8,Math.floor(anim+0.5)));
       var bCS=band('CS',H*0.20,12),bCK=band('SCLK',H*0.42,15),bMO=band('MOSI',H*0.64,15),bMI=band('MISO',H*0.85,15);
       if(step>=2)sampleTicks(g);
       rowLabel(g,bCS,'CS','#c2543d');csLine(g,bCS);
       rowLabel(g,bCK,'SCLK','#7a5ea8');drawSCLK(g,bCK);
-      if(step>=2){rowLabel(g,bMO,'MOSI','#3c7876');drawData(g,bMO,MOSI,'#3c7876',step>=2);}
-      if(step>=3){rowLabel(g,bMI,'MISO','#2563aa');drawData(g,bMI,MISO,'#2563aa',true);}
-      if(step===1)info.innerHTML='master が <b style="color:#7a5ea8">SCLK</b> で時を刻む（CS を Low に落として相手を選んでから）。1バイト＝クロック8発。<b>速さを前もって約束する必要がない</b> ── 何 Hz で叩こうが、時計のエッジが「いま」を全部決めるから、受け手はただ従えばいい。ここが UART と決定的に違う所だ。';
-      else if(step===2)info.innerHTML='<span class="v-teal">MOSI</span> に master がビットを載せ、各クロックの<b>立ち上がり（橙の点）</b>で slave が読む。UART は1ビットの“真ん中”で読んだけど、SPI は<b>クロックのエッジ</b>で読む ── 時計があるから、迷いがない。並びは <b>MSB から先</b>（0xA5 = 1,0,1,0,0,1,0,1）。';
-      else if(step===3)info.innerHTML='そして <span class="v-blue">MISO</span>。master が送る同じ8クロックで、slave も<b>同時に</b>ビットを返す ── <b>全二重</b>だ。master と slave のシフトレジスタが輪のように繋がって、1ビットずつ<b>入れ替わって</b>いる（送る＝受ける）。<span class="v-amber">CS</span> が Low の間だけ有効＝<b>アドレスは要らない、線で相手を選ぶ</b>。複数の slave は CS を別々に引く。';
+      if(step>=2){rowLabel(g,bMO,'MOSI →','#3c7876');drawData(g,bMO,MOSI,'#3c7876',step>=2,nDots);}
+      if(step>=3){rowLabel(g,bMI,'← MISO','#2563aa');drawData(g,bMI,MISO,'#2563aa',true,nDots);}
+      revealMask(g);
+      if(step===1)info.innerHTML='master が <b style="color:#7a5ea8">SCLK</b> で時を刻む（CS を Low に落として相手を選んでから）。1バイト＝クロック8発。<b>速さを前もって約束する必要がない</b> ── 何 Hz で叩こうが、時計のエッジが「いま」を全部決めるから、受け手はただ従えばいい。ここが UART と決定的に違う所だ。<b>▶ 再生</b>で時計が刻むのを見られる。';
+      else if(step===2)info.innerHTML='<span class="v-teal">MOSI</span> に master がビットを載せ、各クロックの<b>立ち上がり（橙の点）</b>で slave が読む。UART は1ビットの“真ん中”で読んだけど、SPI は<b>クロックのエッジ</b>で読む ── 時計があるから、迷いがない。並びは <b>MSB から先</b>（0xA5 = 1,0,1,0,0,1,0,1）。<b>▶ 再生</b>で、ビットが1発ずつ送り出される様子を流せる。';
+      else if(step===3)info.innerHTML='そして <span class="v-blue">MISO</span>。master が送る同じ8クロックで、slave も<b>同時に</b>ビットを返す ── <b>全二重</b>だ（<span class="v-teal">→ 送る</span>と<span class="v-blue">← 返る</span>が同時に流れる）。master と slave のシフトレジスタが輪のように繋がって、1ビットずつ<b>入れ替わって</b>いる（送る＝受ける）。<span class="v-amber">CS</span> が Low の間だけ有効＝<b>線で相手を選ぶ</b>。<b>▶ 再生</b>で、送りと返りが同時に走るのを見てほしい。';
     }
   }
   function draw(){if(W&&H)drawStep();}
-  function syncUI(){stepno.textContent='STEP '+(step+1)+' / 4';steptitle.textContent=STEPS[step].t;bPrev.disabled=(step===0);bNext.disabled=(step===3);for(var i=0;i<dotsEl.children.length;i++)dotsEl.children[i].classList.toggle('on',i===step);}
-  for(var i=0;i<4;i++){var d=document.createElement('span');d.className='dot';d.addEventListener('click',(function(x){return function(){step=x;syncUI();draw();};})(i));dotsEl.appendChild(d);}
-  bPrev.addEventListener('click',function(){if(step>0){step--;syncUI();draw();}});
-  bNext.addEventListener('click',function(){if(step<3){step++;syncUI();draw();}});
+  function syncUI(){stepno.textContent='STEP '+(step+1)+' / 4';steptitle.textContent=STEPS[step].t;bPrev.disabled=(step===0);bNext.disabled=(step===3);bPlay.disabled=(step===0);for(var i=0;i<dotsEl.children.length;i++)dotsEl.children[i].classList.toggle('on',i===step);}
+  function stopAnim(){playing=false;if(rafId){cancelAnimationFrame(rafId);rafId=0;}anim=8;}
+  function tick(now){if(!playing)return;var dt=now-rafLast;rafLast=now;anim+=8*dt/2600;if(anim>=8){anim=8;playing=false;rafId=0;draw();return;}draw();rafId=requestAnimationFrame(tick);}
+  function play(){if(step===0)return;if(rafId)cancelAnimationFrame(rafId);anim=0;playing=true;rafLast=(window.performance&&performance.now)?performance.now():Date.now();rafId=requestAnimationFrame(tick);}
+  function gotoStep(x){stopAnim();step=x;syncUI();if(step===2||step===3)play();else draw();}
+  for(var i=0;i<4;i++){var d=document.createElement('span');d.className='dot';d.addEventListener('click',(function(x){return function(){gotoStep(x);};})(i));dotsEl.appendChild(d);}
+  bPrev.addEventListener('click',function(){if(step>0)gotoStep(step-1);});
+  bNext.addEventListener('click',function(){if(step<3)gotoStep(step+1);});
+  bPlay.addEventListener('click',function(){play();});
   var ro=new ResizeObserver(function(){resize();});ro.observe(stage);
   syncUI();resize();
 })();
