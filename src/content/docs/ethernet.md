@@ -30,6 +30,35 @@ order: 6
   <div class="cap"><span>ethercat-wave</span><a href="/ethercat-wave/" target="_blank" rel="noopener noreferrer">全画面で開く ↗</a></div>
 </div>
 
+せっかくなので、さっき名前だけ出した **「3値（MLT-3）＋4B5B」が何をしているのか**を、もう一段開けておこう。素朴な高/低（2値）でそのまま流さず、わざわざ二段の符号化をかませているのには、ちゃんと理由がある。受信側が抱える二つの悩み ──「**時計をどう合わせるか**」と「**線の帯域に収まるか**」── を、それぞれ片付けているんだ。
+
+**4B5B ── 時計のための“息継ぎ”を混ぜる。** Ethernet には、UART の start ビットのような分かりやすい同期の合図がない。受信側は、信号の **変化（エッジ）そのものから時計を復元**している。ということは、0 が延々と続いて線が変化しないと、エッジが来なくて、受信の時計が迷子になる。そこで **4ビットを5ビットに置き換える**（決まった変換表で）。5ビット側のコードは「0 が長く続かない」ものだけを選んであって、これで必ず一定の間隔で変化が入る＝**受信が時計を見失わない**。代償は、4ビットを5ビットで運ぶので **25%の水増し**（だから 100Mbit/s のデータに、線の上では 125Mボー必要になる）。おまけに、5ビットで作れるコードは余るので、その余りを「アイドル」「フレームの開始/終了」みたいな**制御の合図**にも使える。
+
+**MLT-3 ── 3つの高さで、周波数を下げる。** 4B5B で整えたビット列を、こんど線の電圧に乗せる。ここで素朴な2値（高/低）を使うと、1 が続くたびに高低がバタバタ反転して、**高い周波数**の信号になる ── 細いより線（Cat5）の帯域を食い、ノイズも撒く。MLT-3 は **−／0／＋ の3つの高さ**を使い、ルールはこうだ：**「1」のとき次の高さへ一段ずつ進み（…−→0→＋→0→−…）、「0」のときその場に留まる**。すると、1 が連続しても −,0,＋,0 と4ビットでひと巡りするので、**いちばん速い変化でも、ビット速度の 1/4 の周波数**で済む（2値の素朴な方形波なら 1/2）。125Mボーの信号が、実質 30MHz ちょっとの帯域に収まる ── だから普通の Cat5 ケーブルできれいに通り、放射ノイズも小さい。
+
+<figure style="margin:1.6rem 0;text-align:center;">
+<svg viewBox="0 0 480 200" width="480" style="max-width:100%;height:auto;font-family:'JetBrains Mono',monospace;">
+  <!-- bit labels -->
+  <text x="20" y="34" font-size="10" fill="#7d7568" text-anchor="end">bit</text>
+  <text x="85" y="34" font-size="11" fill="#1d1b17" text-anchor="middle">1</text><text x="135" y="34" font-size="11" fill="#1d1b17" text-anchor="middle">1</text><text x="185" y="34" font-size="11" fill="#aaa49b" text-anchor="middle">0</text><text x="235" y="34" font-size="11" fill="#1d1b17" text-anchor="middle">1</text><text x="285" y="34" font-size="11" fill="#aaa49b" text-anchor="middle">0</text><text x="335" y="34" font-size="11" fill="#1d1b17" text-anchor="middle">1</text><text x="385" y="34" font-size="11" fill="#1d1b17" text-anchor="middle">1</text><text x="435" y="34" font-size="11" fill="#aaa49b" text-anchor="middle">0</text>
+  <!-- NRZ (2値) -->
+  <text x="52" y="68" font-size="9" fill="#7d7568" text-anchor="end" font-weight="bold">2値</text>
+  <path d="M60,50 L160,50 L160,80 L210,80 L210,50 L260,50 L260,80 L310,80 L310,50 L410,50 L410,80 L460,80" fill="none" stroke="#b6ab99" stroke-width="2"/>
+  <!-- MLT-3 level guides -->
+  <line x1="55" y1="120" x2="462" y2="120" stroke="#ece3d6" stroke-width="1" stroke-dasharray="2 3"/>
+  <line x1="55" y1="145" x2="462" y2="145" stroke="#ece3d6" stroke-width="1" stroke-dasharray="2 3"/>
+  <line x1="55" y1="170" x2="462" y2="170" stroke="#ece3d6" stroke-width="1" stroke-dasharray="2 3"/>
+  <text x="50" y="123" font-size="9" fill="#aaa49b" text-anchor="end">＋</text><text x="50" y="148" font-size="9" fill="#aaa49b" text-anchor="end">0</text><text x="50" y="173" font-size="9" fill="#aaa49b" text-anchor="end">−</text>
+  <!-- MLT-3 (3値) -->
+  <text x="52" y="148" font-size="9" fill="#3c7876" text-anchor="end" font-weight="bold">3値</text>
+  <path d="M60,120 L110,120 L110,145 L210,145 L210,170 L310,170 L310,145 L360,145 L360,120 L460,120" fill="none" stroke="#3c7876" stroke-width="2.2"/>
+  <text x="240" y="195" font-size="9" fill="#7d7568" text-anchor="middle">「1」で次の高さへ一段ずつ進む／「0」はその場に留まる ── 同じ 1 続きでも、3値なら変化がゆっくり</text>
+</svg>
+<figcaption style="font-size:.8rem;color:#aaa49b;margin-top:.3rem;">同じビット列を、素朴な2値（上）と MLT-3 の3値（下）で。2値は 1 のたびに高低を行き来して変化が速い。MLT-3 は −/0/＋ を一段ずつ辿るので、同じビットでも電圧の変化がゆっくり＝周波数が低い。線が運びやすく、ノイズも出にくい。</figcaption>
+</figure>
+
+つまり、**4B5B で「時計が迷子にならないだけの変化」を保証し、MLT-3 で「その変化を、線が運べる低い周波数に収める」**。受信の同期と、ケーブルの帯域 ── 物理層の二大悩みを、符号化の合わせ技で同時に片付けているわけだ。私はこの「2値を3値にするだけで、最高周波数が半分になる」あたりが、地味だけど効いていて好きだ。（ちなみに、もっと速い 1000BASE-T では、今度は4対すべてを使い、5値の PAM-5 ＋誤り訂正でさらに詰め込む。けれど発想は同じ ──「変化は十分に・周波数は低く・線に収まるように」符号を設計する、だ。）
+
 つまり、Ethernet の物理層は「差動でノイズに強い線に、符号化したビットを流す」── ここまでの回で握った道具が、そのまま効いている。新しいのは、ここから上だ。
 
 ## 2. フレームと MAC ── 配達先の書き方

@@ -59,7 +59,8 @@ if(window.self!==window.top)document.body.classList.add('embed');
   var TEAL='#3c7876',RED='#c2543d',AMBER='#c9761f',BLUE='#2563aa',PURPLE='#7a5ea8',TEXT='#1d1b17',MUTED='#7d7568',FAINT='#aaa49b';
   var DOMFILL='#2c2926'; // dominant(0) ＝ 強い・塗りつぶし
 
-  var STEPS=[{t:'3台が同時に、喋り出したら？'},{t:'0 が 1 に勝つ ── dominant / recessive'},{t:'アービトレーション本番 ── ID で競る'},{t:'勝者のメッセージは、そのまま流れる'}];
+  var STEPS=[{t:'3台が同時に、喋り出したら？'},{t:'0 が 1 に勝つ ── dominant / recessive'},{t:'触ってみる ── 誰か一人でも 0 を出すと'},{t:'アービトレーション本番 ── ID で競る'},{t:'勝者のメッセージは、そのまま流れる'}];
+  var NS=5; // ステップ数
 
   // ── ノードと、アービトレーションの計算（描く前に、IDから実際に求める）──
   var NB=11;
@@ -83,6 +84,8 @@ if(window.self!==window.top)document.body.classList.add('embed');
   })();
 
   var step=0,W=0,H=0,DPR=1;
+  // STEP3(触ってみる)用の状態：3ノードの出力(1=手を離す/0=引っぱる)、当たり判定、引き倒し量のアニメ
+  var iv=[1,1,1],ivHit=[],rodCur=0,rodTgt=0,ivRaf=0;
   function resize(){DPR=Math.min(window.devicePixelRatio||1,2);var r=stage.getBoundingClientRect();W=Math.round(r.width);H=Math.round(r.height);cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';ctx.setTransform(DPR,0,0,DPR,0,0);draw();}
   function clearBg(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#faf8f4';ctx.fillRect(0,0,W,H);}
   function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
@@ -308,21 +311,63 @@ if(window.self!==window.top)document.body.classList.add('embed');
     info.innerHTML='勝ったのは <span class="v-teal">C（ID = 0x080）</span>。すごいのはここから ── 競り合いで送った 11 ビットは、そのまま<b>本物のメッセージの先頭</b>。C は止まらず、続きのデータ・CRC まで<b>そのまま流れる</b>（再送いらず）。負けた <span class="v-amber">A</span>・<span class="v-blue">B</span> はバスが空くのを待って<b>自動で再送</b>する。<b>優先度＝ID（小さいほど強い）</b>。多マスタなのに衝突しない、この調停が、車載で何十年も鍛えられた CAN の核だ。上に載る <code>CANopen</code>（オブジェクト辞書）は、EtherCAT の <code>CoE</code> の母でもある。';
   }
 
+  // ============ STEP 3（触ってみる：ワイヤードAND）============
+  function drawStepInteractive(){
+    var bus=iv[0]&iv[1]&iv[2];
+    ivHit=[];
+    ctx.fillStyle='#3a3a36';ctx.font='bold 12px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='top';
+    ctx.fillText('ノードをクリックして 0 / 1 を切り替えてみて',W/2,H*0.045);
+    var nx=[W*0.22,W*0.5,W*0.78],ny=H*0.27,cw=Math.min(W*0.24,116),ch=Math.min(H*0.26,88);
+    for(var i=0;i<3;i++){
+      var nd=NODES[i],x=nx[i]-cw/2,y=ny-ch/2,dom=(iv[i]===0);
+      ctx.fillStyle=dom?rgba(nd.col,0.14):'#fff';ctx.strokeStyle=nd.col;ctx.lineWidth=2;
+      roundRect(x,y,cw,ch,10);ctx.fill();ctx.stroke();
+      ctx.fillStyle=nd.col;ctx.font='bold 12px "Zen Kaku Gothic New",sans-serif';ctx.textAlign='center';ctx.textBaseline='top';
+      ctx.fillText('Node '+nd.n,nx[i],y+7);
+      ctx.font='bold 30px "JetBrains Mono",monospace';ctx.fillStyle=dom?nd.col:'#bdb4a4';
+      ctx.fillText(String(iv[i]),nx[i],y+22);
+      ctx.font='9px "Zen Kaku Gothic New",sans-serif';ctx.fillStyle=MUTED;ctx.textBaseline='bottom';
+      ctx.fillText(dom?'0 = 引っぱる(dom)':'1 = 手を離す(rec)',nx[i],y+ch-6);
+      ivHit.push({x:x,y:y,w:cw,h:ch,k:i});
+      ctx.strokeStyle=rgba(nd.col,0.45);ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(nx[i],y+ch);ctx.lineTo(nx[i],H*0.56);ctx.stroke();
+    }
+    var rodY=H*0.60+rodCur*(H*0.12);
+    ctx.strokeStyle=(bus===0)?DOMFILL:'#8a7f6e';ctx.lineWidth=4;
+    ctx.beginPath();ctx.moveTo(W*0.13,rodY);ctx.lineTo(W*0.87,rodY);ctx.stroke();
+    ctx.fillStyle=MUTED;ctx.font='9px "JetBrains Mono",monospace';ctx.textAlign='left';ctx.textBaseline='middle';ctx.fillText('BUS',W*0.13,rodY-12);
+    for(var j=0;j<3;j++){ if(iv[j]===0){ var hx=nx[j];
+      ctx.strokeStyle=rgba(NODES[j].col,0.85);ctx.lineWidth=2.4;ctx.beginPath();ctx.moveTo(hx,H*0.56);ctx.lineTo(hx,rodY);ctx.stroke();
+      ctx.fillStyle=NODES[j].col;ctx.beginPath();ctx.moveTo(hx,rodY+2);ctx.lineTo(hx-4,rodY-6);ctx.lineTo(hx+4,rodY-6);ctx.closePath();ctx.fill();
+    }}
+    var bx=W/2,byc=H*0.87;
+    ctx.fillStyle=(bus===0)?DOMFILL:'#fff';ctx.strokeStyle=(bus===0)?DOMFILL:'#cdbfa8';ctx.lineWidth=1.6;
+    roundRect(bx-26,byc-21,52,42,9);ctx.fill();ctx.stroke();
+    ctx.fillStyle=(bus===0)?'#fff':'#a99e8c';ctx.font='bold 25px "JetBrains Mono",monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(String(bus),bx,byc);
+    ctx.fillStyle=MUTED;ctx.font='bold 14px "JetBrains Mono",monospace';ctx.textAlign='right';ctx.fillText(iv[0]+' & '+iv[1]+' & '+iv[2]+' =',bx-36,byc);
+    ctx.textAlign='left';ctx.fillStyle=(bus===0)?RED:TEAL;ctx.font='bold 11px "Zen Kaku Gothic New",sans-serif';
+    ctx.fillText(bus===0?'バスは 0 に引き倒される':'バスは 1（全員手を離した）',bx+36,byc);
+    info.innerHTML='3台が同じバスに繋がっている。各ノードは、線を <code>0</code> に<b>引っぱる</b>（dominant）か、<b>手を離して</b> <code>1</code> に任せる（recessive）かのどちらか。クリックで切り替えてみて ── <span class="v-red">誰か一人でも 0 を出すと、ほかが全員 1 にしようとしても、バスは 0 に引き倒される</span>。これが<b>ワイヤードAND</b>だ。次のアービトレーションは、この「0 が必ず勝つ」を使って、ID の小さい（0 の多い）方を勝者に選んでいる。';
+  }
+  function ivEase(){var d=rodTgt-rodCur;if(Math.abs(d)<0.012){rodCur=rodTgt;ivRaf=0;draw();return;}rodCur+=d*0.28;draw();ivRaf=requestAnimationFrame(ivEase);}
+  function ivToggle(k){iv[k]=iv[k]?0:1;rodTgt=((iv[0]&iv[1]&iv[2])===0)?1:0;if(ivRaf)cancelAnimationFrame(ivRaf);ivRaf=requestAnimationFrame(ivEase);}
+
   function drawStep(){
     clearBg();
     if(step===0)drawStep1();
     else if(step===1)drawStep2();
-    else if(step===2)drawStep3();
+    else if(step===2)drawStepInteractive();
+    else if(step===3)drawStep3();
     else drawStep4();
   }
   function draw(){if(W&&H)drawStep();}
   function updateHash(){try{history.replaceState(null,'','#step'+(step+1));}catch(e){}}
-  function syncUI(){stepno.textContent='STEP '+(step+1)+' / 4';steptitle.textContent=STEPS[step].t;bPrev.disabled=(step===0);bNext.disabled=(step===3);for(var i=0;i<dotsEl.children.length;i++)dotsEl.children[i].classList.toggle('on',i===step);}
-  function go(n){step=Math.max(0,Math.min(3,n));updateHash();syncUI();draw();}
-  for(var i=0;i<4;i++){var d=document.createElement('span');d.className='dot';d.addEventListener('click',(function(x){return function(){go(x);};})(i));dotsEl.appendChild(d);}
+  function syncUI(){stepno.textContent='STEP '+(step+1)+' / '+NS;steptitle.textContent=STEPS[step].t;bPrev.disabled=(step===0);bNext.disabled=(step===NS-1);for(var i=0;i<dotsEl.children.length;i++)dotsEl.children[i].classList.toggle('on',i===step);}
+  function go(n){step=Math.max(0,Math.min(NS-1,n));updateHash();syncUI();draw();}
+  for(var i=0;i<NS;i++){var d=document.createElement('span');d.className='dot';d.addEventListener('click',(function(x){return function(){go(x);};})(i));dotsEl.appendChild(d);}
   bPrev.addEventListener('click',function(){if(step>0)go(step-1);});
-  bNext.addEventListener('click',function(){if(step<3)go(step+1);});
-  (function(){var m=/step([1-4])/.exec(location.hash);if(m)step=+m[1]-1;})();
+  bNext.addEventListener('click',function(){if(step<NS-1)go(step+1);});
+  cv.addEventListener('click',function(e){if(step!==2)return;var r=cv.getBoundingClientRect();var x=e.clientX-r.left,y=e.clientY-r.top;for(var i=0;i<ivHit.length;i++){var h=ivHit[i];if(x>=h.x&&x<=h.x+h.w&&y>=h.y&&y<=h.y+h.h){ivToggle(h.k);break;}}});
+  (function(){var m=/step([1-5])/.exec(location.hash);if(m)step=+m[1]-1;})();
   var ro=new ResizeObserver(function(){resize();});ro.observe(stage);
   syncUI();resize();
 })();
