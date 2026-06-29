@@ -13,6 +13,11 @@ order: 2
 .code-sample{background:#fbf8f2;border:1px solid #e3dbd0;border-radius:8px;padding:.85rem 1rem;margin:1.3rem 0;font-family:'JetBrains Mono',monospace;font-size:.82rem;line-height:1.8;overflow-x:auto;color:#3a3835;white-space:pre;}
 .code-sample .ck{color:#7a5ea8;}.code-sample .cf{color:#2563aa;}.code-sample .cs{color:#3c7876;}.code-sample .cn{color:#c9761f;}.code-sample .cc{color:#aaa49b;font-style:italic;}
 .code-cap{font-size:.74rem;color:#aaa49b;font-family:'JetBrains Mono',monospace;margin:-.7rem 0 1.3rem;}
+.ref-table{width:100%;border-collapse:collapse;margin:1.1rem 0;font-size:.79rem;}
+.ref-table th{background:#f0ece6;color:#1d1b17;font-weight:700;text-align:left;padding:.45rem .55rem;border:1px solid #e3dbd0;font-family:'JetBrains Mono',monospace;font-size:.69rem;}
+.ref-table td{padding:.45rem .55rem;border:1px solid #e3dbd0;vertical-align:top;line-height:1.5;}
+.ref-table tr:nth-child(even) td{background:#faf8f4;}
+.ref-table .nm{font-weight:700;color:#3c7876;white-space:nowrap;}
 </style>
 
 [UART](/docs/uart/) で、いちばん素朴な「一本の線にバイトを乗せる」を見た。その最後に、UART の性格は「クロックの線を共有しない（非同期）」ことだ、と置いた。今日は、そこに**線を一本、足してみる**。足すのは、時計（クロック）の線だ。
@@ -22,6 +27,22 @@ order: 2
 ## 1. 時計の線を、引く ── SPI
 
 SPI は線が **4本**。順に、CS（相手を選ぶ）、SCLK（クロック＝master が刻む時計）、MOSI（master→slave のデータ）、MISO（slave→master のデータ）。
+
+この4本、実は **呼び名がいろいろあって**、データシートを読むたび混乱する所だ。先に一枚、地図にしておく。
+
+<table class="ref-table">
+<thead><tr><th>古典的な名前</th><th>新しい（包括的）名前</th><th>機器視点の別名</th><th>意味</th></tr></thead>
+<tbody>
+<tr><td><span class="nm">SCLK</span> / SCK</td><td>SCK</td><td>CLK</td><td>クロック（master が刻む時計）</td></tr>
+<tr><td><span class="nm">MOSI</span></td><td>COPI</td><td>master の SDO ／ slave の SDI</td><td>master → slave のデータ</td></tr>
+<tr><td><span class="nm">MISO</span></td><td>CIPO</td><td>master の SDI ／ slave の SDO</td><td>slave → master のデータ</td></tr>
+<tr><td><span class="nm">SS</span> / nSS</td><td>CS / CSn</td><td>CE / CSB</td><td>相手を選ぶ（Low で選択）</td></tr>
+</tbody>
+</table>
+
+ここに、配線で**いつも引っかかる罠**が一つ隠れている。**MOSI / MISO は「向き」で名付けられている**（MOSI＝Master Out Slave In）。だから一本の線の両端が同じ「MOSI」で、配線は **同じ名前どうしをつなぐ**（MOSI–MOSI、MISO–MISO）── たすき掛けは要らない。ところが **SDI / SDO は「その機器から見た入出力」**なので、こっちは **たすき掛け**になる（master の SDO → slave の SDI）。UART の TX/RX と同じ罠が、名前の流儀の違いとして、ここにも顔を出すわけだ。
+
+（ちなみに「master / slave」という言い方は、近年 **controller / peripheral** へ置き換えが進んでいて、その流れで MOSI/MISO も COPI/CIPO になった。中身は何も変わらない ── 同じ線の、呼び名違いだ。この記事では、データシートや widget で今もよく見る master/slave のまま進める。）
 
 UART との違いは、SCLK があること、これに尽きる。master が SCLK をカチカチ刻むと、その**エッジ（立ち上がり）に合わせて**データが読まれる。何ヘルツで叩こうが構わない ── 速さの約束が要らない。時計がぜんぶ決めてくれるからだ。しかも MOSI と MISO が別々にあるので、**送りながら同時に受ける**（全二重）。master と slave のシフトレジスタが輪のように繋がって、1ビットずつ入れ替わっていく。
 
@@ -37,6 +58,10 @@ UART との違いは、SCLK があること、これに尽きる。master が SC
 ## 2. 2本で、多数を ── I²C
 
 その「線が増える」を嫌って、**たった2本**で多数を相手にするのが I²C だ。線は SDA（データ）と SCL（クロック）だけ。CS 線が無いぶん、相手は **アドレス**で選ぶ ── 同じ2本のバスに何台ぶら下げても、7ビットのアドレスで呼び分けられる。
+
+「そのアドレスって、どうやって指定するの？」── 仕組みはシンプルだ。START の直後、master が最初に流す **1バイトめ**が、まるごと「宛先」になっている：上位 **7ビットがアドレス**、最後の **1ビットが R/W**（読みたいのか・書きたいのか）。バスにぶら下がった全員がこの1バイトを聞いて、**自分のアドレスと一致した1台だけ**が「はい（ACK）」と返事をし、以降のやり取りに応じる。残りは黙る。CS の線を引く代わりに、線の上を流れる最初の1バイトで相手を呼ぶ、というわけだ。
+
+そのアドレスの値は、チップごとに**データシートで決まっている**（たとえば、よくある温度センサなら 0x48）。同じ型のチップを2台3台と同じバスに付けたいとき用に、**下位の数ビットを基板のピンの結線で選べる**ようになっていることが多い ── だから「0x48〜0x4B の最大4台まで同居OK」みたいな書き方を、データシートでよく見る。コードでは、この1バイトめを自分で組み立てる必要はなく、ライブラリに**アドレスを数値で渡すだけ**でいい（後で出てくる `bus.read_byte(addr)` の `addr` が、まさにこれ）。
 
 2本しかないから、やり取りには作法が要る。SCL が High のあいだに SDA を動かすのは「合図」専用、と決めておく：SCL が High のまま SDA が下がったら **START**（始めるよ）、上がったら **STOP**（終わり）。その合図にはさまれた中で、SCL のリズムに乗せてビットを送る。
 
@@ -58,8 +83,10 @@ UART との違いは、SCLK があること、これに尽きる。master が SC
   <text x="365" y="166" font-size="9.5" fill="#7d7568" text-anchor="middle">データ</text>
   <text x="400" y="12" font-size="9" fill="#c2543d" text-anchor="middle">STOP</text>
 </svg>
-<figcaption style="font-size:.8rem;color:#aaa49b;margin-top:.3rem;">I²C のやり取りの骨格（簡略）。SCL が High のまま SDA が下がる＝START、上がる＝STOP。その間に、アドレス（誰に）＋データを SCL のリズムで送る。受け取った側は1ビット分 SDA を Low に引いて「届いたよ（ACK）」を返す。2本で、選んで・送って・確かめる、を全部こなしている。</figcaption>
+<figcaption style="font-size:.8rem;color:#aaa49b;margin-top:.3rem;">I²C のやり取りの骨格（簡略）。SCL が High のまま SDA が下がる＝START、上がる＝STOP。その間に、アドレス（誰に）＋データを SCL のリズムで送る。受け取った側は1ビット分 SDA を Low に引いて「届いたよ（ACK）」を返す。図の途中で SDA が何度も上下しているのは“データのビット”で、これは合図ではない（SCL が Low の間に動かしているから）。2本で、選んで・送って・確かめる、を全部こなしている。</figcaption>
 </figure>
+
+図をよく見ると、「SDA、途中で何回も上がってるのに、どうして STOP にならないの？」と思うかもしれない（いい目だ）。からくりは、さっきの決まりにある ── **SDA の上下が“合図”になるのは、SCL が High のあいだに動いたときだけ**。データを送っている最中、SDA を動かすのは必ず **SCL が Low の間**で、そのときの上下は「ただのビットの 0/1」であって、合図じゃない。だから途中の上がり下がりはぜんぶ受け流され、最後に **SCL が High のまま SDA がスッと上がった、その一回**だけが STOP として効く。「**いつ動かすか**で、意味を切り替える」── これが、線が2本しかない I²C の、いちばんの知恵だ。
 
 もう一つ I²C 特有の作法に、**ACK** がある。1バイト送るごとに、受け取った側が SDA を1ビット分 Low に引いて「ちゃんと届いた」と返事をする。返事が無ければ（NACK）、その相手は居ないか、手一杯ということ。2本しかない線で、選んで・送って・確かめてを全部やるための、よくできた約束だ。
 
@@ -67,7 +94,7 @@ UART との違いは、SCLK があること、これに尽きる。master が SC
 
 ## 3. コードでは ── 線で選ぶか、アドレスで選ぶか
 
-性格の違いは、コードにそのまま出る。SPI は CS の線で相手を選んで「送る＝受ける」、I²C はアドレスで相手を選んで「そのレジスタを読む」。下の widget で1行ずつ。
+性格の違いは、コードにそのまま出る。SPI は CS の線で相手を選んで「送る＝受ける」、I²C はアドレスで相手を選んで「そのレジスタを読む」。下の widget で1行ずつ（言語は **Python** ── SPI は `spidev`、I²C は `smbus` というライブラリを使う。C にも同じ役の API があるけれど、やる三手＝**開く・相手を選ぶ・読み書き**、はどの言語でも変わらない）。
 
 <div class="demo-embed">
   <iframe src="/spi-code/" title="SPI / I²C をコードで" loading="lazy"></iframe>
