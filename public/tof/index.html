@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta name="robots" content="noindex, nofollow" />
-<title>ToF 深度ビューア ── VL53L8CX 8×8</title>
+<title>ToF 深度ビューア ── VL53L5CX 8×8</title>
 <style>
   :root{
     --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
@@ -64,7 +64,7 @@ const cv=document.getElementById('c'), ctx=cv.getContext('2d');
 const ro=document.getElementById('ro'), badge=document.getElementById('badge');
 const N=8;                       // VL53L8CX = 8x8 zones
 let W=0,H=0,DPR=1;
-let grid=new Float32Array(N*N).fill(1500);   // distances in mm
+let grid=new Float32Array(N*N).fill(1500);   // distances in mm (VL53L5CX 8x8 zones)
 let playing=true, smooth=true, showNums=false, rangeAuto=true, dmaxFixed=2000;
 let mode='syn';                  // 'syn' | 'live'
 let t=0, last=0, fps=0, frames=0, fpsT=0;
