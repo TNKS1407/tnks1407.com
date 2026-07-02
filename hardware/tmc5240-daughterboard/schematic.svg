@@ -1,0 +1,400 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1560 1200" font-family="'Hiragino Sans','Noto Sans JP',sans-serif" font-size="12">
+  <defs>
+    <style>
+      .wire { stroke:#111; stroke-width:1.6; fill:none; }
+      .comp { stroke:#111; stroke-width:1.6; fill:#fff; }
+      .net  { fill:#1d4ed8; font-weight:bold; }
+      .pin  { fill:#666; font-size:9px; }
+      .name { fill:#111; font-size:11px; }
+      .val  { fill:#333; font-size:10px; }
+      .ttl  { fill:#111; font-size:13px; font-weight:bold; }
+      .note { fill:#444; font-size:11px; }
+      .gray { fill:#888; font-size:10px; }
+    </style>
+  </defs>
+  <rect x="0" y="0" width="1560" height="1200" fill="#fff"/>
+
+  <!-- ============ ① 電源入力・保護 ============ -->
+  <text x="60" y="50" class="ttl">① 電源入力・保護（24V）</text>
+
+  <!-- J2 terminal block -->
+  <rect x="60" y="100" width="70" height="90" class="comp"/>
+  <text x="68" y="129" class="name">+24V</text>
+  <text x="68" y="169" class="name">GND</text>
+  <text x="60" y="210" class="val">J2 端子台 5.08mm 2P</text>
+  <line x1="130" y1="125" x2="170" y2="125" class="wire"/>
+  <line x1="130" y1="165" x2="140" y2="165" class="wire"/>
+  <line x1="140" y1="165" x2="140" y2="265" class="wire"/>
+
+  <!-- F1 PPTC -->
+  <rect x="170" y="108" width="80" height="34" class="comp"/>
+  <text x="182" y="129" class="name">PPTC</text>
+  <text x="170" y="100" class="val">F1 3A/33V (2920)</text>
+  <line x1="250" y1="125" x2="300" y2="125" class="wire"/>
+
+  <!-- Q1 P-MOSFET reverse protection -->
+  <rect x="300" y="95" width="90" height="60" class="comp"/>
+  <text x="326" y="120" class="name">P-MOS</text>
+  <text x="306" y="140" class="pin">D</text>
+  <text x="378" y="140" class="pin">S</text>
+  <text x="350" y="150" class="pin">G</text>
+  <text x="290" y="88" class="val">Q1 S-LP2408LT1G（−40V/−3A 逆接保護）</text>
+  <line x1="345" y1="155" x2="345" y2="200" class="wire"/>
+
+  <!-- Source rail to VS -->
+  <line x1="390" y1="125" x2="700" y2="125" class="wire"/>
+  <text x="705" y="129" class="net">VS</text>
+  <circle cx="440" cy="125" r="3" fill="#111"/>
+  <circle cx="490" cy="125" r="3" fill="#111"/>
+  <circle cx="550" cy="125" r="3" fill="#111"/>
+
+  <!-- D2 zener gate clamp -->
+  <line x1="440" y1="125" x2="440" y2="150" class="wire"/>
+  <polygon points="432,150 448,150 440,168" class="comp"/>
+  <polyline points="430,168 434,172 446,172 450,164" class="wire"/>
+  <line x1="440" y1="172" x2="440" y2="190" class="wire"/>
+  <line x1="440" y1="190" x2="345" y2="190" class="wire"/>
+  <circle cx="345" cy="190" r="3" fill="#111"/>
+  <text x="454" y="164" class="val">D2 BZT52C12（G-S保護）</text>
+
+  <!-- R8 gate pulldown -->
+  <line x1="345" y1="190" x2="345" y2="200" class="wire"/>
+  <rect x="336" y="200" width="18" height="40" class="comp"/>
+  <text x="358" y="224" class="val">R8 10k</text>
+  <line x1="345" y1="240" x2="345" y2="265" class="wire"/>
+
+  <!-- D1 TVS -->
+  <line x1="490" y1="125" x2="490" y2="152" class="wire"/>
+  <polygon points="482,180 498,180 490,155" class="comp"/>
+  <polyline points="480,155 484,151 496,151 500,159" class="wire"/>
+  <line x1="490" y1="180" x2="490" y2="265" class="wire"/>
+  <text x="504" y="172" class="val">D1 SMBJ33A</text>
+
+  <!-- C1 bulk -->
+  <line x1="550" y1="125" x2="550" y2="162" class="wire"/>
+  <line x1="536" y1="162" x2="564" y2="162" class="wire"/>
+  <line x1="536" y1="171" x2="564" y2="171" class="wire"/>
+  <text x="528" y="158" class="name">+</text>
+  <line x1="550" y1="171" x2="550" y2="265" class="wire"/>
+  <text x="564" y="197" class="val">C1 100µF/35V</text>
+
+  <!-- GND rail -->
+  <line x1="140" y1="265" x2="560" y2="265" class="wire"/>
+  <line x1="335" y1="265" x2="365" y2="265" class="wire"/>
+  <line x1="340" y1="272" x2="360" y2="272" class="wire"/>
+  <line x1="345" y1="279" x2="355" y2="279" class="wire"/>
+  <circle cx="345" cy="265" r="3" fill="#111"/>
+  <circle cx="490" cy="265" r="3" fill="#111"/>
+  <circle cx="550" cy="265" r="3" fill="#111"/>
+
+  <!-- ============ 設計メモ ============ -->
+  <text x="780" y="50" class="ttl">設計メモ</text>
+  <text x="780" y="76"  class="note">・R_IREF=12kΩ → IFS=3.0A（CURRENT_RANGE=3A）。GLOBALSCALER=181・IRUN=31 → 1.5A RMS</text>
+  <text x="780" y="98"  class="note">・UART_EN=GND で4線SPI選択。CLK=GND で内蔵発振器（12.5MHz±5%）</text>
+  <text x="780" y="120" class="note">・DIAG0/1 はオープンドレイン既定 → 10kΩプルアップ必須。CSN/SCK/SDI は内部プルダウン</text>
+  <text x="780" y="142" class="note">・SLEEPN=H で動作（内部プルダウン）。DRV_ENN=L で出力有効 → プルアップで起動時は無効</text>
+  <text x="780" y="164" class="note">・AGND / EP（露出パッド）は GND ベタへ。EP 直下にサーマルビア 3×3 以上</text>
+  <text x="780" y="186" class="note">・損失見積 ≈1.0〜1.5W（RDSon: HS 0.12Ω + LS 0.11Ω, 1.5A RMS ×2相）</text>
+  <text x="780" y="208" class="note">・C10〜C13（1nF, モータ出力のEMC対策）は DNP 可</text>
+  <text x="780" y="230" class="note">・VDD1V8 は内蔵1.8Vコア電源の「出力」。負荷接続禁止、2.2µF のみ接続</text>
+
+  <!-- ============ J1 header ============ -->
+  <text x="60" y="368" class="ttl">J1 2.54mm 1×12（Pico 接続）</text>
+  <rect x="60" y="380" width="75" height="370" class="comp"/>
+  <!-- pins -->
+  <g class="name">
+    <text x="70" y="399">1</text><text x="70" y="429">2</text><text x="70" y="459">3</text>
+    <text x="70" y="489">4</text><text x="70" y="519">5</text><text x="70" y="549">6</text>
+    <text x="70" y="579">7</text><text x="70" y="609">8</text><text x="70" y="639">9</text>
+    <text x="70" y="669">10</text><text x="70" y="699">11</text><text x="70" y="729">12</text>
+  </g>
+  <g class="wire">
+    <line x1="135" y1="395" x2="185" y2="395"/><line x1="135" y1="425" x2="185" y2="425"/>
+    <line x1="135" y1="455" x2="185" y2="455"/><line x1="135" y1="485" x2="185" y2="485"/>
+    <line x1="135" y1="515" x2="185" y2="515"/><line x1="135" y1="545" x2="185" y2="545"/>
+    <line x1="135" y1="575" x2="185" y2="575"/><line x1="135" y1="605" x2="185" y2="605"/>
+    <line x1="135" y1="635" x2="185" y2="635"/><line x1="135" y1="665" x2="185" y2="665"/>
+    <line x1="135" y1="695" x2="185" y2="695"/><line x1="135" y1="725" x2="185" y2="725"/>
+  </g>
+  <g class="net">
+    <text x="190" y="399">GND</text><text x="190" y="429">3V3</text><text x="190" y="459">SCK</text>
+    <text x="190" y="489">SDI</text><text x="190" y="519">SDO</text><text x="190" y="549">CSN</text>
+    <text x="190" y="579">ENN</text><text x="190" y="609">DIAG0</text><text x="190" y="639">DIAG1</text>
+    <text x="190" y="669">REFL</text><text x="190" y="699">REFR</text><text x="190" y="729">GND</text>
+  </g>
+  <g class="gray">
+    <text x="255" y="429">Pico 3V3(OUT)</text><text x="255" y="459">GP18 SPI0 SCK</text>
+    <text x="255" y="489">GP19 SPI0 TX</text><text x="255" y="519">GP16 SPI0 RX</text>
+    <text x="255" y="549">GP17</text><text x="255" y="579">任意GPIO</text>
+    <text x="255" y="609">任意GPIO</text><text x="255" y="639">任意GPIO</text>
+    <text x="255" y="669">原点SW(任意)</text><text x="255" y="699">原点SW(任意)</text>
+  </g>
+
+  <!-- ============ U1 TMC5240 ============ -->
+  <text x="700" y="320" class="ttl">U1 TMC5240ATJ+T（TQFN-32 5×5, EP=GND）</text>
+  <rect x="700" y="330" width="360" height="540" class="comp" stroke-width="2"/>
+
+  <!-- left pins -->
+  <g class="wire">
+    <line x1="650" y1="360" x2="700" y2="360"/><line x1="650" y1="392" x2="700" y2="392"/>
+    <line x1="650" y1="424" x2="700" y2="424"/><line x1="650" y1="456" x2="700" y2="456"/>
+    <line x1="650" y1="488" x2="700" y2="488"/><line x1="650" y1="520" x2="700" y2="520"/>
+    <line x1="650" y1="552" x2="700" y2="552"/><line x1="650" y1="584" x2="700" y2="584"/>
+    <line x1="650" y1="616" x2="700" y2="616"/><line x1="650" y1="648" x2="700" y2="648"/>
+    <line x1="655" y1="680" x2="700" y2="680"/><line x1="655" y1="712" x2="700" y2="712"/>
+    <line x1="655" y1="744" x2="700" y2="744"/><line x1="655" y1="776" x2="700" y2="776"/>
+    <line x1="655" y1="808" x2="700" y2="808"/><line x1="655" y1="840" x2="700" y2="840"/>
+  </g>
+  <g class="pin" text-anchor="end">
+    <text x="694" y="355">5</text><text x="694" y="387">9</text><text x="694" y="419">26</text>
+    <text x="694" y="451">27</text><text x="694" y="483">28</text><text x="694" y="515">29</text>
+    <text x="694" y="547">11</text><text x="694" y="579">12</text><text x="694" y="611">31</text>
+    <text x="694" y="643">32</text><text x="694" y="675">8</text><text x="694" y="707">7</text>
+    <text x="694" y="739">6</text><text x="694" y="771">10</text><text x="694" y="803">2</text>
+    <text x="694" y="835">30</text>
+  </g>
+  <g class="name">
+    <text x="706" y="364">VCC_IO</text><text x="706" y="396">DRV_ENN</text><text x="706" y="428">CSN</text>
+    <text x="706" y="460">SCK</text><text x="706" y="492">SDI</text><text x="706" y="524">SDO</text>
+    <text x="706" y="556">DIAG0</text><text x="706" y="588">DIAG1/SW</text><text x="706" y="620">REFL</text>
+    <text x="706" y="652">REFR</text><text x="706" y="684">ENCA</text><text x="706" y="716">ENCB</text>
+    <text x="706" y="748">ENCN</text><text x="706" y="780">UART_EN</text><text x="706" y="812">AIN</text>
+    <text x="706" y="844">CLK</text>
+  </g>
+  <g class="net" text-anchor="end">
+    <text x="645" y="364">3V3</text><text x="645" y="396">ENN</text><text x="645" y="428">CSN</text>
+    <text x="645" y="460">SCK</text><text x="645" y="492">SDI</text><text x="645" y="524">SDO</text>
+    <text x="645" y="556">DIAG0</text><text x="645" y="588">DIAG1</text><text x="645" y="620">REFL</text>
+    <text x="645" y="652">REFR</text>
+  </g>
+  <!-- GND strap bus (ENCA..CLK) -->
+  <line x1="655" y1="680" x2="655" y2="852" class="wire"/>
+  <circle cx="655" cy="712" r="3" fill="#111"/><circle cx="655" cy="744" r="3" fill="#111"/>
+  <circle cx="655" cy="776" r="3" fill="#111"/><circle cx="655" cy="808" r="3" fill="#111"/>
+  <circle cx="655" cy="840" r="3" fill="#111"/>
+  <line x1="645" y1="852" x2="665" y2="852" class="wire"/>
+  <line x1="649" y1="858" x2="661" y2="858" class="wire"/>
+  <line x1="652" y1="864" x2="658" y2="864" class="wire"/>
+  <text x="640" y="770" class="gray" text-anchor="end">未使用→GND</text>
+  <text x="640" y="784" class="gray" text-anchor="end">UART_EN=GND: SPI</text>
+  <text x="640" y="848" class="gray" text-anchor="end">CLK=GND: 内蔵OSC</text>
+
+  <!-- right pins -->
+  <g class="wire">
+    <line x1="1060" y1="355" x2="1110" y2="355"/><line x1="1060" y1="385" x2="1110" y2="385"/>
+    <line x1="1060" y1="415" x2="1110" y2="415"/><line x1="1060" y1="445" x2="1110" y2="445"/>
+    <line x1="1060" y1="475" x2="1110" y2="475"/><line x1="1060" y1="505" x2="1110" y2="505"/>
+    <line x1="1060" y1="535" x2="1110" y2="535"/><line x1="1060" y1="565" x2="1085" y2="565"/>
+    <line x1="1060" y1="595" x2="1110" y2="595"/>
+    <line x1="1060" y1="625" x2="1330" y2="625"/><line x1="1060" y1="655" x2="1330" y2="655"/>
+    <line x1="1060" y1="685" x2="1330" y2="685"/><line x1="1060" y1="715" x2="1330" y2="715"/>
+    <line x1="1060" y1="745" x2="1200" y2="745"/><line x1="1060" y1="775" x2="1120" y2="775"/>
+    <line x1="1060" y1="805" x2="1075" y2="805"/><line x1="1060" y1="835" x2="1075" y2="835"/>
+  </g>
+  <g class="pin">
+    <text x="1066" y="350">17</text><text x="1066" y="380">20</text><text x="1066" y="410">21</text>
+    <text x="1066" y="440">24</text><text x="1066" y="470">16</text><text x="1066" y="500">15</text>
+    <text x="1066" y="530">14</text><text x="1066" y="560">13</text><text x="1066" y="590">25</text>
+    <text x="1066" y="620">23</text><text x="1066" y="650">22</text><text x="1066" y="680">18</text>
+    <text x="1066" y="710">19</text><text x="1066" y="740">1</text><text x="1066" y="770">3</text>
+    <text x="1066" y="800">4</text><text x="1066" y="830">EP</text>
+  </g>
+  <g class="name" text-anchor="end">
+    <text x="1054" y="359">VS</text><text x="1054" y="389">VS</text><text x="1054" y="419">VS</text>
+    <text x="1054" y="449">VS</text><text x="1054" y="479">VCP</text><text x="1054" y="509">CPO</text>
+    <text x="1054" y="539">CPI</text><text x="1054" y="569">OV</text><text x="1054" y="599">SLEEPN</text>
+    <text x="1054" y="629">OUT1A</text><text x="1054" y="659">OUT2A</text><text x="1054" y="689">OUT1B</text>
+    <text x="1054" y="719">OUT2B</text><text x="1054" y="749">IREF</text><text x="1054" y="779">VDD1V8</text>
+    <text x="1054" y="809">AGND</text><text x="1054" y="839">GND</text>
+  </g>
+
+  <!-- VS rail -->
+  <line x1="1110" y1="355" x2="1110" y2="445" class="wire"/>
+  <circle cx="1110" cy="385" r="3" fill="#111"/><circle cx="1110" cy="415" r="3" fill="#111"/>
+  <line x1="1110" y1="355" x2="1110" y2="315" class="wire"/>
+  <text x="1102" y="306" class="net">VS</text>
+
+  <!-- VCP/CPO/CPI net labels -->
+  <text x="1115" y="479" class="net">VCP</text>
+  <text x="1115" y="509" class="net">CPO</text>
+  <text x="1115" y="539" class="net">CPI</text>
+
+  <!-- OV n.c. -->
+  <line x1="1082" y1="560" x2="1092" y2="570" class="wire"/>
+  <line x1="1082" y1="570" x2="1092" y2="560" class="wire"/>
+  <text x="1098" y="569" class="gray">N.C.（過電圧クランプ未使用）</text>
+
+  <!-- SLEEPN -->
+  <text x="1115" y="599" class="net">3V3</text>
+
+  <!-- OUT net names -->
+  <text x="1150" y="619" class="net">OUT1A</text>
+  <text x="1150" y="649" class="net">OUT2A</text>
+  <text x="1150" y="679" class="net">OUT1B</text>
+  <text x="1150" y="709" class="net">OUT2B</text>
+
+  <!-- IREF resistor -->
+  <line x1="1200" y1="745" x2="1200" y2="765" class="wire"/>
+  <rect x="1191" y="765" width="18" height="40" class="comp"/>
+  <text x="1214" y="790" class="val">R1 12kΩ 1%</text>
+  <line x1="1200" y1="805" x2="1200" y2="828" class="wire"/>
+  <line x1="1190" y1="828" x2="1210" y2="828" class="wire"/>
+  <line x1="1194" y1="834" x2="1206" y2="834" class="wire"/>
+  <line x1="1197" y1="840" x2="1203" y2="840" class="wire"/>
+
+  <!-- VDD1V8 cap -->
+  <line x1="1120" y1="775" x2="1120" y2="792" class="wire"/>
+  <line x1="1106" y1="792" x2="1134" y2="792" class="wire"/>
+  <line x1="1106" y1="800" x2="1134" y2="800" class="wire"/>
+  <line x1="1120" y1="800" x2="1120" y2="826" class="wire"/>
+  <line x1="1110" y1="826" x2="1130" y2="826" class="wire"/>
+  <line x1="1114" y1="832" x2="1126" y2="832" class="wire"/>
+  <line x1="1117" y1="838" x2="1123" y2="838" class="wire"/>
+  <text x="1138" y="800" class="val">C8 2.2µF（AGNDへ）</text>
+
+  <!-- AGND + EP to GND -->
+  <line x1="1075" y1="805" x2="1075" y2="855" class="wire"/>
+  <circle cx="1075" cy="835" r="3" fill="#111"/>
+  <line x1="1065" y1="855" x2="1085" y2="855" class="wire"/>
+  <line x1="1069" y1="861" x2="1081" y2="861" class="wire"/>
+  <line x1="1072" y1="867" x2="1078" y2="867" class="wire"/>
+
+  <!-- ============ J3 motor terminal ============ -->
+  <text x="1300" y="592" class="ttl">J3 モータ端子台 5.08mm 4P</text>
+  <rect x="1330" y="605" width="75" height="130" class="comp"/>
+  <g class="name">
+    <text x="1340" y="629">1</text><text x="1340" y="659">2</text>
+    <text x="1340" y="689">3</text><text x="1340" y="719">4</text>
+  </g>
+  <path d="M 1415 615 q 10 25 0 50" class="wire"/>
+  <text x="1430" y="645" class="name">コイルA</text>
+  <path d="M 1415 675 q 10 25 0 50" class="wire"/>
+  <text x="1430" y="705" class="name">コイルB</text>
+
+  <!-- ============ ④ プルアップ / プルダウン ============ -->
+  <text x="60" y="930" class="ttl">④ プルアップ(3.3V) / プルダウン</text>
+  <line x1="80" y1="975" x2="330" y2="975" class="wire"/>
+  <text x="76" y="968" class="net" text-anchor="end">3V3</text>
+  <g class="wire">
+    <line x1="120" y1="975" x2="120" y2="985"/><line x1="180" y1="975" x2="180" y2="985"/>
+    <line x1="240" y1="975" x2="240" y2="985"/><line x1="300" y1="975" x2="300" y2="985"/>
+  </g>
+  <circle cx="120" cy="975" r="3" fill="#111"/><circle cx="180" cy="975" r="3" fill="#111"/>
+  <circle cx="240" cy="975" r="3" fill="#111"/>
+  <rect x="111" y="985" width="18" height="40" class="comp"/>
+  <rect x="171" y="985" width="18" height="40" class="comp"/>
+  <rect x="231" y="985" width="18" height="40" class="comp"/>
+  <rect x="291" y="985" width="18" height="40" class="comp"/>
+  <g class="val">
+    <text x="120" y="1042" text-anchor="middle">R2 10k</text>
+    <text x="180" y="1042" text-anchor="middle">R3 10k</text>
+    <text x="240" y="1042" text-anchor="middle">R4 10k</text>
+    <text x="300" y="1042" text-anchor="middle">R5 10k</text>
+  </g>
+  <g class="wire">
+    <line x1="120" y1="1025" x2="120" y2="1050"/><line x1="180" y1="1025" x2="180" y2="1050"/>
+    <line x1="240" y1="1025" x2="240" y2="1050"/><line x1="300" y1="1025" x2="300" y2="1050"/>
+  </g>
+  <g class="net" text-anchor="middle">
+    <text x="120" y="1066">CSN</text><text x="180" y="1066">ENN</text>
+    <text x="240" y="1066">DIAG0</text><text x="300" y="1066">DIAG1</text>
+  </g>
+  <!-- pulldowns REFL/REFR -->
+  <g class="net" text-anchor="middle">
+    <text x="380" y="968">REFL</text><text x="440" y="968">REFR</text>
+  </g>
+  <g class="wire">
+    <line x1="380" y1="975" x2="380" y2="985"/><line x1="440" y1="975" x2="440" y2="985"/>
+  </g>
+  <rect x="371" y="985" width="18" height="40" class="comp"/>
+  <rect x="431" y="985" width="18" height="40" class="comp"/>
+  <g class="val">
+    <text x="380" y="1042" text-anchor="middle">R6 10k</text>
+    <text x="440" y="1042" text-anchor="middle">R7 10k</text>
+  </g>
+  <g class="wire">
+    <line x1="380" y1="1025" x2="380" y2="1050"/><line x1="440" y1="1025" x2="440" y2="1050"/>
+    <line x1="360" y1="1050" x2="460" y2="1050"/>
+    <line x1="400" y1="1057" x2="420" y2="1057"/>
+    <line x1="404" y1="1063" x2="416" y2="1063"/>
+    <line x1="407" y1="1069" x2="413" y2="1069"/>
+  </g>
+
+  <!-- ============ ② デカップリング（U1近傍） ============ -->
+  <text x="520" y="930" class="ttl">② デカップリング（U1 の各ピン直近に配置）</text>
+  <g class="net" text-anchor="middle">
+    <text x="540" y="968">VS</text><text x="595" y="968">VS</text>
+    <text x="650" y="968">VS</text><text x="705" y="968">VS</text>
+    <text x="760" y="968">3V3</text>
+    <text x="815" y="968">OUT1A</text><text x="875" y="968">OUT2A</text>
+    <text x="935" y="968">OUT1B</text><text x="995" y="968">OUT2B</text>
+  </g>
+  <g class="wire">
+    <line x1="540" y1="975" x2="540" y2="998"/><line x1="595" y1="975" x2="595" y2="998"/>
+    <line x1="650" y1="975" x2="650" y2="998"/><line x1="705" y1="975" x2="705" y2="998"/>
+    <line x1="760" y1="975" x2="760" y2="998"/><line x1="815" y1="975" x2="815" y2="998"/>
+    <line x1="875" y1="975" x2="875" y2="998"/><line x1="935" y1="975" x2="935" y2="998"/>
+    <line x1="995" y1="975" x2="995" y2="998"/>
+  </g>
+  <g class="wire">
+    <line x1="526" y1="998" x2="554" y2="998"/><line x1="526" y1="1006" x2="554" y2="1006"/>
+    <line x1="581" y1="998" x2="609" y2="998"/><line x1="581" y1="1006" x2="609" y2="1006"/>
+    <line x1="636" y1="998" x2="664" y2="998"/><line x1="636" y1="1006" x2="664" y2="1006"/>
+    <line x1="691" y1="998" x2="719" y2="998"/><line x1="691" y1="1006" x2="719" y2="1006"/>
+    <line x1="746" y1="998" x2="774" y2="998"/><line x1="746" y1="1006" x2="774" y2="1006"/>
+    <line x1="801" y1="998" x2="829" y2="998"/><line x1="801" y1="1006" x2="829" y2="1006"/>
+    <line x1="861" y1="998" x2="889" y2="998"/><line x1="861" y1="1006" x2="889" y2="1006"/>
+    <line x1="921" y1="998" x2="949" y2="998"/><line x1="921" y1="1006" x2="949" y2="1006"/>
+    <line x1="981" y1="998" x2="1009" y2="998"/><line x1="981" y1="1006" x2="1009" y2="1006"/>
+  </g>
+  <g class="wire">
+    <line x1="540" y1="1006" x2="540" y2="1055"/><line x1="595" y1="1006" x2="595" y2="1055"/>
+    <line x1="650" y1="1006" x2="650" y2="1055"/><line x1="705" y1="1006" x2="705" y2="1055"/>
+    <line x1="760" y1="1006" x2="760" y2="1055"/><line x1="815" y1="1006" x2="815" y2="1055"/>
+    <line x1="875" y1="1006" x2="875" y2="1055"/><line x1="935" y1="1006" x2="935" y2="1055"/>
+    <line x1="995" y1="1006" x2="995" y2="1055"/>
+    <line x1="520" y1="1055" x2="1015" y2="1055"/>
+    <line x1="755" y1="1063" x2="775" y2="1063"/>
+    <line x1="759" y1="1069" x2="771" y2="1069"/>
+    <line x1="762" y1="1075" x2="768" y2="1075"/>
+  </g>
+  <g class="val" text-anchor="middle">
+    <text x="540" y="1032">C2</text><text x="595" y="1032">C3</text>
+    <text x="650" y="1032">C4</text><text x="705" y="1032">C5</text>
+    <text x="760" y="1032">C9</text>
+    <text x="815" y="1032">C10</text><text x="875" y="1032">C11</text>
+    <text x="935" y="1032">C12</text><text x="995" y="1032">C13</text>
+  </g>
+  <g class="val" text-anchor="middle">
+    <text x="540" y="1046">1µF</text><text x="595" y="1046">1µF</text>
+    <text x="650" y="1046">100n</text><text x="705" y="1046">100n</text>
+    <text x="760" y="1046">100n</text>
+    <text x="815" y="1046">1nF*</text><text x="875" y="1046">1nF*</text>
+    <text x="935" y="1046">1nF*</text><text x="995" y="1046">1nF*</text>
+  </g>
+  <text x="520" y="1095" class="gray">* C10〜C13 はEMC対策（DNP可）。C2/C4 と C3/C5 は VS ピン2グループの直近に分置</text>
+
+  <!-- ============ ③ チャージポンプ ============ -->
+  <text x="1060" y="930" class="ttl">③ チャージポンプ</text>
+  <text x="1088" y="984" class="net" text-anchor="end">CPO</text>
+  <line x1="1095" y1="980" x2="1140" y2="980" class="wire"/>
+  <line x1="1140" y1="968" x2="1140" y2="992" class="wire"/>
+  <line x1="1150" y1="968" x2="1150" y2="992" class="wire"/>
+  <line x1="1150" y1="980" x2="1195" y2="980" class="wire"/>
+  <text x="1202" y="984" class="net">CPI</text>
+  <text x="1250" y="984" class="val">C6 22nF/50V</text>
+
+  <text x="1088" y="1034" class="net" text-anchor="end">VCP</text>
+  <line x1="1095" y1="1030" x2="1140" y2="1030" class="wire"/>
+  <line x1="1140" y1="1018" x2="1140" y2="1042" class="wire"/>
+  <line x1="1150" y1="1018" x2="1150" y2="1042" class="wire"/>
+  <line x1="1150" y1="1030" x2="1195" y2="1030" class="wire"/>
+  <text x="1202" y="1034" class="net">VS</text>
+  <text x="1250" y="1034" class="val">C7 1µF（VSピン直近）</text>
+
+  <!-- ============ title block ============ -->
+  <rect x="1220" y="1090" width="320" height="90" class="comp"/>
+  <text x="1235" y="1115" class="ttl">TMC5240 子基板</text>
+  <text x="1235" y="1138" class="note">24V / 1.5A RMS / SPI（Raspberry Pi Pico）</text>
+  <text x="1235" y="1160" class="note">Rev.1　2026-07-02　JLCPCB 発注前提</text>
+</svg>
