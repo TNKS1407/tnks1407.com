@@ -121,16 +121,17 @@
   <g class="net">
     <text x="190" y="399">GND</text><text x="190" y="429">3V3</text><text x="190" y="459">SCK</text>
     <text x="190" y="489">SDI</text><text x="190" y="519">SDO</text><text x="190" y="549">CSN</text>
-    <text x="190" y="579">ENN</text><text x="190" y="609">DIAG0</text><text x="190" y="639">DIAG1</text>
-    <text x="190" y="669">REFL</text><text x="190" y="699">REFR</text><text x="190" y="729">GND</text>
+    <text x="190" y="579">REFL</text><text x="190" y="609">REFR</text><text x="190" y="639">ENN</text>
+    <text x="190" y="669">DIAG0</text><text x="190" y="699">DIAG1</text><text x="190" y="729">GND</text>
   </g>
   <g class="gray">
     <text x="255" y="429">Pico 3V3(OUT)</text><text x="255" y="459">GP18 SPI0 SCK</text>
     <text x="255" y="489">GP19 SPI0 TX</text><text x="255" y="519">GP16 SPI0 RX</text>
-    <text x="255" y="549">GP17</text><text x="255" y="579">任意GPIO</text>
-    <text x="255" y="609">任意GPIO</text><text x="255" y="639">任意GPIO</text>
-    <text x="255" y="669">原点SW(任意)</text><text x="255" y="699">原点SW(任意)</text>
+    <text x="255" y="549">GP17</text><text x="255" y="579">原点SW(任意)</text>
+    <text x="255" y="609">原点SW(任意)</text><text x="255" y="639">任意GPIO</text>
+    <text x="255" y="669">任意GPIO</text><text x="255" y="699">任意GPIO</text>
   </g>
+  <text x="60" y="770" class="gray">※ピン並びは基板配線の交差回避に合わせた順（Rev.2a レイアウト確定値）</text>
 
   <!-- ============ U1 TMC5240 ============ -->
   <text x="700" y="320" class="ttl">U1 TMC5240ATJ+T（TQFN-32 5×5, EP=GND）</text>
@@ -196,16 +197,16 @@
     <text x="1066" y="350">17</text><text x="1066" y="380">20</text><text x="1066" y="410">21</text>
     <text x="1066" y="440">24</text><text x="1066" y="470">16</text><text x="1066" y="500">15</text>
     <text x="1066" y="530">14</text><text x="1066" y="560">13</text><text x="1066" y="590">25</text>
-    <text x="1066" y="620">23</text><text x="1066" y="650">22</text><text x="1066" y="680">18</text>
-    <text x="1066" y="710">19</text><text x="1066" y="740">1</text><text x="1066" y="770">3</text>
+    <text x="1066" y="620">23</text><text x="1066" y="650">22</text><text x="1066" y="680">19</text>
+    <text x="1066" y="710">18</text><text x="1066" y="740">1</text><text x="1066" y="770">3</text>
     <text x="1066" y="800">4</text><text x="1066" y="830">EP</text>
   </g>
   <g class="name" text-anchor="end">
     <text x="1054" y="359">VS</text><text x="1054" y="389">VS</text><text x="1054" y="419">VS</text>
     <text x="1054" y="449">VS</text><text x="1054" y="479">VCP</text><text x="1054" y="509">CPO</text>
     <text x="1054" y="539">CPI</text><text x="1054" y="569">OV</text><text x="1054" y="599">SLEEPN</text>
-    <text x="1054" y="629">OUT1A</text><text x="1054" y="659">OUT2A</text><text x="1054" y="689">OUT1B</text>
-    <text x="1054" y="719">OUT2B</text><text x="1054" y="749">IREF</text><text x="1054" y="779">VDD1V8</text>
+    <text x="1054" y="629">OUT1A</text><text x="1054" y="659">OUT2A</text><text x="1054" y="689">OUT2B</text>
+    <text x="1054" y="719">OUT1B</text><text x="1054" y="749">IREF</text><text x="1054" y="779">VDD1V8</text>
     <text x="1054" y="809">AGND</text><text x="1054" y="839">GND</text>
   </g>
 
@@ -231,8 +232,8 @@
   <!-- OUT net names -->
   <text x="1150" y="619" class="net">OUT1A</text>
   <text x="1150" y="649" class="net">OUT2A</text>
-  <text x="1150" y="679" class="net">OUT1B</text>
-  <text x="1150" y="709" class="net">OUT2B</text>
+  <text x="1150" y="679" class="net">OUT2B</text>
+  <text x="1150" y="709" class="net">OUT1B</text>
 
   <!-- IREF resistor -->
   <line x1="1200" y1="745" x2="1200" y2="765" class="wire"/>
@@ -271,6 +272,7 @@
   <text x="1430" y="645" class="name">コイルA</text>
   <path d="M 1415 675 q 10 25 0 50" class="wire"/>
   <text x="1430" y="705" class="name">コイルB</text>
+  <text x="1300" y="755" class="gray">並び: A1 A2 B2 B1（配線交差回避）</text>
 
   <!-- ============ ④ プルアップ / プルダウン ============ -->
   <text x="60" y="930" class="ttl">④ プルアップ(3.3V) / プルダウン</text>

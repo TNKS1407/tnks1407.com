@@ -10,7 +10,7 @@ Comment,Designator,Footprint,LCSC Part #,Basic/Extended,Notes
 "22nF 50V X7R",C6,0603,C21122,Basic,"チャージポンプ フライングキャパシタ CPO-CPI"
 "1uF 50V X7R",C7,0805,C28323,Basic,"VCP-VS リザーバ。VSピン直近に配置"
 "2.2uF 16V X5R",C8,0603,C23630,Basic,"VDD1V8(内蔵1.8Vコア)用。AGNDへ"
-"1nF 50V X7R (DNP可)",C10 C11 C12 C13,0603,C1588,Basic(要確認),"モータ出力EMC対策。省略可"
+"1nF 50V X7R (DNP可)",C10 C11 C12 C13,0603,C1588,Basic(要確認),"モータ出力EMC対策。Rev.2aレイアウトではパターン未実装（必要ならRev.3で追加）"
 "12k 1% (IREF)",R1,0603,C22790,Basic,"電流設定。1%必須"
 "10k 1%",R2 R3 R4 R5 R6 R7 R8 R9 R10 R11,0603,C25804,Basic,"プルアップ/プルダウン/ゲート/ENC未接続時確定"
 "Pin header 1x12 2.54mm",J1,THT_1x12_2.54mm,C124353,Extended,"Ckmtw B-2101S12P-A110。フットプリント要確認"

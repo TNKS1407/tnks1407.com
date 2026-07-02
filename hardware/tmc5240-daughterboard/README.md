@@ -1,8 +1,14 @@
-# TMC5240 ステッピングモータ駆動 子基板 — 設計書 Rev.2
+# TMC5240 ステッピングモータ駆動 子基板 — 設計書 Rev.2a
 
 JLCPCB 発注（PCBA、LCSC 在庫部品）前提。ホストは Raspberry Pi Pico（3.3V / SPI）。
 
 **Rev.2 変更点:** エンコーダ後付け対応（J4 追加、ENCA/B/N を GND 直結→ヘッダ＋10k プルダウンに変更）、UART_EN を GND 直結→ハンダジャンパ SJ1（既定 GND=SPI）に変更。
+
+**Rev.2a 変更点（レイアウト確定に伴う）:**
+- **KiCad 基板レイアウト完成**（`kicad/`、60×42mm 4層、**DRC エラー 0・未接続 0**）。製造データは `fab/`。
+- **J1 ピン並び変更**: 7〜11 番を `REFL, REFR, ENN, DIAG0, DIAG1` の順に（配線交差の完全回避のため）。
+- **J3 ピン並び変更**: `1:OUT1A, 2:OUT2A, 3:OUT2B, 4:OUT1B`（A1 A2 B2 B1）。コイルB の2線は太い配線を表層で交差なく引くための入替。結線はシルク表記に従えば従来と等価。
+- C10〜C13（1nF EMC対策、DNP可）は**基板にパターンを設けない**判断とした（必要になった事例が出たら Rev.3 で追加）。
 
 | 項目 | 値 |
 |---|---|
@@ -94,14 +100,16 @@ I_RMS = (GLOBALSCALER/256) × ((CS+1)/32) × IFS/√2
 | 4 | SDI (MOSI) | GP19 (SPI0 TX) |
 | 5 | SDO (MISO) | GP16 (SPI0 RX) |
 | 6 | CSN | GP17 |
-| 7 | ENN | 任意 GPIO（L=駆動許可） |
-| 8 | DIAG0 | 任意 GPIO（割込/StallGuard） |
-| 9 | DIAG1 | 任意 GPIO |
-| 10 | REFL | 原点SW（任意） |
-| 11 | REFR | 原点SW（任意） |
+| 7 | REFL | 原点SW（任意） |
+| 8 | REFR | 原点SW（任意） |
+| 9 | ENN | 任意 GPIO（L=駆動許可） |
+| 10 | DIAG0 | 任意 GPIO（割込/StallGuard） |
+| 11 | DIAG1 | 任意 GPIO |
 | 12 | GND | GND |
 
-**J2** 5.08mm 2P: +24V / GND　**J3** 5.08mm 4P: OUT1A / OUT2A（コイルA）, OUT1B / OUT2B（コイルB）
+> ピン並びは Rev.2a レイアウトの配線順に合わせた確定値（交差回避）。
+
+**J2** 5.08mm 2P: +24V / GND　**J3** 5.08mm 4P: `1:OUT1A / 2:OUT2A（コイルA）/ 3:OUT2B / 4:OUT1B（コイルB）`（シルク: A1 A2 B2 B1）
 
 **J4 2.54mm 1×5（エンコーダ、後付け可）**
 
@@ -121,30 +129,30 @@ I_RMS = (GLOBALSCALER/256) × ((CS+1)/32) × IFS/√2
 | 24V_F | F1.2, Q1.D |
 | VS | Q1.S, D2.K, D1.K, C1.+, C2.1, C3.1, C4.1, C5.1, C7.2, U1.17, U1.20, U1.21, U1.24 |
 | Q1_G | Q1.G, R8.1, D2.A |
-| 3V3 | J1.2, J4.1, U1.5(VCC_IO), U1.25(SLEEPN), R2.1, R3.1, R4.1, R5.1, C9.1, SJ1.1 |
+| 3V3 | J1.2, J4.1, U1.5(VCC_IO), U1.25(SLEEPN), R2.1, R3.2, R4.2, R5.2, C9.1, SJ1.3 |
 | SCK | J1.3, U1.27 |
 | SDI | J1.4, U1.28 |
 | SDO | J1.5, U1.29 |
 | CSN | J1.6, U1.26, R2.2 |
-| ENN | J1.7, U1.9(DRV_ENN), R3.2 |
-| DIAG0 | J1.8, U1.11, R4.2 |
-| DIAG1 | J1.9, U1.12, R5.2 |
-| REFL | J1.10, U1.31, R6.1 |
-| REFR | J1.11, U1.32, R7.1 |
-| ENCA | J4.2, U1.8, R9.1 |
-| ENCB | J4.3, U1.7, R10.1 |
-| ENCN | J4.4, U1.6, R11.1 |
+| ENN | J1.9, U1.9(DRV_ENN), R3.1 |
+| DIAG0 | J1.10, U1.11, R4.1 |
+| DIAG1 | J1.11, U1.12, R5.1 |
+| REFL | J1.7, U1.31, R6.1 |
+| REFR | J1.8, U1.32, R7.1 |
+| ENCA | J4.2, U1.8, R9.2 |
+| ENCB | J4.3, U1.7, R10.2 |
+| ENCN | J4.4, U1.6, R11.2 |
 | UART_EN | U1.10, SJ1.2（中央パッド） |
-| IREF | U1.1, R1.1 |
-| VDD1V8 | U1.3, C8.1 |
-| CPO | U1.15, C6.1 |
-| CPI | U1.14, C6.2 |
+| IREF | U1.1, R1.2 |
+| VDD1V8 | U1.3, C8.2 |
+| CPO | U1.15, C6.2 |
+| CPI | U1.14, C6.1 |
 | VCP | U1.16, C7.1 |
-| OUT1A | U1.23, J3.1, C10.1 |
-| OUT2A | U1.22, J3.2, C11.1 |
-| OUT1B | U1.18, J3.3, C12.1 |
-| OUT2B | U1.19, J3.4, C13.1 |
-| GND | J2.2, J1.1, J1.12, J4.5, D1.A, C1.−, C2–C5.2, C8.2(AGND経由), C9.2, C10–C13.2, R1.2, R6.2, R7.2, R8.2, R9.2, R10.2, R11.2, SJ1.3（既定ブリッジ側）, U1.2(AIN), U1.4(AGND), U1.30(CLK), U1.EP |
+| OUT1A | U1.23, J3.1 |
+| OUT2A | U1.22, J3.2 |
+| OUT2B | U1.19, J3.3 |
+| OUT1B | U1.18, J3.4 |
+| GND | J2.2, J1.1, J1.12, J4.5, D1.A, C1.−, C2–C5.2, C8.1(AGND経由), C9.2, R1.1, R6.2, R7.2, R8.2, R9.1, R10.1, R11.1, SJ1.1（既定ブリッジ側）, U1.2(AIN), U1.4(AGND), U1.30(CLK), U1.EP, H1–H3 |
 
 ## 4. 発熱見積
 
@@ -159,6 +167,19 @@ I_RMS = (GLOBALSCALER/256) × ((CS+1)/32) × IFS/√2
 - C2/C4 と C3/C5 は VS ピンの2グループにそれぞれ配置。C1 はその外側。
 - AGND（pin4）と C8 のリターンは静かな GND 経由で EP ベタへ（モータ電流経路と分ける）。
 - OUT 配線は太く短く。J2/J3（24V系）と J1（3.3V系）は物理的に分離。
+
+## 5.5 KiCad レイアウト（Rev.2a、`kicad/` と `fab/`）
+
+- **基板**: 60 × 42 mm、**4層**（L1: 信号＋GNDベタ / L2: GND 全面 / L3: 3V3＋VS プレーン＋GND / L4: 一部信号＋GNDベタ）。M2.5 マウント穴 ×3（GND接続）。
+- **検証**: KiCad 7 DRC で **エラー 0・未接続パッド 0**（クリアランス 0.15mm、最小ビア 0.4/0.2 — JLCPCB 4層の標準能力内）。
+- **生成方法**: `kicad/generate_pcb.py` が基板を完全生成（`python3 generate_pcb.py`）。手修正せずスクリプトを変更して再生成する運用。
+- **主要配置**: J1(Pico)左端 / J2(24V)上左 / 保護回路（F1→Q1→D1→C1）上辺 / U1 中央（EP 直下サーマルビア9本） / J3(モータ)右端 / J4(エンコーダ)＋SJ1 下辺。
+- **電源**: 24V入力 2.0mm 幅、モータ出力はエスケープ 0.25→0.5→1.0mm 段階拡幅、VS/3V3 は内層プレーン給電。
+- **`fab/` の内容**:
+  - `tmc5240-daughterboard_gerbers.zip` — JLCPCB にそのままアップロードする製造データ（4層）
+  - `bom_jlcpcb_pcba.csv` / `cpl_jlcpcb.csv` — PCBA 用 BOM・配置データ
+- **発注手順**: ①zip をアップロード → 4 Layers を確認 ② PCBA(Economic) を選択、BOM/CPL を投入 ③ 部品照合で **U1 の在庫確保**と**回転（特に U1/Q1/D1/D2 の向き）を必ずプレビューで確認**（KiCad→JLCPCB の回転規約差は要目視）。
+- **PCBA 対象外**: J4（C番号未確定 → 手半田推奨）、SJ1（銅箔のみ）、H1–H3（穴）。J1/J2/J3 は THT — Economic PCBA の THT 対応か手半田かを選択。
 
 ## 6. JLCPCB 発注メモ
 
