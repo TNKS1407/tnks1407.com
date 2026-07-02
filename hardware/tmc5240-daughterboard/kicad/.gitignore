@@ -1,3 +1,4 @@
 *.kicad_prl
 drc.txt
 *-backups/
+drc2.txt
