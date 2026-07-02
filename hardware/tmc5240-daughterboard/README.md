@@ -1,6 +1,8 @@
-# TMC5240 ステッピングモータ駆動 子基板 — 設計書 Rev.1
+# TMC5240 ステッピングモータ駆動 子基板 — 設計書 Rev.2
 
 JLCPCB 発注（PCBA、LCSC 在庫部品）前提。ホストは Raspberry Pi Pico（3.3V / SPI）。
+
+**Rev.2 変更点:** エンコーダ後付け対応（J4 追加、ENCA/B/N を GND 直結→ヘッダ＋10k プルダウンに変更）、UART_EN を GND 直結→ハンダジャンパ SJ1（既定 GND=SPI）に変更。
 
 | 項目 | 値 |
 |---|---|
@@ -65,10 +67,20 @@ I_RMS = (GLOBALSCALER/256) × ((CS+1)/32) × IFS/√2
 - CPO–CPI: 22 nF/50V（C6）。VCP–VS: 1 µF（C7, **VS ピン直近に配置** — 誘導性ピーク回避のためデータシート指示）。
 
 ### ④ ロジック
-- UART_EN=GND（SPI選択）、CLK=GND（内蔵発振 12.5 MHz ±5%、SPI クロック上限 10 MHz）。
-- ENCA/ENCB/ENCN・AIN 未使用 → GND。OV ピン未使用 → 開放（過電圧クランプFETは未実装）。
+- UART_EN → **SJ1（3パッドハンダジャンパ、既定 GND側ブリッジ = 4線SPI）**。3V3 側に付け替えると1線UARTモード。CLK=GND（内蔵発振 12.5 MHz ±5%、SPI クロック上限 10 MHz）。
+- AIN 未使用 → GND。OV ピン未使用 → 開放（過電圧クランプFETは未実装）。
 - プルアップ 10k×4: CSN / ENN(DRV_ENN) / DIAG0 / DIAG1（DIAG はオープンドレイン既定のため必須）。
 - プルダウン 10k×2: REFL / REFR（未接続時のレベル確定。SW_MODE で極性設定可）。
+
+### ⑤ エンコーダ（後付け対応）
+- ENCA/ENCB/ENCN を J4（2.54mm 1×5: 3V3 / A / B / N / GND）へ引き出し。**未接続時は R9〜R11 の 10k プルダウンでレベル確定**（フロート禁止のため）。
+- 対応エンコーダは **3.3V ロジック（VCC_IO ドメイン）の ABN インクリメンタル**。5V 出力品はレベル変換が必要。
+- 使うときのレジスタ: `ENCMODE`(0x38) で極性/クリア条件、`ENC_CONST`(0x3A) にエンコーダ分解能↔マイクロステップ換算、実位置は `X_ENC`(0x39)。N チャネルで StallGuard 原点出しより高精度なホーミングも可能。
+
+### UART について（設計判断）
+- Pico と1対1の本構成では **SPI を正式採用**。全二重・10MHz・毎応答ステータス付きで、StealthChop2/StallGuard4 の全機能が使える。
+- TMC5240 の UART は1線半二重で、利点は配線削減と多軸デイジーチェーン（CSN/SCK/SDI がアドレスストラップ AD2/AD1/AD0 兼用）。単基板では利点なし。
+- ただし選択は UART_EN ピン1本なので、**SJ1 により追加部品ゼロで将来切替可能**にした。UART に切り替えた場合、J1 の SDI ピンが1線データ、CSN/SCK のプルアップ/プルダウン状態がノードアドレスになる点に注意。
 
 ### コネクタ
 
@@ -91,6 +103,16 @@ I_RMS = (GLOBALSCALER/256) × ((CS+1)/32) × IFS/√2
 
 **J2** 5.08mm 2P: +24V / GND　**J3** 5.08mm 4P: OUT1A / OUT2A（コイルA）, OUT1B / OUT2B（コイルB）
 
+**J4 2.54mm 1×5（エンコーダ、後付け可）**
+
+| ピン | 信号 | 備考 |
+|---|---|---|
+| 1 | 3V3 | エンコーダ電源（3.3V ロジック品のみ） |
+| 2 | ENCA | A相 |
+| 3 | ENCB | B相 |
+| 4 | ENCN | N（インデックス） |
+| 5 | GND | — |
+
 ## 3. ネットリスト
 
 | ネット | 接続 |
@@ -99,7 +121,7 @@ I_RMS = (GLOBALSCALER/256) × ((CS+1)/32) × IFS/√2
 | 24V_F | F1.2, Q1.D |
 | VS | Q1.S, D2.K, D1.K, C1.+, C2.1, C3.1, C4.1, C5.1, C7.2, U1.17, U1.20, U1.21, U1.24 |
 | Q1_G | Q1.G, R8.1, D2.A |
-| 3V3 | J1.2, U1.5(VCC_IO), U1.25(SLEEPN), R2.1, R3.1, R4.1, R5.1, C9.1 |
+| 3V3 | J1.2, J4.1, U1.5(VCC_IO), U1.25(SLEEPN), R2.1, R3.1, R4.1, R5.1, C9.1, SJ1.1 |
 | SCK | J1.3, U1.27 |
 | SDI | J1.4, U1.28 |
 | SDO | J1.5, U1.29 |
@@ -109,6 +131,10 @@ I_RMS = (GLOBALSCALER/256) × ((CS+1)/32) × IFS/√2
 | DIAG1 | J1.9, U1.12, R5.2 |
 | REFL | J1.10, U1.31, R6.1 |
 | REFR | J1.11, U1.32, R7.1 |
+| ENCA | J4.2, U1.8, R9.1 |
+| ENCB | J4.3, U1.7, R10.1 |
+| ENCN | J4.4, U1.6, R11.1 |
+| UART_EN | U1.10, SJ1.2（中央パッド） |
 | IREF | U1.1, R1.1 |
 | VDD1V8 | U1.3, C8.1 |
 | CPO | U1.15, C6.1 |
@@ -118,7 +144,7 @@ I_RMS = (GLOBALSCALER/256) × ((CS+1)/32) × IFS/√2
 | OUT2A | U1.22, J3.2, C11.1 |
 | OUT1B | U1.18, J3.3, C12.1 |
 | OUT2B | U1.19, J3.4, C13.1 |
-| GND | J2.2, J1.1, J1.12, D1.A, C1.−, C2–C5.2, C8.2(AGND経由), C9.2, C10–C13.2, R1.2, R6.2, R7.2, R8.2, U1.2(AIN), U1.4(AGND), U1.6(ENCN), U1.7(ENCB), U1.8(ENCA), U1.10(UART_EN), U1.30(CLK), U1.EP |
+| GND | J2.2, J1.1, J1.12, J4.5, D1.A, C1.−, C2–C5.2, C8.2(AGND経由), C9.2, C10–C13.2, R1.2, R6.2, R7.2, R8.2, R9.2, R10.2, R11.2, SJ1.3（既定ブリッジ側）, U1.2(AIN), U1.4(AGND), U1.30(CLK), U1.EP |
 
 ## 4. 発熱見積
 
@@ -148,8 +174,9 @@ I_RMS = (GLOBALSCALER/256) × ((CS+1)/32) × IFS/√2
 - [ ] CPO–CPI 22nF・VCP–VS 1µF がピン直近か
 - [ ] VDD1V8 に 2.2µF（AGND へ）、負荷を繋いでいないか
 - [ ] SLEEPN が 3V3 に接続されているか（内部プルダウンのため開放不可）
-- [ ] UART_EN=GND（SPI）、CLK=GND（内蔵OSC）か
-- [ ] DIAG0/1・CSN・ENN に 10k プルアップ、REFL/REFR に 10k プルダウン
+- [ ] SJ1 が GND 側ブリッジ（SPI）で製造されるか（銅箔ブリッジ or 製造時ハンダ指示）、CLK=GND（内蔵OSC）か
+- [ ] DIAG0/1・CSN・ENN に 10k プルアップ、REFL/REFR・ENCA/B/N に 10k プルダウン
+- [ ] エンコーダは 3.3V ロジック品か（5V 品はレベル変換要）
 - [ ] TVS クランプ電圧が VS 絶対最大（≈38V, 要確認）未満か／Q1 耐圧 −40V 以上か
 - [ ] EP サーマルビア・GND ベタ・IHOLD 低減の放熱3点セット
 - [ ] 発注直前の在庫・Basic/Extended 再確認（特に U1）
