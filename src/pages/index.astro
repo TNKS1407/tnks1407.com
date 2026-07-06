@@ -249,6 +249,38 @@ const works: Work[] = [
     status: "Single Crystal", section: "works", group: "engineering",
     prompt: "パワー MOSFET のスイッチング用途向け技術リファレンスを、実務で使える辞書的文書としてまとめてほしい。\n\n## 対象読者\n電子回路の基礎知識（Vgs, Id, RdsOn の意味は分かる）はあるが、\nスイッチング電源・モータードライバ・インバータでの MOSFET 設計に初めて踏み込む人。\n「データシートを見て何を確認すべきか」「なぜ壊れるか」が分かることがゴール。\n\n## ドキュメント構成\n### 1. MOSFET の選定フロー\n電圧マージン: Vds_max ≥ Vbus × 1.5 / 電流マージン: Id_max ≥ Ipeak × 1.3\nRdsOn（Tj=125°C）は温度で 2〜3 倍になることに注意\n\n### 2. 損失計算\n- P_on = Id² × RdsOn(Tj) × D（温度補正付き）\n- P_sw = 0.5 × Vds × Id × (tr+tf) × fs\n- P_g = Qg × Vgs × fs\n- ボディダイオード損失: V_f × I_d × (1-D)（同期整流使用時）\n\n### 3. ゲート駆動設計\n- ゲート抵抗 Rg の決め方: dV/dt ≈ (Vgs-Vth) / (Rg × Cgd)\n- ブートストラップ回路: 最大 Duty は 99% 程度（100%連続では Cboot が充電できない）\n- 絶縁ドライバ: フォトカプラ（低速）/ パルストランス（中速）/ 専用IC（高速・小型）\n\n### 4. 熱設計\nTj = Tamb + Ptot × (Rth_JC + Rth_CH + Rth_HA)\n過渡熱インピーダンス曲線の読み方（パルス動作での許容損失）\n\n### 5. SOA（安全動作領域）\nDC/Pulse/Safe-Operating-Area 図の読み方\n誘導性負荷スイッチオフ時の Vds スパイク: V = L × dI/dt\n\n### 6. アバランシェ耐量\nEAS = 0.5 × L × I_peak² × Vbr/(Vbr - Vdc)\nインダクタンスエネルギー 0.5LI² との比較で壊れるかを判定\n\n### 7. よくある故障モードと対策\n- ゲート酸化膜破壊: Vgs_max（通常 ±20V）を超えないこと\n- 過電流による熱暴走: デレーティングと保護回路\n- dV/dt 誤作動: Rg の増大・Cgd に対する Vgs の影響\n\n### 8. 参考文献\nInfineon AN2020 / Infineon EiceDRIVER AN2019 / IRF Design Tip 94-1\n\n## スタイル指針\n- 式はテキスト表記（LaTeX 不要、プレーン HTML で表示できる）\n- 数値例は実際に使いそうな値（100V/10A、fs=100kHz）\n- 「なぜそうなるか」の物理的直感を必ず添える\n- 実務でよく見る間違い・落とし穴を「注意」として明示する",
   },
+  {
+    title: "KenzuBoard — 検図 → AI依頼書",
+    icon: "🖍️",
+    description: "基板図・図面のスクショに赤ペンで指摘を描き込むと、AIが読める構造化修正依頼（指示・理由・受入条件）に変換。赤ペン付きcrop画像とMD/JSON/AI依頼書をZIPで書き出す。画像もデータも端末内だけ（IndexedDB）だから機密案件でも使える。",
+    url: "https://kenzu.tnks1407.com",
+    tags: ["JavaScript", "Konva", "検図", "AI Workflow"],
+    status: "Annealing", section: "works", group: "engineering",
+  },
+  {
+    title: "数値積分ラボ — 未来を1コマずつ作る",
+    icon: "🎞️",
+    description: "自由落下を「加速度→速度→位置」の更新ループ（オイラー法）で1コマずつ解く。式・表・x-tグラフを並べて“数値積分が未来を作る”感覚を体感するインタラクティブ。解説記事「数値積分とは何か」とつながる実験台。",
+    url: "https://euler.tnks1407.com",
+    tags: ["JavaScript", "数値積分", "物理", "教材"],
+    status: "Nucleation", section: "lab", group: "engineering",
+  },
+  {
+    title: "エネルギー地形ラボ",
+    icon: "⛰️",
+    description: "ポテンシャル U(x) の谷を粒子が転がる。粒子の高さが位置エネルギー、全エネルギー線との隙間が運動エネルギー。摩擦を 0 にすると和が変わらない＝力学的エネルギー保存を、地形をいじりながら確かめる。",
+    url: "https://energy.tnks1407.com",
+    tags: ["JavaScript", "力学", "エネルギー保存", "教材"],
+    status: "Nucleation", section: "lab", group: "engineering",
+  },
+  {
+    title: "図ワークベンチ",
+    icon: "✒️",
+    description: "物理教材用SVGをサイト共通の「図の文法」（力=ティール、加速度=橙…）で下書き→編集→書き出しする作業台。AIに下書きさせた図をここで仕上げて解説記事へ送る、教材制作の裏方ツール。",
+    url: "https://figlab.tnks1407.com",
+    tags: ["SVG", "教材制作", "図版"],
+    status: "Nucleation", section: "works", group: "utilities",
+  },
 ];
 
 const uniqueTags = [...new Set(works.flatMap(w => w.tags))];
@@ -704,7 +736,7 @@ const favKey = (w: Work) => {
     </main>
 
     <footer>
-      © 2026 TNKS1407 ·
+      © {new Date().getFullYear()} TNKS1407 ·
       <a href="/comments">みんなのコメント</a> ·
       <a href="https://github.com/TNKS1407" target="_blank" rel="noopener noreferrer">GitHub</a> ·
       <a href="https://tnkblog.net" target="_blank" rel="noopener noreferrer">Blog</a> ·
