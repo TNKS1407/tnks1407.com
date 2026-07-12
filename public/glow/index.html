@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>熱放射ラボ ── すべての物は光っている (プランク曲線)</title>
+<style>
+  :root{
+    --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
+    --teal:#3c7876;--red:#c2543d;--amber:#c9761f;--blue:#2563aa;
+    --text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;}
+  body{font-family:'Zen Kaku Gothic New',system-ui,sans-serif;background:var(--bg);color:var(--text);
+    display:flex;flex-direction:column;overflow:hidden;}
+  #stage{flex:1;position:relative;min-height:0;}
+  canvas{display:block;width:100%;height:100%;}
+  .readout{position:absolute;right:10px;top:8px;font-size:.7rem;color:var(--muted);text-align:right;
+    font-family:'JetBrains Mono',monospace;line-height:1.55;pointer-events:none;background:rgba(250,248,244,.78);
+    border-radius:6px;padding:.3rem .5rem;}
+  .readout b{color:var(--text);font-weight:700;}
+  .ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.55rem .8rem;
+    display:flex;flex-wrap:wrap;gap:.5rem .9rem;align-items:center;}
+  .row{display:flex;align-items:center;gap:.4rem;font-size:.76rem;color:var(--muted);}
+  .row label{font-weight:700;white-space:nowrap;}
+  button{font:inherit;font-size:.74rem;font-weight:700;color:var(--text);background:var(--card);
+    border:1px solid var(--border);border-radius:8px;padding:.32rem .6rem;cursor:pointer;}
+  button:hover{border-color:var(--teal);}
+  button.on{background:var(--teal);color:#fff;border-color:var(--teal);}
+  input[type=range]{width:150px;accent-color:var(--teal);}
+  .val{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--text);min-width:4.4em;}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="c"></canvas>
+  <div class="readout" id="ro"></div>
+</div>
+<div class="ctrl">
+  <div class="row"><label>温度</label>
+    <input id="temp" type="range" min="0" max="100" step="0.2" value="42" />
+    <span class="val" id="tempv">310K</span></div>
+  <button id="p273">氷 273K</button>
+  <button id="p310" class="on">体温 310K</button>
+  <button id="p520">はんだごて 520K</button>
+  <button id="p2700">電球 2700K</button>
+  <button id="p5778">太陽 5778K</button>
+</div>
+<script>
+"use strict";
+// ============================================================
+// プランクの黒体放射 B_λ(T) = (2hc²/λ⁵) / (exp(hc/λkT) - 1)  [W·sr⁻¹·m⁻³]
+// ウィーンの変位則 λ_max = b/T,  b = 2897.771955 µm·K
+// ステファン・ボルツマン M = σT⁴,  σ = 5.670374419e-8 W·m⁻²·K⁻⁴
+// (定数はCODATA/SI定義値。縦軸は対数で切らずに描く)
+// ============================================================
+const h=6.62607015e-34, c=2.99792458e8, kB=1.380649e-23;
+const WIEN_B=2897.771955;            // µm·K
+const SIGMA=5.670374419e-8;
+function planck(lam_m, T){           // W / (sr·m³)
+  const x=h*c/(lam_m*kB*T);
+  if(x>700) return 0;                // exp溢れ(値は実質0)
+  return 2*h*c*c/Math.pow(lam_m,5)/Math.expm1(x);
+}
+
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const ro=document.getElementById('ro');
+let W=0,H=0,DPR=1;
+let T=310;
+let selftestMsg='';
+
+// 軸レンジ(対数): λ 0.1..100µm, B 1e3..1e14
+const LX0=Math.log10(0.1), LX1=Math.log10(100);
+const LY0=3, LY1=14.3;
+
+const PRESETS=[['p273',273],['p310',310],['p520',520],['p2700',2700],['p5778',5778]];
+function sliderToT(v){ return 250*Math.pow(6000/250, v/100); }
+function tToSlider(t){ return 100*Math.log(t/250)/Math.log(6000/250); }
+
+function resize(){
+  const r=cv.getBoundingClientRect();
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  W=r.width; H=r.height;
+  cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  draw();
+}
+function geom(){
+  const x0=56, x1=W-16, y0=40, y1=H-40;
+  return {x0,x1,y0,y1,
+    lx:um=>x0+(x1-x0)*(Math.log10(um)-LX0)/(LX1-LX0),
+    ly:B=>{ const l=Math.log10(Math.max(B,1e-30));
+      return y1-(y1-y0)*Math.min(1.05,Math.max(-0.02,(l-LY0)/(LY1-LY0))); }};
+}
+
+// 可視光帯を虹で(0.38-0.78µm、波長→ざっくりRGB)
+function wavelenColor(um){
+  const t=(um-0.38)/(0.78-0.38);
+  const stops=[[92,60,187],[46,100,220],[60,170,150],[120,190,70],[230,200,50],[235,140,45],[200,60,45]];
+  const s=Math.min(0.999,Math.max(0,t))*(stops.length-1), i=Math.floor(s), f=s-i;
+  const a=stops[i], b=stops[Math.min(i+1,stops.length-1)];
+  return `rgba(${a[0]+(b[0]-a[0])*f|0},${a[1]+(b[1]-a[1])*f|0},${a[2]+(b[2]-a[2])*f|0},0.28)`;
+}
+
+function fmtB(v){
+  if(v<=0) return '0';
+  const e=Math.floor(Math.log10(v));
+  return (v/Math.pow(10,e)).toFixed(1)+'e'+e;
+}
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  const g=geom();
+  // ---- 帯: 可視光 ----
+  const vx0=g.lx(0.38), vx1=g.lx(0.78);
+  for(let x=vx0;x<vx1;x+=1){
+    const um=Math.pow(10, LX0+(x-g.x0)/(g.x1-g.x0)*(LX1-LX0));
+    ctx.fillStyle=wavelenColor(um);
+    ctx.fillRect(x,g.y0,1.2,g.y1-g.y0);
+  }
+  ctx.fillStyle='#7d7568'; ctx.font='9.5px Zen Kaku Gothic New, sans-serif'; ctx.textAlign='center';
+  ctx.fillText('可視光', (vx0+vx1)/2, g.y0-6);
+  // ---- 帯: LWIR(サーマルカメラの窓) ----
+  const wx0=g.lx(8), wx1=g.lx(14);
+  ctx.fillStyle='rgba(60,120,118,.12)';
+  ctx.fillRect(wx0,g.y0,wx1-wx0,g.y1-g.y0);
+  ctx.fillStyle='#3c7876';
+  ctx.fillText('サーマルカメラが見る窓', (wx0+wx1)/2, g.y0-6);
+  ctx.fillText('8–14µm', (wx0+wx1)/2, g.y0+14);
+
+  // ---- 軸 ----
+  ctx.strokeStyle='#d8d0c3'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(g.x0,g.y1); ctx.lineTo(g.x1,g.y1); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(g.x0,g.y0); ctx.lineTo(g.x0,g.y1); ctx.stroke();
+  ctx.fillStyle='#aaa49b'; ctx.font='9.5px JetBrains Mono, monospace';
+  for(const um of [0.1,0.3,1,3,10,30,100]){
+    const x=g.lx(um);
+    ctx.beginPath(); ctx.moveTo(x,g.y1); ctx.lineTo(x,g.y1+5); ctx.stroke();
+    ctx.textAlign='center'; ctx.fillText(um+'µm', x, g.y1+16);
+  }
+  for(let e=4;e<=14;e+=2){
+    const y=g.ly(Math.pow(10,e));
+    ctx.beginPath(); ctx.moveTo(g.x0-5,y); ctx.lineTo(g.x0,y); ctx.stroke();
+    ctx.textAlign='right'; ctx.fillText('10^'+e, g.x0-8, y+3);
+  }
+  ctx.save(); ctx.translate(14,(g.y0+g.y1)/2); ctx.rotate(-Math.PI/2);
+  ctx.textAlign='center'; ctx.fillStyle='#7d7568';
+  ctx.font='10px Zen Kaku Gothic New, sans-serif';
+  ctx.fillText('分光放射輝度 B_λ [W·sr⁻¹·m⁻³] (対数)', 0, 0); ctx.restore();
+
+  // ---- プランク曲線 ----
+  ctx.strokeStyle='#3c7876'; ctx.lineWidth=2.2; ctx.beginPath();
+  let started=false;
+  for(let px=g.x0;px<=g.x1;px+=1){
+    const um=Math.pow(10, LX0+(px-g.x0)/(g.x1-g.x0)*(LX1-LX0));
+    const B=planck(um*1e-6, T);
+    if(B<Math.pow(10,LY0)*0.5){ started=false; continue; }
+    const y=g.ly(B);
+    if(!started){ ctx.moveTo(px,y); started=true; } else ctx.lineTo(px,y);
+  }
+  ctx.stroke();
+
+  // ---- ウィーンのλ_maxマーカー ----
+  const lmax=WIEN_B/T;   // µm
+  if(lmax>=0.1&&lmax<=100){
+    const x=g.lx(lmax), Bpk=planck(lmax*1e-6,T), y=g.ly(Bpk);
+    ctx.strokeStyle='#c9761f'; ctx.setLineDash([4,4]); ctx.lineWidth=1.3;
+    ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x,g.y1); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle='#c9761f';
+    ctx.beginPath(); ctx.arc(x,y,4,0,7); ctx.fill();
+    ctx.textAlign= x<W*0.7 ? 'left':'right';
+    ctx.font='10px JetBrains Mono, monospace';
+    ctx.fillText(' λ_max='+lmax.toPrecision(3)+'µm', x+(x<W*0.7?4:-4), y-8);
+  }
+  // ---- 一行だけの式 ----
+  ctx.fillStyle='#7d7568'; ctx.font='10.5px JetBrains Mono, monospace'; ctx.textAlign='left';
+  ctx.fillText('λ_max = 2898/T [µm·K]', g.x0+8, g.y0+14);
+
+  // ---- T⁴バー(太陽基準の線形 ── 低温でほぼ見えないのがT⁴の凄み) ----
+  const M=SIGMA*Math.pow(T,4);
+  const Msun=SIGMA*Math.pow(5778,4);
+  const bwMax=Math.max(80, g.lx(0.38)-(g.x0+8)-10);   // 可視光帯の手前まで
+  ctx.fillStyle='#aaa49b'; ctx.font='9.5px Zen Kaku Gothic New, sans-serif'; ctx.textAlign='left';
+  ctx.fillText('総放射 M=σT⁴', g.x0+8, g.y0+32);
+  ctx.strokeStyle='#d8d0c3'; ctx.strokeRect(g.x0+8.5, g.y0+37.5, bwMax, 6);
+  ctx.fillStyle='rgba(194,84,61,.85)';
+  ctx.fillRect(g.x0+9, g.y0+38, Math.max(0.5,bwMax*(M/Msun)), 5);
+  ctx.fillStyle='#aaa49b';
+  ctx.fillText('(太陽=全長の線形)', g.x0+8, g.y0+56);
+
+  // ---- 体温の注記 ----
+  if(T>=300&&T<=320){
+    ctx.fillStyle='#c9761f'; ctx.font='11px Zen Kaku Gothic New, sans-serif'; ctx.textAlign='center';
+    ctx.fillText('あなたはいま、ここで光っている', (wx0+wx1)/2, (g.y0+g.y1)/2-8);
+    ctx.font='9.5px Zen Kaku Gothic New, sans-serif';
+    ctx.fillText('λ_max≈9.3µm ── ちょうどサーマルの窓の中', (wx0+wx1)/2, (g.y0+g.y1)/2+8);
+  }
+
+  // ---- readout ----
+  const Mstr = M>=1e4 ? (M/1e4>=100 ? (M/1e6).toPrecision(3)+' MW/m²' : (M/1e3).toPrecision(3)+' kW/m²')
+                      : M.toPrecision(3)+' W/m²';
+  ro.innerHTML='T <b>'+Math.round(T)+'</b> K<br>'+
+    'λ_max <b>'+lmax.toPrecision(3)+'</b> µm<br>'+
+    'M=σT⁴ <b>'+Mstr+'</b>'+
+    (selftestMsg?'<br>'+selftestMsg:'');
+}
+
+// ---- UI ----
+const $=id=>document.getElementById(id);
+function setT(t){
+  T=t; $('tempv').textContent=Math.round(T)+'K';
+  for(const [id,tv] of PRESETS) $(id).classList.toggle('on', Math.abs(T-tv)<2);
+  draw();
+}
+$('temp').addEventListener('input',e=>setT(sliderToT(+e.target.value)));
+for(const [id,tv] of PRESETS)
+  $(id).addEventListener('click',()=>{ $('temp').value=tToSlider(tv).toFixed(1); setT(tv); });
+$('temp').value=tToSlider(310).toFixed(1);
+
+// ---- selftest (?selftest=1) ----
+// ①数値argmax vs ウィーン則(3温度, 1%以内) ②B(0.5µm,5778K) vs 既知値2.6376e13(1%以内)
+function selftest(){
+  let ok=true, log=[];
+  for(const Tt of [310,2700,5778]){
+    let best=0,bl=0;
+    for(let i=0;i<=40000;i++){
+      const um=Math.pow(10, LX0+(LX1-LX0)*i/40000);
+      const B=planck(um*1e-6,Tt);
+      if(B>best){best=B;bl=um;}
+    }
+    const wien=WIEN_B/Tt, rel=Math.abs(bl-wien)/wien;
+    log.push('T='+Tt+'K: argmax='+bl.toPrecision(4)+'µm wien='+wien.toPrecision(4)+'µm rel='+(rel*100).toFixed(3)+'%');
+    if(rel>0.01) ok=false;
+  }
+  const Bref=2.637567e13;   // B(0.5µm,5778K) 参照値(同式・倍精度で事前計算)
+  const Bnow=planck(0.5e-6,5778), relB=Math.abs(Bnow-Bref)/Bref;
+  log.push('B(0.5µm,5778K)='+fmtB(Bnow)+' ref='+fmtB(Bref)+' rel='+(relB*100).toExponential(2)+'%');
+  if(relB>0.01) ok=false;
+  for(const l of log) console.log('[glow selftest] '+l);
+  console.log('[glow selftest] '+(ok?'PASS':'FAIL'));
+  selftestMsg='selftest: '+(ok?'PASS':'FAIL');
+  draw();
+}
+window.addEventListener('resize',resize);
+resize(); setT(310);
+if(new URLSearchParams(location.search).get('selftest')==='1') selftest();
+</script>
+</body>
+</html>

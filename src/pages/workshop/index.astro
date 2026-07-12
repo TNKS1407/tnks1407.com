@@ -98,6 +98,16 @@ const labGroups: { label: string; items: Lab[] }[] = [
       { name: 'ポアソン分布（数え上げ）', url: '/poisson-counts/' },
     ],
   },
+  {
+    label: '光で測る',
+    items: [
+      { name: 'パルスの旅（ToF原理）', url: '/tof-pulse/' },
+      { name: '熱放射ラボ（プランク曲線）', url: '/glow/' },
+      { name: '深度ビューア 8×8（実機対応）', url: '/tof/' },
+      { name: 'サーマルビューア 32×24（実機対応）', url: '/thermal/' },
+      { name: '熱深度（ToF×サーマル実機）', url: '/duo/' },
+    ],
+  },
 ];
 const labCount = labGroups.reduce((n, g) => n + g.items.length, 0);
 

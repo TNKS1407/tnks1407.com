@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>パルスの旅 ── 光の遅れで距離を測る (dToF)</title>
+<style>
+  :root{
+    --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
+    --teal:#3c7876;--red:#c2543d;--amber:#c9761f;--blue:#2563aa;
+    --text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;}
+  body{font-family:'Zen Kaku Gothic New',system-ui,sans-serif;background:var(--bg);color:var(--text);
+    display:flex;flex-direction:column;overflow:hidden;}
+  #stage{flex:1;position:relative;min-height:0;}
+  canvas{display:block;width:100%;height:100%;}
+  .readout{position:absolute;right:10px;top:8px;font-size:.7rem;color:var(--muted);text-align:right;
+    font-family:'JetBrains Mono',monospace;line-height:1.55;pointer-events:none;background:rgba(250,248,244,.78);
+    border-radius:6px;padding:.3rem .5rem;}
+  .readout b{color:var(--text);font-weight:700;}
+  .readout .est{color:var(--red);font-weight:700;}
+  .hint{position:absolute;left:10px;top:8px;font-size:.68rem;color:var(--faint);pointer-events:none;}
+  .ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.55rem .8rem;
+    display:flex;flex-wrap:wrap;gap:.5rem .9rem;align-items:center;}
+  .row{display:flex;align-items:center;gap:.4rem;font-size:.76rem;color:var(--muted);}
+  .row label{font-weight:700;white-space:nowrap;}
+  button{font:inherit;font-size:.74rem;font-weight:700;color:var(--text);background:var(--card);
+    border:1px solid var(--border);border-radius:8px;padding:.32rem .6rem;cursor:pointer;}
+  button:hover{border-color:var(--teal);}
+  button.on{background:var(--teal);color:#fff;border-color:var(--teal);}
+  button.accent{border-color:var(--teal);color:var(--teal);}
+  input[type=range]{width:96px;accent-color:var(--teal);}
+  .val{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--text);min-width:4.2em;}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="c"></canvas>
+  <div class="hint">壁はドラッグでも動かせる ・ パルスはスローモーション表示</div>
+  <div class="readout" id="ro"></div>
+</div>
+<div class="ctrl">
+  <button id="fire" class="accent">パルスを撃つ</button>
+  <button id="rapid">連射</button>
+  <button id="reset">リセット</button>
+  <div class="row"><label>壁</label>
+    <input id="dist" type="range" min="0.3" max="4" step="0.05" value="2" />
+    <span class="val" id="distv">2.00m</span></div>
+  <div class="row"><label>発数</label>
+    <input id="shots" type="range" min="0" max="100" step="1" value="60" />
+    <span class="val" id="shotsv">300</span></div>
+  <div class="row"><label>雑音</label>
+    <input id="noise" type="range" min="0" max="4" step="0.1" value="0.6" />
+    <span class="val" id="noisev">0.6</span></div>
+</div>
+<script>
+"use strict";
+// ============================================================
+// dToF(direct Time of Flight)原理ラボ
+// 物理: 往復時間 Δt = 2d/c。1発では光子はぱらぱらとしか返らず、
+// 雑音光子(環境光)と区別できない。N発撃って到着時刻のヒストグラムを
+// 取ると、真のΔtの所に「山」が浮かぶ ── これがdToFの心臓部。
+// モデル(正直な単純化):
+//  ・信号光子: 1発あたり検出確率 pSig = min(0.9, 0.5/d²)  (返り光は1/d²で減る)
+//    到着時刻は Δt の周りに σ=0.3ns のガウスジッタ(パルス幅+回路ジッタの合算のつもり)
+//  ・雑音光子: 1発あたり平均λ個(ポアソン)、窓内[0,30ns]の一様時刻
+//  ・係数0.5/d²やσは「それらしい体験」のための教材値(実機のSPAD特性の再現ではない)
+// ============================================================
+const C = 299792458;           // m/s
+const TMAX_NS = 30;            // 観測窓 [ns] (往復30ns ≈ 4.5m先まで)
+const BINS = 120;              // 0.25ns/bin ≈ 3.75cm/bin
+const SIG_NS = 0.3;            // 信号ジッタσ [ns]
+
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const ro=document.getElementById('ro');
+let W=0,H=0,DPR=1;
+let d=2.0;                     // 壁までの距離 [m]
+let lam=0.6;                   // 雑音率 (光子/発)
+let nShots=300;                // 発数/バースト
+let hist=new Float64Array(BINS);
+let totPhotons=0, totBursts=0;
+let rapid=false, rapidAcc=0;
+let pulses=[];                 // {pos(m), dir(+1|-1), fast}
+let selftestMsg='';
+
+// ---- 乱数 ----
+function gauss(){ let u=0,v=0; while(!u)u=Math.random(); while(!v)v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+function poisson(l){ if(l<=0)return 0; const L=Math.exp(-l); let k=0,p=1;
+  do{ k++; p*=Math.random(); }while(p>L); return k-1; }
+
+// ---- 物理: バースト1回をヒストグラムへ ----
+function addBurst(h, dm, N, lm){
+  const t0 = 2*dm/C*1e9;                       // Δt [ns]
+  const pSig = Math.min(0.9, 0.5/(dm*dm));     // 返り光の1/d²減衰(教材値)
+  let n=0;
+  for(let i=0;i<N;i++){
+    if(Math.random()<pSig){
+      const t = t0 + gauss()*SIG_NS;
+      const b = Math.floor(t/TMAX_NS*BINS);
+      if(b>=0&&b<BINS){ h[b]++; n++; }
+    }
+    let m=poisson(lm);
+    n+=m;
+    while(m-->0){ h[Math.floor(Math.random()*BINS)]++; }
+  }
+  return n;
+}
+// ---- 推定: ピークbinの近傍±2binの重心 (信号/雑音の区別は知らない) ----
+function estimateNs(h){
+  let pk=-1, pv=0;
+  for(let b=0;b<BINS;b++) if(h[b]>pv){ pv=h[b]; pk=b; }
+  if(pk<0) return NaN;
+  let s=0, sw=0;
+  for(let b=Math.max(0,pk-2); b<=Math.min(BINS-1,pk+2); b++){ s+=h[b]*(b+0.5); sw+=h[b]; }
+  return sw ? s/sw*(TMAX_NS/BINS) : NaN;
+}
+
+function fireBurst(){ totPhotons+=addBurst(hist,d,nShots,lam); totBursts++; }
+
+// ---- レイアウト/描画 ----
+function resize(){
+  const r=cv.getBoundingClientRect();
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  W=r.width; H=r.height;
+  cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+const M_MAX=4.6;               // 空間表示の右端 [m]
+function spaceGeom(){
+  const sh=Math.max(110, Math.min(210, H*0.34));
+  const x0=64, x1=W-24, y=sh*0.62;
+  return {sh, x0, x1, y, mx:m=>x0+(x1-x0)*m/M_MAX};
+}
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  const g=spaceGeom();
+  // ---- 上段: 空間 ----
+  ctx.strokeStyle='#d8d0c3'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(g.x0-40,g.y+26); ctx.lineTo(g.x1+10,g.y+26); ctx.stroke();
+  ctx.font='10px JetBrains Mono, monospace'; ctx.fillStyle='#aaa49b'; ctx.textAlign='center';
+  for(let m=0;m<=4;m++){ const x=g.mx(m);
+    ctx.beginPath(); ctx.moveTo(x,g.y+22); ctx.lineTo(x,g.y+30); ctx.stroke();
+    ctx.fillText(m+'m', x, g.y+40); }
+  // センサ
+  ctx.fillStyle='#3c7876';
+  ctx.beginPath(); ctx.roundRect(g.x0-38,g.y-16,30,32,5); ctx.fill();
+  ctx.fillStyle='#fff'; ctx.font='9px Zen Kaku Gothic New, sans-serif';
+  ctx.fillText('センサ', g.x0-23, g.y+3);
+  // 壁
+  const wx=g.mx(d);
+  ctx.fillStyle='#8a8276';
+  ctx.fillRect(wx-4, g.y-g.sh*0.42, 8, g.sh*0.42+42);
+  ctx.fillStyle='#7d7568'; ctx.font='10px Zen Kaku Gothic New, sans-serif';
+  ctx.fillText('壁', wx+14, g.y-g.sh*0.30);
+  // 光路の基線
+  ctx.strokeStyle='rgba(60,120,118,.25)'; ctx.setLineDash([3,4]);
+  ctx.beginPath(); ctx.moveTo(g.x0-8,g.y); ctx.lineTo(wx-4,g.y); ctx.stroke(); ctx.setLineDash([]);
+  // パルス(スローモーション。実時間は下の readout の Δt)
+  for(const p of pulses){
+    const x=g.mx(p.pos);
+    const grd=ctx.createRadialGradient(x,g.y,0,x,g.y,10);
+    grd.addColorStop(0,'rgba(201,118,31,.95)'); grd.addColorStop(1,'rgba(201,118,31,0)');
+    ctx.fillStyle=grd;
+    ctx.beginPath(); ctx.arc(x,g.y,10,0,7); ctx.fill();
+    ctx.fillStyle='#c9761f';
+    ctx.beginPath(); ctx.arc(x,g.y,3,0,7); ctx.fill();
+  }
+
+  // ---- 下段: ヒストグラム ----
+  const hy0=g.sh+50, hy1=H-30, hx0=64, hx1=W-24;
+  if(hy1-hy0>40){
+    // 軸
+    ctx.strokeStyle='#d8d0c3'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(hx0,hy1); ctx.lineTo(hx1,hy1); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(hx0,hy0); ctx.lineTo(hx0,hy1); ctx.stroke();
+    let hmax=0; for(let b=0;b<BINS;b++) if(hist[b]>hmax)hmax=hist[b];
+    const bw=(hx1-hx0)/BINS;
+    // バー(信号も雑音も同じ色 ── 区別できないのが本物)
+    ctx.fillStyle='rgba(60,120,118,.75)';
+    if(hmax>0) for(let b=0;b<BINS;b++){
+      const hgt=hist[b]/hmax*(hy1-hy0-14);
+      if(hgt>0) ctx.fillRect(hx0+b*bw, hy1-hgt, Math.max(1,bw-0.6), hgt);
+    }
+    // 真のΔtマーカー
+    const tx=t=>hx0+(hx1-hx0)*t/TMAX_NS;
+    const t0=2*d/C*1e9;
+    ctx.strokeStyle='#c9761f'; ctx.setLineDash([4,4]); ctx.lineWidth=1.4;
+    ctx.beginPath(); ctx.moveTo(tx(t0),hy0); ctx.lineTo(tx(t0),hy1); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle='#c9761f'; ctx.font='10px Zen Kaku Gothic New, sans-serif';
+    ctx.textAlign='right';
+    ctx.fillText('真のΔt ', tx(t0)-4, hy0+9);
+    // 推定マーカー(ラベルは反対側に出して衝突を避ける)
+    const te=estimateNs(hist);
+    if(isFinite(te)){
+      ctx.strokeStyle='#c2543d'; ctx.lineWidth=1.6;
+      ctx.beginPath(); ctx.moveTo(tx(te),hy0+12); ctx.lineTo(tx(te),hy1); ctx.stroke();
+      ctx.fillStyle='#c2543d'; ctx.textAlign='left';
+      ctx.fillText(' 山のピーク → 推定', tx(te)+4, hy0+9);
+    }
+    // 時間軸ラベル(ns と 対応距離)
+    ctx.fillStyle='#aaa49b'; ctx.font='9.5px JetBrains Mono, monospace';
+    for(const t of [0,10,20,30]){
+      const x=tx(t);
+      ctx.textAlign='center';
+      ctx.fillText(t+'ns', x, hy1+12);
+      if(t>0) ctx.fillText('('+(t*1e-9*C/2).toFixed(1)+'m)', x, hy1+23);
+    }
+    ctx.save(); ctx.translate(hx0-46, (hy0+hy1)/2); ctx.rotate(-Math.PI/2);
+    ctx.textAlign='center'; ctx.fillStyle='#7d7568';
+    ctx.font='10px Zen Kaku Gothic New, sans-serif';
+    ctx.fillText('光子数(到着時刻ごと)', 0, 0); ctx.restore();
+    if(hmax>0){ ctx.textAlign='left'; ctx.fillStyle='#aaa49b';
+      ctx.font='9.5px JetBrains Mono, monospace'; ctx.fillText(hmax+'', hx0+4, hy0+10); }
+  }
+
+  // ---- readout ----
+  const te=estimateNs(hist);
+  const de=isFinite(te)? te*1e-9*C/2 : NaN;
+  ro.innerHTML =
+    '真の距離 <b>'+d.toFixed(2)+'</b> m · Δt=2d/c <b>'+(2*d/C*1e9).toFixed(2)+'</b> ns<br>'+
+    (isFinite(de)
+      ? '推定 <span class="est">'+de.toFixed(3)+' m</span> (誤差 '+((de-d)*100).toFixed(1)+' cm)'
+      : '推定 ── (まず撃ってみて)')+'<br>'+
+    'バースト '+totBursts+' · 光子 '+totPhotons+
+    (selftestMsg? '<br>'+selftestMsg : '');
+}
+
+// ---- アニメーション ----
+let last=0;
+function tick(now){
+  if(!last)last=now; const dt=Math.min(0.05,(now-last)/1000); last=now;
+  // パルス移動(見た目の速度: 往復~1.2s、連射時は速く)
+  const v=3.6;
+  for(const p of pulses){
+    p.pos+=p.dir*v*(p.fast?5:1)*dt;
+    if(p.pos>=d){ p.pos=d; p.dir=-1; }
+    if(p.dir<0 && p.pos<=0){ p.done=true; fireBurst(); }
+  }
+  pulses=pulses.filter(p=>!p.done);
+  if(rapid){
+    rapidAcc+=dt;
+    while(rapidAcc>0.12){ rapidAcc-=0.12; fireBurst(); }
+    if(pulses.length<2 && Math.random()<0.1) pulses.push({pos:0,dir:1,fast:true});
+  }
+  draw();
+  requestAnimationFrame(tick);
+}
+
+// ---- UI ----
+const $=id=>document.getElementById(id);
+function shotsFromSlider(v){ return Math.round(10*Math.pow(200, v/100)); } // 10..2000(対数)
+$('fire').addEventListener('click',()=>{ pulses.push({pos:0,dir:1,fast:false}); });
+$('rapid').addEventListener('click',e=>{ rapid=!rapid; e.target.classList.toggle('on',rapid); });
+$('reset').addEventListener('click',()=>{ hist.fill(0); totPhotons=0; totBursts=0; selftestMsg=''; });
+$('dist').addEventListener('input',e=>{ d=+e.target.value; $('distv').textContent=d.toFixed(2)+'m'; });
+$('shots').addEventListener('input',e=>{ nShots=shotsFromSlider(+e.target.value); $('shotsv').textContent=nShots+''; });
+$('noise').addEventListener('input',e=>{ lam=+e.target.value; $('noisev').textContent=lam.toFixed(1); });
+nShots=shotsFromSlider(60); $('shotsv').textContent=nShots+'';
+
+// 壁ドラッグ(上段のみ)
+let dragging=false;
+cv.addEventListener('pointerdown',ev=>{
+  const r=cv.getBoundingClientRect(); const y=ev.clientY-r.top;
+  if(y<spaceGeom().sh+40){ dragging=true; cv.setPointerCapture(ev.pointerId); dragTo(ev); }
+});
+cv.addEventListener('pointermove',ev=>{ if(dragging) dragTo(ev); });
+cv.addEventListener('pointerup',()=>{ dragging=false; });
+function dragTo(ev){
+  const r=cv.getBoundingClientRect(); const g=spaceGeom();
+  const m=(ev.clientX-r.left-g.x0)/(g.x1-g.x0)*M_MAX;
+  d=Math.min(4,Math.max(0.3,m));
+  $('dist').value=d.toFixed(2); $('distv').textContent=d.toFixed(2)+'m';
+}
+
+// ---- selftest (?selftest=1): d=2.0m, N=2000, λ=1.0, 30試行で±5cm ----
+function selftest(){
+  d=2.0; lam=1.0; nShots=2000;
+  $('dist').value='2'; $('distv').textContent='2.00m';
+  $('noise').value='1'; $('noisev').textContent='1.0';
+  $('shots').value='100'; $('shotsv').textContent='2000';
+  const errs=[];
+  for(let k=0;k<30;k++){
+    const h2=new Float64Array(BINS);
+    addBurst(h2, 2.0, 2000, 1.0);
+    const de=estimateNs(h2)*1e-9*C/2;
+    errs.push(Math.abs(de-2.0)*100);
+  }
+  const mx=Math.max(...errs), mean=errs.reduce((a,b)=>a+b,0)/errs.length;
+  const pass=mx<5;
+  console.log('[tof-pulse selftest] d=2.0m N=2000 λ=1.0 ×30試行: '
+    +'max|err|='+mx.toFixed(2)+'cm mean='+mean.toFixed(2)+'cm → '+(pass?'PASS':'FAIL')+' (基準±5cm)');
+  selftestMsg='selftest: max|err|='+mx.toFixed(2)+'cm '+(pass?'PASS':'FAIL');
+  hist.fill(0); totPhotons=0; totBursts=0;
+  fireBurst();   // 画面にも1バースト出しておく
+}
+
+window.addEventListener('resize',resize);
+resize();
+if(new URLSearchParams(location.search).get('selftest')==='1') selftest();
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

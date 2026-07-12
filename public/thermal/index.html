@@ -1,0 +1,724 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>サーマルビューア ── MLX90640 32×24</title>
+<style>
+  :root{
+    --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
+    --teal:#3c7876;--red:#c2543d;--amber:#c9761f;--blue:#2563aa;
+    --text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;}
+  body{font-family:'Zen Kaku Gothic New',system-ui,sans-serif;background:var(--bg);color:var(--text);
+    display:flex;flex-direction:column;overflow:hidden;}
+  #stage{flex:1;position:relative;min-height:0;}
+  canvas{display:block;width:100%;height:100%;}
+  .readout{position:absolute;right:10px;top:8px;font-size:.7rem;color:var(--muted);text-align:right;
+    font-family:'JetBrains Mono',monospace;line-height:1.55;pointer-events:none;background:rgba(250,248,244,.72);
+    border-radius:6px;padding:.3rem .5rem;}
+  .readout b{color:var(--text);font-weight:700;}
+  .badge{position:absolute;left:10px;top:8px;font-size:.72rem;font-weight:700;
+    font-family:'JetBrains Mono',monospace;padding:.22rem .5rem;border-radius:6px;pointer-events:none;}
+  .badge.syn{color:var(--amber);background:rgba(201,118,31,.10);}
+  .badge.live{color:var(--teal);background:rgba(60,120,118,.12);}
+  .ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);padding:.55rem .8rem;
+    display:flex;flex-wrap:wrap;gap:.5rem .9rem;align-items:center;}
+  .row{display:flex;align-items:center;gap:.4rem;font-size:.76rem;color:var(--muted);}
+  .row label{font-weight:700;white-space:nowrap;}
+  button{font:inherit;font-size:.74rem;font-weight:700;color:var(--text);background:var(--card);
+    border:1px solid var(--border);border-radius:8px;padding:.32rem .6rem;cursor:pointer;}
+  button:hover{border-color:var(--teal);}
+  button.on{background:var(--teal);color:#fff;border-color:var(--teal);}
+  button.accent{border-color:var(--teal);color:var(--teal);}
+  button:disabled{opacity:.5;cursor:default;}
+  .seg{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+  .seg button{border:none;border-radius:0;}
+  .seg button+button{border-left:1px solid var(--border);}
+  input[type=range]{width:96px;accent-color:var(--teal);}
+  .val{font-family:'JetBrains Mono',monospace;font-weight:700;color:var(--text);min-width:3.6em;}
+  a.open{font-size:.74rem;font-weight:700;color:var(--teal);text-decoration:none;border:1px solid var(--teal);
+    border-radius:8px;padding:.32rem .6rem;}
+  .hw{position:absolute;left:0;right:0;bottom:0;max-height:82%;overflow:auto;background:var(--surface);
+    border-top:1px solid var(--border);padding:.7rem 1rem .9rem;font-size:.78rem;line-height:1.7;}
+  .hw h3{font-size:.85rem;margin:.2rem 0 .3rem;color:var(--teal);}
+  .hw table{border-collapse:collapse;margin:.3rem 0;}
+  .hw td,.hw th{border:1px solid var(--border);padding:.15rem .55rem;font-size:.75rem;}
+  .hw th{background:var(--card);font-weight:700;}
+  .hw code{font-family:'JetBrains Mono',monospace;font-size:.72rem;background:var(--card);
+    border:1px solid var(--border);border-radius:4px;padding:.05rem .3rem;}
+  .hw .warn{color:var(--red);font-weight:700;}
+  .hw a{color:var(--teal);font-weight:700;}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="c"></canvas>
+  <div class="badge syn" id="badge">合成データ</div>
+  <div class="readout" id="ro"></div>
+  <div class="hw" id="hw" hidden>
+    <h3>実機でやる ── MLX90640 + Raspberry Pi Pico</h3>
+    <div>Picoは生データの土管、温度較正はこのページのJSがやる。ファームは
+      <a href="firmware.zip" download>firmware.zip</a>（mlx_stream.py + README）。</div>
+    <table>
+      <tr><th>MLX90640ボード</th><th>Pico物理ピン</th><th>GPIO</th></tr>
+      <tr><td>VIN</td><td>36 (3V3 OUT)</td><td>-</td></tr>
+      <tr><td>GND</td><td>38</td><td>-</td></tr>
+      <tr><td>SDA</td><td>6</td><td>GP4</td></tr>
+      <tr><td>SCL</td><td>7</td><td>GP5</td></tr>
+    </table>
+    <div class="warn">給電は3.3V厳守（5V/VBUS直結は禁止。素子は3.3Vデバイス）。</div>
+    <div style="margin-top:.4rem">
+      手順: ① <code>pip install mpremote</code> ②
+      <code>python -m mpremote connect COMx run mlx_stream.py</code> で流れ出すのを確認
+      （COMxはデバイスマネージャか <code>python -m mpremote connect list</code>）③
+      mpremoteを <b>Ctrl+Cで止めてから</b> このページの「接続」でCOMを選ぶ
+      （シリアルは1プロセス占有。runを止めてもスクリプトはPico上で走り続ける）。
+      常用は <code>cp mlx_stream.py :main.py</code> でUSB挿すだけ。
+    </div>
+    <div style="margin-top:.4rem;color:var(--muted)">
+      電源投入から数分は素子の自己発熱で絵が少しずつドリフトする。絶対値を見たい時は5分置いてから。
+    </div>
+    <div style="margin-top:.5rem"><button id="hwClose">閉じる ▴</button></div>
+  </div>
+</div>
+<div class="ctrl">
+  <button id="play" class="on">⏸ 停止</button>
+  <button id="connect" class="accent">接続 (Web Serial)</button>
+  <a class="open" id="openFull" href="#" target="_blank" rel="noopener" hidden>全画面で開く ↗</a>
+  <div class="row"><label>ε</label>
+    <input id="eps" type="range" min="10" max="100" value="95" />
+    <span class="val" id="epsv">0.95</span></div>
+  <div class="row"><label>表示</label>
+    <span class="seg"><button id="mSmooth" class="on">なめらか</button><button id="mBlock">ブロック</button></span></div>
+  <div class="row"><label>レンジ</label>
+    <span class="seg"><button id="rAuto" class="on">自動</button><button id="rFix">固定</button></span></div>
+  <div class="row"><label>低/高</label>
+    <input id="tlo" type="range" min="-20" max="150" value="15" disabled />
+    <input id="thi" type="range" min="0" max="400" value="40" disabled />
+    <span class="val" id="trv">15–40</span></div>
+  <button id="hwBtn">実機でやる ▾</button>
+</div>
+<script>
+"use strict";
+// (projects/tof-homeplay のビューアからスプライスで転記 ── 字面同一。数値検算は tof-homeplay/thermal/test/, duo/test/)
+// ===MLX_CALIB_BEGIN===
+// MLX90640 較正計算 (JS移植)
+// 出典: Adafruit_CircuitPython_MLX90640 (MIT, (c)2019 ladyada/Adafruit) の
+// _ExtractParameters / _GetVdd / _GetTa / _CalculateTo を忠実に移植。
+// 元はMelexis mlx90640-library (MLX90640_API.c) / データシート§11の手順。
+// 検算: test/run_js_check.js がこのブロックを抜き出してnodeで実行し、
+// 純Python参照(test/mlx_ref.py)と768画素×2ケースで突合する。
+const MLXCal = (() => {
+  const SCALEALPHA = 0.000001;
+  const OPENAIR_TA_SHIFT = 8;   // 開放空気なら反射温度 tr = Ta - 8 [degC]
+
+  // ---- adafruit: _ExtractParameters (EEPROM 832語 -> 較正パラメータ) ----
+  function extractParameters(ee) {
+    const p = {};
+
+    // _ExtractVDDParameters (datasheet §11.1 VDD)
+    p.kVdd = (ee[51] & 0xFF00) >> 8;
+    if (p.kVdd > 127) p.kVdd -= 256;
+    p.kVdd *= 32;
+    p.vdd25 = ee[51] & 0x00FF;
+    p.vdd25 = ((p.vdd25 - 256) << 5) - 8192;
+
+    // _ExtractPTATParameters (§11.1 Ta)
+    p.KvPTAT = (ee[50] & 0xFC00) >> 10;
+    if (p.KvPTAT > 31) p.KvPTAT -= 64;
+    p.KvPTAT /= 4096;
+    p.KtPTAT = ee[50] & 0x03FF;
+    if (p.KtPTAT > 511) p.KtPTAT -= 1024;
+    p.KtPTAT /= 8;
+    p.vPTAT25 = ee[49];
+    p.alphaPTAT = (ee[16] & 0xF000) / Math.pow(2, 14) + 8;
+
+    // _ExtractGainParameters
+    p.gainEE = ee[48];
+    if (p.gainEE > 32767) p.gainEE -= 65536;
+
+    // _ExtractTgcParameters
+    p.tgc = ee[60] & 0x00FF;
+    if (p.tgc > 127) p.tgc -= 256;
+    p.tgc /= 32;
+
+    // _ExtractResolutionParameters
+    p.resolutionEE = (ee[56] & 0x3000) >> 12;
+
+    // _ExtractKsTaParameters
+    p.KsTa = (ee[60] & 0xFF00) >> 8;
+    if (p.KsTa > 127) p.KsTa -= 256;
+    p.KsTa /= 8192;
+
+    // _ExtractKsToParameters (温度レンジ境界 ct と傾き ksTo)
+    const step = ((ee[63] & 0x3000) >> 12) * 10;
+    p.ct = [-40, 0, (ee[63] & 0x00F0) >> 4, (ee[63] & 0x0F00) >> 8, 0];
+    p.ct[2] *= step;
+    p.ct[3] = p.ct[2] + p.ct[3] * step;
+    let KsToScale = (ee[63] & 0x000F) + 8;
+    KsToScale = 1 << KsToScale;
+    p.ksTo = [ee[61] & 0x00FF, (ee[61] & 0xFF00) >> 8,
+              ee[62] & 0x00FF, (ee[62] & 0xFF00) >> 8, 0];
+    for (let i = 0; i < 4; i++) {
+      if (p.ksTo[i] > 127) p.ksTo[i] -= 256;
+      p.ksTo[i] /= KsToScale;
+    }
+    p.ksTo[4] = -0.0002;
+
+    // _ExtractCPParameters (コンペンセーション画素)
+    {
+      const alphaScaleCP = ((ee[32] & 0xF000) >> 12) + 27;
+      const offsetSP = [ee[58] & 0x03FF, (ee[58] & 0xFC00) >> 10];
+      if (offsetSP[0] > 511) offsetSP[0] -= 1024;
+      if (offsetSP[1] > 31) offsetSP[1] -= 64;
+      offsetSP[1] += offsetSP[0];
+      const alphaSP = [ee[57] & 0x03FF, (ee[57] & 0xFC00) >> 10];
+      if (alphaSP[0] > 511) alphaSP[0] -= 1024;
+      alphaSP[0] /= Math.pow(2, alphaScaleCP);
+      if (alphaSP[1] > 31) alphaSP[1] -= 64;
+      alphaSP[1] = (1 + alphaSP[1] / 128) * alphaSP[0];
+      let cpKta = ee[59] & 0x00FF;
+      if (cpKta > 127) cpKta -= 256;
+      const ktaScale1cp = ((ee[56] & 0x00F0) >> 4) + 8;
+      p.cpKta = cpKta / Math.pow(2, ktaScale1cp);
+      let cpKv = (ee[59] & 0xFF00) >> 8;
+      if (cpKv > 127) cpKv -= 256;
+      const kvScaleCP = (ee[56] & 0x0F00) >> 8;
+      p.cpKv = cpKv / Math.pow(2, kvScaleCP);
+      p.cpAlpha = alphaSP;
+      p.cpOffset = offsetSP;
+    }
+
+    // _ExtractAlphaParameters (画素感度 α)
+    {
+      const accRemScale = ee[32] & 0x000F;
+      const accColumnScale = (ee[32] & 0x00F0) >> 4;
+      const accRowScale = (ee[32] & 0x0F00) >> 8;
+      let alphaScale = ((ee[32] & 0xF000) >> 12) + 30;
+      const alphaRef = ee[33];
+      const accRow = new Array(24).fill(0);
+      const accColumn = new Array(32).fill(0);
+      const alphaTemp = new Array(768).fill(0);
+      for (let i = 0; i < 6; i++) {
+        const q = i * 4;
+        accRow[q + 0] = ee[34 + i] & 0x000F;
+        accRow[q + 1] = (ee[34 + i] & 0x00F0) >> 4;
+        accRow[q + 2] = (ee[34 + i] & 0x0F00) >> 8;
+        accRow[q + 3] = (ee[34 + i] & 0xF000) >> 12;
+      }
+      for (let i = 0; i < 24; i++) if (accRow[i] > 7) accRow[i] -= 16;
+      for (let i = 0; i < 8; i++) {
+        const q = i * 4;
+        accColumn[q + 0] = ee[40 + i] & 0x000F;
+        accColumn[q + 1] = (ee[40 + i] & 0x00F0) >> 4;
+        accColumn[q + 2] = (ee[40 + i] & 0x0F00) >> 8;
+        accColumn[q + 3] = (ee[40 + i] & 0xF000) >> 12;
+      }
+      for (let i = 0; i < 32; i++) if (accColumn[i] > 7) accColumn[i] -= 16;
+      for (let i = 0; i < 24; i++) {
+        for (let j = 0; j < 32; j++) {
+          const q = 32 * i + j;
+          alphaTemp[q] = (ee[64 + q] & 0x03F0) >> 4;
+          if (alphaTemp[q] > 31) alphaTemp[q] -= 64;
+          alphaTemp[q] *= 1 << accRemScale;
+          alphaTemp[q] += alphaRef + (accRow[i] << accRowScale) + (accColumn[j] << accColumnScale);
+          alphaTemp[q] /= Math.pow(2, alphaScale);
+          alphaTemp[q] -= p.tgc * (p.cpAlpha[0] + p.cpAlpha[1]) / 2;
+          alphaTemp[q] = SCALEALPHA / alphaTemp[q];
+        }
+      }
+      let temp = alphaTemp[0];
+      for (let i = 1; i < 768; i++) if (alphaTemp[i] > temp) temp = alphaTemp[i];
+      alphaScale = 0;
+      while (temp < 32768) { temp *= 2; alphaScale += 1; }
+      p.alpha = new Array(768);
+      for (let i = 0; i < 768; i++) {
+        p.alpha[i] = Math.trunc(alphaTemp[i] * Math.pow(2, alphaScale) + 0.5); // int(x+0.5)
+      }
+      p.alphaScale = alphaScale;
+    }
+
+    // _ExtractOffsetParameters (画素オフセット)
+    {
+      const occRemScale = ee[16] & 0x000F;
+      const occColumnScale = (ee[16] & 0x00F0) >> 4;
+      const occRowScale = (ee[16] & 0x0F00) >> 8;
+      let offsetRef = ee[17];
+      if (offsetRef > 32767) offsetRef -= 65536;
+      const occRow = new Array(24).fill(0);
+      const occColumn = new Array(32).fill(0);
+      for (let i = 0; i < 6; i++) {
+        const q = i * 4;
+        occRow[q + 0] = ee[18 + i] & 0x000F;
+        occRow[q + 1] = (ee[18 + i] & 0x00F0) >> 4;
+        occRow[q + 2] = (ee[18 + i] & 0x0F00) >> 8;
+        occRow[q + 3] = (ee[18 + i] & 0xF000) >> 12;
+      }
+      for (let i = 0; i < 24; i++) if (occRow[i] > 7) occRow[i] -= 16;
+      for (let i = 0; i < 8; i++) {
+        const q = i * 4;
+        occColumn[q + 0] = ee[24 + i] & 0x000F;
+        occColumn[q + 1] = (ee[24 + i] & 0x00F0) >> 4;
+        occColumn[q + 2] = (ee[24 + i] & 0x0F00) >> 8;
+        occColumn[q + 3] = (ee[24 + i] & 0xF000) >> 12;
+      }
+      for (let i = 0; i < 32; i++) if (occColumn[i] > 7) occColumn[i] -= 16;
+      p.offset = new Array(768);
+      for (let i = 0; i < 24; i++) {
+        for (let j = 0; j < 32; j++) {
+          const q = 32 * i + j;
+          p.offset[q] = (ee[64 + q] & 0xFC00) >> 10;
+          if (p.offset[q] > 31) p.offset[q] -= 64;
+          p.offset[q] *= 1 << occRemScale;
+          p.offset[q] += offsetRef + (occRow[i] << occRowScale) + (occColumn[j] << occColumnScale);
+        }
+      }
+    }
+
+    // _ExtractKtaPixelParameters (Ta依存の傾き kta)
+    {
+      const KtaRC = new Array(4).fill(0);
+      let v;
+      v = (ee[54] & 0xFF00) >> 8; if (v > 127) v -= 256; KtaRC[0] = v;
+      v = ee[54] & 0x00FF;        if (v > 127) v -= 256; KtaRC[2] = v;
+      v = (ee[55] & 0xFF00) >> 8; if (v > 127) v -= 256; KtaRC[1] = v;
+      v = ee[55] & 0x00FF;        if (v > 127) v -= 256; KtaRC[3] = v;
+      let ktaScale1 = ((ee[56] & 0x00F0) >> 4) + 8;
+      const ktaScale2 = ee[56] & 0x000F;
+      const ktaTemp = new Array(768).fill(0);
+      for (let i = 0; i < 24; i++) {
+        for (let j = 0; j < 32; j++) {
+          const q = 32 * i + j;
+          const split = 2 * (Math.floor(q / 32) - Math.floor(q / 64) * 2) + (q % 2);
+          ktaTemp[q] = (ee[64 + q] & 0x000E) >> 1;
+          if (ktaTemp[q] > 3) ktaTemp[q] -= 8;
+          ktaTemp[q] *= 1 << ktaScale2;
+          ktaTemp[q] += KtaRC[split];
+          ktaTemp[q] /= Math.pow(2, ktaScale1);
+        }
+      }
+      let temp = Math.abs(ktaTemp[0]);
+      for (const kta of ktaTemp) temp = Math.max(temp, Math.abs(kta));
+      ktaScale1 = 0;
+      while (temp < 64) { temp *= 2; ktaScale1 += 1; }
+      p.kta = new Array(768);
+      for (let i = 0; i < 768; i++) {
+        const t = ktaTemp[i] * Math.pow(2, ktaScale1);
+        p.kta[i] = t < 0 ? Math.trunc(t - 0.5) : Math.trunc(t + 0.5); // int() は0方向切捨て
+      }
+      p.ktaScale = ktaScale1;
+    }
+
+    // _ExtractKvPixelParameters (VDD依存の傾き kv)
+    {
+      const KvT = new Array(4).fill(0);
+      let v;
+      v = (ee[52] & 0xF000) >> 12; if (v > 7) v -= 16; KvT[0] = v;
+      v = (ee[52] & 0x0F00) >> 8;  if (v > 7) v -= 16; KvT[2] = v;
+      v = (ee[52] & 0x00F0) >> 4;  if (v > 7) v -= 16; KvT[1] = v;
+      v = ee[52] & 0x000F;         if (v > 7) v -= 16; KvT[3] = v;
+      let kvScale = (ee[56] & 0x0F00) >> 8;
+      const kvTemp = new Array(768).fill(0);
+      for (let i = 0; i < 24; i++) {
+        for (let j = 0; j < 32; j++) {
+          const q = 32 * i + j;
+          const split = 2 * (Math.floor(q / 32) - Math.floor(q / 64) * 2) + (q % 2);
+          kvTemp[q] = KvT[split];
+          kvTemp[q] /= Math.pow(2, kvScale);
+        }
+      }
+      let temp = Math.abs(kvTemp[0]);
+      for (const kv of kvTemp) temp = Math.max(temp, Math.abs(kv));
+      kvScale = 0;
+      while (temp < 64) { temp *= 2; kvScale += 1; }
+      p.kv = new Array(768);
+      for (let i = 0; i < 768; i++) {
+        const t = kvTemp[i] * Math.pow(2, kvScale);
+        p.kv[i] = t < 0 ? Math.trunc(t - 0.5) : Math.trunc(t + 0.5);
+      }
+      p.kvScale = kvScale;
+    }
+
+    // _ExtractCILCParameters (インタリーブ/チェス補正)
+    {
+      p.calibrationModeEE = (ee[10] & 0x0800) >> 4;
+      p.calibrationModeEE ^= 0x80;
+      const c = [ee[53] & 0x003F, (ee[53] & 0x07C0) >> 6, (ee[53] & 0xF800) >> 11];
+      if (c[0] > 31) c[0] -= 64; c[0] /= 16.0;
+      if (c[1] > 15) c[1] -= 32; c[1] /= 2.0;
+      if (c[2] > 15) c[2] -= 32; c[2] /= 8.0;
+      p.ilChessC = c;
+    }
+
+    // _ExtractDeviatingPixels (不良画素: 全ゼロ=broken, bit0=outlier)
+    {
+      p.brokenPixels = [];
+      p.outlierPixels = [];
+      let pixCnt = 0;
+      while (pixCnt < 768 && p.brokenPixels.length < 5 && p.outlierPixels.length < 5) {
+        if (ee[pixCnt + 64] === 0) p.brokenPixels.push(pixCnt);
+        else if ((ee[pixCnt + 64] & 0x0001) !== 0) p.outlierPixels.push(pixCnt);
+        pixCnt += 1;
+      }
+      if (p.brokenPixels.length > 4) throw new Error("More than 4 broken pixels");
+      if (p.outlierPixels.length > 4) throw new Error("More than 4 outlier pixels");
+      p.badPixels = new Set([...p.brokenPixels, ...p.outlierPixels]);
+    }
+    return p;
+  }
+
+  // ---- adafruit: _GetVdd ----
+  function getVdd(fr, p) {
+    let vdd = fr[810];
+    if (vdd > 32767) vdd -= 65536;
+    const resolutionRAM = (fr[832] & 0x0C00) >> 10;
+    const resolutionCorrection = Math.pow(2, p.resolutionEE) / Math.pow(2, resolutionRAM);
+    return (resolutionCorrection * vdd - p.vdd25) / p.kVdd + 3.3;
+  }
+
+  // ---- adafruit: _GetTa ----
+  function getTa(fr, p) {
+    const vdd = getVdd(fr, p);
+    let ptat = fr[800];
+    if (ptat > 32767) ptat -= 65536;
+    let ptatArt = fr[768];
+    if (ptatArt > 32767) ptatArt -= 65536;
+    ptatArt = (ptat / (ptat * p.alphaPTAT + ptatArt)) * Math.pow(2, 18);
+    let ta = ptatArt / (1 + p.KvPTAT * (vdd - 3.3)) - p.vPTAT25;
+    return ta / p.KtPTAT + 25;
+  }
+
+  // ---- adafruit: _CalculateTo (自サブページの画素だけ result に書く) ----
+  function calculateTo(fr, emissivity, tr, p, result) {
+    const subPage = fr[833];
+    const vdd = getVdd(fr, p);
+    const ta = getTa(fr, p);
+
+    let ta4 = ta + 273.15; ta4 *= ta4; ta4 *= ta4;
+    let tr4 = tr + 273.15; tr4 *= tr4; tr4 *= tr4;
+    const taTr = tr4 - (tr4 - ta4) / emissivity;
+
+    const ktaScale = Math.pow(2, p.ktaScale);
+    const kvScale = Math.pow(2, p.kvScale);
+    const alphaScale = Math.pow(2, p.alphaScale);
+
+    const alphaCorrR = [0, 0, 0, 0];
+    alphaCorrR[0] = 1 / (1 + p.ksTo[0] * 40);
+    alphaCorrR[1] = 1;
+    alphaCorrR[2] = 1 + p.ksTo[1] * p.ct[2];
+    alphaCorrR[3] = alphaCorrR[2] * (1 + p.ksTo[2] * (p.ct[3] - p.ct[2]));
+
+    // ゲイン (datasheet §11.2.2 gain)
+    let gain = fr[778];
+    if (gain > 32767) gain -= 65536;
+    gain = p.gainEE / gain;
+
+    const mode = (fr[832] & 0x1000) >> 5;   // 128=チェス, 0=インタリーブ
+
+    const irDataCP = [fr[776], fr[808]];
+    for (let i = 0; i < 2; i++) {
+      if (irDataCP[i] > 32767) irDataCP[i] -= 65536;
+      irDataCP[i] *= gain;
+    }
+    irDataCP[0] -= p.cpOffset[0] * (1 + p.cpKta * (ta - 25)) * (1 + p.cpKv * (vdd - 3.3));
+    if (mode === p.calibrationModeEE) {
+      irDataCP[1] -= p.cpOffset[1] * (1 + p.cpKta * (ta - 25)) * (1 + p.cpKv * (vdd - 3.3));
+    } else {
+      irDataCP[1] -= (p.cpOffset[1] + p.ilChessC[0])
+        * (1 + p.cpKta * (ta - 25)) * (1 + p.cpKv * (vdd - 3.3));
+    }
+
+    for (let pix = 0; pix < 768; pix++) {
+      if (p.badPixels.has(pix)) { result[pix] = -273.15; continue; }
+
+      const ilPattern = Math.floor(pix / 32) - Math.floor(pix / 64) * 2;
+      const chessPattern = ilPattern ^ (pix - Math.floor(pix / 2) * 2);
+      const conversionPattern = (
+        Math.floor((pix + 2) / 4) - Math.floor((pix + 3) / 4)
+        + Math.floor((pix + 1) / 4) - Math.floor(pix / 4)
+      ) * (1 - 2 * ilPattern);
+
+      const pattern = (mode === 0) ? ilPattern : chessPattern;
+      if (pattern !== fr[833]) continue;
+
+      let irData = fr[pix];
+      if (irData > 32767) irData -= 65536;
+      irData *= gain;
+
+      const kta = p.kta[pix] / ktaScale;
+      const kv = p.kv[pix] / kvScale;
+      irData -= p.offset[pix] * (1 + kta * (ta - 25)) * (1 + kv * (vdd - 3.3));
+
+      if (mode !== p.calibrationModeEE) {
+        irData += p.ilChessC[2] * (2 * ilPattern - 1) - p.ilChessC[1] * conversionPattern;
+      }
+
+      irData -= p.tgc * irDataCP[subPage];
+      irData /= emissivity;
+
+      let alphaCompensated = SCALEALPHA * alphaScale / p.alpha[pix];
+      alphaCompensated *= 1 + p.KsTa * (ta - 25);
+
+      // To 1回目 (Sx 込み) → レンジ判定 → 2回目 (datasheet §11.2.2 To)
+      let Sx = alphaCompensated * alphaCompensated * alphaCompensated
+             * (irData + alphaCompensated * taTr);
+      Sx = Math.sqrt(Math.sqrt(Sx)) * p.ksTo[1];
+
+      let To = Math.sqrt(Math.sqrt(
+        irData / (alphaCompensated * (1 - p.ksTo[1] * 273.15) + Sx) + taTr
+      )) - 273.15;
+
+      let torange;
+      if (To < p.ct[1]) torange = 0;
+      else if (To < p.ct[2]) torange = 1;
+      else if (To < p.ct[3]) torange = 2;
+      else torange = 3;
+
+      To = Math.sqrt(Math.sqrt(
+        irData / (alphaCompensated * alphaCorrR[torange]
+                  * (1 + p.ksTo[torange] * (To - p.ct[torange]))) + taTr
+      )) - 273.15;
+
+      result[pix] = To;
+    }
+  }
+
+  return { extractParameters, getVdd, getTa, calculateTo, OPENAIR_TA_SHIFT };
+})();
+if (typeof module !== "undefined" && module.exports) module.exports = MLXCal;
+// ===MLX_CALIB_END===
+
+const NW=32, NH=24;
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const ro=document.getElementById('ro'), badge=document.getElementById('badge');
+const $=id=>document.getElementById(id);
+let W=0,H=0,DPR=1;
+const off=document.createElement('canvas'); off.width=NW; off.height=NH;
+const offc=off.getContext('2d'); const offImg=offc.createImageData(NW,NH);
+
+let toArr=new Float64Array(NW*NH).fill(NaN);
+let params=null, lastFrames=[null,null], taNow=NaN;
+let playing=true, smooth=true, rangeAuto=true;
+let mode='syn';
+let fps=0, lastArr=0, errCount=0;
+let dispLo=18, dispHi=40, t=0, last=0;
+
+// ---- ironbow(表示用パレット) ----
+const IRON=[[0.00,0,0,20],[0.15,70,0,110],[0.30,145,10,105],[0.45,195,50,70],
+  [0.60,225,105,20],[0.75,245,160,0],[0.90,255,215,60],[1.00,255,255,220]];
+function cmap(u){
+  u=u<0?0:u>1?1:u;
+  for(let i=1;i<IRON.length;i++) if(u<=IRON[i][0]){
+    const a=IRON[i-1],b=IRON[i],f=(u-a[0])/(b[0]-a[0]);
+    return [a[1]+f*(b[1]-a[1]), a[2]+f*(b[2]-a[2]), a[3]+f*(b[3]-a[3])];
+  }
+  return [255,255,220];
+}
+
+function resize(){
+  const r=cv.getBoundingClientRect();
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  W=r.width; H=r.height;
+  cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+
+function range(){
+  if(!rangeAuto){ const lo=+$('tlo').value; return [lo, Math.max(lo+1,+$('thi').value)]; }
+  const vals=[];
+  for(let k=0;k<toArr.length;k++) if(isFinite(toArr[k])) vals.push(toArr[k]);
+  if(vals.length<8) return [dispLo,dispHi];
+  vals.sort((a,b)=>a-b);
+  const lo=vals[Math.floor(vals.length*0.01)], hi=vals[Math.min(vals.length-1,Math.floor(vals.length*0.99))];
+  const pad=Math.max(0.5,(hi-lo)*0.05);
+  dispLo+=0.25*((lo-pad)-dispLo); dispHi+=0.25*((hi+pad)-dispHi);
+  if(dispHi-dispLo<2){ const m=(dispHi+dispLo)/2; dispLo=m-1; dispHi=m+1; }
+  return [dispLo,dispHi];
+}
+let heatRect=null;
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  const pad=14, barW=20, gap=14, labelW=52, topPad=64;  // topPad=右上readoutとの衝突回避
+  const availW=W-pad*2-barW-gap-labelW, availH=H-pad-topPad;
+  const S=Math.max(60, Math.min(availW, availH*NW/NH));
+  const Sh=S*NH/NW;
+  const ox=pad+(availW-S)/2, oy=topPad+(availH-Sh)/2;
+  heatRect=[ox,oy,S,Sh];
+  const [lo,hi]=range();
+  for(let k=0;k<NW*NH;k++){
+    const v=toArr[k]; const p=k*4;
+    if(!isFinite(v)){ offImg.data[p]=228;offImg.data[p+1]=224;offImg.data[p+2]=216;offImg.data[p+3]=255; continue; }
+    const c=cmap((v-lo)/(hi-lo));
+    offImg.data[p]=c[0];offImg.data[p+1]=c[1];offImg.data[p+2]=c[2];offImg.data[p+3]=255;
+  }
+  offc.putImageData(offImg,0,0);
+  ctx.imageSmoothingEnabled=smooth; ctx.imageSmoothingQuality='high';
+  ctx.drawImage(off,0,0,NW,NH,ox,oy,S,Sh);
+  ctx.strokeStyle='#cfc7b9'; ctx.lineWidth=1.4; ctx.strokeRect(ox-.5,oy-.5,S+1,Sh+1);
+  // colorbar(上=高温)
+  const bx=ox+S+gap, by=oy, bh=Sh;
+  for(let y=0;y<bh;y++){ const c=cmap(1-y/bh);
+    ctx.fillStyle=`rgb(${c[0]|0},${c[1]|0},${c[2]|0})`; ctx.fillRect(bx,by+y,barW,1); }
+  ctx.strokeStyle='#cfc7b9'; ctx.lineWidth=1; ctx.strokeRect(bx-.5,by-.5,barW+1,bh+1);
+  ctx.fillStyle='#7d7568'; ctx.font='10px JetBrains Mono, monospace';
+  ctx.textAlign='left'; ctx.textBaseline='middle';
+  ctx.fillText(hi.toFixed(0)+'℃', bx+barW+6, by+6);
+  ctx.fillText(((lo+hi)/2).toFixed(0), bx+barW+6, by+bh/2);
+  ctx.fillText(lo.toFixed(0)+'℃', bx+barW+6, by+bh-6);
+  // readout
+  let mn=Infinity,mx=-Infinity;
+  for(let k=0;k<toArr.length;k++){const v=toArr[k]; if(!isFinite(v))continue; if(v<mn)mn=v; if(v>mx)mx=v;}
+  const cc=(toArr[11*NW+15]+toArr[11*NW+16]+toArr[12*NW+15]+toArr[12*NW+16])/4;
+  ro.innerHTML='最小 <b>'+(isFinite(mn)?mn.toFixed(1):'—')+'</b> / 最大 <b>'+(isFinite(mx)?mx.toFixed(1):'—')+'</b> ℃<br>'+
+    '中心 '+(isFinite(cc)?cc.toFixed(1)+'℃':'—')+' · Ta '+(isFinite(taNow)?taNow.toFixed(1)+'℃':'—')+'<br>'+
+    (mode==='syn'?'合成':'実機')+' · <b>'+fps.toFixed(1)+'</b> fps'+(errCount?' · ERR×'+errCount:'')+
+    (probeTxt?'<br>'+probeTxt:'');
+}
+let probeTxt='';
+cv.addEventListener('pointermove',ev=>{
+  if(!heatRect) return;
+  const r=cv.getBoundingClientRect();
+  const x=Math.floor((ev.clientX-r.left-heatRect[0])/heatRect[2]*NW);
+  const y=Math.floor((ev.clientY-r.top-heatRect[1])/heatRect[3]*NH);
+  if(x>=0&&x<NW&&y>=0&&y<NH){
+    const v=toArr[y*NW+x];
+    probeTxt='('+x+','+y+') <b>'+(isFinite(v)?v.toFixed(2)+' ℃':'—')+'</b>';
+  } else probeTxt='';
+});
+
+// ---- 合成データ(湯気と手) ----
+function synth(time){
+  const hx=15+9*Math.sin(time*0.6), hy=11+6*Math.sin(time*0.43+1.3);
+  for(let y=0;y<NH;y++)for(let x=0;x<NW;x++){
+    let v=20.5+2.2*x/NW+0.8*Math.sin(0.2*y+0.3);
+    v+=12.5*Math.exp(-(((x-hx)**2)+((y-hy)**2))/14);                       // 手 ~33℃
+    const mr=((x-5)**2)/6+((y-17)**2)/9;
+    v+=47*Math.exp(-mr);                                                    // マグ ~68℃
+    v+=6*Math.exp(-(((x-5)**2)/5+((y-11)**2)/16))*(0.6+0.4*Math.sin(3*time+y)); // 湯気
+    toArr[y*NW+x]=v+(Math.sin(x*12.9+y*78.2+time*7)*0.5)*0.5;
+  }
+  taNow=26.4;
+}
+function tick(now){
+  if(!last)last=now; const dt=(now-last)/1000; last=now;
+  if(playing&&mode==='syn'){ t+=dt; synth(t);
+    fps=0.9*fps+0.1*Math.min(60,1/Math.max(1e-3,dt)); }
+  draw();
+  requestAnimationFrame(tick);
+}
+
+// ---- 実機処理 (行プロトコル: EE 832hex / FR 834hex / # / ERR) ----
+function inpaintBad(){
+  if(!params) return;
+  for(const pix of params.badPixels){
+    const x=pix%NW, y=Math.floor(pix/NW);
+    let s=0,n=0;
+    for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      const nx=x+dx, ny=y+dy;
+      if(nx<0||nx>=NW||ny<0||ny>=NH) continue;
+      const v=toArr[ny*NW+nx];
+      if(isFinite(v)&&v>-273&&!params.badPixels.has(ny*NW+nx)){ s+=v; n++; }
+    }
+    toArr[pix]=n?s/n:NaN;
+  }
+}
+function processFrame(fr){
+  lastFrames[fr[833]&1]=fr;
+  if(!params){ badge.textContent='実機 (EEPROM待ち)'; return; }
+  try{
+    taNow=MLXCal.getTa(fr,params);
+    MLXCal.calculateTo(fr, +$('eps').value/100, taNow-MLXCal.OPENAIR_TA_SHIFT, params, toArr);
+    inpaintBad();
+  }catch(e){ probeTxt='calc: '+e.message; return; }
+  const now=performance.now(), dt=now-lastArr;
+  if(lastArr&&dt>1) fps=0.85*fps+0.15*(1000/dt);
+  lastArr=now;
+  badge.textContent='実機 (live)';
+}
+function processEE(words){
+  try{
+    params=MLXCal.extractParameters(words);
+    for(const fr of lastFrames) if(fr) processFrame(fr);
+  }catch(e){ probeTxt='EEPROM: '+e.message; }
+}
+let lineBuf='';
+function parseStream(text){
+  lineBuf+=text;
+  if(lineBuf.length>200000) lineBuf=lineBuf.slice(-100000);
+  let nl;
+  while((nl=lineBuf.indexOf('\n'))>=0){
+    const line=lineBuf.slice(0,nl).trim(); lineBuf=lineBuf.slice(nl+1);
+    if(!line) continue;
+    if(line.startsWith('ERR')){ errCount++; continue; }
+    if(line[0]==='#') continue;
+    const isEE=line.startsWith('EE '), isFR=line.startsWith('FR ');
+    if(!isEE&&!isFR) continue;
+    const parts=line.slice(3).trim().split(/\s+/);
+    const need=isEE?832:834;
+    if(parts.length!==need) continue;
+    const words=new Array(need); let ok=true;
+    for(let k=0;k<need;k++){ const v=parseInt(parts[k],16);
+      if(!(v>=0&&v<=0xFFFF)){ok=false;break;} words[k]=v; }
+    if(!ok) continue;
+    if(isEE) processEE(words); else processFrame(words);
+  }
+}
+
+// ---- Web Serial ----
+const EMBEDDED = window.self!==window.top;
+let port=null, keepReading=false;
+async function connect(){
+  if(!('serial' in navigator)){ probeTxt='このブラウザはWeb Serial非対応(Chrome/Edge)'; return; }
+  try{
+    port=await navigator.serial.requestPort();
+    await port.open({baudRate:115200});
+    mode='live'; badge.textContent='実機 (EEPROM待ち)'; badge.className='badge live';
+    params=null; lastFrames=[null,null]; toArr.fill(NaN); taNow=NaN; errCount=0; fps=0; lastArr=0;
+    $('connect').textContent='切断';
+    keepReading=true; readLoop();
+  }catch(e){}
+}
+async function readLoop(){
+  const dec=new TextDecoderStream(); port.readable.pipeTo(dec.writable).catch(()=>{});
+  const reader=dec.readable.getReader();
+  try{ while(keepReading){ const {value,done}=await reader.read(); if(done)break; if(value)parseStream(value); } }
+  catch(e){} finally{ try{reader.releaseLock();}catch(e){} }
+}
+async function disconnect(){
+  keepReading=false; try{ await port.close(); }catch(e){}
+  port=null; mode='syn'; badge.textContent='合成データ'; badge.className='badge syn';
+  $('connect').textContent='接続 (Web Serial)';
+  toArr.fill(NaN); t=0;
+}
+
+// ---- UI ----
+function seg(onId,offId,set){ $(onId).classList.add('on'); $(offId).classList.remove('on'); set(); }
+$('play').addEventListener('click',e=>{ playing=!playing; e.target.textContent=playing?'⏸ 停止':'▶ 再生'; e.target.classList.toggle('on',playing); });
+$('connect').addEventListener('click',()=>{ port?disconnect():connect(); });
+$('mSmooth').addEventListener('click',()=>seg('mSmooth','mBlock',()=>smooth=true));
+$('mBlock').addEventListener('click',()=>seg('mBlock','mSmooth',()=>smooth=false));
+$('rAuto').addEventListener('click',()=>{ seg('rAuto','rFix',()=>rangeAuto=true); $('tlo').disabled=$('thi').disabled=true; });
+$('rFix').addEventListener('click',()=>{ seg('rFix','rAuto',()=>rangeAuto=false); $('tlo').disabled=$('thi').disabled=false; });
+function trv(){ $('trv').textContent=$('tlo').value+'–'+$('thi').value; }
+$('tlo').addEventListener('input',trv); $('thi').addEventListener('input',trv);
+$('eps').addEventListener('input',e=>{
+  $('epsv').textContent=(+e.target.value/100).toFixed(2);
+  if(mode==='live'&&params) for(const fr of lastFrames) if(fr) processFrame(fr);
+});
+$('hwBtn').addEventListener('click',()=>{ $('hw').hidden=!$('hw').hidden; });
+$('hwClose').addEventListener('click',()=>{ $('hw').hidden=true; });
+if(EMBEDDED){
+  $('connect').disabled=true;
+  $('connect').textContent='接続は全画面で';
+  $('connect').title='iframe内ではWeb Serialが使えない。全画面で開くと実機に繋げます';
+  const a=$('openFull'); a.hidden=false; a.href=location.href;
+}
+window.addEventListener('resize',resize);
+resize(); synth(0); requestAnimationFrame(tick);
+</script>
+</body>
+</html>
