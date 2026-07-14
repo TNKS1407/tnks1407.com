@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>畑の計器盤 — 育苗自動化</title>
+<style>
+:root{
+  --bg:#faf6ef; --panel:#fffdf8; --ink:#2b2a26; --sub:#6b675f;
+  --line:#e4ddd0; --accent:#b3592c; --accent2:#2c6e91; --mono:'JetBrains Mono','Consolas',monospace;
+  --ch0:#2c6e91; --ch1:#5a7d3c; --ch2:#7d5ba6; --tempc:#c98a3d;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Zen Kaku Gothic New','Hiragino Sans',sans-serif;overflow-x:hidden}
+header{padding:14px 18px 6px}
+h1{font-size:17px;margin:0 0 2px}
+h2{font-size:13px;margin:0 0 8px}
+.sub{color:var(--sub);font-size:12px}
+#wrap{display:flex;flex-wrap:wrap;gap:12px;padding:12px 18px 24px;max-width:1100px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;flex:1 1 300px;min-width:0}
+.panel.full{flex-basis:100%}
+canvas{display:block;border-radius:6px}
+#graph{touch-action:pan-y;background:#fdfaf2;border:1px solid var(--line)}
+.ctrl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:12.5px}
+button{font:inherit;font-size:12.5px;padding:6px 14px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button:disabled{opacity:.45;cursor:default}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:none;border-radius:0;padding:6px 12px}
+.seg button.on{background:var(--accent2);color:#fff}
+input[type=range]{width:130px}
+@media(max-width:430px){input[type=range]{width:90px}}
+label{display:inline-flex;gap:6px;align-items:center;color:var(--sub)}
+#stat{font-family:var(--mono);font-size:11.5px;color:var(--sub);margin-left:auto}
+.bar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-top:8px;font-size:12px}
+.k{color:var(--sub)} .v{font-family:var(--mono);font-size:12px}
+small.tip{color:var(--sub);display:block;margin-top:8px;line-height:1.7}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(146px,1fr));gap:10px;flex-basis:100%}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 12px;min-width:0}
+.card .nm{font-size:11.5px;color:var(--sub)}
+.card .big{font-family:var(--mono);font-size:23px;line-height:1.3;white-space:nowrap}
+.card .big small{font-size:12px;color:var(--sub)}
+.card .mini{font-family:var(--mono);font-size:10.5px;color:var(--sub);margin-top:1px;white-space:nowrap}
+.bdg{display:inline-block;font-size:10.5px;border-radius:99px;padding:1px 9px;margin-top:4px}
+.bdg.ok{background:#e9eedd;color:#4e6b34}
+.bdg.dry{background:#f6e2d8;color:#a34a24}
+.bdg.wet{background:#dde8f0;color:#2c5d80}
+.bdg.na{background:#efeae0;color:#8a8272}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--sub)}
+.sw{width:14px;height:3px;border-radius:2px;display:inline-block}
+.swb{width:12px;height:12px;border-radius:3px;background:rgba(190,130,40,.28);display:inline-block}
+.thrrow{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:12.5px;margin-bottom:8px}
+.crow{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:12px;padding:8px 0;border-top:1px dashed var(--line)}
+.crow:first-child{border-top:none}
+.crow button{padding:4px 10px;font-size:11.5px}
+.chdot{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:2px;vertical-align:-1px}
+.warn{color:var(--accent);font-size:11px}
+#demoPanel{margin-top:12px;padding-top:10px;border-top:1px dashed var(--line)}
+footer{padding:0 18px 26px;max-width:1100px}
+</style>
+</head>
+<body>
+<header>
+  <h1>畑の計器盤 — 育苗自動化</h1>
+  <div class="sub">Pico（Web Serial・JSON行）から土壌水分3ch＋気温＋ポンプ状態を受けて記録する。履歴は生ADCのまま1分間隔・7日分をこのブラウザに保存、%変換は2点校正（乾いた土／水没）。シリアル契約は同ディレクトリの PROTOCOL.md。</div>
+</header>
+<div id="wrap">
+
+  <div class="panel full">
+    <div class="ctrl">
+      <button id="btnConn" class="primary">Picoに接続</button>
+      <button id="btnDemo">デモ（7日分の畑）</button>
+      <span class="seg"><button id="btnV24" class="on">24h</button><button id="btnV7">7d</button></span>
+      <span id="stat">未接続</span>
+    </div>
+  </div>
+
+  <div class="cards" id="cards"></div>
+
+  <div class="panel full">
+    <h2>時系列 — 水分%（左軸）と気温（右軸・<span style="color:var(--tempc)">橙</span>）</h2>
+    <div id="gbox"><canvas id="graph"></canvas></div>
+    <div class="bar">
+      <span class="chip"><span class="sw" style="background:var(--ch0)"></span>CH1</span>
+      <span class="chip"><span class="sw" style="background:var(--ch1)"></span>CH2</span>
+      <span class="chip"><span class="sw" style="background:var(--ch2)"></span>CH3</span>
+      <span class="chip"><span class="sw" style="background:var(--tempc)"></span>気温</span>
+      <span class="chip"><span class="swb"></span>給水（帯）</span>
+      <span class="chip"><span class="sw" style="background:var(--accent);height:1px;border-bottom:2px dashed var(--accent)"></span>乾き線</span>
+      <span class="chip"><span class="sw" style="background:#46779c;height:1px;border-bottom:2px dashed #46779c"></span>過湿線</span>
+    </div>
+    <div class="bar"><span class="k">読み出し</span><span id="probe" class="v">—（グラフをなぞると値が出る）</span></div>
+  </div>
+
+  <div class="panel">
+    <h2>しきい値（水分%）</h2>
+    <div class="thrrow">
+      <label>乾き <input id="rngDry" type="range" min="5" max="60" value="30"></label>
+      <span class="v" id="vDry">30%</span>
+      <span class="k">これ以下で給水推奨（将来の自動給水の判定線）</span>
+    </div>
+    <div class="thrrow">
+      <label>過湿 <input id="rngWet" type="range" min="40" max="95" value="75"></label>
+      <span class="v" id="vWet">75%</span>
+      <span class="k">これ以上が30分続くと警告（キノコ・カビは上限側の監視が肝）</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>手動給水</h2>
+    <div class="ctrl">
+      <label>秒数 <input id="rngSec" type="range" min="1" max="10" value="5"></label>
+      <span class="v" id="vSec">5s</span>
+      <button id="btnWater" class="primary" disabled>給水</button>
+      <button id="btnStop" disabled>停止</button>
+    </div>
+    <div class="bar"><span id="pumpNote" class="k">FW側で最大10秒・OFF後5秒のクールダウン（PROTOCOL.md）</span></div>
+    <div id="demoPanel" style="display:none">
+      <h2>校正ごっこ（デモ）</h2>
+      <div class="ctrl">
+        <button id="btnPrDry">乾いた土に挿す</button>
+        <button id="btnPrWater">水に浸す</button>
+        <button id="btnPrField">畑に戻す</button>
+        <span class="k">状態: <span class="v" id="prState">畑</span></span>
+      </div>
+      <small class="tip">実機での校正手順の練習。センサを移してから、下の校正パネルで「取得」を押す。取得し直すと過去のグラフごと引き直されるのが見える。</small>
+    </div>
+  </div>
+
+  <div class="panel full">
+    <h2>2点校正（生ADC → 水分%）</h2>
+    <div id="calbody"></div>
+    <small class="tip">センサを「乾いた土」と「水没」に置いて、それぞれ落ち着いた値で取得（直近5サンプルの中央値を使う）。容量式は乾くほど生値が大きいのが普通だが、2点校正なので極性はどちらでもよい。履歴は raw のまま保存しているので、校正し直すと過去のグラフも再計算される。</small>
+  </div>
+
+</div>
+<footer>
+  <small class="tip">Web Serial は Chrome / Edge。データはこのブラウザの localStorage に残る（履歴7日・約400KB）。しきい値は実機とデモで共通、校正と履歴はデモでは揮発（実機データを汚さない）。深リンク: #24h / #7d、?demo=1 でデモ自動開始。</small>
+</footer>
+<script>
+"use strict";
+// =====================================================================
+// ===GARDEN_CORE_BEGIN===
+// 純粋コア: %変換とデモ7日分の合成データ生成。
+// 検算: test/check.js がこのブロックを抜き出して node で走らせ、
+// 行数・値域・給水イベント数・過湿エピソード・最終状態を確認する。
+const GardenCore = (() => {
+  // 再現性のための小さなPRNG（デモ専用・物理ではない）
+  function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+  // 2点校正: dry/wet の生値から%へ（線形・0..100にクランプ）。未校正はnull
+  function pctOf(raw, dry, wet){
+    if(raw==null || dry==null || wet==null || dry===wet) return null;
+    const p=(raw-dry)/(wet-dry)*100;
+    return Math.max(0, Math.min(100, p));
+  }
+
+  // デモの畑: ch0=大きめのポット, ch1=小さいポット(1.45倍速く乾く), ch2=未接続
+  // dry/wet は容量式センサの典型値のつもり(乾で高い)。係数は見た目調整で根拠は無い
+  const DEMO_CH=[
+    {dry:52300, wet:23800, evap:1.00, m0:0.46, absorb:0.13},
+    {dry:50800, wet:22600, evap:1.45, m0:0.42, absorb:0.19},
+    null
+  ];
+  function rawOf(ch, m){ const c=DEMO_CH[ch]; return c.dry + m*(c.wet-c.dry); }
+
+  // 1分刻みの前進シミュレーション:
+  //   蒸発は昼に速い(日射 dayl)・給水は「どれかが0.33を切ったら日中に1回」
+  //   吸水は一次遅れ(w)でじわっと立ち上がる・2日目午後に雨(ポンプ無しの過湿)
+  //   最後の26時間は水やりを忘れている(→「じわっと乾く」現在状態)
+  const N_MIN = 7*1440;
+  function genDemoHistory(nowMs){
+    const rnd = mulberry32(1407);
+    const endMin = Math.floor(nowMs/60000);
+    const startMin = endMin-(N_MIN-1);
+    const sim=[{m:DEMO_CH[0].m0,w:0},{m:DEMO_CH[1].m0,w:0}];
+    const rows=[];
+    let lastWater=-1e9;
+    const rainStart=startMin+1440+14*60;          // 2日目14:00から2時間
+    const HOLIDAY=26*60;                          // 終端の水やり休止(分)
+    for(let i=0;i<N_MIN;i++){
+      const min=startMin+i;
+      const d=new Date(min*60000);
+      const h=d.getHours()+d.getMinutes()/60;
+      const dayl=(h>=6&&h<=18)?Math.sin(Math.PI*(h-6)/12):0;
+      let pump=0;
+      const inHoliday=(N_MIN-i)<=HOLIDAY;
+      const dryest=Math.min(sim[0].m,sim[1].m);
+      if(!inHoliday && dryest<0.33 && h>=6 && h<21 && (min-lastWater)>240){
+        pump=1; lastWater=min;
+        sim[0].w+=DEMO_CH[0].absorb*(0.9+0.2*rnd());
+        sim[1].w+=DEMO_CH[1].absorb*(0.9+0.2*rnd());
+      }
+      const rain=(min>=rainStart&&min<rainStart+120)?0.00375:0;
+      for(let c=0;c<2;c++){
+        const s=sim[c];
+        s.m+=s.w*0.06; s.w*=0.94;
+        s.m+=rain;
+        s.m-=1.5e-4*(0.35+1.15*dayl)*DEMO_CH[c].evap;
+        s.m=Math.max(0.02,Math.min(1,s.m));
+      }
+      const temp=23+4.6*Math.cos(2*Math.PI*(h-15)/24)
+               +1.1*Math.sin(2*Math.PI*(min*60000/86400000)/2.7)
+               +(rnd()-0.5)*0.5;
+      rows.push([min,
+        Math.round(rawOf(0,sim[0].m)+(rnd()-0.5)*300),
+        Math.round(rawOf(1,sim[1].m)+(rnd()-0.5)*300),
+        null,
+        Math.round(temp*10),
+        pump]);
+    }
+    return {rows, sim};
+  }
+  return {pctOf, genDemoHistory, rawOf, DEMO_CH, N_MIN, mulberry32};
+})();
+if (typeof module!=="undefined" && module.exports) module.exports = GardenCore;
+// ===GARDEN_CORE_END===
+// =====================================================================
+
+const $=id=>document.getElementById(id);
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const CH_COL=['#2c6e91','#5a7d3c','#7d5ba6'];
+const CH_PIN=['GP26','GP27','GP28'];
+const MIN7D=7*1440;
+const K={hist:'garden.hist.v1', calib:'garden.calib.v1', thr:'garden.thr.v1'};
+
+let mode='idle';            // 'idle' | 'serial' | 'demo'
+let rows=[];                // [tmin, raw0, raw1, raw2, temp*10|null, pump] 1分バケツ
+let calib={dry:[null,null,null], wet:[null,null,null]};
+let thr={dry:30, wet:75};
+let live=null;              // {soil:[..], temp, pump, at}
+let recent=[[],[],[]];      // 校正取得用の直近raw
+let view='24h';
+let rxCount=0, errCount=0, dirty=false;
+let probeMin=null, GP=null; // GP: draw()の座標系(プローブ用)
+let demoT=null, demoS=null;
+let port=null, reader=null, writer=null, connected=false;
+let pumpUntilEst=0;         // 手動給水の残り時間表示(推定。真実はテレメトリのpump)
+let noteT=null;
+
+// ---- localStorage(全て失敗許容) ----
+function lsGet(k){try{const s=localStorage.getItem(k);return s?JSON.parse(s):null;}catch(e){return null;}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+function validRow(r){return Array.isArray(r)&&r.length===6&&typeof r[0]==='number';}
+function loadReal(){
+  const h=lsGet(K.hist);
+  rows=(h&&h.v===1&&Array.isArray(h.rows))?h.rows.filter(validRow):[];
+  const c=lsGet(K.calib);
+  calib={dry:[null,null,null],wet:[null,null,null]};
+  if(c&&Array.isArray(c.dry)&&Array.isArray(c.wet)){
+    for(let i=0;i<3;i++){
+      if(typeof c.dry[i]==='number')calib.dry[i]=c.dry[i];
+      if(typeof c.wet[i]==='number')calib.wet[i]=c.wet[i];
+    }
+  }
+  live=null; recent=[[],[],[]];
+}
+function saveHist(){ if(mode==='serial') lsSet(K.hist,{v:1,rows}); }
+function saveCalib(){ if(mode!=='demo') lsSet(K.calib,calib); }
+setInterval(()=>{ if(dirty&&mode==='serial'){saveHist();dirty=false;} },15000);
+addEventListener('pagehide',()=>{ if(mode==='serial')saveHist(); });
+
+// ---- %変換 ----
+const pc=(raw,c)=>GardenCore.pctOf(raw, calib.dry[c], calib.wet[c]);
+const calibOk=c=>calib.dry[c]!=null&&calib.wet[c]!=null&&calib.dry[c]!==calib.wet[c];
+
+// ---- 取り込み(シリアルもデモも同じ道) ----
+function ingest(sample, at){
+  live={soil:sample.soil, temp:sample.temp, pump:sample.pump?1:0, at};
+  for(let c=0;c<3;c++){
+    if(sample.soil[c]!=null){ recent[c].push(sample.soil[c]); if(recent[c].length>6)recent[c].shift(); }
+  }
+  const min=Math.floor(at/60000);
+  const t10=sample.temp==null?null:Math.round(sample.temp*10);
+  const rr=[min,
+    sample.soil[0]==null?null:Math.round(sample.soil[0]),
+    sample.soil[1]==null?null:Math.round(sample.soil[1]),
+    sample.soil[2]==null?null:Math.round(sample.soil[2]),
+    t10, live.pump];
+  const L=rows[rows.length-1];
+  if(L&&L[0]===min){ L[1]=rr[1];L[2]=rr[2];L[3]=rr[3];L[4]=rr[4];L[5]=L[5]||rr[5]; }
+  else{
+    rows.push(rr);
+    while(rows.length&&rows[0][0]<min-(MIN7D-1))rows.shift();
+  }
+  dirty=true; rxCount++;
+  renderCards(); scheduleDraw();
+}
+
+// ---- 行パーサ(JSON行・#無視・壊れた行は計上のみ) ----
+let buf='';
+function feed(text){
+  if(mode!=='serial')return;
+  buf+=text;
+  if(buf.length>100000)buf=buf.slice(-50000);
+  let i;
+  while((i=buf.indexOf('\n'))>=0){
+    const line=buf.slice(0,i).trim(); buf=buf.slice(i+1);
+    if(!line||line[0]==='#')continue;
+    let o=null;
+    try{o=JSON.parse(line);}catch(e){errCount++;continue;}
+    if(!o||typeof o!=='object'||!Array.isArray(o.soil)){errCount++;continue;}
+    const soil=[0,1,2].map(c=>{
+      const v=o.soil[c];
+      return (typeof v==='number'&&isFinite(v))?clamp(v,0,65535):null;
+    });
+    const temp=(typeof o.temp==='number'&&isFinite(o.temp))?o.temp:null;
+    ingest({soil,temp,pump:o.pump?1:0}, Date.now());
+  }
+  renderStatus();
+}
+
+// ---- Web Serial ----
+async function connect(){
+  let p=null;
+  try{
+    p=await navigator.serial.requestPort();
+    await p.open({baudRate:115200});
+  }catch(e){ note('serial: '+e.message); return; }
+  stopDemoTimer();
+  loadReal();
+  port=p; mode='serial'; connected=true; rxCount=0; errCount=0; buf='';
+  updateModeUI(); renderCards(); renderCalibVals(); scheduleDraw();
+  try{
+    writer=port.writable.getWriter();
+    const dec=new TextDecoderStream();
+    const pipe=port.readable.pipeTo(dec.writable).catch(()=>{});
+    reader=dec.readable.getReader();
+    for(;;){
+      const {value,done}=await reader.read();
+      if(done)break;
+      if(value)feed(value);
+    }
+    await pipe;
+  }catch(e){ note('serial: '+e.message); }
+  finally{
+    try{if(writer)writer.releaseLock();}catch(e){}
+    try{await port.close();}catch(e){}
+    writer=null; reader=null; port=null; connected=false;
+    if(mode==='serial'){ saveHist(); mode='idle'; }
+    updateModeUI(); renderStatus();
+  }
+}
+async function disconnect(){ try{await reader.cancel();}catch(e){} }
+
+async function sendCmd(o){
+  if(mode==='demo'){ return demoCmd(o); }
+  if(!writer){ note('未接続'); return false; }
+  try{ await writer.write(new TextEncoder().encode(JSON.stringify(o)+'\n')); return true; }
+  catch(e){ note('send: '+e.message); return false; }
+}
+
+// ---- デモ ----
+function startDemo(){
+  if(mode==='serial'){ saveHist(); disconnect(); }  // feed()はmodeガードで止まる
+  stopDemoTimer();
+  mode='demo'; rxCount=0; errCount=0; live=null; recent=[[],[],[]]; pumpUntilEst=0;
+  const gen=GardenCore.genDemoHistory(Date.now());
+  rows=gen.rows;
+  demoS={sim:gen.sim, probe:'field', pumpUntil:0, lastOff:0, wasPumping:false, disp:[null,null,null]};
+  // デモ既定の校正(合成データの真値を丸めたもの)。リセットして校正手順の練習もできる
+  calib={dry:GardenCore.DEMO_CH.map(c=>c?c.dry:null), wet:GardenCore.DEMO_CH.map(c=>c?c.wet:null)};
+  demoT=setInterval(demoTick,1000);
+  demoTick();
+  updateModeUI(); renderCalibVals(); scheduleDraw();
+}
+function stopDemoTimer(){ if(demoT){clearInterval(demoT);demoT=null;} }
+function stopDemo(){
+  stopDemoTimer();
+  if(mode==='demo'){
+    mode='idle'; demoS=null; pumpUntilEst=0;
+    loadReal();
+    updateModeUI(); renderCards(); renderCalibVals(); renderStatus(); scheduleDraw();
+  }
+}
+function demoCmd(o){
+  if(!demoS)return false;
+  const now=Date.now();
+  if(o.cmd==='pump'&&o.on===false){ demoS.pumpUntil=0; return true; }
+  if(o.cmd==='pump'&&o.on===true){
+    if(now-demoS.lastOff<5000){ note('（デモFW）クールダウン中、拒否'); return false; }
+    if(now<demoS.pumpUntil){ note('（デモFW）ON中の延長は拒否'); return false; }
+    const sec=clamp(Math.round(o.sec)||5,1,10);
+    demoS.pumpUntil=now+sec*1000;
+    return true;
+  }
+  return false;
+}
+function demoTick(){
+  if(!demoS)return;
+  const now=Date.now();
+  const d=new Date(now);
+  const h=d.getHours()+d.getMinutes()/60+d.getSeconds()/3600;
+  const dayl=(h>=6&&h<=18)?Math.sin(Math.PI*(h-6)/12):0;
+  const pumping=now<demoS.pumpUntil;
+  if(demoS.wasPumping&&!pumping)demoS.lastOff=now;
+  demoS.wasPumping=pumping;
+  for(let c=0;c<2;c++){
+    const s=demoS.sim[c];
+    if(pumping)s.w+=(c===0?0.014:0.020);            // 1秒あたりの吸水仕込み
+    s.m+=s.w*0.06/60; s.w*=Math.pow(0.94,1/60);     // 履歴生成と同じ力学の1秒版
+    s.m-=1.5e-4*(0.35+1.15*dayl)*GardenCore.DEMO_CH[c].evap/60;
+    s.m=Math.max(0.02,Math.min(1,s.m));
+  }
+  const soil=[null,null,null];
+  for(let c=0;c<3;c++){
+    const cc=GardenCore.DEMO_CH[c];
+    if(!cc){demoS.disp[c]=null;continue;}
+    let target;
+    if(demoS.probe==='dry')target=cc.dry+400;
+    else if(demoS.probe==='water')target=cc.wet-500;
+    else target=GardenCore.rawOf(c,demoS.sim[c].m);
+    target+=(Math.random()-0.5)*220;
+    demoS.disp[c]=demoS.disp[c]==null?target:demoS.disp[c]+(target-demoS.disp[c])*0.45;
+    soil[c]=clamp(Math.round(demoS.disp[c]),0,65535);
+  }
+  const temp=23+4.6*Math.cos(2*Math.PI*(h-15)/24)
+           +1.1*Math.sin(2*Math.PI*(now/86400000)/2.7)
+           +(Math.random()-0.5)*0.3;
+  ingest({soil, temp:Math.round(temp*10)/10, pump:pumping?1:0}, now);
+  renderStatus();
+}
+
+// ---- 現在値カード ----
+function fresh(){ return live&&(Date.now()-live.at)<5000; }
+function overwetMin(c){
+  let n=0, prev=null;
+  for(let i=rows.length-1;i>=0;i--){
+    const r=rows[i], p=pc(r[1+c],c);
+    if(p==null||p<thr.wet)break;
+    if(prev!=null&&prev-r[0]>5)break;
+    n=prev==null?1:n+(prev-r[0]);
+    prev=r[0];
+  }
+  return n;
+}
+function lastWaterMin(){
+  for(let i=rows.length-1;i>=0;i--)if(rows[i][5])return rows[i][0];
+  return null;
+}
+function fmtMin(min){
+  const d=new Date(min*60000);
+  return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+function renderCards(){
+  const f=fresh();
+  let html='';
+  for(let c=0;c<3;c++){
+    const raw=f?live.soil[c]:null;
+    let big='—', badge='<span class="bdg na">待機</span>', mini=CH_PIN[c];
+    if(f&&raw==null){ badge='<span class="bdg na">未接続</span>'; }
+    else if(raw!=null){
+      const p=pc(raw,c);
+      mini=`raw ${raw} · ${CH_PIN[c]}`;
+      if(p==null){ big=`${raw}<small> raw</small>`; badge='<span class="bdg na">未校正</span>'; }
+      else{
+        big=`${Math.round(p)}<small>%</small>`;
+        if(p<=thr.dry)badge='<span class="bdg dry">給水推奨</span>';
+        else if(p>=thr.wet&&overwetMin(c)>=30)badge='<span class="bdg wet">過湿つづき・カビ注意</span>';
+        else if(p>=thr.wet)badge='<span class="bdg wet">過湿</span>';
+        else badge='<span class="bdg ok">適正</span>';
+      }
+    }
+    html+=`<div class="card"><div class="nm"><span class="chdot" style="background:${CH_COL[c]}"></span>土壌 CH${c+1}</div><div class="big">${big}</div><div class="mini">${mini}</div>${badge}</div>`;
+  }
+  const tv=(f&&live.temp!=null)?`${live.temp.toFixed(1)}<small>℃</small>`:'—';
+  html+=`<div class="card"><div class="nm"><span class="chdot" style="background:var(--tempc)"></span>気温</div><div class="big">${tv}</div><div class="mini">temp</div></div>`;
+  const now=Date.now();
+  const on=f&&live.pump;
+  let pmini='—';
+  const lw=lastWaterMin();
+  if(lw!=null)pmini=`直近 ${fmtMin(lw)}`;
+  let pbig=f?(on?'ON':'OFF'):'—';
+  if(on&&pumpUntilEst>now)pbig+=`<small> 残${Math.ceil((pumpUntilEst-now)/1000)}s</small>`;
+  html+=`<div class="card"><div class="nm">ポンプ</div><div class="big" style="color:${on?'var(--accent)':'inherit'}">${pbig}</div><div class="mini">${pmini}</div>${on?'<span class="bdg dry">給水中</span>':''}</div>`;
+  $('cards').innerHTML=html;
+}
+
+// ---- グラフ ----
+let drawQueued=false;
+function scheduleDraw(){ if(drawQueued)return; drawQueued=true; requestAnimationFrame(()=>{drawQueued=false;draw();}); }
+function resize(){
+  const dpr=Math.min(2,window.devicePixelRatio||1);
+  const avail=Math.min($('gbox').clientWidth, window.innerWidth-60);
+  const cssW=Math.max(260,avail);
+  const cssH=Math.round(clamp(cssW*0.42,190,300));
+  const cv=$('graph');
+  cv.width=Math.round(cssW*dpr); cv.height=Math.round(cssH*dpr);
+  cv.style.width=cssW+'px'; cv.style.height=cssH+'px';
+  draw();
+}
+addEventListener('resize',resize);
+
+function draw(){
+  const cv=$('graph'), ctx=cv.getContext('2d');
+  const u=Math.min(2,window.devicePixelRatio||1);
+  const W=cv.width, H=cv.height;
+  ctx.clearRect(0,0,W,H);
+  const padL=36*u, padR=44*u, padT=10*u, padB=24*u;
+  const pw=W-padL-padR, ph=H-padT-padB;
+  const spanMin=view==='24h'?1440:MIN7D;
+  const endMin=Math.ceil(Date.now()/60000);
+  const startMin=endMin-spanMin;
+  GP={startMin,spanMin,padL,pw,u};
+  const X=min=>padL+(min-startMin)/spanMin*pw;
+  const Yp=p=>padT+(1-p/100)*ph;
+  const mono=`${10*u}px 'JetBrains Mono',Consolas,monospace`;
+
+  let i0=0;
+  while(i0<rows.length&&rows[i0][0]<startMin)i0++;
+  const vis=rows.slice(i0);
+
+  // 給水帯(先に塗る)
+  ctx.fillStyle='rgba(190,130,40,.16)';
+  const band=(a,b)=>{const x1=X(a-0.5);const x2=Math.max(X(b+0.5),x1+2*u);ctx.fillRect(x1,padT,x2-x1,ph);};
+  let bs=null,be=null;
+  for(const r of vis){
+    if(!r[5])continue;
+    if(bs==null){bs=r[0];be=r[0];}
+    else if(r[0]-be<=2)be=r[0];
+    else{band(bs,be);bs=r[0];be=r[0];}
+  }
+  if(bs!=null)band(bs,be);
+
+  // 横グリッド + 左軸(%)
+  ctx.font=mono; ctx.textAlign='right'; ctx.textBaseline='middle';
+  for(let p=0;p<=100;p+=25){
+    const y=Yp(p);
+    ctx.strokeStyle='rgba(43,42,38,.07)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(padL+pw,y); ctx.stroke();
+    ctx.fillStyle='#6b675f';
+    ctx.fillText(p===100?'100%':String(p), padL-4*u, y);
+  }
+
+  // 時間目盛(ローカル時刻に整列)
+  const step=view==='24h'?180:1440;
+  const d0=new Date(startMin*60000);
+  const mo=d0.getHours()*60+d0.getMinutes();
+  ctx.textAlign='center'; ctx.textBaseline='top';
+  for(let t=startMin+((step-(mo%step))%step); t<=endMin; t+=step){
+    const x=X(t);
+    ctx.strokeStyle='rgba(43,42,38,.06)';
+    ctx.beginPath(); ctx.moveTo(x,padT); ctx.lineTo(x,padT+ph); ctx.stroke();
+    const d=new Date(t*60000);
+    ctx.fillStyle='#6b675f';
+    const lbl=(view==='24h')
+      ?(d.getHours()===0?`${d.getMonth()+1}/${d.getDate()}`:`${d.getHours()}時`)
+      :`${d.getMonth()+1}/${d.getDate()}`;
+    ctx.fillText(lbl,x,padT+ph+5*u);
+  }
+
+  // 右軸(気温)レンジ
+  let tlo=Infinity,thi=-Infinity;
+  for(const r of vis)if(r[4]!=null){const t=r[4]/10;if(t<tlo)tlo=t;if(t>thi)thi=t;}
+  if(!isFinite(tlo)){tlo=15;thi=30;}
+  tlo=Math.floor(tlo-0.8); thi=Math.ceil(thi+0.8);
+  if(thi-tlo<6){const m=(thi+tlo)/2;tlo=Math.floor(m-3);thi=Math.ceil(m+3);}
+  const Yt=t=>padT+(1-(t-tlo)/(thi-tlo))*ph;
+  ctx.textAlign='left'; ctx.textBaseline='middle'; ctx.fillStyle='#c98a3d';
+  ctx.fillText(`${thi}℃`,padL+pw+4*u,padT+4*u);
+  ctx.fillText(`${Math.round((thi+tlo)/2)}`,padL+pw+4*u,padT+ph/2);
+  ctx.fillText(`${tlo}`,padL+pw+4*u,padT+ph-2*u);
+
+  // しきい値2本(乾き/過湿)
+  ctx.setLineDash([5*u,4*u]); ctx.lineWidth=1.2*u;
+  ctx.font=`${9.5*u}px 'JetBrains Mono',Consolas,monospace`;
+  ctx.textAlign='right'; ctx.textBaseline='bottom';
+  ctx.strokeStyle='#b3592c';
+  ctx.beginPath(); ctx.moveTo(padL,Yp(thr.dry)); ctx.lineTo(padL+pw,Yp(thr.dry)); ctx.stroke();
+  ctx.fillStyle='#b3592c'; ctx.fillText(`乾き${thr.dry}`,padL+pw-3*u,Yp(thr.dry)-2*u);
+  ctx.strokeStyle='#46779c';
+  ctx.beginPath(); ctx.moveTo(padL,Yp(thr.wet)); ctx.lineTo(padL+pw,Yp(thr.wet)); ctx.stroke();
+  ctx.fillStyle='#46779c'; ctx.fillText(`過湿${thr.wet}`,padL+pw-3*u,Yp(thr.wet)-2*u);
+  ctx.setLineDash([]);
+
+  // 折れ線(5分超の欠測で線を切る)
+  function series(fy,col,w){
+    ctx.strokeStyle=col; ctx.lineWidth=w; ctx.beginPath();
+    let pen=false, prev=null;
+    for(const r of vis){
+      const y=fy(r);
+      if(y==null){pen=false;continue;}
+      const x=X(r[0]);
+      if(!pen||r[0]-prev>5){ctx.moveTo(x,y);pen=true;}
+      else ctx.lineTo(x,y);
+      prev=r[0];
+    }
+    ctx.stroke();
+  }
+  series(r=>r[4]==null?null:Yt(r[4]/10), '#c98a3d', 1.2*u);
+  let anyCal=false;
+  for(let c=0;c<3;c++){
+    if(!calibOk(c))continue;
+    anyCal=true;
+    series(r=>{const p=pc(r[1+c],c);return p==null?null:Yp(p);}, CH_COL[c], 1.7*u);
+  }
+
+  // ヒント
+  ctx.font=`${11*u}px 'Zen Kaku Gothic New',sans-serif`;
+  ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle='#8a8272';
+  if(vis.length===0){
+    ctx.fillText(rows.length?'この範囲にデータなし':'データなし —「Picoに接続」か「デモ」から', padL+pw/2, padT+ph/2);
+  }else if(!anyCal){
+    ctx.fillText('2点校正すると水分%の線が出る（下の校正パネル）', padL+pw/2, padT+16*u);
+  }
+
+  // プローブ縦線
+  if(probeMin!=null&&probeMin>=startMin&&probeMin<=endMin){
+    ctx.strokeStyle='rgba(43,42,38,.4)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(X(probeMin),padT); ctx.lineTo(X(probeMin),padT+ph); ctx.stroke();
+  }
+}
+
+// ---- プローブ(なぞって読む) ----
+function nearestRow(min){
+  let lo=0,hi=rows.length-1;
+  if(hi<0)return null;
+  while(lo<hi){const m=(lo+hi)>>1; if(rows[m][0]<min)lo=m+1; else hi=m;}
+  let best=rows[lo];
+  if(lo>0&&Math.abs(rows[lo-1][0]-min)<Math.abs(best[0]-min))best=rows[lo-1];
+  return Math.abs(best[0]-min)<=6?best:null;
+}
+function onProbe(ev){
+  if(!GP)return;
+  const cv=$('graph'), rect=cv.getBoundingClientRect();
+  const x=(ev.clientX-rect.left)*(cv.width/rect.width);
+  const min=Math.round(GP.startMin+clamp((x-GP.padL)/GP.pw,0,1)*GP.spanMin);
+  const r=nearestRow(min);
+  if(!r){ $('probe').textContent='—'; probeMin=null; scheduleDraw(); return; }
+  let s=fmtMin(r[0]);
+  for(let c=0;c<3;c++){
+    if(r[1+c]==null)continue;
+    const p=pc(r[1+c],c);
+    s+=` · CH${c+1} ${p==null?('raw'+r[1+c]):(Math.round(p)+'%')}`;
+  }
+  if(r[4]!=null)s+=` · ${(r[4]/10).toFixed(1)}℃`;
+  if(r[5])s+=' · 給水';
+  $('probe').textContent=s;
+  probeMin=r[0]; scheduleDraw();
+}
+$('graph').addEventListener('pointermove',onProbe);
+$('graph').addEventListener('pointerdown',onProbe);
+$('graph').addEventListener('pointerleave',()=>{probeMin=null;$('probe').textContent='—';scheduleDraw();});
+
+// ---- しきい値 ----
+function applyThrUI(){
+  $('rngDry').value=thr.dry; $('rngWet').value=thr.wet;
+  $('vDry').textContent=thr.dry+'%'; $('vWet').textContent=thr.wet+'%';
+}
+$('rngDry').oninput=e=>{
+  thr.dry=Math.min(+e.target.value, thr.wet-5);
+  lsSet(K.thr,thr); applyThrUI(); renderCards(); scheduleDraw();
+};
+$('rngWet').oninput=e=>{
+  thr.wet=Math.max(+e.target.value, thr.dry+5);
+  lsSet(K.thr,thr); applyThrUI(); renderCards(); scheduleDraw();
+};
+
+// ---- 校正パネル(構造は一度だけ作り、値だけ更新) ----
+function buildCalib(){
+  let html='';
+  for(let c=0;c<3;c++){
+    html+=`<div class="crow">
+      <span><span class="chdot" style="background:${CH_COL[c]}"></span><b>CH${c+1}</b> <span class="k">(${CH_PIN[c]})</span></span>
+      <span class="k">現在</span><span class="v" id="cur${c}">—</span>
+      <span class="k">乾いた土</span><span class="v" id="cd${c}">—</span>
+      <button id="capD${c}" disabled>取得</button>
+      <span class="k">水没</span><span class="v" id="cw${c}">—</span>
+      <button id="capW${c}" disabled>取得</button>
+      <button id="clr${c}">クリア</button>
+      <span class="warn" id="cwarn${c}"></span>
+    </div>`;
+  }
+  $('calbody').innerHTML=html;
+  for(let c=0;c<3;c++){
+    $('capD'+c).onclick=()=>capture(c,'dry');
+    $('capW'+c).onclick=()=>capture(c,'wet');
+    $('clr'+c).onclick=()=>{
+      calib.dry[c]=null; calib.wet[c]=null;
+      saveCalib(); renderCalibVals(); renderCards(); scheduleDraw();
+    };
+  }
+}
+function median(a){const s=a.slice().sort((x,y)=>x-y);return s[Math.floor(s.length/2)];}
+function capture(c,kind){
+  if(!fresh()||recent[c].length<3){ note('新しいデータがない（接続かデモを動かして）'); return; }
+  calib[kind][c]=Math.round(median(recent[c].slice(-5)));
+  saveCalib(); renderCalibVals(); renderCards(); scheduleDraw();
+}
+function renderCalibVals(){
+  for(let c=0;c<3;c++){
+    $('cd'+c).textContent=calib.dry[c]==null?'—':calib.dry[c];
+    $('cw'+c).textContent=calib.wet[c]==null?'—':calib.wet[c];
+    const d=calib.dry[c], w=calib.wet[c];
+    $('cwarn'+c).textContent=(d!=null&&w!=null&&Math.abs(d-w)<2000)?'乾湿の差が小さい（配線・センサ確認）':'';
+  }
+}
+function updateCalibLive(){
+  const f=fresh();
+  for(let c=0;c<3;c++){
+    const raw=f?live.soil[c]:null;
+    $('cur'+c).textContent=raw==null?'—':raw;
+    const en=f&&raw!=null&&recent[c].length>=3;
+    $('capD'+c).disabled=!en; $('capW'+c).disabled=!en;
+  }
+}
+
+// ---- 手動給水 ----
+$('rngSec').oninput=e=>{$('vSec').textContent=e.target.value+'s';};
+$('btnWater').onclick=async()=>{
+  const sec=clamp(Math.round(+$('rngSec').value),1,10);
+  const ok=await sendCmd({cmd:'pump',on:true,sec});
+  if(ok){ pumpUntilEst=Date.now()+sec*1000; note(`給水コマンド送信（${sec}s）`); }
+};
+$('btnStop').onclick=async()=>{
+  await sendCmd({cmd:'pump',on:false});
+  pumpUntilEst=0; note('停止コマンド送信');
+};
+function updateWaterBtns(){
+  const base=connected||mode==='demo';
+  $('btnWater').disabled=!base||Date.now()<pumpUntilEst+5000;
+  $('btnStop').disabled=!base;
+}
+function note(s){
+  $('pumpNote').textContent=s;
+  if(noteT)clearTimeout(noteT);
+  noteT=setTimeout(()=>{$('pumpNote').textContent='FW側で最大10秒・OFF後5秒のクールダウン（PROTOCOL.md）';},4000);
+}
+
+// ---- デモの校正ごっこ ----
+$('btnPrDry').onclick=()=>{if(demoS){demoS.probe='dry';$('prState').textContent='乾いた土';}};
+$('btnPrWater').onclick=()=>{if(demoS){demoS.probe='water';$('prState').textContent='水中';}};
+$('btnPrField').onclick=()=>{if(demoS){demoS.probe='field';$('prState').textContent='畑';}};
+
+// ---- モードUI/ステータス ----
+function updateModeUI(){
+  $('btnConn').textContent=connected?'切断':'Picoに接続';
+  $('btnDemo').textContent=mode==='demo'?'デモ停止':'デモ（7日分の畑）';
+  $('demoPanel').style.display=mode==='demo'?'':'none';
+  updateWaterBtns();
+}
+function renderStatus(){
+  let s;
+  if(mode==='serial'){
+    s=`受信中 ${rxCount}行`+(errCount?` ERR×${errCount}`:'');
+    if(live)s+=` — 最終 ${Math.round((Date.now()-live.at)/1000)}s前`;
+  }else if(mode==='demo'){
+    s=`デモ稼働中（合成データ） ${rxCount}行`;
+  }else{
+    s='未接続'+(rows.length?` — 保存履歴 ${rows.length}分ぶん`:'');
+  }
+  $('stat').textContent=s;
+}
+setInterval(()=>{ renderStatus(); renderCards(); updateCalibLive(); updateWaterBtns(); },1000);
+
+// ---- ビュー切替(#24h/#7d) ----
+function setView(v,push){
+  view=v;
+  $('btnV24').classList.toggle('on',v==='24h');
+  $('btnV7').classList.toggle('on',v==='7d');
+  if(push)location.hash=v;
+  scheduleDraw();
+}
+$('btnV24').onclick=()=>setView('24h',true);
+$('btnV7').onclick=()=>setView('7d',true);
+addEventListener('hashchange',()=>{
+  const h=location.hash.replace('#','');
+  if(h==='24h'||h==='7d')setView(h,false);
+});
+
+// ---- ボタン ----
+$('btnConn').onclick=()=>{ if(connected)disconnect(); else connect(); };
+$('btnDemo').onclick=()=>{ if(mode==='demo')stopDemo(); else startDemo(); };
+
+// ---- 起動 ----
+(function boot(){
+  const t=lsGet(K.thr);
+  if(t&&typeof t.dry==='number'&&typeof t.wet==='number'){
+    thr.dry=clamp(Math.round(t.dry),5,60);
+    thr.wet=clamp(Math.round(t.wet),40,95);
+    if(thr.wet-thr.dry<5)thr.wet=thr.dry+5;
+  }
+  applyThrUI();
+  buildCalib();
+  loadReal();
+  renderCalibVals(); renderCards(); renderStatus();
+  const h=location.hash.replace('#','');
+  if(h==='24h'||h==='7d')setView(h,false);
+  if(!('serial' in navigator)){
+    $('btnConn').disabled=true;
+    note('このブラウザはWeb Serial非対応（Chrome/Edgeで）');
+  }
+  resize();
+  if(new URLSearchParams(location.search).get('demo')==='1')startDemo();
+})();
+</script>
+</body>
+</html>

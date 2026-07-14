@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>分光 11ch ビューア — AS7341</title>
+<style>
+:root{
+  --bg:#faf6ef; --panel:#fffdf8; --ink:#2b2a26; --sub:#6b675f;
+  --line:#e4ddd0; --accent:#b3592c; --accent2:#2c6e91; --mono:'JetBrains Mono','Consolas',monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Zen Kaku Gothic New','Hiragino Sans',sans-serif;overflow-x:hidden}
+header{padding:14px 18px 6px}
+h1{font-size:17px;margin:0 0 2px}
+.sub{color:var(--sub);font-size:12px}
+#wrap{display:flex;flex-wrap:wrap;gap:14px;padding:12px 18px 24px;max-width:1100px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;flex:1 1 420px;min-width:0}
+h2{font-size:13px;margin:0 0 8px;color:var(--sub);font-weight:600}
+canvas{display:block;border-radius:6px;touch-action:none;max-width:100%}
+.ctrl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:12.5px}
+button{font:inherit;padding:6px 14px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button:disabled{opacity:.45;cursor:default}
+label{display:inline-flex;gap:4px;align-items:center;color:var(--sub)}
+#stat{font-family:var(--mono);font-size:12px;color:var(--sub);min-height:1.2em}
+#read{font-family:var(--mono);font-size:13px;min-height:1.2em}
+.bar{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:8px}
+.k{color:var(--sub)} .v{font-family:var(--mono)}
+.v.warn{color:var(--accent);font-weight:700}
+small.tip{color:var(--sub)}
+.demoLbl{color:var(--sub);font-size:12px}
+#chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:11px;font-family:var(--mono);cursor:pointer}
+.chip.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.dot{width:9px;height:9px;border-radius:50%;border:1px solid rgba(0,0,0,.15)}
+</style>
+</head>
+<body>
+<header>
+  <h1>分光 11ch ビューア — AS7341</h1>
+  <div class="sub">AS7341 ＋ Pico（Web Serial・JSON行）。PicoがSMUXを2バンク切替してF1–F8＋Clear＋NIRを読む。棒の色は波長からの近似色（表示用の見た目で、厳密な色度ではない）。</div>
+</header>
+<div id="wrap">
+  <div class="panel">
+    <h2>スペクトル（今この瞬間）</h2>
+    <div class="ctrl">
+      <button id="btnConn" class="primary">Picoに接続</button>
+      <span class="demoLbl">デモ:</span>
+      <button id="btnDemoSun">太陽光</button>
+      <button id="btnDemoLed">白色LED</button>
+      <button id="btnDemoLeaf">葉っぱ</button>
+      <button id="btnFreeze" disabled>⏸ 停止</button>
+    </div>
+    <div class="ctrl" style="margin-top:6px">
+      <label><input id="chkLog" type="checkbox">対数スケール</label>
+      <label><input id="chkNorm" type="checkbox">正規化 counts/(gain·ms)</label>
+    </div>
+    <canvas id="bars" style="margin-top:8px"></canvas>
+    <div class="bar">
+      <span class="k">ゲイン</span><span class="v" id="vGain">—</span>
+      <span class="k">積分</span><span class="v" id="vItime">—</span>
+      <span class="k">Hz</span><span class="v" id="vHz">—</span>
+      <span class="k">飽和</span><span class="v" id="vSat">—</span>
+    </div>
+    <div class="bar">
+      <span id="read">—</span>
+      <span id="stat">未接続</span>
+    </div>
+    <div class="bar">
+      <small class="tip">棒にホバー/タップで値の読み出し。ClearとNIRは広帯域なので別枠・別スケール。オートゲインで生カウントが段差を作るときは「正規化」を入れると連続して見える（counts を gain×積分時間 で割った値）。</small>
+    </div>
+  </div>
+  <div class="panel">
+    <h2>時系列（直近60秒）</h2>
+    <div id="chips"></div>
+    <canvas id="strip"></canvas>
+    <div class="bar">
+      <small class="tip">選んだチャネルが太線、他の可視チャネルは薄く重ね描き（可視8chは共通スケール、Clear/NIRを選んだときはそのchだけのスケール）。照明を手で覆う・色紙をかざす、で動きが見える。</small>
+    </div>
+  </div>
+</div>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const bars = $("bars"), bctx = bars.getContext("2d");
+const strip = $("strip"), sctx = strip.getContext("2d");
+
+// ---- チャネル定義: AS7341 の可視8ch + Clear + NIR ----
+const BANDS = [415, 445, 480, 515, 555, 590, 630, 680];   // nm (Adafruitドライバのch名に一致)
+const NAMES = ["F1 415", "F2 445", "F3 480", "F4 515", "F5 555", "F6 590", "F7 630", "F8 680", "Clear", "NIR"];
+
+// 波長→RGB近似 (Dan Bruton の可視光近似。表示用の見た目で、測色ではない)
+function wl2rgb(w) {
+  let r = 0, g = 0, b = 0;
+  if (w >= 380 && w < 440) { r = -(w - 440) / 60; b = 1; }
+  else if (w < 490) { g = (w - 440) / 50; b = 1; }
+  else if (w < 510) { g = 1; b = -(w - 510) / 20; }
+  else if (w < 580) { r = (w - 510) / 70; g = 1; }
+  else if (w < 645) { r = 1; g = -(w - 645) / 65; }
+  else if (w <= 780) { r = 1; }
+  let s = 1;
+  if (w > 700) s = .3 + .7 * (780 - w) / 80;
+  else if (w < 420) s = .3 + .7 * (w - 380) / 40;
+  const f = x => Math.round(255 * Math.pow(Math.max(0, x) * s, 0.8));
+  return `rgb(${f(r)},${f(g)},${f(b)})`;
+}
+const COLORS = BANDS.map(wl2rgb).concat(["#9a948a", "#7a3020"]);  // Clear=灰 / NIR=暗赤(可視外)
+
+// ---- 状態 ----
+let cur = null;                 // 最新フレーム {t,ch[10],gain,itime,sat}
+let hist = [];                  // {tm, ch[10], gain, itime} 直近~65秒
+let sel = 4;                    // 時系列の選択チャネル(F5 555nm)
+let frozen = false, demoTimer = null, demoName = "", port = null, reader = null;
+let fps = 0, lastT = 0, errCount = 0;
+let emaB = 1, emaW = 1;         // 棒グラフの自動スケール(EMA追従)
+
+const logOn  = () => $("chkLog").checked;
+const normOn = () => $("chkNorm").checked;
+const dval = (ch, gain, itime, i) => normOn() ? ch[i] / (gain * itime) : ch[i];
+function fmtVal(v) {
+  if (!isFinite(v)) return "—";
+  if (!normOn()) return String(Math.round(v));
+  return v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v >= 1 ? v.toFixed(2) : v.toFixed(3);
+}
+
+// ---- レイアウト/DPR ----
+function resize() {
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  // パネル(親)の実幅から決める。パネル幅は flex-basis と min-width:0 で決まり
+  // canvas幅には依存しないので、「canvasが親を押し広げる不動点」の罠(thermalで踏んだ)に嵌らない。
+  // 念のため window.innerWidth でもクランプ。
+  const pw = bars.parentElement.getBoundingClientRect().width;
+  const cssW = Math.max(200, Math.floor(Math.min(pw, window.innerWidth - 36) - 26));
+  const barsH = Math.round(Math.min(320, Math.max(210, cssW * 0.52)));
+  bars.width = Math.round(cssW * dpr); bars.height = Math.round(barsH * dpr);
+  bars.style.width = cssW + "px"; bars.style.height = barsH + "px";
+  const stripH = 160;
+  strip.width = Math.round(cssW * dpr); strip.height = Math.round(stripH * dpr);
+  strip.style.width = cssW + "px"; strip.style.height = stripH + "px";
+  drawBars(); drawStrip();
+}
+window.addEventListener("resize", resize);
+
+// ---- 棒グラフ ----
+function drawBars() {
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const w = bars.width, h = bars.height;
+  bctx.clearRect(0, 0, w, h);
+  const padL = 8 * dpr, padR = 8 * dpr, padT = 26 * dpr, padB = 30 * dpr;
+  const gap = 14 * dpr;
+  const slot = (w - padL - padR - gap) / 10;
+  const baseY = h - padB;
+
+  const ch = cur ? cur.ch : null;
+  const dv = i => ch ? dval(ch, cur.gain, cur.itime, i) : 0;
+
+  // ゾーン別スケール(可視8ch / 広帯域2ch)。EMAでゆっくり追従、現在値では絶対に切らない
+  if (ch) {
+    let mB = 0, mW = 0;
+    for (let i = 0; i < 8; i++) mB = Math.max(mB, dv(i));
+    for (let i = 8; i < 10; i++) mW = Math.max(mW, dv(i));
+    if (mB > 0) { emaB += 0.3 * (mB * 1.06 - emaB); if (emaB < mB) emaB = mB; }
+    if (mW > 0) { emaW += 0.3 * (mW * 1.06 - emaW); if (emaW < mW) emaW = mW; }
+  }
+  const scale = (v, m) => logOn() ? Math.log10(1 + Math.max(0, v)) / Math.log10(1 + m) : v / m;
+
+  // 広帯域ゾーンの背景(別枠であることを見せる)
+  const zx = padL + 8 * slot + gap * 0.4;
+  bctx.fillStyle = "rgba(0,0,0,.045)";
+  bctx.fillRect(zx, padT - 16 * dpr, w - padR - zx, baseY - padT + 16 * dpr);
+  bctx.fillStyle = "#6b675f";
+  bctx.font = `${9 * dpr}px JetBrains Mono, Consolas, monospace`;
+  bctx.textAlign = "center";
+  bctx.fillText("広帯域(別スケール)", zx + (w - padR - zx) / 2, padT - 5 * dpr);
+
+  // ベースライン
+  bctx.strokeStyle = "#e4ddd0"; bctx.lineWidth = 1 * dpr;
+  bctx.beginPath(); bctx.moveTo(padL, baseY + 0.5); bctx.lineTo(w - padR, baseY + 0.5); bctx.stroke();
+
+  for (let i = 0; i < 10; i++) {
+    const x0 = padL + i * slot + (i >= 8 ? gap : 0);
+    const cx = x0 + slot / 2;
+    const bw = slot * 0.62;
+    if (ch) {
+      const m = i < 8 ? emaB : emaW;
+      const t = Math.max(0, Math.min(1, scale(dv(i), m)));
+      const bh = t * (baseY - padT);
+      bctx.fillStyle = COLORS[i];
+      bctx.fillRect(cx - bw / 2, baseY - bh, bw, bh);
+      bctx.font = `${9 * dpr}px JetBrains Mono, Consolas, monospace`;
+      bctx.textAlign = "center";
+      let ly = baseY - bh - 4 * dpr;
+      if (ly < padT + 2 * dpr) {   // 棒が天井近くまで届いたら、ラベルは棒の内側に白抜き
+        ly = baseY - bh + 11 * dpr;
+        bctx.fillStyle = "#fff";
+      } else {
+        bctx.fillStyle = "#2b2a26";
+      }
+      bctx.fillText(fmtVal(dv(i)), cx, ly);
+    }
+    // ラベル
+    bctx.fillStyle = "#6b675f";
+    bctx.font = `${9.5 * dpr}px JetBrains Mono, Consolas, monospace`;
+    bctx.textAlign = "center";
+    bctx.fillText(i < 8 ? String(BANDS[i]) : (i === 8 ? "CLR" : "NIR"), cx, baseY + 12 * dpr);
+    if (i === 0) bctx.fillText("nm", padL + slot / 2, baseY + 23 * dpr);
+  }
+  if (!ch) {
+    bctx.fillStyle = "#6b675f";
+    bctx.font = `${11 * dpr}px Zen Kaku Gothic New, sans-serif`;
+    bctx.textAlign = "center";
+    bctx.fillText("接続するかデモを押すとここにスペクトルが出る", w / 2, (padT + baseY) / 2);
+  }
+}
+
+// ---- 時系列ストリップ ----
+function drawStrip() {
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const w = strip.width, h = strip.height;
+  sctx.clearRect(0, 0, w, h);
+  const padL = 8 * dpr, padR = 48 * dpr, padT = 12 * dpr, padB = 16 * dpr;
+  const now = performance.now(), t0 = now - 60000;
+  const X = t => padL + (t - t0) / 60000 * (w - padL - padR);
+
+  // グリッド
+  sctx.strokeStyle = "rgba(0,0,0,.06)"; sctx.lineWidth = 1;
+  sctx.fillStyle = "#6b675f";
+  sctx.font = `${9 * dpr}px JetBrains Mono, Consolas, monospace`;
+  sctx.textAlign = "center";
+  for (let s = 0; s <= 60; s += 15) {
+    const x = X(t0 + s * 1000);
+    sctx.beginPath(); sctx.moveTo(x, padT); sctx.lineTo(x, h - padB); sctx.stroke();
+    sctx.fillText(s === 60 ? "now" : `-${60 - s}s`, x, h - 4 * dpr);
+  }
+  for (let k = 1; k <= 3; k++) {
+    const y = padT + (h - padT - padB) * k / 4;
+    sctx.beginPath(); sctx.moveTo(padL, y); sctx.lineTo(w - padR, y); sctx.stroke();
+  }
+  if (hist.length < 2) return;
+
+  const val = (f, i) => dval(f.ch, f.gain, f.itime, i);
+  let mB = 1e-12, mSel = 1e-12;
+  for (const f of hist) {
+    for (let i = 0; i < 8; i++) { const v = val(f, i); if (v > mB) mB = v; }
+    const v = val(f, sel); if (v > mSel) mSel = v;
+  }
+  const yFor = (v, m) => {
+    const t = logOn() ? Math.log10(1 + Math.max(0, v)) / Math.log10(1 + m) : v / m;
+    return h - padB - Math.max(0, Math.min(1, t)) * (h - padT - padB);
+  };
+  const mS = sel < 8 ? mB : mSel;   // 可視chは共通スケール / 広帯域chは自前スケール
+
+  function path(i, m) {
+    sctx.beginPath();
+    let started = false;
+    for (const f of hist) {
+      if (f.tm < t0) continue;
+      const x = X(f.tm), y = yFor(val(f, i), m);
+      if (!started) { sctx.moveTo(x, y); started = true; } else sctx.lineTo(x, y);
+    }
+    sctx.stroke();
+  }
+  // 可視8chを薄く(選択chは後で太く描く)
+  for (let i = 0; i < 8; i++) {
+    if (i === sel) continue;
+    sctx.globalAlpha = 0.26; sctx.strokeStyle = COLORS[i]; sctx.lineWidth = 1 * dpr;
+    path(i, mB);
+  }
+  sctx.globalAlpha = 1;
+  sctx.strokeStyle = COLORS[sel]; sctx.lineWidth = 2 * dpr;
+  path(sel, mS);
+
+  // 右端に選択chの最新値とスケール上限
+  const last = hist[hist.length - 1];
+  sctx.fillStyle = COLORS[sel];
+  sctx.font = `${10 * dpr}px JetBrains Mono, Consolas, monospace`;
+  sctx.textAlign = "left";
+  const ly = Math.max(padT + 8 * dpr, yFor(val(last, sel), mS));
+  sctx.fillText(fmtVal(val(last, sel)), w - padR + 4 * dpr, ly);
+  sctx.fillStyle = "#6b675f";
+  sctx.fillText("max " + fmtVal(mS), w - padR + 4 * dpr, padT + 2 * dpr);
+}
+
+// ---- チップ(時系列のチャネル選択) ----
+function buildChips() {
+  const box = $("chips");
+  box.innerHTML = "";
+  NAMES.forEach((n, i) => {
+    const b = document.createElement("button");
+    b.className = "chip" + (i === sel ? " on" : "");
+    const d = document.createElement("span");
+    d.className = "dot"; d.style.background = COLORS[i];
+    b.appendChild(d); b.appendChild(document.createTextNode(n));
+    b.onclick = () => { sel = i; buildChips(); drawStrip(); };
+    box.appendChild(b);
+  });
+}
+
+// ---- フレーム適用(シリアルもデモも同じ経路) ----
+function applyFrame(o) {
+  cur = o;
+  const tm = performance.now();
+  hist.push({ tm, ch: o.ch.slice(), gain: o.gain, itime: o.itime });
+  const lim = tm - 65000;
+  while (hist.length && hist[0].tm < lim) hist.shift();
+
+  const dt = tm - lastT;
+  if (lastT && dt > 1) fps = 0.85 * fps + 0.15 * (1000 / dt);
+  lastT = tm;
+  $("vHz").textContent = fps.toFixed(1);
+  $("vGain").textContent = "x" + o.gain;
+  $("vItime").textContent = o.itime.toFixed(1) + "ms";
+  const sat = o.sat === 1;
+  $("vSat").textContent = sat ? "⚠あり" : "—";
+  $("vSat").className = "v" + (sat ? " warn" : "");
+  $("stat").textContent = demoTimer
+    ? "デモ(合成スペクトル・実測ではない): " + demoName
+    : "受信中" + (errCount ? ` (ERR×${errCount})` : "");
+  if (!frozen) { drawBars(); drawStrip(); }
+}
+
+// ---- 行パーサ: JSON行 / "# .." / "ERR .." ----
+let buf = "";
+function feed(text) {
+  buf += text;
+  if (buf.length > 200000) buf = buf.slice(-100000);   // 暴走ガード
+  let i;
+  while ((i = buf.indexOf("\n")) >= 0) {
+    const line = buf.slice(0, i).trim(); buf = buf.slice(i + 1);
+    if (!line) continue;
+    if (line.startsWith("ERR")) { errCount++; continue; }
+    if (line.startsWith("#")) continue;
+    if (!line.startsWith("{")) continue;
+    let o;
+    try { o = JSON.parse(line); } catch (e) { continue; }   // 途中から読んだ欠け行は捨てる
+    if (!o || !Array.isArray(o.ch) || o.ch.length !== 10) continue;
+    if (!o.ch.every(Number.isFinite)) continue;
+    if (!Number.isFinite(o.gain) || !Number.isFinite(o.itime)) continue;
+    applyFrame(o);
+  }
+}
+
+// ---- Web Serial ----
+async function connect() {
+  try {
+    port = await navigator.serial.requestPort();
+    await port.open({ baudRate: 115200 });
+    stopDemo();
+    cur = null; hist = []; errCount = 0; fps = 0; lastT = 0; emaB = emaW = 1;
+    $("btnConn").textContent = "接続中…受信待ち"; $("btnConn").disabled = true;
+    $("btnFreeze").disabled = false;
+    const dec = new TextDecoderStream();
+    port.readable.pipeTo(dec.writable);
+    reader = dec.readable.getReader();
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      if (value) feed(value);
+    }
+  } catch (e) {
+    $("stat").textContent = "serial: " + e.message;
+  } finally {
+    $("btnConn").textContent = "Picoに接続"; $("btnConn").disabled = false;
+  }
+}
+
+// ---- デモ(合成スペクトル: JSON行を作って実際のパーサに通す) ----
+// 数値は「それらしい形」を作るための創作値。実測SPDではない(VERIFY.md参照)。
+const FS_DEMO = 18000;   // ATIME=17/ASTEP=999 のフルスケール相当
+const DEMOS = {
+  sun: { name: "太陽光っぽい連続光", gain: 8,
+    rel: [0.72, 0.83, 0.94, 1.00, 0.99, 0.97, 0.94, 0.88], clearRel: 5.2, nirRel: 0.78,
+    clearAbs: 15200,   // 雲の切れ間でClearが飽和に触れる(⚠の練習)
+    mod: t => 1 + 0.16 * Math.sin(t * 0.10) + 0.05 * Math.sin(t * 0.031 + 1.7) },
+  led: { name: "白色LEDっぽい(青ピーク+蛍光体の土手)", gain: 64,
+    rel: [0.10, 1.00, 0.38, 0.48, 0.70, 0.78, 0.55, 0.28], clearRel: 3.4, nirRel: 0.04,
+    clearAbs: 12200,
+    mod: t => 1 + 0.012 * Math.sin(t * 2.1) + 0.008 * Math.sin(t * 5.7) },
+  leaf: { name: "葉っぱの反射っぽい(緑ピーク+NIR高=レッドエッジ)", gain: 128,
+    rel: [0.05, 0.06, 0.09, 0.20, 0.30, 0.19, 0.11, 0.07], clearRel: 1.15, nirRel: 0.88,
+    clearAbs: 6400,
+    mod: t => 1 + 0.06 * Math.sin(t * 0.55) + 0.02 * Math.sin(t * 1.3 + 0.5) },
+};
+const gauss = () => Math.random() + Math.random() + Math.random() - 1.5;
+function startDemo(key) {
+  stopDemo();
+  const d = DEMOS[key];
+  demoName = d.name;
+  let t = Math.random() * 100;
+  demoTimer = setInterval(() => {
+    t += 0.16;
+    const m = d.mod(t), unit = d.clearAbs / d.clearRel;
+    const mk = v => {
+      v *= m;
+      v += Math.sqrt(Math.max(v, 1)) * gauss() * 1.2;   // ショットノイズ風
+      return Math.max(0, Math.min(FS_DEMO, Math.round(v)));
+    };
+    const ch = d.rel.map(r => mk(r * unit));
+    ch.push(mk(d.clearAbs));
+    ch.push(mk(d.nirRel * unit));
+    const sat = ch[8] >= FS_DEMO - 100 ? 1 : 0;
+    feed(JSON.stringify({ t: Math.round(performance.now()), ch, gain: d.gain, itime: 50.04, sat }) + "\n");
+  }, 160);
+  $("btnFreeze").disabled = false;
+}
+function stopDemo() { if (demoTimer) { clearInterval(demoTimer); demoTimer = null; } }
+
+// ---- UI ----
+$("btnConn").onclick = connect;
+$("btnDemoSun").onclick = () => startDemo("sun");
+$("btnDemoLed").onclick = () => startDemo("led");
+$("btnDemoLeaf").onclick = () => startDemo("leaf");
+$("btnFreeze").onclick = () => {
+  frozen = !frozen;
+  $("btnFreeze").textContent = frozen ? "▶ 再開" : "⏸ 停止";
+  if (!frozen) { drawBars(); drawStrip(); }
+};
+$("chkLog").onchange = () => { drawBars(); drawStrip(); };
+$("chkNorm").onchange = () => { emaB = emaW = 1; drawBars(); drawStrip(); };
+bars.addEventListener("pointermove", onProbe);
+bars.addEventListener("pointerdown", onProbe);
+function onProbe(ev) {
+  if (!cur) return;
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  const r = bars.getBoundingClientRect();
+  const px = (ev.clientX - r.left) * dpr;
+  const padL = 8 * dpr, padR = 8 * dpr, gap = 14 * dpr;
+  const slot = (bars.width - padL - padR - gap) / 10;
+  let i = -1;
+  for (let k = 0; k < 10; k++) {
+    const x0 = padL + k * slot + (k >= 8 ? gap : 0);
+    if (px >= x0 && px < x0 + slot) { i = k; break; }
+  }
+  if (i < 0) return;
+  const v = dval(cur.ch, cur.gain, cur.itime, i);
+  const unit = normOn() ? " c/(g·ms)" : " counts";
+  const nm = i < 8 ? ` ${BANDS[i]}nm` : (i === 9 ? " (近赤外)" : " (広帯域)");
+  $("read").textContent = `${NAMES[i]}${nm} = ${fmtVal(v)}${unit}`;
+}
+if (!("serial" in navigator)) {
+  $("btnConn").disabled = true;
+  $("stat").textContent = "このブラウザはWeb Serial非対応(Chrome/Edgeで開いて)";
+}
+buildChips();
+resize();
+if (new URLSearchParams(location.search).get("dbg") === "2") {
+  // 開発用: 対数+正規化+NIR選択の描画経路をヘッドレスで踏むため
+  $("chkLog").checked = true; $("chkNorm").checked = true;
+  sel = 9; buildChips();
+}
+if (new URLSearchParams(location.search).get("dbg") === "1") {
+  const dump = () => {
+    $("read").textContent = `dbg iw=${window.innerWidth} wrapCW=${$("wrap").clientWidth} panelW=${bars.parentElement.getBoundingClientRect().width.toFixed(0)} dpr=${window.devicePixelRatio} barsCss=${bars.style.width}`;
+  };
+  dump(); setTimeout(dump, 500); setTimeout(dump, 1500);
+}
+{
+  const q = new URLSearchParams(location.search).get("demo");
+  if (q === "1" || q === "sun") startDemo("sun");
+  else if (q === "led") startDemo("led");
+  else if (q === "leaf") startDemo("leaf");
+}
+</script>
+</body>
+</html>

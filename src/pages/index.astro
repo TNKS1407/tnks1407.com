@@ -1,6 +1,7 @@
 ---
 import { getCollection } from 'astro:content';
 import ImproveButton from '../components/ImproveButton.astro';
+import { labGroups, labCount } from '../data/labs';
 
 type Work = {
   title: string; description: string; url: string;
@@ -443,6 +444,22 @@ const favKey = (w: Work) => {
       .docs-teaser-kicker{font-family:'JetBrains Mono',monospace;font-size:.68rem;font-weight:700;letter-spacing:.12em;color:var(--accent);}
       .docs-teaser-title{font-size:1.05rem;font-weight:700;color:var(--text);}
       .docs-teaser-desc{font-size:.82rem;color:var(--text-muted);line-height:1.6;}
+      .lab-shelf{margin-top:.9rem;margin-bottom:2.2rem;border:1px solid var(--border);border-radius:14px;background:var(--card-bg,rgba(255,255,255,.02));}
+      .lab-shelf-summary{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;cursor:pointer;list-style:none;padding:1.1rem 1.4rem;}
+      .lab-shelf-summary::-webkit-details-marker{display:none;}
+      .lab-shelf:hover{border-color:var(--accent);}
+      .lab-shelf-kicker{font-family:'JetBrains Mono',monospace;font-size:.68rem;font-weight:700;letter-spacing:.12em;color:var(--accent);}
+      .lab-shelf-title{font-size:1.05rem;font-weight:700;color:var(--text);}
+      .lab-shelf-hint{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:.8rem;color:var(--text-muted);}
+      .lab-shelf[open] .lab-shelf-hint{transform:rotate(180deg);}
+      .lab-shelf-body{padding:.2rem 1.4rem 1.2rem;}
+      .lab-shelf-group{margin-top:.9rem;}
+      .lab-shelf-label{display:block;font-size:.78rem;font-weight:700;color:var(--text-muted);letter-spacing:.06em;margin-bottom:.45rem;}
+      .lab-shelf-chips{display:flex;flex-wrap:wrap;gap:.45rem;}
+      .lab-chip{font-size:.8rem;line-height:1.3;padding:.34rem .7rem;border:1px solid var(--border);border-radius:999px;color:var(--text);text-decoration:none;transition:border-color .15s,transform .15s;}
+      .lab-chip:hover{border-color:var(--accent);transform:translateY(-1px);}
+      .lab-shelf-foot{margin-top:1.1rem;font-size:.78rem;color:var(--text-muted);}
+      .lab-shelf-foot a{color:var(--accent);}
       .docs-teaser-go{flex-shrink:0;font-family:'JetBrains Mono',monospace;font-size:.8rem;font-weight:700;color:#fff;
         background:var(--accent);border-radius:999px;padding:.5rem 1.1rem;white-space:nowrap;}
 
@@ -682,6 +699,28 @@ const favKey = (w: Work) => {
         </div>
         <span class="docs-teaser-go">ロードマップを開く →</span>
       </a>
+
+      <!-- 実験の棚：単一HTMLの触れるwidget全部（正本は src/data/labs.ts、工房と共有） -->
+      <details class="lab-shelf" id="labs">
+        <summary class="lab-shelf-summary">
+          <span class="lab-shelf-kicker">実験の棚 — WIDGETS</span>
+          <span class="lab-shelf-title">触れる実験、ぜんぶで {labCount} 個</span>
+          <span class="lab-shelf-hint">開く ▾</span>
+        </summary>
+        <div class="lab-shelf-body">
+          {labGroups.map((g) => (
+            <div class="lab-shelf-group">
+              <span class="lab-shelf-label">{g.label}</span>
+              <div class="lab-shelf-chips">
+                {g.items.map((it) => (
+                  <a class="lab-chip" href={it.url}>{it.name}</a>
+                ))}
+              </div>
+            </div>
+          ))}
+          <p class="lab-shelf-foot">制作の経緯は<a href="/workshop/">工房（制作ログ）</a>に。</p>
+        </div>
+      </details>
 
       <!-- Works by group -->
       <div id="works">
