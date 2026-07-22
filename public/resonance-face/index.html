@@ -1,0 +1,569 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>直列か、並列か — 共振の二つの顔</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
+  --teal:#3c7876;--red:#c2543d;--amber:#c9761f;--blue:#2563aa;
+  --text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{overflow-x:hidden;max-width:100%;}
+body{
+  font-family:'Zen Kaku Gothic New',sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.6;
+  background-image:radial-gradient(circle at 1px 1px,#e9e4da 1px,transparent 0);
+  background-size:22px 22px;
+}
+.wrap{max-width:820px;margin:0 auto;padding:20px 16px 48px;}
+header{display:flex;align-items:flex-end;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.brand{font-weight:700;font-size:22px;line-height:1.1;color:var(--text);}
+.brand .a{color:var(--amber);}
+.tag{font-size:12px;color:var(--muted);padding-bottom:2px;}
+.back{margin-left:auto;font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;text-decoration:none;white-space:nowrap;}
+.back:hover{color:var(--teal);}
+.lead{background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:13px 16px;margin-bottom:16px;font-size:13px;color:#3a3a36;line-height:1.78;
+  box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.lead p{margin:0 0 .5rem;}.lead p:last-child{margin-bottom:0;}
+.lead b{color:var(--text);}
+.selftest{margin-top:.5rem;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);
+  border-top:1px dashed var(--border);padding-top:.5rem;line-height:1.7;}
+.selftest b{color:var(--teal);}
+.card-tool{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;
+  box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.circuit{background:var(--surface);border-bottom:1px solid var(--border);padding:.5rem .7rem;
+  display:flex;align-items:center;gap:.8rem;}
+.circuit svg{flex:0 0 auto;}
+.circuit .desc{font-size:12px;color:#3a3a36;line-height:1.6;}
+.circuit .desc b{color:var(--text);}
+.circuit .desc .em{color:var(--red);font-weight:600;}
+#stage{position:relative;width:100%;height:clamp(460px,105vw,620px);overflow:hidden;background:var(--surface);}
+canvas{display:block;width:100%;height:100%;touch-action:none;}
+#info{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);
+  padding:.45rem .7rem;font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--muted);
+  line-height:1.85;min-height:2.4rem;}
+#info b{color:var(--text);}
+#info .v-teal{color:var(--teal);font-weight:600;}
+#info .v-red{color:var(--red);font-weight:600;}
+#info .v-amber{color:var(--amber);font-weight:600;}
+#info .v-blue{color:var(--blue);font-weight:600;}
+.ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);
+  padding:.5rem .7rem;display:flex;flex-wrap:wrap;gap:.5rem .8rem;align-items:center;}
+.cg{display:flex;align-items:center;gap:.4rem;font-size:.75rem;}
+.cg label{color:var(--muted);white-space:nowrap;font-weight:500;}
+.cg label b{color:var(--text);}
+.cg input[type=range]{width:clamp(72px,15vw,120px);accent-color:var(--amber);}
+.cg .val{font-family:'JetBrains Mono',monospace;color:var(--amber);font-size:.72rem;font-weight:600;min-width:5ch;}
+.modes{display:flex;gap:.4rem;flex-wrap:wrap;}
+button{font-family:'Zen Kaku Gothic New',sans-serif;font-size:.74rem;font-weight:700;
+  color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:8px;
+  padding:.28rem .65rem;cursor:pointer;transition:border-color .15s,background .15s,color .15s;}
+button:hover{border-color:var(--teal);}
+button.on{background:var(--teal);color:#fff;border-color:var(--teal);}
+.note{font-size:12px;color:#3a3a36;line-height:1.8;background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:12px 16px;margin-top:16px;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.note b{color:var(--text);}
+footer{text-align:center;color:var(--faint);font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:12px;}
+body.embed{height:100%;display:flex;flex-direction:column;overflow:hidden;background-image:none;}
+body.embed .wrap{max-width:none;margin:0;padding:0;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
+body.embed header,body.embed .lead,body.embed .note,body.embed footer{display:none;}
+body.embed .card-tool{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;border:none;border-radius:0;box-shadow:none;}
+body.embed #stage{flex:1 1 auto;height:auto;min-height:220px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">直列か、<span class="a">並列</span>か</div>
+    <div class="tag">共振と電源 #3 ── 接続で「顔」が正反対になる</div>
+    <a class="back" href="/">&larr; tnks1407</a>
+  </header>
+  <div class="lead">
+    <p>「LとCが共振する」だけでは設計に使えない。同じ L・C でも、<b>直列</b>に組んで電圧で駆動するか、<b>並列</b>に組んで電流で駆動するかで、端子から見える性質が<b>正反対</b>になる。直列は共振点で <b>インピーダンス最小（電流の山）</b>、並列は <b>インピーダンス最大（電圧の山）</b>だ。</p>
+    <p>そして肝は「<b>外で見える量</b>」と「<b>中で回る量</b>」を混ぜないこと。共振点では、端子から見える量に対してタンク内部の量が <b>Q 倍</b>まで膨らむ。直列なら L・C の端子電圧が Q·V<sub>s</sub>、並列なら L・C 枝の循環電流が Q·I<sub>s</sub>。つまみを回して、この二つの顔を見比べてみて。</p>
+    <div class="selftest" id="selftest">セルフテスト実行中…</div>
+  </div>
+
+  <div class="card-tool">
+    <div class="circuit" id="circuit"></div>
+    <div id="stage"><canvas id="c"></canvas></div>
+    <div id="info"></div>
+    <div class="ctrl">
+      <div class="modes">
+        <button id="mSer" class="on">直列 (電圧源)</button>
+        <button id="mPar">並列 (電流源)</button>
+      </div>
+      <div class="cg"><label>L <b id="lL"></b></label>
+        <input id="sL" type="range" min="0" max="1000" step="1" value="500"></div>
+      <div class="cg"><label>C <b id="lC"></b></label>
+        <input id="sC" type="range" min="0" max="1000" step="1" value="500"></div>
+      <div class="cg"><label id="labR">R <b id="lR"></b></label>
+        <input id="sR" type="range" min="0" max="1000" step="1" value="500"></div>
+      <div class="cg"><label>駆動 f <b id="lF"></b></label>
+        <input id="sF" type="range" min="0" max="1000" step="1" value="500"></div>
+      <div class="cg"><label>Δφ 位相遅れ <b id="lDp"></b></label>
+        <input id="sDp" type="range" min="0" max="30" step="0.5" value="0"></div>
+    </div>
+  </div>
+
+  <div class="note">
+    <p><b>直列は電流の山、並列は電圧の山。</b>外から見える量と、中で回る量を混ぜないこと。共振点でタンク内部の量が Q 倍に膨らむのは、実装では L・C・配線が耐えねばならない <b>実在の電圧・電流</b>だ ── 端子の測定値だけ見ていると足をすくわれる。</p>
+    <p>Δφ を動かすと、余分な位相遅れの分だけ発振点が Δω/ω₀ ≃ Δφ/(2Q) だけ ω₀ からずれる。Q を上げるとこのずれは小さくなる ── <b>高 Q は周波数の錨</b>だ。</p>
+  </div>
+  <footer>resonance-face · 解析式（RK4なし） · 単一HTML</footer>
+</div>
+
+<script>
+if(window.self!==window.top)document.body.classList.add('embed');
+
+// ===================================================================
+//  parameters (SI)
+// ===================================================================
+let mode='series';          // 'series' | 'parallel'
+let L=100e-6, C=100e-9;     // H, F
+let Rs=10, Rp=1000;         // series loss / parallel loss
+let fDrive=0;               // Hz (set from slider)
+let dPhiDeg=0;              // added phase lag, degrees
+const Vs=1, Is=1;           // unit drive amplitudes
+
+// ---- log-slider mapping ----
+const logmap=(s,lo,hi)=>lo*Math.pow(hi/lo, s/1000);
+
+const w0=()=>1/Math.sqrt(L*C);
+const f0=()=>w0()/(2*Math.PI);
+const Z0=()=>Math.sqrt(L/C);
+const Qs=()=>w0()*L/Rs;      // series Q = w0 L / Rs = Z0/Rs
+const Qp=()=>Rp/(w0()*L);    // parallel Q = Rp/(w0 L) = Rp/Z0
+const Rnow=()=>mode==='series'?Rs:Rp;
+const Qnow=()=>mode==='series'?Qs():Qp();
+
+// impedance at angular frequency w -> {mag, ph(rad)}
+function Zof(w){
+  if(mode==='series'){
+    const X=w*L - 1/(w*C);
+    return {mag:Math.hypot(Rs,X), ph:Math.atan2(X,Rs)};
+  }else{
+    const G=1/Rp, B=w*C - 1/(w*L);
+    const yl=Math.hypot(G,B);
+    return {mag:1/yl, ph:-Math.atan2(B,G)};
+  }
+}
+
+// solve ph(w) = -dphi  near w0 (oscillation anchor). returns w or null
+function anchorW(dphiRad){
+  if(dphiRad<=1e-9) return w0();
+  const W0=w0();
+  let a,b;
+  if(mode==='series'){ a=W0*0.3; b=W0; }   // slope +, root below w0
+  else               { a=W0;     b=W0*3; }  // slope -, root above w0
+  const g=(w)=>Zof(w).ph + dphiRad;         // want = 0
+  let ga=g(a), gb=g(b);
+  if(ga*gb>0) return null;                   // out of bracket
+  for(let i=0;i<80;i++){
+    const m=Math.sqrt(a*b);                   // geometric bisection (log freq)
+    const gm=g(m);
+    if(ga*gm<=0){b=m;gb=gm;} else {a=m;ga=gm;}
+  }
+  return Math.sqrt(a*b);
+}
+
+// ===================================================================
+//  SELF-TEST (analytic + numeric derivative) — runs at load
+// ===================================================================
+function selfTest(){
+  const sav=[mode,L,C,Rs,Rp];
+  L=100e-6; C=100e-9; Rs=10; Rp=1000;
+  const W0=w0();
+  const out={};
+
+  // (1) |Z(w0)| = R
+  mode='series';  out.z1s=Zof(W0).mag; out.r1s=Rs;
+  mode='parallel';out.z1p=Zof(W0).mag; out.r1p=Rp;
+
+  // (2) series: V_L(w0)/Vs = Qs
+  mode='series';
+  { const Zm=Zof(W0).mag, I=Vs/Zm, VL=I*W0*L; out.vlRatio=VL/Vs; out.Qs=Qs(); }
+
+  // (3) parallel: I_L(w0)/Is = Qp
+  mode='parallel';
+  { const Zm=Zof(W0).mag, V=Is*Zm, IL=V/(W0*L); out.ilRatio=IL/Is; out.Qp=Qp(); }
+
+  // (4) dph/dw at w0 vs -/+ 2Q/w0  (central difference in log-w to be symmetric)
+  const dw=W0*1e-4;
+  mode='series';
+  out.slopeS=(Zof(W0+dw).ph-Zof(W0-dw).ph)/(2*dw); out.slopeSth= 2*Qs()/W0;
+  mode='parallel';
+  out.slopeP=(Zof(W0+dw).ph-Zof(W0-dw).ph)/(2*dw); out.slopePth=-2*Qp()/W0;
+
+  // (5) oscillation shift: dphi=5deg on high-Q parallel, measured vs dphi/(2Q)
+  mode='parallel';
+  { const dphi=5*Math.PI/180;
+    const wr=anchorW(dphi);
+    out.shiftMeas=(wr-W0)/W0;
+    out.shiftTh=dphi/(2*Qp()); }
+
+  [mode,L,C,Rs,Rp]=sav;
+  return out;
+}
+const ST=selfTest();
+(function reportST(){
+  const el=document.getElementById('selftest');
+  const ok=(b)=>b?'<b>PASS</b>':'<span style="color:var(--red)">FAIL</span>';
+  const rel=(a,b)=>Math.abs(a/b-1);
+  const c1=rel(ST.z1s,ST.r1s)<0.005 && rel(ST.z1p,ST.r1p)<0.005;
+  const c2=rel(ST.vlRatio,ST.Qs)<0.02;
+  const c3=rel(ST.ilRatio,ST.Qp)<0.02;
+  const c4=rel(ST.slopeS,ST.slopeSth)<0.03 && rel(ST.slopeP,ST.slopePth)<0.03;
+  const c5=rel(ST.shiftMeas,ST.shiftTh)<0.10;
+  el.innerHTML=
+    'セルフテスト（L100µ/C100n/Rs10Ω/Rp1kΩ, f₀='+(ST.z1s, (1/(2*Math.PI*Math.sqrt(100e-6*100e-9))/1e3).toFixed(1))+'kHz）<br>'+
+    '①|Z(ω₀)|=R '+ok(c1)+' 直列'+ST.z1s.toFixed(2)+'Ω/並列'+(ST.z1p).toFixed(0)+'Ω &nbsp; '+
+    '②直列 V_L/Vs=Q '+ok(c2)+' '+ST.vlRatio.toFixed(3)+'→Q'+ST.Qs.toFixed(3)+'<br>'+
+    '③並列 I_L/Is=Q '+ok(c3)+' '+ST.ilRatio.toFixed(2)+'→Q'+ST.Qp.toFixed(2)+' &nbsp; '+
+    '④dφ/dω=∓2Q/ω₀ '+ok(c4)+' 直+'+ST.slopeS.toExponential(2)+'/並'+ST.slopeP.toExponential(2)+'<br>'+
+    '⑤発振ずれ vs Δφ/2Q '+ok(c5)+' 実測'+(ST.shiftMeas*1e3).toFixed(3)+'e-3→理論'+(ST.shiftTh*1e3).toFixed(3)+'e-3';
+})();
+
+// ===================================================================
+//  CIRCUIT DIAGRAMS (SVG, swap on mode)
+// ===================================================================
+function zig(x0,y,w,n){ // resistor zigzag path segment (horizontal)
+  let d='M'+x0+' '+y, seg=w/(n*2), x=x0;
+  for(let i=0;i<n;i++){ x+=seg; d+=' L'+x+' '+(y-6); x+=seg; d+=' L'+x+' '+(y+6); }
+  d+=' L'+(x0+w)+' '+y; return d;
+}
+function coil(x0,y,w,n){ // inductor bumps (horizontal, up)
+  let d='M'+x0+' '+y, seg=w/n, x=x0;
+  for(let i=0;i<n;i++){ d+=' A'+(seg/2)+' '+(seg/2)+' 0 0 1 '+(x+seg)+' '+y; x+=seg; }
+  return d;
+}
+const svgSeries=`
+<svg width="150" height="110" viewBox="0 0 150 110">
+  <g fill="none" stroke="#7d7568" stroke-width="1.6" stroke-linecap="round">
+    <!-- outer loop -->
+    <path d="M20 30 L20 80 M20 80 L130 80 M130 80 L130 30"/>
+    <!-- source (left) -->
+    <circle cx="20" cy="55" r="12" fill="#faf8f4" stroke="#2563aa"/>
+    <path d="M20 30 L20 43 M20 67 L20 80" stroke="#2563aa"/>
+    <!-- top wire with Rs, L, C -->
+    <path d="M20 30 L34 30" />
+    <path d="${zig(34,30,26,4)}" stroke="#c2543d"/>
+    <path d="M60 30 L70 30"/>
+    <path d="${coil(70,30,26,4)}" stroke="#c9761f"/>
+    <path d="M96 30 L108 30"/>
+    <!-- cap -->
+    <path d="M112 22 L112 38 M118 22 L118 38" stroke="#3c7876"/>
+    <path d="M108 30 L112 30 M118 30 L130 30 L130 30"/>
+  </g>
+  <text x="20" y="59" font-size="12" fill="#2563aa" text-anchor="middle" font-family="JetBrains Mono">+</text>
+  <text x="8" y="59" font-size="10" fill="#2563aa" font-family="JetBrains Mono">Vs</text>
+  <text x="47" y="16" font-size="10" fill="#c2543d" text-anchor="middle" font-family="JetBrains Mono">Rs</text>
+  <text x="83" y="16" font-size="10" fill="#c9761f" text-anchor="middle" font-family="JetBrains Mono">L</text>
+  <text x="115" y="52" font-size="10" fill="#3c7876" text-anchor="middle" font-family="JetBrains Mono">C</text>
+</svg>`;
+const svgParallel=`
+<svg width="150" height="110" viewBox="0 0 150 110">
+  <g fill="none" stroke="#7d7568" stroke-width="1.6" stroke-linecap="round">
+    <!-- rails -->
+    <path d="M20 20 L130 20 M20 90 L130 90"/>
+    <!-- current source (left) -->
+    <circle cx="20" cy="55" r="12" fill="#faf8f4" stroke="#2563aa"/>
+    <path d="M20 20 L20 43 M20 67 L20 90" stroke="#2563aa"/>
+    <path d="M20 48 L20 62 M20 48 L17 53 M20 48 L23 53" stroke="#2563aa"/>
+    <!-- Rp branch -->
+    <path d="M60 20 L60 40" />
+    <path d="M54 40 L66 40 L66 70 L54 70 L54 40 Z" stroke="#c2543d"/>
+    <path d="M60 70 L60 90"/>
+    <!-- L branch -->
+    <path d="M90 20 L90 34"/>
+    <path d="M84 34 A6 6 0 0 1 96 34 M84 46 A6 6 0 0 1 96 46 M84 58 A6 6 0 0 1 96 58" stroke="#c9761f"/>
+    <path d="M84 34 L84 70 M96 34 L96 70" stroke="none"/>
+    <path d="M90 64 L90 90"/>
+    <!-- C branch -->
+    <path d="M120 20 L120 48 M108 48 L132 48 M108 58 L132 58 M120 58 L120 90" stroke="#3c7876"/>
+  </g>
+  <text x="8" y="59" font-size="10" fill="#2563aa" font-family="JetBrains Mono">Is</text>
+  <text x="72" y="58" font-size="10" fill="#c2543d" text-anchor="middle" font-family="JetBrains Mono">Rp</text>
+  <text x="103" y="52" font-size="10" fill="#c9761f" text-anchor="middle" font-family="JetBrains Mono">L</text>
+  <text x="133" y="40" font-size="10" fill="#3c7876" text-anchor="middle" font-family="JetBrains Mono">C</text>
+</svg>`;
+function drawCircuit(){
+  const box=document.getElementById('circuit');
+  if(mode==='series'){
+    box.innerHTML=svgSeries+
+      '<div class="desc"><b>直列RLC・電圧源駆動。</b>ω₀で Z=Rs（最小）、枝電流が最大。'+
+      '<span class="em">L・C端子には Q·Vs の電圧</span>が立つ。</div>';
+  }else{
+    box.innerHTML=svgParallel+
+      '<div class="desc"><b>並列RLC・電流源駆動。</b>ω₀で Z=Rp（最大）、端子電圧が最大。'+
+      '<span class="em">L・C枝には Q·Is の循環電流</span>が回る。</div>';
+  }
+}
+
+// ===================================================================
+//  CANVAS
+// ===================================================================
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const info=document.getElementById('info');
+let W=0,H=0,DPR=1;
+function resize(){
+  const r=cv.getBoundingClientRect();
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  W=r.width;H=r.height;
+  cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  draw();
+}
+window.addEventListener('resize',resize);
+
+const MONO='11px JetBrains Mono, monospace';
+const fLoR=()=>f0()*0.2, fHiR=()=>f0()*5;
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  const F0=f0(), fLo=fLoR(), fHi=fHiR();
+  const xL=40, xR=W-12, plotW=xR-xL;
+  const xOf=(f)=> xL + (Math.log(f/fLo)/Math.log(fHi/fLo))*plotW;
+
+  // vertical regions
+  const gap=10;
+  const zTop=20, zH=Math.round(H*0.36);
+  const pTop=zTop+zH+34, pH=Math.round(H*0.20);
+  const bTop=pTop+pH+30, bH=H-bTop-6;
+
+  const wd=2*Math.PI*fDrive;
+  const Zd=Zof(wd);
+
+  // -------- helpers: freq grid ticks --------
+  function freqTicks(top,h,drawLabels){
+    // resonance dashed (red), drive cursor (blue), f/f0 = 0.5,1,2 light
+    [[0.5,'0.5'],[1,''],[2,'2']].forEach(([m])=>{
+      const x=xOf(F0*m);
+      ctx.strokeStyle='#ece5da';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,top+h);ctx.stroke();
+    });
+    // resonance
+    const xr=xOf(F0);
+    ctx.strokeStyle='rgba(194,84,61,.55)';ctx.setLineDash([5,4]);ctx.lineWidth=1.4;
+    ctx.beginPath();ctx.moveTo(xr,top);ctx.lineTo(xr,top+h);ctx.stroke();
+    ctx.setLineDash([]);
+    // drive cursor
+    const xc=xOf(fDrive);
+    ctx.strokeStyle='rgba(37,99,170,.85)';ctx.lineWidth=1.6;
+    ctx.beginPath();ctx.moveTo(xc,top);ctx.lineTo(xc,top+h);ctx.stroke();
+    if(drawLabels){
+      ctx.fillStyle='#c2543d';ctx.font=MONO;ctx.textAlign='center';ctx.textBaseline='top';
+      ctx.fillText('f₀', xr, top+h+3);
+      ctx.fillStyle='#2563aa';ctx.fillText('f', xc, top+h+3);
+    }
+  }
+
+  // ================= |Z| log-log =================
+  // sample curve, find y-range
+  const N=220; const fs=[], zs=[];
+  let ymin=1e30,ymax=-1e30;
+  for(let i=0;i<=N;i++){
+    const f=fLo*Math.pow(fHi/fLo, i/N), w=2*Math.PI*f, m=Zof(w).mag;
+    fs.push(f); zs.push(m); if(m<ymin)ymin=m; if(m>ymax)ymax=m;
+  }
+  ymin*=0.7; ymax*=1.4;
+  const lymin=Math.log10(ymin), lymax=Math.log10(ymax);
+  const yOfZ=(z)=> zTop+zH - ((Math.log10(z)-lymin)/(lymax-lymin))*zH;
+  // frame
+  ctx.strokeStyle='#e3dbd0';ctx.lineWidth=1;
+  ctx.strokeRect(xL,zTop,plotW,zH);
+  // decade gridlines + labels
+  ctx.textAlign='right';ctx.textBaseline='middle';ctx.font=MONO;
+  for(let e=Math.ceil(lymin);e<=Math.floor(lymax);e++){
+    const y=yOfZ(Math.pow(10,e));
+    ctx.strokeStyle='#f0ebe2';ctx.beginPath();ctx.moveTo(xL,y);ctx.lineTo(xR,y);ctx.stroke();
+    ctx.fillStyle='#aaa49b';
+    const v=Math.pow(10,e);
+    ctx.fillText(v>=1000?(v/1000)+'k':v+'Ω', xL-3, y);
+  }
+  freqTicks(zTop,zH,false);
+  // curve
+  ctx.strokeStyle='#3c7876';ctx.lineWidth=2;ctx.beginPath();
+  for(let i=0;i<=N;i++){const x=xOf(fs[i]),y=yOfZ(zs[i]);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}
+  ctx.stroke();
+  // R marker line
+  ctx.strokeStyle='rgba(125,117,104,.4)';ctx.setLineDash([2,3]);ctx.lineWidth=1;
+  const yR=yOfZ(Rnow());ctx.beginPath();ctx.moveTo(xL,yR);ctx.lineTo(xR,yR);ctx.stroke();ctx.setLineDash([]);
+  // marker dot at drive
+  ctx.fillStyle='#c9761f';const yd=yOfZ(Zd.mag);
+  ctx.beginPath();ctx.arc(xOf(fDrive),yd,3.5,0,7);ctx.fill();
+  // title
+  ctx.fillStyle='#3c7876';ctx.textAlign='left';ctx.textBaseline='top';ctx.font='11px JetBrains Mono, monospace';
+  ctx.fillText('|Z|(f) '+(mode==='series'?'谷（直列）':'山（並列）'), xL+3, zTop+3);
+
+  // ================= phase =================
+  ctx.strokeStyle='#e3dbd0';ctx.lineWidth=1;ctx.strokeRect(xL,pTop,plotW,pH);
+  const yOfP=(deg)=> pTop+pH/2 - (deg/90)*(pH/2-2);
+  // grid at 0, ±45, ±90
+  ctx.textAlign='right';ctx.textBaseline='middle';ctx.font=MONO;
+  [90,45,0,-45,-90].forEach(d=>{
+    const y=yOfP(d);
+    ctx.strokeStyle=d===0?'#e6ded3':'#f2ede5';ctx.beginPath();ctx.moveTo(xL,y);ctx.lineTo(xR,y);ctx.stroke();
+    ctx.fillStyle='#aaa49b';ctx.fillText(d+'°',xL-3,y);
+  });
+  freqTicks(pTop,pH,true);
+  // phase curve
+  ctx.strokeStyle='#c9761f';ctx.lineWidth=2;ctx.beginPath();
+  for(let i=0;i<=N;i++){const w=2*Math.PI*fs[i];const deg=Zof(w).ph*180/Math.PI;
+    const x=xOf(fs[i]),y=yOfP(deg);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}
+  ctx.stroke();
+  // anchor: -dphi line + oscillation point
+  const dRad=dPhiDeg*Math.PI/180;
+  let wr=null;
+  if(dPhiDeg>0.01){
+    wr=anchorW(dRad);
+    const ytar=yOfP(-dPhiDeg);
+    ctx.strokeStyle='rgba(194,84,61,.5)';ctx.setLineDash([4,3]);ctx.lineWidth=1.2;
+    ctx.beginPath();ctx.moveTo(xL,ytar);ctx.lineTo(xR,ytar);ctx.stroke();ctx.setLineDash([]);
+    if(wr){
+      const fx=wr/(2*Math.PI);
+      if(fx>=fLo&&fx<=fHi){
+        const x=xOf(fx);
+        ctx.fillStyle='#c2543d';ctx.beginPath();ctx.arc(x,ytar,4,0,7);ctx.fill();
+        ctx.strokeStyle='rgba(194,84,61,.5)';ctx.lineWidth=1;
+        ctx.beginPath();ctx.moveTo(x,pTop);ctx.lineTo(x,pTop+pH);ctx.stroke();
+      }
+    }
+  }
+  ctx.fillStyle='#c9761f';ctx.textAlign='left';ctx.textBaseline='top';ctx.font='11px JetBrains Mono, monospace';
+  ctx.fillText('位相 φ(f)'+(dPhiDeg>0?' ・発振点＝φ=−Δφ':''), xL+3, pTop+3);
+
+  // ================= 外の顔 / 中の顔 bars =================
+  const baseY=bTop+bH-16, topY=bTop+18, fullH=baseY-topY;
+  ctx.strokeStyle='#f0ebe2';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(xL,baseY);ctx.lineTo(xR,baseY);ctx.stroke();
+  // divider between outer/inner
+  const midX=xL+plotW*0.40;
+  ctx.strokeStyle='#e3dbd0';ctx.setLineDash([3,3]);
+  ctx.beginPath();ctx.moveTo(midX,topY-10);ctx.lineTo(midX,baseY+2);ctx.stroke();ctx.setLineDash([]);
+
+  const Q=Qnow();
+  // compute quantities
+  let extLabel, extVal, extBar, inLabel, inA, inB, inAname, inBname;
+  if(mode==='series'){
+    const I=Vs/Zd.mag;            // terminal current
+    const VL=I*wd*L, VC=I/(wd*C);
+    extLabel='端子電流 |I|'; extVal=I; extBar=Rs/Zd.mag;   // 1 at res
+    inLabel='L/C 端子電圧'; inA=VL/Vs; inB=VC/Vs; inAname='V_L'; inBname='V_C';
+  }else{
+    const V=Is*Zd.mag;           // terminal voltage
+    const IL=V/(wd*L), IC=V*wd*C;
+    extLabel='端子電圧 |V|'; extVal=V; extBar=Zd.mag/Rp;    // 1 at res
+    inLabel='L/C 枝の循環電流'; inA=IL/Is; inB=IC/Is; inAname='I_L'; inBname='I_C';
+  }
+  // outer bar (teal)
+  const owx=xL+30, obw=Math.min(42,plotW*0.14);
+  const oh=Math.max(0,Math.min(1,extBar))*fullH;
+  ctx.fillStyle='rgba(60,120,118,.18)';ctx.fillRect(owx,topY,obw,fullH);
+  ctx.fillStyle='#3c7876';ctx.fillRect(owx,baseY-oh,obw,oh);
+  // inner bars (amber L, teal-red C) — normalized so res(=Q) is full height
+  const i1x=midX+plotW*0.14, i2x=midX+plotW*0.14+obw+18, ibw=obw;
+  const h1=Math.max(0,Math.min(1,inA/Q))*fullH, h2=Math.max(0,Math.min(1,inB/Q))*fullH;
+  ctx.fillStyle='rgba(201,118,31,.16)';ctx.fillRect(i1x,topY,ibw,fullH);
+  ctx.fillStyle='#c9761f';ctx.fillRect(i1x,baseY-h1,ibw,h1);
+  ctx.fillStyle='rgba(194,84,61,.16)';ctx.fillRect(i2x,topY,ibw,fullH);
+  ctx.fillStyle='#c2543d';ctx.fillRect(i2x,baseY-h2,ibw,h2);
+  // "×1 source" tick across inner bars (at 1/Q of full)
+  const tickY=baseY-(1/Q)*fullH;
+  ctx.strokeStyle='rgba(125,117,104,.6)';ctx.setLineDash([3,2]);ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(i1x-4,tickY);ctx.lineTo(i2x+ibw+4,tickY);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='#7d7568';ctx.font=MONO;ctx.textAlign='left';ctx.textBaseline='bottom';
+  ctx.fillText('×1 (源)', i2x+ibw+6, tickY+2);
+  // top = ×Q line
+  ctx.strokeStyle='rgba(194,84,61,.35)';ctx.setLineDash([2,3]);
+  ctx.beginPath();ctx.moveTo(i1x-4,topY);ctx.lineTo(i2x+ibw+4,topY);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='#c2543d';ctx.textBaseline='bottom';
+  ctx.fillText('×Q='+Q.toFixed(1), i2x+ibw+6, topY+2);
+  // labels
+  ctx.fillStyle='#3c7876';ctx.textAlign='center';ctx.textBaseline='top';ctx.font='11px JetBrains Mono, monospace';
+  ctx.fillText('外の顔', xL+plotW*0.18, bTop-2);
+  ctx.fillStyle='#c9761f';ctx.fillText('中の顔', midX+plotW*0.30, bTop-2);
+  ctx.fillStyle='#7d7568';ctx.font='10px JetBrains Mono, monospace';ctx.textBaseline='bottom';
+  ctx.fillText(extLabel, owx+obw/2, baseY+13);
+  ctx.fillStyle='#c9761f';ctx.fillText(inAname, i1x+ibw/2, baseY+13);
+  ctx.fillStyle='#c2543d';ctx.fillText(inBname, i2x+ibw/2, baseY+13);
+  // multiplier readout on inner bars
+  ctx.textBaseline='bottom';ctx.font=MONO;
+  ctx.fillStyle='#c9761f';ctx.fillText('×'+inA.toFixed(1), i1x+ibw/2, baseY-h1-2);
+  ctx.fillStyle='#c2543d';ctx.fillText('×'+inB.toFixed(1), i2x+ibw/2, baseY-h2-2);
+
+  updateInfo(Zd, wr);
+}
+
+function updateInfo(Zd, wr){
+  const F0=f0(), Q=Qnow();
+  let s='mode = <b class="'+(mode==='series'?'v-teal':'v-red')+'">'+(mode==='series'?'直列 (電圧源)':'並列 (電流源)')+'</b> &nbsp;|&nbsp; '+
+    'f₀ = <b class="v-red">'+fmtF(F0)+'</b> &nbsp; f = <b class="v-blue">'+fmtF(fDrive)+'</b> ('+(fDrive/F0).toFixed(2)+'·f₀) &nbsp;|&nbsp; '+
+    'Q = <b class="v-amber">'+Q.toFixed(2)+'</b><br>'+
+    '|Z(f)| = <b>'+fmtOhm(Zd.mag)+'</b> &nbsp; φ = <b>'+(Zd.ph*180/Math.PI).toFixed(1)+'°</b> &nbsp;|&nbsp; Z₀=√(L/C)=<b>'+fmtOhm(Z0())+'</b>';
+  if(dPhiDeg>0.01){
+    const dRad=dPhiDeg*Math.PI/180;
+    const shiftMeas = wr? (wr-2*Math.PI*F0)/(2*Math.PI*F0) : NaN;
+    const shiftTh = (mode==='series'?-1:1)*dRad/(2*Q);
+    s+='<br>Δφ = <b class="v-red">'+dPhiDeg.toFixed(1)+'°</b> → 発振ずれ Δω/ω₀ 実測 <b class="v-amber">'+
+      (isNaN(shiftMeas)?'—':(shiftMeas*100).toFixed(3)+'%')+'</b> vs 理論 Δφ/2Q <b>'+(shiftTh*100).toFixed(3)+'%</b>';
+  }
+  info.innerHTML=s;
+}
+function fmtF(f){ return f>=1e6?(f/1e6).toFixed(2)+'MHz':f>=1e3?(f/1e3).toFixed(2)+'kHz':f.toFixed(0)+'Hz'; }
+function fmtOhm(z){ return z>=1e3?(z/1e3).toFixed(2)+'kΩ':z.toFixed(2)+'Ω'; }
+
+// ===================================================================
+//  controls
+// ===================================================================
+const sL=document.getElementById('sL'),sC=document.getElementById('sC'),sR=document.getElementById('sR'),
+      sF=document.getElementById('sF'),sDp=document.getElementById('sDp');
+const lL=document.getElementById('lL'),lC=document.getElementById('lC'),lR=document.getElementById('lR'),
+      lF=document.getElementById('lF'),lDp=document.getElementById('lDp'),labR=document.getElementById('labR');
+function readParams(){
+  L=logmap(parseFloat(sL.value),10e-6,1e-3);
+  C=logmap(parseFloat(sC.value),1e-9,1e-6);
+  if(mode==='series') Rs=logmap(parseFloat(sR.value),1,100);
+  else                Rp=logmap(parseFloat(sR.value),100,100e3);
+  fDrive=logmap(parseFloat(sF.value),f0()*0.2,f0()*5);
+  dPhiDeg=parseFloat(sDp.value);
+  lL.textContent=(L*1e6>=1000?(L*1e3).toFixed(2)+'mH':(L*1e6).toFixed(0)+'µH');
+  lC.textContent=(C*1e9>=1000?(C*1e6).toFixed(2)+'µF':(C*1e9).toFixed(0)+'nF');
+  if(mode==='series'){ labR.innerHTML='Rs <b id="lR">'+Rs.toFixed(1)+'Ω</b>'; }
+  else{ labR.innerHTML='Rp <b id="lR">'+(Rp>=1000?(Rp/1000).toFixed(1)+'kΩ':Rp.toFixed(0)+'Ω')+'</b>'; }
+  lF.textContent=fmtF(fDrive);
+  lDp.textContent=dPhiDeg.toFixed(1)+'°';
+}
+[sL,sC,sR,sF,sDp].forEach(s=>s.addEventListener('input',()=>{readParams();draw();}));
+
+const mSer=document.getElementById('mSer'),mPar=document.getElementById('mPar');
+function setMode(m){
+  mode=m;
+  mSer.classList.toggle('on',m==='series');
+  mPar.classList.toggle('on',m==='parallel');
+  drawCircuit(); readParams(); draw();
+  location.hash='mode='+m;
+}
+mSer.addEventListener('click',()=>setMode('series'));
+mPar.addEventListener('click',()=>setMode('parallel'));
+
+// init
+(function init(){
+  const h=location.hash.match(/mode=(series|parallel)/);
+  mode=h?h[1]:'series';
+  mSer.classList.toggle('on',mode==='series');
+  mPar.classList.toggle('on',mode==='parallel');
+  drawCircuit();
+  readParams();
+  resize();
+})();
+</script>
+</body>
+</html>
