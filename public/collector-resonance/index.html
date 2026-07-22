@@ -101,6 +101,8 @@ body.embed #stage{flex:1 1 auto;height:auto;min-height:180px;}
         <input id="sRl" type="range" min="0" max="1000" step="1" value="667"></div>
       <div class="cg"><label>Lch <b id="lLch"></b></label>
         <input id="sLch" type="range" min="1" max="10" step="0.5" value="2"></div>
+      <div class="cg"><label>再生速度 <b id="lSpd"></b></label>
+        <input id="sSpd" type="range" min="0" max="1000" step="1" value="812"></div>
       <div class="modes">
         <button id="mSteady" class="on">定常を見る</button>
         <button id="mStart" class="sec">起動を見る</button>
@@ -248,8 +250,10 @@ function seedStart(){
 }
 function recompute(){ dt=period()/600; }
 
+let speed=1;   // playback time-scale (物理dtは固定・1フレームで進める物理時間を倍率で変える)
 function step(){
-  const spf=(mode==='start')?90:60;  // sim steps per frame
+  const base=(mode==='start')?90:60;
+  const spf=Math.max(1,Math.round(base*speed));  // sim steps per frame (physics dt unchanged)
   const keep=BUFT();
   for(let s=0;s<spf;s++){
     rk4(y,dt); simT+=dt;
@@ -365,9 +369,11 @@ function updateInfo(){
 
 // ---- controls ----
 const sVin=document.getElementById('sVin'),sLd=document.getElementById('sLd'),
-      sCr=document.getElementById('sCr'),sRl=document.getElementById('sRl'),sLch=document.getElementById('sLch');
+      sCr=document.getElementById('sCr'),sRl=document.getElementById('sRl'),sLch=document.getElementById('sLch'),
+      sSpd=document.getElementById('sSpd');
 const lVin=document.getElementById('lVin'),lLd=document.getElementById('lLd'),
-      lCr=document.getElementById('lCr'),lRl=document.getElementById('lRl'),lLch=document.getElementById('lLch');
+      lCr=document.getElementById('lCr'),lRl=document.getElementById('lRl'),lLch=document.getElementById('lLch'),
+      lSpd=document.getElementById('lSpd');
 function readParams(){
   Vin=parseFloat(sVin.value);
   Ld=logmap(parseFloat(sLd.value),10e-6,500e-6);
@@ -379,12 +385,16 @@ function readParams(){
   lCr.textContent=(Cr*1e9>=1000?(Cr*1e6).toFixed(2)+'µF':(Cr*1e9).toFixed(0)+'nF');
   lRl.textContent=(Rload>=1000?(Rload/1000).toFixed(2)+'kΩ':Rload.toFixed(0)+'Ω');
   lLch.textContent=(Lch*1e3).toFixed(1)+'mH';
+  speed=logmap(parseFloat(sSpd.value),0.05,2);
+  lSpd.textContent=(speed<1?speed.toFixed(2):speed.toFixed(1))+'×'+(speed<0.85?'（スロー）':'');
   recompute();
 }
+// param sliders reseed (waveform depends on them); speed slider must NOT reseed
 [sVin,sLd,sCr,sRl,sLch].forEach(s=>s.addEventListener('input',()=>{
   readParams();
   if(mode==='steady')seedSteady(); else seedStart();
 }));
+sSpd.addEventListener('input',readParams);
 
 const mSteady=document.getElementById('mSteady'),mStart=document.getElementById('mStart');
 function setMode(m){
