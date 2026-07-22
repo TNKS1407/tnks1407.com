@@ -5,6 +5,8 @@ pubDate: 2026-07-22
 tags: ["電子回路", "共振", "LC", "自励発振", "インバータ", "ZVS", "電源"]
 demo: "/collector-resonance/"
 demoLabel: "コレクタ共振ラボを全画面で開く"
+series: "resonant-power"
+order: 1
 related:
   - { title: "声はどこで鳴っている？（定在波と共鳴の入口 ── 共振の“音”版）", url: "/docs/waves-formants/" }
   - { title: "足し合わせの話（矩形波が正弦波たちに分解できる、の土台）", url: "/docs/superposition/" }

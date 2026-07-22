@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>誰も合図していないのに — 起動を一歩一歩</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
+  --teal:#3c7876;--red:#c2543d;--amber:#c9761f;--blue:#2563aa;
+  --text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{overflow-x:hidden;max-width:100%;}
+body{
+  font-family:'Zen Kaku Gothic New',sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.6;
+  background-image:radial-gradient(circle at 1px 1px,#e9e4da 1px,transparent 0);
+  background-size:22px 22px;
+}
+.wrap{max-width:820px;margin:0 auto;padding:20px 16px 48px;}
+header{display:flex;align-items:flex-end;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.brand{font-weight:700;font-size:22px;line-height:1.1;color:var(--text);}
+.brand .a{color:var(--amber);}
+.tag{font-size:12px;color:var(--muted);padding-bottom:2px;}
+.back{margin-left:auto;font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;text-decoration:none;white-space:nowrap;}
+.back:hover{color:var(--teal);}
+.lead{background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:13px 16px;margin-bottom:16px;font-size:13px;color:#3a3a36;line-height:1.78;
+  box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.lead p{margin:0 0 .5rem;}.lead p:last-child{margin-bottom:0;}
+.lead b{color:var(--text);}
+.selftest{margin-top:.5rem;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);
+  border-top:1px dashed var(--border);padding-top:.5rem;}
+.selftest b{color:var(--teal);}
+.card-tool{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;
+  box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+/* progress dots */
+.dots{display:flex;gap:.4rem;align-items:center;justify-content:center;flex-wrap:wrap;
+  padding:.55rem .6rem;background:var(--surface);border-bottom:1px solid var(--border);}
+.dot{width:22px;height:22px;border-radius:50%;border:1px solid var(--border);background:var(--card);
+  font-family:'JetBrains Mono',monospace;font-size:.66rem;font-weight:600;color:var(--muted);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;flex:0 0 auto;}
+.dot:hover{border-color:var(--teal);}
+.dot.on{background:var(--teal);color:#fff;border-color:var(--teal);}
+.dot.done{border-color:var(--teal);color:var(--teal);}
+#stage{position:relative;width:100%;background:var(--surface);}
+#svg{display:block;width:100%;height:auto;}
+#wave{display:block;width:100%;height:78px;background:var(--surface);border-top:1px solid var(--border);}
+.explain{background:var(--card);border-top:1px solid var(--border);padding:.7rem .9rem;min-height:5.8rem;}
+.etitle{font-weight:700;font-size:.9rem;color:var(--text);margin-bottom:.3rem;display:flex;align-items:baseline;gap:.5rem;}
+.etitle .num{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--amber);}
+.etext{font-size:.83rem;line-height:1.8;color:#3a3a36;}
+.etext b{color:var(--text);}
+.ctrl{background:var(--surface);border-top:1px solid var(--border);
+  padding:.55rem .7rem;display:flex;gap:.5rem;align-items:center;}
+button{font-family:'Zen Kaku Gothic New',sans-serif;font-size:.78rem;font-weight:700;
+  color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:8px;
+  padding:.34rem .8rem;cursor:pointer;transition:border-color .15s,background .15s,color .15s;}
+button:hover{border-color:var(--teal);}
+button:disabled{opacity:.4;cursor:default;}
+button.sec{border-color:var(--amber);color:var(--amber);}
+button.sec:hover{background:var(--amber);color:#fff;}
+button.on{background:var(--amber);color:#fff;border-color:var(--amber);}
+.counter{font-family:'JetBrains Mono',monospace;font-size:.74rem;color:var(--muted);margin-left:auto;}
+.note{font-size:12px;color:#3a3a36;line-height:1.8;background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:12px 16px;margin-top:16px;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.note b{color:var(--text);}
+footer{text-align:center;color:var(--faint);font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:12px;}
+body.embed{height:100%;display:flex;flex-direction:column;overflow:hidden;background-image:none;}
+body.embed .wrap{max-width:none;margin:0;padding:0;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
+body.embed header,body.embed .lead,body.embed .note,body.embed footer{display:none;}
+body.embed .card-tool{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;border:none;border-radius:0;box-shadow:none;overflow:hidden;}
+body.embed #stage{flex:1 1 auto;min-height:0;overflow:hidden;}
+body.embed #svg{height:100%;}
+body.embed .explain{overflow:auto;}
+
+/* ============ SVG step-driven styling ============ */
+#svg text{font-family:'JetBrains Mono',monospace;}
+.wire{fill:none;stroke:#9a9186;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;}
+.coil{fill:none;stroke:#6f665b;stroke-width:1.8;stroke-linecap:round;}
+.node{fill:#6f665b;}
+.lbl{fill:var(--muted);font-size:11px;}
+.lblv{fill:var(--text);font-size:12px;font-weight:600;}
+.dev{stroke:#6f665b;stroke-width:1.8;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+/* transistors */
+.q{transition:opacity .3s;}
+.q .body{stroke:#5a5148;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round;}
+.q .bar{stroke:#5a5148;stroke-width:2.6;}
+.q .arrow{fill:#5a5148;stroke:none;}
+.qglow{filter:drop-shadow(0 0 5px rgba(60,120,118,.85));}
+.qglow .body,.qglow .bar{stroke:var(--teal);}
+.qglow .arrow{fill:var(--teal);}
+.qdim{opacity:.22;}
+/* bias current (R_start) */
+.bias{fill:none;stroke:var(--blue);stroke-width:1.6;stroke-dasharray:2 5;stroke-linecap:round;opacity:0;
+  transition:opacity .3s;}
+.bias.show{opacity:.9;animation:flow 0.7s linear infinite;}
+.bias.faint{opacity:.32;animation:flow 1.1s linear infinite;}
+/* conduction current paths */
+.curr{fill:none;stroke-linecap:round;stroke-linejoin:round;opacity:0;transition:opacity .3s,stroke-width .3s;}
+.currQ1{stroke:var(--teal);}
+.currQ2{stroke:var(--amber);}
+.curr.show{opacity:.92;stroke-dasharray:7 6;animation:flow 0.5s linear infinite;
+  filter:drop-shadow(0 0 4px rgba(60,120,118,.55));}
+@keyframes flow{to{stroke-dashoffset:-13;}}
+/* flux arrow */
+.flux{opacity:0;transition:opacity .3s;stroke:var(--amber);stroke-width:2.6;fill:none;stroke-linecap:round;}
+.flux.show{opacity:.95;filter:drop-shadow(0 0 4px rgba(201,118,31,.6));}
+/* polarity + tags */
+.pol{opacity:0;transition:opacity .25s;}
+.pol.show{opacity:1;}
+.pol circle{fill:#fff;stroke:#5a5148;stroke-width:1.2;}
+.tag{opacity:0;transition:opacity .25s;}
+.tag.show{opacity:1;}
+.tag rect{fill:#fff;stroke:var(--border);}
+.tag text{font-size:11px;font-weight:600;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">誰も<span class="a">合図</span>していないのに</div>
+    <div class="tag">共振と電源 #2 ／ 自励起動を一歩ずつ</div>
+    <a class="back" href="/">&larr; tnks1407</a>
+  </header>
+  <div class="lead">
+    <p>クロックが無いのに、どうやって発振は始まるのか。この図は、コレクタ共振回路（ロイヤー型）の<b>自励起動</b>を、回路図の上で<b>一コマずつ</b>追う。「次へ」を押すたびに、電流の通り道・ベース電位・磁束・帰還の極性がどう連鎖するかを見てほしい。</p>
+    <p>種になるのは、部品の<b>小さなばらつき</b>だ。回路がそれを帰還で読み、正帰還で一気に増幅する ── そこから先、波形を描くのは<b>LとC</b>で、トランジスタは半周期ごとに通り道を選び直す給仕にすぎない。転流の合図を出しているのは外部クロックではなく、<b>タンク自身のゼロ交差</b>だよ。</p>
+    <div class="selftest" id="selftest">セルフテスト実行中…</div>
+  </div>
+
+  <div class="card-tool">
+    <div class="dots" id="dots"></div>
+    <div id="stage"><svg id="svg" viewBox="0 0 620 380" preserveAspectRatio="xMidYMid meet" aria-label="コレクタ共振回路"></svg></div>
+    <canvas id="wave"></canvas>
+    <div class="explain">
+      <div class="etitle"><span class="num" id="enum"></span><span id="etitle"></span></div>
+      <div class="etext" id="etext"></div>
+    </div>
+    <div class="ctrl">
+      <button id="prev">&larr; 前へ</button>
+      <button id="next" class="sec">次へ &rarr;</button>
+      <button id="auto">自動再生</button>
+      <span class="counter" id="counter"></span>
+    </div>
+  </div>
+
+  <div class="note">
+    <p><b>起動の種は、部品の不完全さ。</b>完全に対称な理想回路は、理屈の上ではいつまでも均衡したまま立ち上がらない（最後のコマで確かめられる）。現実には hFE のわずかな差や、熱雑音だけでも十分な種になる。回路はその微差を帰還で読み、正帰還で増幅し、あとはタンクのゼロ交差が半周期ごとに主役を入れ替える ── これが「誰も合図していないのに始まる」の正体だよ。</p>
+  </div>
+  <footer>collector-startup &middot; 単一HTML &middot; 波形は同モデルのRK4実解</footer>
+</div>
+
+<script>
+if(window.self!==window.top)document.body.classList.add('embed');
+
+/* =====================================================================
+   1) PHYSICS — same tank model as collector-resonance (RK4)
+   y=[v, iL, ich];  Cr dv/dt=-iL - v/Rload + inj ;  Ld diL/dt=v
+   choke: Lch dich/dt = Vin - |v|/2 ;  inj = sign(v)*ich/2
+   The mini-waveform below is the REAL solved v(t), not a cartoon.
+   ===================================================================== */
+const Vin=12, Lch=2e-3, Ld=100e-6, Cr=100e-9, Rload=1000;
+const Z0=Math.sqrt(Ld/Cr), T=2*Math.PI*Math.sqrt(Ld*Cr);
+const Vpk=Math.PI*Vin;                 // steady peak of |v| ≈ π·Vin
+
+function deriv(y,o){
+  const v=y[0], iL=y[1], ich=y[2];
+  const inj=(v>=0?1:-1)*ich*0.5;
+  o[0]=(-iL - v/Rload + inj)/Cr;
+  o[1]=v/Ld;
+  o[2]=(Vin - Math.abs(v)*0.5)/Lch;
+}
+(function(){})();
+function rk4(y,dt,k1,k2,k3,k4,tmp){
+  deriv(y,k1);
+  for(let i=0;i<3;i++)tmp[i]=y[i]+0.5*dt*k1[i]; deriv(tmp,k2);
+  for(let i=0;i<3;i++)tmp[i]=y[i]+0.5*dt*k2[i]; deriv(tmp,k3);
+  for(let i=0;i<3;i++)tmp[i]=y[i]+dt*k3[i];     deriv(tmp,k4);
+  for(let i=0;i<3;i++)y[i]+=dt/6*(k1[i]+2*k2[i]+2*k3[i]+k4[i]);
+}
+// integrate startup from a tiny oscillatory seed, store downsampled v(t).
+// From a 3% seed the envelope rings up, overshoots to ~1.4·πVin near period ~10,
+// then settles onto the limit cycle at πVin by ~period 120 (verified separately).
+const trace={t:[],v:[]};
+let revealEnd=0, steadyStart=0, ptsPerPeriod=0;
+(function buildTrace(){
+  const dt=T/240, k1=[0,0,0],k2=[0,0,0],k3=[0,0,0],k4=[0,0,0],tmp=[0,0,0];
+  const y=[0, 0.03*Vpk/Z0, 0];          // 3% seed (arbitrary noise), ich=0
+  const capPeriods=140, nMax=Math.round(capPeriods*T/dt);
+  let ts=0;
+  for(let n=0;n<nMax;n++){
+    rk4(y,dt,k1,k2,k3,k4,tmp); ts+=dt;
+    if(n%2===0){ trace.t.push(ts); trace.v.push(y[0]); }
+  }
+  ptsPerPeriod=Math.round(T/(dt*2));                 // ~120
+  steadyStart=Math.max(0, trace.v.length-3*ptsPerPeriod);   // fully settled tail
+  revealEnd=Math.min(trace.v.length-1, 48*ptsPerPeriod);    // step7 sweep window
+})();
+
+/* self-test (house style): report freq, peak, growth of the real trace */
+(function selfTest(){
+  const el=document.getElementById('selftest');
+  const ok=b=>b?'<b>PASS</b>':'<span style="color:var(--red)">FAIL</span>';
+  // steady peak
+  let vpk=0; for(let i=steadyStart;i<trace.v.length;i++)vpk=Math.max(vpk,Math.abs(trace.v[i]));
+  // frequency from upward zero crossings in steady region
+  let first=-1,last=-1,cnt=0;
+  for(let i=steadyStart+1;i<trace.v.length;i++){
+    if(trace.v[i-1]<0&&trace.v[i]>=0){ if(first<0)first=trace.t[i]; else{last=trace.t[i];cnt++;} }
+  }
+  const fMeas=(cnt>0&&last>first)?cnt/(last-first):0;
+  const fTheo=1/(2*Math.PI*Math.sqrt(Ld*Cr));
+  // early amplitude (first 0.6 period)
+  let vEarly=0; for(let i=0;i<trace.t.length&&trace.t[i]<0.6*T;i++)vEarly=Math.max(vEarly,Math.abs(trace.v[i]));
+  const grew=vpk>5*vEarly;
+  const c1=Math.abs(fMeas-fTheo)/fTheo<0.05, c2=Math.abs(vpk/Vpk-1)<0.08, c3=grew;
+  el.innerHTML=
+    'セルフテスト（Vin12/Ld100µH/Cr100nF/R1k・波形はこのRK4実解）: '+
+    'f '+ok(c1)+' '+(fTheo/1e3).toFixed(1)+'k理論→'+(fMeas/1e3).toFixed(1)+'k実測 &nbsp; '+
+    'Vpk '+ok(c2)+' 実測/πVin='+(vpk/Vpk).toFixed(3)+' &nbsp; '+
+    '起動成長 '+ok(c3)+' '+vEarly.toFixed(2)+'→'+vpk.toFixed(1)+'V';
+})();
+
+/* =====================================================================
+   2) BUILD THE SCHEMATIC (SVG) with computed coils
+   ===================================================================== */
+const svg=document.getElementById('svg');
+// coil path helpers
+function coilH(x0,x1,y,bumps,amp,dir){ // dir -1 = bumps up
+  const seg=(x1-x0)/bumps; let d=`M ${x0} ${y}`;
+  for(let i=0;i<bumps;i++){const xa=x0+seg*i,xb=x0+seg*(i+1),xm=(xa+xb)/2;
+    d+=` Q ${xm.toFixed(1)} ${(y+dir*amp).toFixed(1)} ${xb.toFixed(1)} ${y}`;}
+  return d;
+}
+function coilV(y0,y1,x,bumps,amp,dir){ // dir +1 = bumps right
+  const seg=(y1-y0)/bumps; let d=`M ${x} ${y0}`;
+  for(let i=0;i<bumps;i++){const ya=y0+seg*i,yb=y0+seg*(i+1),ym=(ya+yb)/2;
+    d+=` Q ${(x+dir*amp).toFixed(1)} ${ym.toFixed(1)} ${x} ${yb.toFixed(1)}`;}
+  return d;
+}
+function zigV(x,y0,y1,n,w){ // resistor zigzag, vertical
+  const seg=(y1-y0)/(2*n); let d=`M ${x} ${y0}`;
+  for(let i=1;i<=2*n;i++){const yy=y0+seg*i; const xx=x+(i%2? w : -w); if(i===2*n)d+=` L ${x} ${yy}`; else d+=` L ${xx} ${yy}`;}
+  return d;
+}
+// NPN glyph markup; origin=base contact; mir=-1 mirrors horizontally
+function npn(id,ox,oy,mir){
+  const m=mir||1;
+  const cx=ox+14*m, top=oy-20, bot=oy+20;              // collector/emitter terminal x
+  // emitter arrow (points toward emitter terminal, outward)
+  const ax=ox+9*m, ay=oy+11, bx2=ox+14*m, by2=oy+20;
+  const perp=4;
+  return `<g class="q" id="${id}">
+    <path class="bar" d="M ${ox} ${oy-13} L ${ox} ${oy+13}"/>
+    <path class="body" d="M ${ox} ${oy-6} L ${cx} ${top}"/>
+    <path class="body" d="M ${cx} ${top} L ${cx} ${top-10}"/>
+    <path class="body" d="M ${ox} ${oy+6} L ${bx2} ${by2}"/>
+    <path class="body" d="M ${bx2} ${by2} L ${bx2} ${by2+10}"/>
+    <polygon class="arrow" points="${ax},${ay} ${bx2},${by2} ${ax+2*m},${ay+6}"/>
+  </g>`;
+}
+
+// key coordinates
+const CT=310, AX=150, BX=470, PY=110, RAILY=60, GNDY=340;
+const Q1B=136, Q2B=484, QCT=250, QET=290;
+
+let m='';
+// ---- rails ----
+m+=`<path class="wire" d="M 45 ${RAILY} H 560"/>`;      // supply rail
+m+=`<path class="wire" d="M 45 ${GNDY} H 560"/>`;        // ground rail
+m+=`<text class="lbl" x="52" y="${RAILY-6}">+Vin</text>`;
+// ground symbol
+m+=`<path class="wire" d="M 300 ${GNDY} v 0"/>`;
+m+=`<g><path class="dev" d="M 296 ${GNDY+8} H 324 M 301 ${GNDY+13} H 319 M 306 ${GNDY+18} H 314"/></g>`;
+// ---- Vin battery (left) ----
+m+=`<path class="wire" d="M 45 ${RAILY} V 150"/>`;
+m+=`<path class="dev" d="M 33 150 H 57"/>`;              // long plate +
+m+=`<path class="dev" d="M 39 160 H 51" stroke-width="3.4"/>`;// short plate -
+m+=`<path class="wire" d="M 45 160 V ${GNDY}"/>`;
+m+=`<text class="lblv" x="10" y="158">Vin</text>`;
+// ---- Lch (choke) : supply rail -> CT ----
+m+=`<path class="wire" d="M ${CT} ${RAILY} V 72"/>`;
+m+=`<path class="coil" d="${coilV(72,100,CT,4,7,1)}"/>`;
+m+=`<path class="wire" d="M ${CT} 100 V ${PY}"/>`;
+m+=`<text class="lblv" x="${CT+10}" y="82">Lch</text>`;
+m+=`<text class="lbl" x="${CT-58}" y="70">入力チョーク</text>`;
+// ---- primary : A --Np1-- CT --Np2-- B ----
+m+=`<path class="coil" d="${coilH(AX,CT,PY,5,8,-1)}"/>`;
+m+=`<path class="coil" d="${coilH(CT,BX,PY,5,8,-1)}"/>`;
+m+=`<circle class="node" cx="${CT}" cy="${PY}" r="3.2"/>`;
+m+=`<text class="lbl" x="${(AX+CT)/2-14}" y="${PY-12}">Np1</text>`;
+m+=`<text class="lbl" x="${(CT+BX)/2+12}" y="${PY-12}">Np2</text>`;
+m+=`<text class="lbl" x="${CT-6}" y="${PY+22}" style="fill:var(--text)">CT</text>`;
+// ---- core (two long lines under primary) + flux ----
+m+=`<path class="dev" d="M 145 120 H 475" stroke="#b8ab98"/>`;
+m+=`<path class="dev" d="M 145 124 H 475" stroke="#b8ab98"/>`;
+m+=`<path class="flux" id="fluxR" d="M 185 122 H 430" marker-end="url(#ah)"/>`;
+m+=`<path class="flux" id="fluxL" d="M 435 122 H 190" marker-end="url(#ah)"/>`;
+m+=`<text class="lbl" id="fluxLbl" x="300" y="139" text-anchor="middle" style="fill:var(--amber);opacity:0" >磁束 Φ</text>`;
+// ---- A / B vertical rails ----
+m+=`<path class="wire" d="M ${AX} ${PY} V ${QCT}"/>`;
+m+=`<path class="wire" d="M ${BX} ${PY} V ${QCT}"/>`;
+m+=`<circle class="node" cx="${AX}" cy="${PY}" r="3.2"/>`;
+m+=`<circle class="node" cx="${BX}" cy="${PY}" r="3.2"/>`;
+m+=`<circle class="node" cx="${AX}" cy="210" r="3.2"/>`;
+m+=`<circle class="node" cx="${BX}" cy="210" r="3.2"/>`;
+m+=`<text class="lblv" x="${AX-24}" y="200" style="fill:var(--teal)">A</text>`;
+m+=`<text class="lblv" x="${BX+10}" y="200" style="fill:var(--teal)">B</text>`;
+// ---- Cr between A and B (y=210) ----
+m+=`<path class="wire" d="M ${AX} 210 H 298"/>`;
+m+=`<path class="wire" d="M 322 210 H ${BX}"/>`;
+m+=`<path class="dev" d="M 298 198 V 222"/>`;
+m+=`<path class="dev" d="M 322 198 V 222"/>`;
+m+=`<text class="lblv" x="303" y="242">Cr</text>`;
+// ---- feedback winding (center-tapped) : ends -> bases, CT -> GND ----
+m+=`<path class="coil" d="${coilH(205,CT,135,4,7,1)}"/>`;
+m+=`<path class="coil" d="${coilH(CT,415,135,4,7,1)}"/>`;
+m+=`<circle class="node" cx="${CT}" cy="135" r="3"/>`;
+m+=`<path class="wire" d="M ${CT} 135 V ${GNDY}"/>`;     // fb center tap to GND (through Cr gap)
+m+=`<text class="lbl" x="228" y="152">Nb1</text>`;
+m+=`<text class="lbl" x="360" y="152">Nb2</text>`;
+// fb leads to bases (cross A/B verticals = no-connect crossover)
+m+=`<path class="wire" d="M 205 135 H 140 V ${QCT+20} H ${Q1B}"/>`;
+m+=`<path class="wire" d="M 415 135 H 480 V ${QCT+20} H ${Q2B}"/>`;
+// ---- R_start L / R : supply rail -> bases ----
+m+=`<path class="wire" d="M 110 ${RAILY} V 118"/>`;
+m+=`<path class="dev" d="${zigV(110,118,152,5,6)}"/>`;
+m+=`<path class="wire" d="M 110 152 V ${QCT+20} H ${Q1B}"/>`;
+m+=`<path class="wire" d="M 550 ${RAILY} V 118"/>`;
+m+=`<path class="dev" d="${zigV(550,118,152,5,6)}"/>`;
+m+=`<path class="wire" d="M 550 152 V ${QCT+20} H ${Q2B}"/>`;
+m+=`<text class="lbl" x="66" y="140">R_start</text>`;
+m+=`<text class="lbl" x="556" y="140">R_start</text>`;
+// base junction dots
+m+=`<circle class="node" cx="${Q1B}" cy="${QCT+20}" r="3"/>`;
+m+=`<circle class="node" cx="${Q2B}" cy="${QCT+20}" r="3"/>`;
+// ---- transistors ----
+m+=npn('Q1',Q1B,270,1);
+m+=npn('Q2',Q2B,270,-1);
+m+=`<path class="wire" d="M ${AX} ${QCT} V 240"/>`; // collector stub to glyph top handled by glyph; connect
+m+=`<path class="wire" d="M ${AX} 240 V ${QCT}"/>`;
+m+=`<path class="wire" d="M ${AX} ${QET} V ${GNDY}"/>`; // emitter to GND
+m+=`<path class="wire" d="M ${BX} ${QET} V ${GNDY}"/>`;
+m+=`<text class="lblv" x="${Q1B-30}" y="278">Q1</text>`;
+m+=`<text class="lblv" x="${Q2B+14}" y="278">Q2</text>`;
+// ---- secondary (small) + load, above rail (out of the way) ----
+m+=`<path class="coil" d="${coilV(96,132,505,3,6,1)}" opacity="0.7"/>`;
+m+=`<path class="wire" d="M 505 96 V 44 H 470" opacity="0.6"/>`;
+m+=`<path class="wire" d="M 505 132 V 150 H 540 V 44 H 500" opacity="0.6"/>`;
+m+=`<rect x="452" y="30" width="46" height="16" rx="3" fill="#fff" stroke="var(--border)"/>`;
+m+=`<text class="lbl" x="475" y="42" text-anchor="middle">負荷</text>`;
+m+=`<text class="lbl" x="512" y="118" opacity="0.7">Ns</text>`;
+
+// ---- bias current overlays (R_start paths) ----
+m+=`<path class="bias" id="biasL" d="M 110 ${RAILY} V 152 M 110 152 V ${QCT+20} H ${Q1B}"/>`;
+m+=`<path class="bias" id="biasR" d="M 550 ${RAILY} V 152 M 550 152 V ${QCT+20} H ${Q2B}"/>`;
+// ---- conduction current paths (Vin->choke->CT->Np->A/B->collector->emitter->GND) ----
+m+=`<path class="curr currQ1" id="pathQ1" d="M ${CT} 100 V ${PY} H ${AX} V ${GNDY}"/>`;
+m+=`<path class="curr currQ2" id="pathQ2" d="M ${CT} 100 V ${PY} H ${BX} V ${GNDY}"/>`;
+
+// ---- polarity marks (feedback ends) ----
+function polMark(id,x,sign){return `<g class="pol" id="${id}"><circle cx="${x}" cy="163" r="8"/><text x="${x}" y="167" text-anchor="middle" font-size="12" font-weight="700" fill="#5a5148">${sign}</text></g>`;}
+m+=polMark('polNL',232,'+'); m+=polMark('polNR',380,'−'); // normal: Q1 wins
+m+=polMark('polFL',232,'−'); m+=polMark('polFR',380,'+');  // flipped: Q2 wins
+// ---- text tags ----
+function tag(id,x,y,w,txt,col){return `<g class="tag" id="${id}"><rect x="${x}" y="${y}" width="${w}" height="18" rx="4"/><text x="${x+w/2}" y="${y+13}" text-anchor="middle" fill="${col}">${txt}</text></g>`;}
+m+=tag('tagHfe',60,300,86,'hFE がわずかに大',   'var(--teal)');
+m+=tag('tagClamp',AX-30,224,74,'A ≈ GND',   'var(--teal)');
+m+=tag('tagRise',BX-40,180,86,'B ↑ π·Vin', 'var(--amber)');
+m+=tag('tagSwap',258,300,104,'⇄ 半周期ごと交代','var(--red)');
+m+=tag('tagSym',248,300,118,'左右 均衡 → 立たない','var(--muted)');
+// marker def
+m=`<defs><marker id="ah" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+   <path d="M0,0 L6,3 L0,6 Z" fill="var(--amber)"/></marker></defs>`+m;
+svg.innerHTML=m;
+
+/* =====================================================================
+   3) STEP DEFINITIONS + wiring
+   ===================================================================== */
+const STEPS=[
+ {t:'電源投入',
+  x:'スイッチを入れた。<b>R_start</b> が Vin から両方のベースへ、ほんの少しずつ電流を流し込む（青い点線）。Q1もQ2も“うっすら”オン。まだ誰も合図していない ── 左右そっくりで、何も起きていないように見える。'},
+ {t:'ばらつき',
+  x:'でも現実の部品はぴったり同じじゃない。ここでは <b>Q1</b> の電流増幅率 hFE がほんの少しだけ大きいとする。すると Q1 に流れる電流がわずかに勝つ（左の経路がうっすら点る）。差はごく小さい ── まだ誰も気づかない差だ。'},
+ {t:'帰還が読む',
+  x:'Q1 の電流が増えると、一次半巻線 <b>Np1</b> を通る電流が増え、コアの磁束 <b>Φ</b> が動きはじめる。動く磁束は帰還巻線に電圧を誘起する（ファラデー）。その極性は ── Q1 をもっとオンに、Q2 をオフに、という向き（＋/−）。回路が自分で“どちらが勝ったか”を読んだ。'},
+ {t:'正帰還ラッチ',
+  x:'誘起電圧が Q1 をさらに開き、電流が増え、磁束が動き、また Q1 を開く ── 正帰還のループが一気に締まる。<b>Q1 フルオン</b>（太い実線）、<b>Q2 オフ</b>（薄い）。A点は Q1 に引かれて GND 近くへ<b>クランプ</b>される。'},
+ {t:'タンクの半周期',
+  x:'Q1 がA点をGNDに留める間、主役は<b>タンク</b>（一次インダクタと Cr）に移る。B点電圧が<b>半正弦</b>で持ち上がり、ピーク ≈ <b>π·Vin</b> まで昇ってまた降りる。描いているのは L と C のエネルギー往復であって、<b>Q1 は時間を数えていない</b>。'},
+ {t:'転流',
+  x:'タンク電圧が一周してゼロを横切り、符号が返る瞬間 ── 磁束の動く向きが<b>反転</b>する。帰還巻線の極性も反転（＋と−が入れ替わる）。今度は <b>Q2 オン・Q1 オフ</b>。合図したのは外部クロックではなく、<b>タンク自身のゼロ交差</b>だ。'},
+ {t:'成長と定常',
+  x:'あとは繰り返し。半周期ごとに Q1↔Q2 が交代し、そのたびにスイッチが“良い位相で”少しだけエネルギーを注ぎ足す。<b>注ぎ足し &gt; 損失</b> の間は振幅が育ち（包絡線が伸びる）、釣り合った所で成長が止まる ── <b>リミットサイクル</b>。定常の正弦波が立った。'},
+ {t:'もし完全対称だったら',
+  x:'もし部品が完全に同じで、ばらつきがゼロだったら？ 左右はいつまでも均衡したまま、どちらも勝てない ── 理屈の上では発振は始まらない。実際に起動できるのは、現実の部品が持つ小さな不完全さ。<b>それが種</b>だ（現実には熱雑音だけでも十分）。'},
+];
+const N=STEPS.length;
+let cur=0, autoOn=false, autoTimer=0;
+
+// build progress dots
+const dots=document.getElementById('dots');
+for(let i=0;i<N;i++){const d=document.createElement('div');d.className='dot';d.textContent=i+1;
+  d.addEventListener('click',()=>go(i));dots.appendChild(d);}
+const $=id=>document.getElementById(id);
+
+function cls(id,on,name){const el=$(id);if(el)el.classList.toggle(name,on);}
+function applySVG(s){ // s = 1-based step
+  // reset
+  ['biasL','biasR'].forEach(id=>{$(id).classList.remove('show','faint');});
+  ['pathQ1','pathQ2'].forEach(id=>$(id).classList.remove('show'));
+  $('pathQ1').style.strokeWidth=''; $('pathQ2').style.strokeWidth='';
+  ['fluxR','fluxL'].forEach(id=>$(id).classList.remove('show'));
+  $('fluxLbl').style.opacity=0;
+  ['polNL','polNR','polFL','polFR'].forEach(id=>$(id).classList.remove('show'));
+  ['tagHfe','tagClamp','tagRise','tagSwap','tagSym'].forEach(id=>$(id).classList.remove('show'));
+  ['Q1','Q2'].forEach(id=>{$(id).classList.remove('qglow','qdim');});
+
+  if(s===1){ cls('biasL',true,'show'); cls('biasR',true,'show');
+    cls('Q1',true,'qglow');cls('Q2',true,'qglow'); // both faint-on: use glow lightly
+    $('Q1').style.opacity=.85;$('Q2').style.opacity=.85; return; }
+  $('Q1').style.opacity=1;$('Q2').style.opacity=1;
+
+  if(s===2){ cls('biasL',true,'faint');cls('biasR',true,'faint');
+    cls('pathQ1',true,'show'); $('pathQ1').style.strokeWidth='2';
+    cls('Q1',true,'qglow'); cls('tagHfe',true,'show'); return; }
+  if(s===3){ cls('pathQ1',true,'show'); $('pathQ1').style.strokeWidth='3';
+    cls('Q1',true,'qglow'); cls('fluxR',true,'show'); $('fluxLbl').style.opacity=1;
+    cls('polNL',true,'show');cls('polNR',true,'show'); return; }
+  if(s===4){ cls('pathQ1',true,'show'); $('pathQ1').style.strokeWidth='6';
+    cls('Q1',true,'qglow'); cls('Q2',true,'qdim'); cls('fluxR',true,'show');$('fluxLbl').style.opacity=1;
+    cls('polNL',true,'show');cls('polNR',true,'show'); cls('tagClamp',true,'show'); return; }
+  if(s===5){ cls('pathQ1',true,'show'); $('pathQ1').style.strokeWidth='6';
+    cls('Q1',true,'qglow'); cls('Q2',true,'qdim'); cls('fluxR',true,'show');$('fluxLbl').style.opacity=1;
+    cls('polNL',true,'show');cls('polNR',true,'show'); cls('tagClamp',true,'show'); cls('tagRise',true,'show'); return; }
+  if(s===6){ cls('pathQ2',true,'show'); $('pathQ2').style.strokeWidth='6';
+    cls('Q2',true,'qglow'); cls('Q1',true,'qdim'); cls('fluxL',true,'show');$('fluxLbl').style.opacity=1;
+    cls('polFL',true,'show');cls('polFR',true,'show'); return; }
+  if(s===7){ cls('pathQ1',true,'show');cls('pathQ2',true,'show');
+    $('pathQ1').style.strokeWidth='3';$('pathQ2').style.strokeWidth='3';
+    cls('tagSwap',true,'show'); return; }
+  if(s===8){ cls('biasL',true,'faint');cls('biasR',true,'faint');
+    $('Q1').style.opacity=.9;$('Q2').style.opacity=.9; cls('tagSym',true,'show'); return; }
+}
+
+function render(){
+  const s=cur+1;
+  $('enum').textContent='STEP '+s;
+  $('etitle').textContent=STEPS[cur].t;
+  $('etext').innerHTML=STEPS[cur].x;
+  $('counter').textContent=s+' / '+N;
+  [...dots.children].forEach((d,i)=>{d.classList.toggle('on',i===cur);d.classList.toggle('done',i<cur);});
+  $('prev').disabled=(cur===0 && !autoOn)?false:false; // keep enabled for wrap-free nav
+  $('prev').disabled=(cur===0);
+  $('next').disabled=(cur===N-1 && !autoOn);
+  applySVG(s);
+  waveEnter=performance.now();
+  location.hash='step='+s;
+}
+function go(i){ cur=Math.max(0,Math.min(N-1,i)); render(); }
+function next(){ if(cur<N-1)go(cur+1); else if(autoOn)go(0); }
+function prev(){ if(cur>0)go(cur-1); }
+$('next').addEventListener('click',()=>{stopAuto();next();});
+$('prev').addEventListener('click',()=>{stopAuto();prev();});
+function startAuto(){autoOn=true;$('auto').classList.add('on');$('auto').textContent='停止';
+  clearInterval(autoTimer);autoTimer=setInterval(()=>{ if(cur<N-1)go(cur+1); else {go(0);} },3800);}
+function stopAuto(){autoOn=false;$('auto').classList.remove('on');$('auto').textContent='自動再生';clearInterval(autoTimer);}
+$('auto').addEventListener('click',()=>{autoOn?stopAuto():startAuto();});
+document.addEventListener('keydown',e=>{if(e.key==='ArrowRight'){stopAuto();next();}if(e.key==='ArrowLeft'){stopAuto();prev();}});
+
+/* =====================================================================
+   4) MINI-WAVEFORM STRIP (real RK4 v(t): vA=max(v,0), vB=max(-v,0))
+   ===================================================================== */
+const wave=document.getElementById('wave'), wctx=wave.getContext('2d');
+let WW=0,WH=0,WDPR=1, waveEnter=0;
+function wresize(){
+  const r=wave.getBoundingClientRect();
+  WDPR=Math.min(window.devicePixelRatio||1,2);
+  WW=r.width; WH=r.height;
+  wave.width=Math.round(WW*WDPR); wave.height=Math.round(WH*WDPR);
+  wctx.setTransform(WDPR,0,0,WDPR,0,0);
+}
+window.addEventListener('resize',()=>{wresize();});
+
+function drawWave(){
+  const s=cur+1;
+  wctx.clearRect(0,0,WW,WH);
+  const padL=8,padR=64,padT=8,padB=8;
+  const x0=padL, x1=WW-padR, ww=x1-x0;
+  const midY=WH*0.56, amp=WH*0.40;
+  const yOf=v=> midY - (v/(Vpk*1.5))*amp;   // headroom for the ring-up overshoot
+  // baseline + peak marker
+  wctx.strokeStyle='#ece5da';wctx.lineWidth=1;
+  wctx.beginPath();wctx.moveTo(x0,midY);wctx.lineTo(x1,midY);wctx.stroke();
+  wctx.font='10px JetBrains Mono, monospace';
+  // legend (right gutter)
+  wctx.textAlign='left';wctx.textBaseline='middle';
+  wctx.fillStyle='#3c7876';wctx.fillText('B点',x1+8,yOf(Vpk*0.5));
+  wctx.fillStyle='#c9761f';wctx.fillText('A点',x1+8,yOf(Vpk*0.16));
+
+  if(s<5 || s===8){
+    wctx.strokeStyle='#c9b8a0';wctx.setLineDash([4,4]);wctx.lineWidth=1.6;
+    wctx.beginPath();wctx.moveTo(x0,midY);wctx.lineTo(x1,midY);wctx.stroke();wctx.setLineDash([]);
+    wctx.fillStyle='#7d7568';wctx.textAlign='center';wctx.textBaseline='middle';wctx.font='11px "Zen Kaku Gothic New"';
+    wctx.fillText(s===8?'左右が均衡 → 振動は立ち上がらない':'まだ振動なし（直流バイアスだけ）', (x0+x1)/2, WH*0.22);
+    return;
+  }
+  // peak dashed line (π·Vin) for the B side
+  wctx.strokeStyle='rgba(194,84,61,.5)';wctx.setLineDash([5,4]);wctx.lineWidth=1.2;
+  wctx.beginPath();wctx.moveTo(x0,yOf(Vpk));wctx.lineTo(x1,yOf(Vpk));wctx.stroke();wctx.setLineDash([]);
+  wctx.fillStyle='#c2543d';wctx.textAlign='left';wctx.textBaseline='bottom';wctx.font='9px JetBrains Mono, monospace';
+  wctx.fillText('π·Vin',x1+8,yOf(Vpk)+3);
+
+  // choose index window
+  let i0,i1;
+  if(s===5){ i0=steadyStart; i1=steadyStart+ptsPerPeriod; }        // one steady period
+  else if(s===6){ i0=steadyStart-Math.round(ptsPerPeriod*0.4); i1=i0+Math.round(ptsPerPeriod*1.7); } // across a crossing
+  else { // s===7 : whole growth, animated reveal
+    i0=0;
+    const dur=5200, frac=Math.min(1,(performance.now()-waveEnter)%(dur+1200)/dur);
+    i1=Math.round(6+frac*(revealEnd-6));
+  }
+  i0=Math.max(0,i0); i1=Math.min(trace.v.length-1,i1);
+  const t0=trace.t[i0], span=trace.t[i1]-t0 || 1;
+  const tX=t=> x0 + ((t-t0)/span)*ww;
+  // draw vA (amber) and vB (teal)
+  function plot(sign,color,wd){
+    wctx.strokeStyle=color;wctx.lineWidth=wd;wctx.beginPath();let started=false;
+    for(let i=i0;i<=i1;i++){const val=Math.max(0,sign*trace.v[i]);const x=tX(trace.t[i]),y=yOf(val);
+      if(!started){wctx.moveTo(x,y);started=true;}else wctx.lineTo(x,y);}
+    wctx.stroke();
+  }
+  if(s===5){ plot(-1,'#3c7876',2.2); plot(1,'rgba(201,118,31,.35)',1.4); }
+  else { plot(1,'#c9761f',1.6); plot(-1,'#3c7876',2); }
+  // moving cursor for step7
+  if(s===7){ const x=tX(trace.t[i1]); wctx.strokeStyle='rgba(37,99,170,.5)';wctx.lineWidth=1;
+    wctx.beginPath();wctx.moveTo(x,padT);wctx.lineTo(x,WH-padB);wctx.stroke(); }
+  // caption
+  wctx.fillStyle='#7d7568';wctx.textAlign='left';wctx.textBaseline='top';wctx.font='10px "Zen Kaku Gothic New"';
+  const cap = s===5?'定常の一周期：B点が半正弦で π·Vin まで':
+              s===6?'ゼロ交差で主役交代（A↔B）':
+                    '振幅が育つ包絡線 → リミットサイクル';
+  wctx.fillText(cap, x0+2, WH-14);
+}
+function loop(){ drawWave(); requestAnimationFrame(loop); }
+
+/* ---- init ---- */
+(function init(){
+  wresize();
+  const h=location.hash.match(/step=(\d)/);
+  cur = h? Math.max(0,Math.min(N-1,parseInt(h[1],10)-1)) : 0;
+  render();
+  requestAnimationFrame(loop);
+  // wresize after fonts/layout settle
+  setTimeout(wresize,120);
+})();
+</script>
+</body>
+</html>
