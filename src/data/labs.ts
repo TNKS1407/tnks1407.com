@@ -52,6 +52,7 @@ export const labGroups: LabGroup[] = [
       { name: 'マクスウェルの遊輪', url: '/maxwell-idler/' },
       { name: '節点と連続の式', url: '/continuity/' },
       { name: 'コレクタ共振ラボ（自励発振・πVin）', url: '/collector-resonance/' },
+      { name: '自励起動ステップ実行（回路図で一歩一歩）', url: '/collector-startup/' },
     ],
   },
   {
