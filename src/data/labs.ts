@@ -51,6 +51,7 @@ export const labGroups: LabGroup[] = [
       { name: '羽根車と循環', url: '/circulation/' },
       { name: 'マクスウェルの遊輪', url: '/maxwell-idler/' },
       { name: '節点と連続の式', url: '/continuity/' },
+      { name: 'コレクタ共振ラボ（自励発振・πVin）', url: '/collector-resonance/' },
     ],
   },
   {
