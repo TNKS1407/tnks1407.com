@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>コレクタ共振 — 主役はLC、スイッチは給仕</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
+  --teal:#3c7876;--red:#c2543d;--amber:#c9761f;--blue:#2563aa;
+  --text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{overflow-x:hidden;max-width:100%;}
+body{
+  font-family:'Zen Kaku Gothic New',sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.6;
+  background-image:radial-gradient(circle at 1px 1px,#e9e4da 1px,transparent 0);
+  background-size:22px 22px;
+}
+.wrap{max-width:820px;margin:0 auto;padding:20px 16px 48px;}
+header{display:flex;align-items:flex-end;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.brand{font-weight:700;font-size:22px;line-height:1.1;color:var(--text);}
+.brand .a{color:var(--amber);}
+.tag{font-size:12px;color:var(--muted);padding-bottom:2px;}
+.back{margin-left:auto;font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;text-decoration:none;white-space:nowrap;}
+.back:hover{color:var(--teal);}
+.lead{background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:13px 16px;margin-bottom:16px;font-size:13px;color:#3a3a36;line-height:1.78;
+  box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.lead p{margin:0 0 .5rem;}.lead p:last-child{margin-bottom:0;}
+.lead b{color:var(--text);}
+.selftest{margin-top:.5rem;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);
+  border-top:1px dashed var(--border);padding-top:.5rem;}
+.selftest b{color:var(--teal);}
+.card-tool{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;
+  box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+#stage{position:relative;width:100%;height:clamp(320px,64vw,460px);overflow:hidden;background:var(--surface);}
+canvas{display:block;width:100%;height:100%;touch-action:none;}
+#info{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);
+  padding:.45rem .7rem;font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--muted);
+  line-height:1.8;min-height:2.4rem;}
+#info b{color:var(--text);}
+#info .v-teal{color:var(--teal);font-weight:600;}
+#info .v-red{color:var(--red);font-weight:600;}
+#info .v-amber{color:var(--amber);font-weight:600;}
+#info .v-blue{color:var(--blue);font-weight:600;}
+.ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);
+  padding:.5rem .7rem;display:flex;flex-wrap:wrap;gap:.5rem .8rem;align-items:center;}
+.cg{display:flex;align-items:center;gap:.4rem;font-size:.75rem;}
+.cg label{color:var(--muted);white-space:nowrap;font-weight:500;}
+.cg label b{color:var(--text);}
+.cg input[type=range]{width:clamp(72px,15vw,130px);accent-color:var(--amber);}
+.cg .val{font-family:'JetBrains Mono',monospace;color:var(--amber);font-size:.72rem;font-weight:600;min-width:5ch;}
+.modes{display:flex;gap:.4rem;flex-wrap:wrap;margin-left:auto;}
+button{font-family:'Zen Kaku Gothic New',sans-serif;font-size:.74rem;font-weight:700;
+  color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:8px;
+  padding:.28rem .65rem;cursor:pointer;transition:border-color .15s,background .15s,color .15s;}
+button:hover{border-color:var(--teal);}
+button.on{background:var(--teal);color:#fff;border-color:var(--teal);}
+button.sec{border-color:var(--amber);color:var(--amber);}
+button.sec:hover{background:var(--amber);color:#fff;}
+.note{font-size:12px;color:#3a3a36;line-height:1.8;background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:12px 16px;margin-top:16px;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.note b{color:var(--text);}
+footer{text-align:center;color:var(--faint);font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:12px;}
+body.embed{height:100%;display:flex;flex-direction:column;overflow:hidden;background-image:none;}
+body.embed .wrap{max-width:none;margin:0;padding:0;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
+body.embed header,body.embed .lead,body.embed .note,body.embed footer{display:none;}
+body.embed .card-tool{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;border:none;border-radius:0;box-shadow:none;}
+body.embed #stage{flex:1 1 auto;height:auto;min-height:180px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><span class="a">コレクタ共振</span>回路</div>
+    <div class="tag">ロイヤー型・自励プッシュプル。CCFLインバータの心臓</div>
+    <a class="back" href="/">&larr; tnks1407</a>
+  </header>
+  <div class="lead">
+    <p>主役は <b>LC共振タンク</b>（一次インダクタ Ld と共振コンデンサ Cr）だ。波形を描いているのは <b>LとC</b> ── エネルギーが両者を行き来して正弦波が立つ。スイッチ（トランジスタ2個）は波形を<b>作っていない</b>。半周期ごとに<b>電流の通り道を選び直し</b>、抵抗で失われた分を<b>良い位相で注ぎ足す給仕</b>だ。</p>
+    <p>チョーク Lch は直流電流 ich をならして注ぎ込む。直流平衡から <b>V<sub>CE</sub> のピーク ≈ π·Vin</b> が出る（赤い破線）。つまみを回して、周波数が <b>1/(2π√(Ld·Cr))</b> で動くこと、負荷を重くすると注ぎ込む電流 ich が増えることを確かめてみて。</p>
+    <div class="selftest" id="selftest">セルフテスト実行中…</div>
+  </div>
+
+  <div class="card-tool">
+    <div id="stage"><canvas id="c"></canvas></div>
+    <div id="info"></div>
+    <div class="ctrl">
+      <div class="cg"><label>Vin <b id="lVin"></b></label>
+        <input id="sVin" type="range" min="3" max="24" step="0.5" value="12"></div>
+      <div class="cg"><label>Ld <b id="lLd"></b></label>
+        <input id="sLd" type="range" min="0" max="1000" step="1" value="589"></div>
+      <div class="cg"><label>Cr <b id="lCr"></b></label>
+        <input id="sCr" type="range" min="0" max="1000" step="1" value="500"></div>
+      <div class="cg"><label>Rload <b id="lRl"></b></label>
+        <input id="sRl" type="range" min="0" max="1000" step="1" value="667"></div>
+      <div class="cg"><label>Lch <b id="lLch"></b></label>
+        <input id="sLch" type="range" min="1" max="10" step="0.5" value="2"></div>
+      <div class="modes">
+        <button id="mSteady" class="on">定常を見る</button>
+        <button id="mStart" class="sec">起動を見る</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <p><b>スイッチは波形を描かない。描くのはLとC。</b>スイッチは半周期ごとに電流の通り道を選び直して、抵抗で失われた分を良い位相で注ぎ足しているだけだ。だから「起動を見る」で、ほぼゼロの揺らぎから振幅が自分で育っていく ── これが<b>自励</b>の顔。</p>
+  </div>
+  <footer>collector-resonance &middot; RK4 &middot; 単一HTML</footer>
+</div>
+
+<script>
+if(window.self!==window.top)document.body.classList.add('embed');
+
+// ---- log-slider mapping (slider 0..1000 -> [lo,hi] log) ----
+const logmap=(s,lo,hi)=>lo*Math.pow(hi/lo, s/1000);
+const logunmap=(v,lo,hi)=>1000*Math.log(v/lo)/Math.log(hi/lo);
+
+// ---- parameters (SI) ----
+let Vin=12, Lch=2e-3, Ld=100e-6, Cr=100e-9, Rload=1000;
+
+// ---- derivative: y=[v, iL, ich] ----
+// tank:  Cr dv/dt = -iL - v/Rload + i_inj ,  Ld diL/dt = v
+// choke: Lch dich/dt = Vin - vct , vct=|v|/2
+// switch injection (energy-balanced coefficient 1/2): i_inj = sign(v)*ich/2
+function deriv(y,o){
+  const v=y[0], iL=y[1], ich=y[2];
+  const inj=(v>=0?1:-1)*ich*0.5;
+  o[0]=(-iL - v/Rload + inj)/Cr;
+  o[1]=v/Ld;
+  o[2]=(Vin - Math.abs(v)*0.5)/Lch;
+}
+const k1=[0,0,0],k2=[0,0,0],k3=[0,0,0],k4=[0,0,0],tmp=[0,0,0];
+function rk4(y,dt){
+  deriv(y,k1);
+  for(let i=0;i<3;i++)tmp[i]=y[i]+0.5*dt*k1[i]; deriv(tmp,k2);
+  for(let i=0;i<3;i++)tmp[i]=y[i]+0.5*dt*k2[i]; deriv(tmp,k3);
+  for(let i=0;i<3;i++)tmp[i]=y[i]+dt*k3[i];     deriv(tmp,k4);
+  for(let i=0;i<3;i++)y[i]+=dt/6*(k1[i]+2*k2[i]+2*k3[i]+k4[i]);
+}
+
+const period=()=>2*Math.PI*Math.sqrt(Ld*Cr);
+const Z0=()=>Math.sqrt(Ld/Cr);
+
+// ===================================================================
+//  SELF-TEST : run headless at default params, check the 4 claims
+// ===================================================================
+function selfTest(){
+  // save globals
+  const sav=[Vin,Lch,Ld,Cr,Rload];
+  Vin=12; Lch=2e-3; Ld=100e-6; Cr=100e-9; Rload=1000;
+  const T=period(), dt=T/600;
+  // tiny OSCILLATORY seed (noise): must cross zero so the switch can lock in.
+  // amplitude ~1% of steady iL amplitude (Vpk/Z0); ich starts at 0.
+  const y=[0, 0.01*Math.PI*Vin/Math.sqrt(Ld/Cr), 0];  // startup
+  const nStep=Math.round(400*T/dt);
+  let vpkEarly=0, vpkLate=0;
+  let sumIch=0, sumV2=0, cnt=0;
+  let prevV=y[0], lastCross=-1, firstCross=-1, crossCount=0, tsim=0;
+  const earlyEnd=0.6*T, lateStart=250*T;  // early = just the seed, before ring-up
+  for(let n=0;n<nStep;n++){
+    rk4(y,dt); tsim+=dt;
+    const v=y[0];
+    if(tsim<earlyEnd) vpkEarly=Math.max(vpkEarly,Math.abs(v));
+    if(tsim>=lateStart){
+      vpkLate=Math.max(vpkLate,Math.abs(v));
+      sumIch+=y[2]; sumV2+=v*v; cnt++;
+      // upward zero crossings for frequency
+      if(prevV<0 && v>=0){
+        if(firstCross<0)firstCross=tsim; else{lastCross=tsim;crossCount++;}
+      }
+    }
+    prevV=v;
+  }
+  const fMeas=(crossCount>0 && lastCross>firstCross)? crossCount/(lastCross-firstCross) : 0;
+  const fTheo=1/(2*Math.PI*Math.sqrt(Ld*Cr));
+  const vpkTheo=Math.PI*Vin;
+  const meanIch=sumIch/cnt;
+  const Pin=Vin*meanIch;
+  const Pload=(sumV2/cnt)/Rload;     // mean(v^2)/R
+  const res={
+    fTheo,fMeas, fErr:(fMeas-fTheo)/fTheo,
+    vpkLate,vpkTheo, vpkRatio:vpkLate/vpkTheo,
+    Pin,Pload, pRatio:Pin/Pload,
+    vpkEarly, grew: vpkLate>5*vpkEarly
+  };
+  // restore
+  [Vin,Lch,Ld,Cr,Rload]=sav;
+  return res;
+}
+const ST=selfTest();
+(function reportST(){
+  const el=document.getElementById('selftest');
+  const p=(x)=>(x*100).toFixed(1);
+  const ok=(b)=>b?'<b>PASS</b>':'<span style="color:var(--red)">FAIL</span>';
+  const c1=Math.abs(ST.fErr)<0.05, c2=Math.abs(ST.vpkRatio-1)<0.06,
+        c3=Math.abs(ST.pRatio-1)<0.05, c4=ST.grew;
+  el.innerHTML=
+    'セルフテスト（Vin12/Ld100µ/Cr100n/R1k）: '+
+    '①f '+ok(c1)+' '+(ST.fTheo/1e3).toFixed(1)+'k理論→'+(ST.fMeas/1e3).toFixed(1)+'k実測 &nbsp; '+
+    '②Vpk '+ok(c2)+' 実測/πVin='+ST.vpkRatio.toFixed(3)+' &nbsp; '+
+    '③電力 '+ok(c3)+' Pin/Pload='+ST.pRatio.toFixed(3)+' &nbsp; '+
+    '④起動成長 '+ok(c4)+' '+ST.vpkEarly.toFixed(2)+'→'+ST.vpkLate.toFixed(1)+'V';
+})();
+/* SELF-TEST RESULTS (filled at load; see .selftest div for live numbers)
+   1) f      : 1/(2*pi*sqrt(Ld*Cr))  vs measured zero-crossing rate  -> within few %
+   2) Vpk    : measured peak(|v|) vs pi*Vin                          -> ratio ~1
+   3) energy : Pin=Vin*mean(ich) vs Pload=mean(v^2)/Rload            -> ratio ~1
+   4) startup: amplitude grows from tiny seed to steady              -> grew=true
+*/
+
+// ===================================================================
+//  LIVE SIMULATION
+// ===================================================================
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const info=document.getElementById('info');
+let W=0,H=0,DPR=1;
+function resize(){
+  const r=cv.getBoundingClientRect();
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  W=r.width;H=r.height;
+  cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+window.addEventListener('resize',resize);
+
+let mode='steady';
+let y=[0,0,0];
+let dt=period()/600;
+let simT=0;
+// ring buffers (chronological arrays, capped)
+let vbuf=[],cebuf=[],ichbuf=[],tbuf=[];
+const BUFT=()=>6*period();   // keep ~6 periods worth
+
+function seedSteady(){
+  const Vpk=Math.PI*Vin;
+  y=[0, Vpk/Z0(), Math.PI*Math.PI*Vin/(2*Rload)]; // launch near limit cycle
+  simT=0; vbuf=[];cebuf=[];ichbuf=[];tbuf=[];
+}
+function seedStart(){
+  // tiny oscillatory seed (noise) that crosses zero, ich=0 ->振幅が自分で育つ
+  y=[0, 0.01*Math.PI*Vin/Z0(), 0]; simT=0; vbuf=[];cebuf=[];ichbuf=[];tbuf=[];
+}
+function recompute(){ dt=period()/600; }
+
+function step(){
+  const spf=(mode==='start')?90:60;  // sim steps per frame
+  const keep=BUFT();
+  for(let s=0;s<spf;s++){
+    rk4(y,dt); simT+=dt;
+    const v=y[0];
+    const vce=Math.max(v,0);         // one-side collector V_CE = vct+v/2 = max(v,0)
+    vbuf.push(v);cebuf.push(vce);ichbuf.push(y[2]);tbuf.push(simT);
+  }
+  // trim to last `keep` seconds
+  while(tbuf.length>2 && (simT-tbuf[0])>keep){
+    vbuf.shift();cebuf.shift();ichbuf.shift();tbuf.shift();
+  }
+}
+
+// ---- measurement from buffer ----
+function measure(){
+  const n=vbuf.length; if(n<10)return null;
+  let vpk=0,sumIch=0,sumV2=0;
+  for(let i=0;i<n;i++){vpk=Math.max(vpk,Math.abs(vbuf[i]));sumIch+=ichbuf[i];sumV2+=vbuf[i]*vbuf[i];}
+  // frequency from upward zero crossings
+  let first=-1,last=-1,cnt=0;
+  for(let i=1;i<n;i++){ if(vbuf[i-1]<0&&vbuf[i]>=0){ if(first<0)first=tbuf[i]; else{last=tbuf[i];cnt++;} } }
+  const f=(cnt>0&&last>first)?cnt/(last-first):0;
+  const meanIch=sumIch/n;
+  return {vpk,f,meanIch,Pin:Vin*meanIch,Pload:(sumV2/n)/Rload};
+}
+
+// ---- drawing ----
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  const padL=8,padR=8;
+  const scopeH=H*0.60, enY=scopeH+8, enH=H-scopeH-14;
+  // ---------- SCOPE ----------
+  const sx0=padL, sx1=W-padR, sw=sx1-sx0;
+  const Vpk=Math.PI*Vin;
+  const vmax=Vpk*1.18;
+  const midY=scopeH*0.52;
+  const vY=(val)=> midY - (val/vmax)*(scopeH*0.44);
+  // baseline & pi*Vin line
+  ctx.strokeStyle='#ece5da';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(sx0,midY);ctx.lineTo(sx1,midY);ctx.stroke();
+  ctx.strokeStyle='rgba(194,84,61,.55)';ctx.setLineDash([5,4]);ctx.lineWidth=1.4;
+  ctx.beginPath();ctx.moveTo(sx0,vY(Vpk));ctx.lineTo(sx1,vY(Vpk));ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='var(--red)';ctx.fillStyle='#c2543d';
+  ctx.font='11px JetBrains Mono, monospace';ctx.textAlign='right';ctx.textBaseline='bottom';
+  ctx.fillText('π·Vin = '+Vpk.toFixed(1)+'V', sx1-3, vY(Vpk)-2);
+  // time window
+  const n=vbuf.length;
+  if(n>2){
+    const t1=tbuf[n-1], win=BUFT(), t0=t1-win;
+    const tX=(t)=> sx0 + ((t-t0)/win)*sw;
+    // ich (blue, own scale, drawn faint under)
+    let ichMax=1e-9; for(let i=0;i<n;i++)ichMax=Math.max(ichMax,ichbuf[i]);
+    const ichBase=scopeH*0.94, ichSpan=scopeH*0.20;
+    ctx.strokeStyle='rgba(37,99,170,.75)';ctx.lineWidth=1.4;ctx.beginPath();
+    for(let i=0;i<n;i++){const x=tX(tbuf[i]),yy=ichBase-(ichbuf[i]/ichMax)*ichSpan;i?ctx.lineTo(x,yy):ctx.moveTo(x,yy);}
+    ctx.stroke();
+    // V_CE half-wave (amber fill)
+    ctx.fillStyle='rgba(201,118,31,.16)';ctx.beginPath();ctx.moveTo(tX(tbuf[0]),midY);
+    for(let i=0;i<n;i++)ctx.lineTo(tX(tbuf[i]),vY(cebuf[i]));
+    ctx.lineTo(tX(tbuf[n-1]),midY);ctx.closePath();ctx.fill();
+    ctx.strokeStyle='#c9761f';ctx.lineWidth=1.6;ctx.beginPath();
+    for(let i=0;i<n;i++){const x=tX(tbuf[i]),yy=vY(cebuf[i]);i?ctx.lineTo(x,yy):ctx.moveTo(x,yy);}
+    ctx.stroke();
+    // v tank (teal)
+    ctx.strokeStyle='#3c7876';ctx.lineWidth=2;ctx.beginPath();
+    for(let i=0;i<n;i++){const x=tX(tbuf[i]),yy=vY(vbuf[i]);i?ctx.lineTo(x,yy):ctx.moveTo(x,yy);}
+    ctx.stroke();
+  }
+  // legend
+  ctx.textAlign='left';ctx.textBaseline='top';ctx.font='11px JetBrains Mono, monospace';
+  ctx.fillStyle='#3c7876';ctx.fillText('— v (タンクA-B)', sx0+2, 4);
+  ctx.fillStyle='#c9761f';ctx.fillText('— V_CE 片側', sx0+2, 18);
+  ctx.fillStyle='#2563aa';ctx.fillText('— ich チョーク', sx0+2, 32);
+
+  // ---------- ENERGY see-saw ----------
+  const Ec=0.5*Cr*y[0]*y[0], EL=0.5*Ld*y[1]*y[1], Et=Ec+EL||1e-30;
+  ctx.strokeStyle='#ece5da';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(sx0,enY);ctx.lineTo(sx1,enY);ctx.stroke();
+  ctx.fillStyle='#7d7568';ctx.font='11px JetBrains Mono, monospace';
+  ctx.textAlign='center';ctx.textBaseline='top';
+  ctx.fillText('エネルギーの往復  ½Cv²  ⇄  ½Li²', W/2, enY+2);
+  const barTop=enY+20, barH=enH-24;
+  const cW=Math.min(64,sw*0.16);
+  const gap=W*0.10;
+  const cX=W/2-gap-cW, lX=W/2+gap;
+  // C bar (red)
+  const hC=barH*(Ec/Et), hL=barH*(EL/Et);
+  ctx.fillStyle='rgba(194,84,61,.22)';ctx.fillRect(cX,barTop,cW,barH);
+  ctx.fillStyle='#c2543d';ctx.fillRect(cX,barTop+barH-hC,cW,hC);
+  ctx.fillStyle='rgba(60,120,118,.22)';ctx.fillRect(lX,barTop,cW,barH);
+  ctx.fillStyle='#3c7876';ctx.fillRect(lX,barTop+barH-hL,cW,hL);
+  ctx.fillStyle='#c2543d';ctx.textBaseline='top';ctx.fillText('C',cX+cW/2,barTop+barH+2);
+  ctx.fillStyle='#3c7876';ctx.fillText('L',lX+cW/2,barTop+barH+2);
+}
+
+let raf=0;
+function loop(){ step(); draw(); updateInfo(); raf=requestAnimationFrame(loop); }
+
+function updateInfo(){
+  const m=measure();
+  const Vpk=Math.PI*Vin;
+  if(!m){info.textContent='…';return;}
+  info.innerHTML=
+    'f = <b class="v-teal">'+(m.f/1e3).toFixed(1)+' kHz</b> '+
+    '<span style="color:var(--faint)">(理論 '+ (1/(2*Math.PI*Math.sqrt(Ld*Cr))/1e3).toFixed(1)+' kHz)</span> &nbsp;|&nbsp; '+
+    'Vpk = <b class="v-amber">'+m.vpk.toFixed(1)+' V</b> '+
+    '<span style="color:var(--faint)">(π·Vin = '+Vpk.toFixed(1)+' V)</span> &nbsp;|&nbsp; '+
+    'ich = <b class="v-blue">'+(m.meanIch*1e3).toFixed(0)+' mA</b><br>'+
+    'Pin = <b>'+m.Pin.toFixed(3)+' W</b> &nbsp; Pload = <b>'+m.Pload.toFixed(3)+' W</b> '+
+    '<span style="color:var(--faint)">(理想スイッチ → Pin≈Pload)</span>';
+}
+
+// ---- controls ----
+const sVin=document.getElementById('sVin'),sLd=document.getElementById('sLd'),
+      sCr=document.getElementById('sCr'),sRl=document.getElementById('sRl'),sLch=document.getElementById('sLch');
+const lVin=document.getElementById('lVin'),lLd=document.getElementById('lLd'),
+      lCr=document.getElementById('lCr'),lRl=document.getElementById('lRl'),lLch=document.getElementById('lLch');
+function readParams(){
+  Vin=parseFloat(sVin.value);
+  Ld=logmap(parseFloat(sLd.value),10e-6,500e-6);
+  Cr=logmap(parseFloat(sCr.value),10e-9,1e-6);
+  Rload=logmap(parseFloat(sRl.value),10,10e3);
+  Lch=parseFloat(sLch.value)*1e-3;
+  lVin.textContent=Vin.toFixed(1)+'V';
+  lLd.textContent=(Ld*1e6).toFixed(0)+'µH';
+  lCr.textContent=(Cr*1e9>=1000?(Cr*1e6).toFixed(2)+'µF':(Cr*1e9).toFixed(0)+'nF');
+  lRl.textContent=(Rload>=1000?(Rload/1000).toFixed(2)+'kΩ':Rload.toFixed(0)+'Ω');
+  lLch.textContent=(Lch*1e3).toFixed(1)+'mH';
+  recompute();
+}
+[sVin,sLd,sCr,sRl,sLch].forEach(s=>s.addEventListener('input',()=>{
+  readParams();
+  if(mode==='steady')seedSteady(); else seedStart();
+}));
+
+const mSteady=document.getElementById('mSteady'),mStart=document.getElementById('mStart');
+function setMode(m){
+  mode=m;
+  mSteady.classList.toggle('on',m==='steady');
+  mStart.classList.toggle('on',m==='start');
+  if(m==='steady')seedSteady(); else seedStart();
+  location.hash='mode='+m;
+}
+mSteady.addEventListener('click',()=>setMode('steady'));
+mStart.addEventListener('click',()=>setMode('start'));
+
+// deep-link
+(function initHash(){
+  const h=location.hash.match(/mode=(steady|start)/);
+  readParams();
+  resize();
+  setMode(h?h[1]:'steady');
+})();
+raf=requestAnimationFrame(loop);
+</script>
+</body>
+</html>
