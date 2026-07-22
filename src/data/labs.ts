@@ -54,6 +54,7 @@ export const labGroups: LabGroup[] = [
       { name: 'コレクタ共振ラボ（自励発振・πVin）', url: '/collector-resonance/' },
       { name: '自励起動ステップ実行（回路図で一歩一歩）', url: '/collector-startup/' },
       { name: '共振の顔（直列の谷・並列の山・Q倍の内側）', url: '/resonance-face/' },
+      { name: 'チョークの言い分（リップル・逆流・πVinの粘り）', url: '/choke-voice/' },
     ],
   },
   {

@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>チョークの言い分 — 入力チョークで何が変わるか</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
+  --teal:#3c7876;--red:#c2543d;--amber:#c9761f;--blue:#2563aa;
+  --text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{overflow-x:hidden;max-width:100%;}
+body{
+  font-family:'Zen Kaku Gothic New',sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.6;
+  background-image:radial-gradient(circle at 1px 1px,#e9e4da 1px,transparent 0);
+  background-size:22px 22px;
+}
+.wrap{max-width:820px;margin:0 auto;padding:20px 16px 48px;}
+header{display:flex;align-items:flex-end;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.brand{font-weight:700;font-size:22px;line-height:1.1;color:var(--text);}
+.brand .a{color:var(--amber);}
+.tag{font-size:12px;color:var(--muted);padding-bottom:2px;}
+.back{margin-left:auto;font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;text-decoration:none;white-space:nowrap;}
+.back:hover{color:var(--teal);}
+.lead{background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:13px 16px;margin-bottom:16px;font-size:13px;color:#3a3a36;line-height:1.78;
+  box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.lead p{margin:0 0 .5rem;}.lead p:last-child{margin-bottom:0;}
+.lead b{color:var(--text);}
+.selftest{margin-top:.5rem;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);
+  border-top:1px dashed var(--border);padding-top:.5rem;}
+.selftest b{color:var(--teal);}
+.card-tool{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;
+  box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+#stage{position:relative;width:100%;height:clamp(340px,68vw,500px);overflow:hidden;background:var(--surface);}
+canvas{display:block;width:100%;height:100%;touch-action:none;}
+#info{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);
+  padding:.45rem .7rem;font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--muted);
+  line-height:1.8;min-height:2.4rem;}
+#info b{color:var(--text);}
+#info .v-teal{color:var(--teal);font-weight:600;}
+#info .v-red{color:var(--red);font-weight:600;}
+#info .v-amber{color:var(--amber);font-weight:600;}
+#info .v-blue{color:var(--blue);font-weight:600;}
+.ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);
+  padding:.5rem .7rem;display:flex;flex-wrap:wrap;gap:.5rem .8rem;align-items:center;}
+.cg{display:flex;align-items:center;gap:.4rem;font-size:.75rem;}
+.cg label{color:var(--muted);white-space:nowrap;font-weight:500;}
+.cg label b{color:var(--text);}
+.cg.star label b{color:var(--amber);}
+.cg input[type=range]{width:clamp(72px,15vw,130px);accent-color:var(--amber);}
+.cg.star input[type=range]{width:clamp(96px,22vw,180px);}
+.cg .val{font-family:'JetBrains Mono',monospace;color:var(--amber);font-size:.72rem;font-weight:600;min-width:5ch;}
+.modes{display:flex;gap:.4rem;flex-wrap:wrap;margin-left:auto;}
+button{font-family:'Zen Kaku Gothic New',sans-serif;font-size:.74rem;font-weight:700;
+  color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:8px;
+  padding:.28rem .65rem;cursor:pointer;transition:border-color .15s,background .15s,color .15s;}
+button:hover{border-color:var(--teal);}
+button.on{background:var(--teal);color:#fff;border-color:var(--teal);}
+button.sec{border-color:var(--amber);color:var(--amber);}
+button.sec:hover{background:var(--amber);color:#fff;}
+.note{font-size:12px;color:#3a3a36;line-height:1.8;background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:12px 16px;margin-top:16px;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.note b{color:var(--text);}
+.note ol{margin:.3rem 0 0 1.2rem;}
+footer{text-align:center;color:var(--faint);font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:12px;}
+body.embed{height:100%;display:flex;flex-direction:column;overflow:hidden;background-image:none;}
+body.embed .wrap{max-width:none;margin:0;padding:0;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
+body.embed header,body.embed .lead,body.embed .note,body.embed footer{display:none;}
+body.embed .card-tool{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;border:none;border-radius:0;box-shadow:none;}
+body.embed #stage{flex:1 1 auto;height:auto;min-height:200px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><span class="a">チョーク</span>の言い分</div>
+    <div class="tag">入力チョーク Lch を回して、その4つの役割を目で見る</div>
+    <a class="back" href="/">&larr; tnks1407</a>
+  </header>
+  <div class="lead">
+    <p>コレクタ共振回路では、電源とタンクの間に <b>入力チョーク Lch</b> が座っている。地味な部品だけれど、言い分がある。チョークは直流電流 ich を <b>ならして</b> 注ぎ込む ── つまり「電流源のふり」をしてタンクに給電する。だから <b>V<sub>CE</sub> のピーク ≈ π·Vin</b> が立つ。</p>
+    <p>主役つまみは <b>Lch</b> だ。大きくするとチョーク電流のリップル ΔI<sub>pp</sub> が小さくなり、なめらかな直流電流源になる。小さくするとリップルが暴れ、やがて <b>ich が負まで振れて逆流</b>する ── そうなるともう一方向の電流源ではない。おもしろいのは、それでも <b>Vpk はほぼ π·Vin のまま</b>なこと。チョークの<b>ボルト秒平衡</b>（平均|v|=2Vin）が Lch に依らず成り立ち、良く効くLCタンクが電圧波形を守るからだ。崩れるのは電圧の山より先に <b>電流の質</b> の方。上段が <b>ich(t)</b>（青・リップルと逆流を見る）、下段が <b>v(t)</b>（タンク電圧・π·Vin の赤破線と比べる）。</p>
+    <div class="selftest" id="selftest">セルフテスト実行中…</div>
+  </div>
+
+  <div class="card-tool">
+    <div id="stage"><canvas id="c"></canvas></div>
+    <div id="info"></div>
+    <div class="ctrl">
+      <div class="cg star"><label>Lch <b id="lLch"></b></label>
+        <input id="sLch" type="range" min="0" max="1000" step="1" value="500"></div>
+      <div class="cg"><label>Vin <b id="lVin"></b></label>
+        <input id="sVin" type="range" min="3" max="24" step="0.5" value="12"></div>
+      <div class="cg"><label>Ld <b id="lLd"></b></label>
+        <input id="sLd" type="range" min="0" max="1000" step="1" value="589"></div>
+      <div class="cg"><label>Cr <b id="lCr"></b></label>
+        <input id="sCr" type="range" min="0" max="1000" step="1" value="500"></div>
+      <div class="cg"><label>Rload <b id="lRl"></b></label>
+        <input id="sRl" type="range" min="0" max="1000" step="1" value="667"></div>
+      <div class="cg"><label>再生速度 <b id="lSpd"></b></label>
+        <input id="sSpd" type="range" min="0" max="1000" step="1" value="812"></div>
+      <div class="modes">
+        <button id="mSteady" class="on">定常を見る</button>
+        <button id="mStart" class="sec">起動を見る</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <p><b>チョークの言い分は4つある。</b></p>
+    <ol>
+      <li>直流電流を<b>ならす</b>（リップルを小さく＝電流源のふり）。</li>
+      <li>タンクの<b>電圧の山を電源から隔離</b>する（電源には平らな直流だけ）。</li>
+      <li>タンクの<b>高周波を電源線に返さない</b>（インピーダンスの壁）。</li>
+      <li>その代わり、エネルギー W = ½·Lch·Ich² を<b>抱える</b> ── 故障時にはこの分の逃げ場が要る。</li>
+    </ol>
+  </div>
+  <footer>choke-voice &middot; RK4 &middot; 単一HTML</footer>
+</div>
+
+<script>
+if(window.self!==window.top)document.body.classList.add('embed');
+
+// ---- log-slider mapping ----
+const logmap=(s,lo,hi)=>lo*Math.pow(hi/lo, s/1000);
+const logunmap=(v,lo,hi)=>1000*Math.log(v/lo)/Math.log(hi/lo);
+
+// ---- parameters (SI) ----
+let Vin=12, Lch=1e-3, Ld=100e-6, Cr=100e-9, Rload=1000;
+
+// theoretical ripple coefficient: ΔI_pp = COEF*Vin/(f0*Lch)
+//   ich(t)=(Vin/(Lch*ω))·H(ωt),  H(x)=∫(1-(π/2)|sin|)  → ΔH/(2π)=0.105257
+const RIPPLE_COEF=0.10525683117650932;
+
+// ---- derivative: y=[v, iL, ich] ----
+// tank:  Cr dv/dt = -iL - v/Rload + sign(v)*ich/2
+// tank:  Ld diL/dt = v
+// choke: Lch dich/dt = Vin - |v|/2
+function deriv(y,o){
+  const v=y[0], iL=y[1], ich=y[2];
+  const inj=(v>=0?1:-1)*ich*0.5;
+  o[0]=(-iL - v/Rload + inj)/Cr;
+  o[1]=v/Ld;
+  o[2]=(Vin - Math.abs(v)*0.5)/Lch;
+}
+const k1=[0,0,0],k2=[0,0,0],k3=[0,0,0],k4=[0,0,0],tmp=[0,0,0];
+function rk4(y,dt){
+  deriv(y,k1);
+  for(let i=0;i<3;i++)tmp[i]=y[i]+0.5*dt*k1[i]; deriv(tmp,k2);
+  for(let i=0;i<3;i++)tmp[i]=y[i]+0.5*dt*k2[i]; deriv(tmp,k3);
+  for(let i=0;i<3;i++)tmp[i]=y[i]+dt*k3[i];     deriv(tmp,k4);
+  for(let i=0;i<3;i++)y[i]+=dt/6*(k1[i]+2*k2[i]+2*k3[i]+k4[i]);
+}
+
+const period=()=>2*Math.PI*Math.sqrt(Ld*Cr);
+const f0=()=>1/(2*Math.PI*Math.sqrt(Ld*Cr));
+const Z0=()=>Math.sqrt(Ld/Cr);
+const dIppTheo=()=>RIPPLE_COEF*Vin/(f0()*Lch);
+
+// ===================================================================
+//  SELF-TEST
+// ===================================================================
+// Run to steady state from a near-limit-cycle seed at given Lch, then
+// measure over the last `measFrac` of the run.
+function runSim(LchVal,nPer,measFrac){
+  const sav=[Vin,Lch,Ld,Cr,Rload];
+  Vin=12; Ld=100e-6; Cr=100e-9; Rload=1000; Lch=LchVal;
+  const T=period(), dt=T/600, Vpk=Math.PI*Vin;
+  const y=[0, Vpk/Z0(), Math.PI*Math.PI*Vin/(2*Rload)]; // near limit cycle
+  const nStep=Math.round(nPer*T/dt);
+  const measStart=(1-measFrac)*nPer*T;
+  let vpk=0, ichMax=-1e30, ichMin=1e30, sumIch=0, sumV2=0, cnt=0, tsim=0;
+  for(let n=0;n<nStep;n++){
+    rk4(y,dt); tsim+=dt;
+    if(tsim>=measStart){
+      const v=y[0], ich=y[2];
+      vpk=Math.max(vpk,Math.abs(v));
+      ichMax=Math.max(ichMax,ich); ichMin=Math.min(ichMin,ich);
+      sumIch+=ich; sumV2+=v*v; cnt++;
+    }
+  }
+  const meanIch=sumIch/cnt;
+  const res={
+    Lch:LchVal, vpk, vpkTheo:Math.PI*Vin, vpkRatio:vpk/(Math.PI*Vin),
+    dIpp:ichMax-ichMin, ichMin, dIppTheo:RIPPLE_COEF*Vin/(f0()*Lch),
+    meanIch, Pin:Vin*meanIch, Pload:(sumV2/cnt)/Rload
+  };
+  res.dIppRatio=res.dIpp/res.dIppTheo;
+  res.pRatio=res.Pin/res.Pload;
+  [Vin,Lch,Ld,Cr,Rload]=sav;
+  return res;
+}
+const STbig=runSim(10e-3,220,0.25);   // large choke: ideal-ish
+const STsmall=runSim(0.1e-3,220,0.25); // small choke: current-source lost
+(function reportST(){
+  const el=document.getElementById('selftest');
+  const ok=(b)=>b?'<b>PASS</b>':'<span style="color:var(--red)">FAIL</span>';
+  const c1=Math.abs(STbig.dIppRatio-1)<0.15;
+  const c2=Math.abs(STbig.vpkRatio-1)<0.02;
+  const c3=STsmall.ichMin<0;   // choke current reverses = 電流源でなくなる
+  const c4=Math.abs(STbig.pRatio-1)<0.05;
+  el.innerHTML=
+    'セルフテスト（Vin12/Ld100µ/Cr100n/R1k）:<br>'+
+    '①ΔI_pp '+ok(c1)+' Lch10mH 実測/理論='+STbig.dIppRatio.toFixed(3)+
+      ' ('+(STbig.dIpp*1e3).toFixed(2)+'/'+(STbig.dIppTheo*1e3).toFixed(2)+'mA) &nbsp; '+
+    '②Vpk '+ok(c2)+' Lch10mH 実測/πVin='+STbig.vpkRatio.toFixed(3)+'<br>'+
+    '③電流源喪失 '+ok(c3)+' Lch0.1mH ich_min='+(STsmall.ichMin*1e3).toFixed(0)+
+      'mA (<0＝逆流) &nbsp; '+
+    '④電力 '+ok(c4)+' Pin/Pload='+STbig.pRatio.toFixed(3);
+})();
+
+// ===================================================================
+//  LIVE SIMULATION
+// ===================================================================
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const info=document.getElementById('info');
+let W=0,H=0,DPR=1;
+function resize(){
+  const r=cv.getBoundingClientRect();
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  W=r.width;H=r.height;
+  cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+window.addEventListener('resize',resize);
+
+let mode='steady';
+let y=[0,0,0];
+let dt=period()/600;
+let simT=0;
+let settleT=null;   // startup settling time (s) or null
+let vbuf=[],ichbuf=[],tbuf=[];
+const BUFT=()=>6*period();
+
+function seedSteady(){
+  const Vpk=Math.PI*Vin;
+  y=[0, Vpk/Z0(), Math.PI*Math.PI*Vin/(2*Rload)];
+  simT=0; settleT=null; vbuf=[];ichbuf=[];tbuf=[];
+}
+function seedStart(){
+  y=[0, 0.01*Math.PI*Vin/Z0(), 0]; simT=0; settleT=null; vbuf=[];ichbuf=[];tbuf=[];
+}
+function recompute(){ dt=period()/600; }
+
+let speed=1;
+function step(){
+  const base=(mode==='start')?90:60;
+  const spf=Math.max(1,Math.round(base*speed));
+  const keep=BUFT();
+  const Vpk=Math.PI*Vin, T=period();
+  for(let s=0;s<spf;s++){
+    rk4(y,dt); simT+=dt;
+    vbuf.push(y[0]);ichbuf.push(y[2]);tbuf.push(simT);
+  }
+  while(tbuf.length>2 && (simT-tbuf[0])>keep){ vbuf.shift();ichbuf.shift();tbuf.shift(); }
+  // settling detection (startup): first time recent-period peak reaches 95% of πVin
+  if(mode==='start' && settleT===null && simT>2*T){
+    let pk=0; const t0=simT-T;
+    for(let i=tbuf.length-1;i>=0 && tbuf[i]>=t0;i--) pk=Math.max(pk,Math.abs(vbuf[i]));
+    if(pk>=0.95*Vpk) settleT=simT;
+  }
+}
+
+function measure(){
+  const n=vbuf.length; if(n<10)return null;
+  let vpk=0,ichMax=-1e30,ichMin=1e30,sumIch=0,sumV2=0;
+  for(let i=0;i<n;i++){
+    const v=vbuf[i],ic=ichbuf[i];
+    vpk=Math.max(vpk,Math.abs(v));
+    ichMax=Math.max(ichMax,ic); ichMin=Math.min(ichMin,ic);
+    sumIch+=ic; sumV2+=v*v;
+  }
+  const meanIch=sumIch/n;
+  return {vpk,dIpp:ichMax-ichMin,ichMax,ichMin,meanIch,
+          Pin:Vin*meanIch,Pload:(sumV2/n)/Rload,
+          W:0.5*Lch*meanIch*meanIch};
+}
+
+// ---- drawing ----
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  const padL=8,padR=8, sx0=padL, sx1=W-padR, sw=sx1-sx0;
+  const n=vbuf.length;
+  const t1=n>2?tbuf[n-1]:0, win=BUFT(), t0=t1-win;
+  const tX=(t)=> sx0 + ((t-t0)/win)*sw;
+
+  // panel geometry
+  const ichTop=18, ichBot=H*0.46;
+  const vTop=H*0.54, vBot=H-24;
+
+  // ================= ich panel (top) =================
+  ctx.fillStyle='#7d7568';ctx.font='11px JetBrains Mono, monospace';
+  ctx.textAlign='left';ctx.textBaseline='top';
+  ctx.fillStyle='#2563aa';ctx.fillText('ich(t)  チョーク電流 — リップル ΔI_pp を見る', sx0+2, 4);
+  // autoscale around mean
+  const m=measure();
+  if(m){
+    const mid=m.meanIch;
+    const half=Math.max((m.ichMax-m.ichMin)*0.62, dIppTheo()*0.75, 1e-6);
+    const icY=(v)=> (ichTop+ichBot)/2 - ((v-mid)/half)*((ichBot-ichTop)*0.5);
+    // mean line
+    ctx.strokeStyle='#ece5da';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(sx0,icY(mid));ctx.lineTo(sx1,icY(mid));ctx.stroke();
+    // theory ripple band (centered on mean, height = ΔI_pp theory)
+    const dth=dIppTheo();
+    ctx.fillStyle='rgba(201,118,31,.13)';
+    ctx.fillRect(sx0, icY(mid+dth/2), sw, icY(mid-dth/2)-icY(mid+dth/2));
+    ctx.strokeStyle='rgba(201,118,31,.5)';ctx.setLineDash([4,3]);ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(sx0,icY(mid+dth/2));ctx.lineTo(sx1,icY(mid+dth/2));ctx.stroke();
+    ctx.beginPath();ctx.moveTo(sx0,icY(mid-dth/2));ctx.lineTo(sx1,icY(mid-dth/2));ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#c9761f';ctx.textAlign='right';ctx.textBaseline='bottom';
+    ctx.fillText('ΔI_pp理論 '+(dth*1e3).toFixed(2)+'mA帯', sx1-3, icY(mid-dth/2)-2);
+    // zero line (visible when ich dips toward/below 0 = current-source loss)
+    const zy=icY(0);
+    if(zy>ichTop && zy<ichBot){
+      ctx.strokeStyle='rgba(194,84,61,.6)';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(sx0,zy);ctx.lineTo(sx1,zy);ctx.stroke();
+      ctx.fillStyle='#c2543d';ctx.textAlign='left';ctx.textBaseline='top';
+      ctx.fillText('ich=0（この下は逆流）', sx0+70, zy+1);
+    }
+    // ich trace (red where negative = reversed)
+    if(n>2){
+      ctx.lineWidth=1.8;
+      for(let i=1;i<n;i++){
+        ctx.strokeStyle=(ichbuf[i]<0||ichbuf[i-1]<0)?'#c2543d':'#2563aa';
+        ctx.beginPath();ctx.moveTo(tX(tbuf[i-1]),icY(ichbuf[i-1]));ctx.lineTo(tX(tbuf[i]),icY(ichbuf[i]));ctx.stroke();
+      }
+    }
+    // measured ΔI_pp bracket on left
+    const bx=sx0+3;
+    ctx.strokeStyle='#c2543d';ctx.lineWidth=1.4;ctx.beginPath();
+    ctx.moveTo(bx,icY(m.ichMax));ctx.lineTo(bx+5,icY(m.ichMax));
+    ctx.moveTo(bx,icY(m.ichMax));ctx.lineTo(bx,icY(m.ichMin));
+    ctx.moveTo(bx,icY(m.ichMin));ctx.lineTo(bx+5,icY(m.ichMin));
+    ctx.stroke();
+    ctx.fillStyle='#c2543d';ctx.textAlign='left';ctx.textBaseline='middle';
+    ctx.fillText((m.dIpp*1e3).toFixed(2)+'mA', bx+8, (icY(m.ichMax)+icY(m.ichMin))/2);
+  }
+
+  // divider
+  ctx.strokeStyle='#e3dbd0';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(sx0,H*0.50);ctx.lineTo(sx1,H*0.50);ctx.stroke();
+
+  // ================= v panel (bottom) =================
+  ctx.fillStyle='#3c7876';ctx.font='11px JetBrains Mono, monospace';
+  ctx.textAlign='left';ctx.textBaseline='top';
+  ctx.fillText('v(t)  タンク電圧 — π·Vin(赤破線)に乗るか', sx0+2, vTop-14);
+  const Vpk=Math.PI*Vin, vmax=Vpk*1.22;
+  const vmid=(vTop+vBot)/2;
+  const vY=(val)=> vmid - (val/vmax)*((vBot-vTop)*0.46);
+  // zero line
+  ctx.strokeStyle='#ece5da';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(sx0,vmid);ctx.lineTo(sx1,vmid);ctx.stroke();
+  // +/- pi*Vin dashed
+  ctx.strokeStyle='rgba(194,84,61,.55)';ctx.setLineDash([5,4]);ctx.lineWidth=1.3;
+  ctx.beginPath();ctx.moveTo(sx0,vY(Vpk));ctx.lineTo(sx1,vY(Vpk));ctx.stroke();
+  ctx.beginPath();ctx.moveTo(sx0,vY(-Vpk));ctx.lineTo(sx1,vY(-Vpk));ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='#c2543d';ctx.font='11px JetBrains Mono, monospace';
+  ctx.textAlign='right';ctx.textBaseline='bottom';
+  ctx.fillText('+π·Vin='+Vpk.toFixed(1)+'V', sx1-3, vY(Vpk)-2);
+  // v trace
+  if(n>2){
+    ctx.strokeStyle='#3c7876';ctx.lineWidth=2;ctx.beginPath();
+    for(let i=0;i<n;i++){const x=tX(tbuf[i]),yy=vY(vbuf[i]);i?ctx.lineTo(x,yy):ctx.moveTo(x,yy);}
+    ctx.stroke();
+  }
+}
+
+let raf=0;
+function loop(){ step(); draw(); updateInfo(); raf=requestAnimationFrame(loop); }
+
+function updateInfo(){
+  const m=measure();
+  if(!m){info.textContent='…';return;}
+  const dth=dIppTheo();
+  const ratio=m.dIpp/dth;
+  const settle=(mode==='start')
+    ? (settleT!==null? (settleT*1e6).toFixed(1)+' µs' : '<span style="color:var(--faint)">整定待ち…</span>')
+    : '<span style="color:var(--faint)">—（定常）</span>';
+  info.innerHTML=
+    'ΔI_pp = <b class="v-blue">'+(m.dIpp*1e3).toFixed(2)+' mA</b> '+
+    '<span style="color:var(--faint)">(理論 '+(dth*1e3).toFixed(2)+'mA・実測/理論='+ratio.toFixed(2)+')</span> '+
+    (m.ichMin<0?'<b class="v-red">ich逆流!('+(m.ichMin*1e3).toFixed(0)+'mA)</b>':'')+' &nbsp;|&nbsp; '+
+    'Vpk/πVin = <b class="v-amber">'+(m.vpk/(Math.PI*Vin)).toFixed(3)+'</b> &nbsp;|&nbsp; '+
+    'W=½LchIch² = <b class="v-red">'+(m.W*1e6).toFixed(1)+' µJ</b> '+
+    '<span style="color:var(--faint)">(故障時の逃げ場)</span><br>'+
+    '整定時間 = <b>'+settle+'</b> &nbsp;|&nbsp; '+
+    'Pin = <b>'+m.Pin.toFixed(3)+' W</b> &nbsp; Pload = <b>'+m.Pload.toFixed(3)+' W</b> '+
+    '<span style="color:var(--faint)">(理想スイッチ→Pin≈Pload)</span>';
+}
+
+// ---- controls ----
+const sVin=document.getElementById('sVin'),sLd=document.getElementById('sLd'),
+      sCr=document.getElementById('sCr'),sRl=document.getElementById('sRl'),sLch=document.getElementById('sLch'),
+      sSpd=document.getElementById('sSpd');
+const lVin=document.getElementById('lVin'),lLd=document.getElementById('lLd'),
+      lCr=document.getElementById('lCr'),lRl=document.getElementById('lRl'),lLch=document.getElementById('lLch'),
+      lSpd=document.getElementById('lSpd');
+function readParams(){
+  Vin=parseFloat(sVin.value);
+  Ld=logmap(parseFloat(sLd.value),10e-6,500e-6);
+  Cr=logmap(parseFloat(sCr.value),10e-9,1e-6);
+  Rload=logmap(parseFloat(sRl.value),10,10e3);
+  Lch=logmap(parseFloat(sLch.value),0.05e-3,20e-3);
+  lVin.textContent=Vin.toFixed(1)+'V';
+  lLd.textContent=(Ld*1e6).toFixed(0)+'µH';
+  lCr.textContent=(Cr*1e9>=1000?(Cr*1e6).toFixed(2)+'µF':(Cr*1e9).toFixed(0)+'nF');
+  lRl.textContent=(Rload>=1000?(Rload/1000).toFixed(2)+'kΩ':Rload.toFixed(0)+'Ω');
+  lLch.textContent=(Lch*1e3>=1?(Lch*1e3).toFixed(2)+'mH':(Lch*1e6).toFixed(0)+'µH');
+  speed=logmap(parseFloat(sSpd.value),0.05,2);
+  lSpd.textContent=(speed<1?speed.toFixed(2):speed.toFixed(1))+'×'+(speed<0.85?'（スロー）':'');
+  recompute();
+}
+[sVin,sLd,sCr,sRl,sLch].forEach(s=>s.addEventListener('input',()=>{
+  readParams();
+  if(mode==='steady')seedSteady(); else seedStart();
+}));
+sSpd.addEventListener('input',readParams);
+
+const mSteady=document.getElementById('mSteady'),mStart=document.getElementById('mStart');
+function setMode(m){
+  mode=m;
+  mSteady.classList.toggle('on',m==='steady');
+  mStart.classList.toggle('on',m==='start');
+  if(m==='steady')seedSteady(); else seedStart();
+  location.hash='mode='+m;
+}
+mSteady.addEventListener('click',()=>setMode('steady'));
+mStart.addEventListener('click',()=>setMode('start'));
+
+(function initHash(){
+  const h=location.hash.match(/mode=(steady|start)/);
+  readParams();
+  resize();
+  setMode(h?h[1]:'steady');
+})();
+raf=requestAnimationFrame(loop);
+</script>
+</body>
+</html>
