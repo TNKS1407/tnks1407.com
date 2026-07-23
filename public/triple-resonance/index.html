@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>1/9のさじ加減 — 二項波形の整形スタジオ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
+  --teal:#3c7876;--red:#c2543d;--amber:#c9761f;--blue:#2563aa;
+  --text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{overflow-x:hidden;max-width:100%;}
+body{
+  font-family:'Zen Kaku Gothic New',sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.6;
+  background-image:radial-gradient(circle at 1px 1px,#e9e4da 1px,transparent 0);
+  background-size:22px 22px;
+}
+.wrap{max-width:820px;margin:0 auto;padding:20px 16px 48px;}
+header{display:flex;align-items:flex-end;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.brand{font-weight:700;font-size:22px;line-height:1.1;color:var(--text);}
+.brand .a{color:var(--amber);}
+.tag{font-size:12px;color:var(--muted);padding-bottom:2px;}
+.back{margin-left:auto;font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;text-decoration:none;white-space:nowrap;}
+.back:hover{color:var(--teal);}
+.lead{background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:13px 16px;margin-bottom:16px;font-size:13px;color:#3a3a36;line-height:1.78;
+  box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.lead p{margin:0 0 .5rem;}.lead p:last-child{margin-bottom:0;}
+.lead b{color:var(--text);}
+.lead .k{font-family:'JetBrains Mono',monospace;color:var(--teal);}
+.selftest{margin-top:.5rem;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);
+  border-top:1px dashed var(--border);padding-top:.5rem;}
+.selftest b{color:var(--teal);}
+.card-tool{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;
+  box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+#stage{position:relative;width:100%;height:clamp(300px,58vw,440px);overflow:hidden;background:var(--surface);}
+canvas{display:block;width:100%;height:100%;touch-action:none;}
+/* flowing readout grid — no absolute overlay */
+.tiles{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:1px;
+  background:var(--border);}
+.tile{background:var(--surface);padding:.4rem .55rem;}
+.tile .lab{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--muted);line-height:1.3;}
+.tile .num{font-family:'JetBrains Mono',monospace;font-size:.95rem;font-weight:600;color:var(--text);line-height:1.35;}
+.tile .sub{font-family:'JetBrains Mono',monospace;font-size:.62rem;color:var(--faint);line-height:1.3;}
+.tile .num.teal{color:var(--teal);}
+.tile .num.amber{color:var(--amber);}
+.tile .num.red{color:var(--red);}
+.tile.wide{grid-column:1/-1;}
+.ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);
+  padding:.5rem .7rem;display:flex;flex-wrap:wrap;gap:.5rem .8rem;align-items:center;}
+.cg{display:flex;align-items:center;gap:.4rem;font-size:.75rem;}
+.cg label{color:var(--muted);white-space:nowrap;font-weight:500;}
+.cg label b{color:var(--text);}
+.cg input[type=range]{width:clamp(90px,20vw,150px);accent-color:var(--amber);}
+.cg .val{font-family:'JetBrains Mono',monospace;color:var(--amber);font-size:.72rem;font-weight:600;min-width:5ch;}
+.modes{display:flex;gap:.4rem;flex-wrap:wrap;margin-left:auto;}
+button{font-family:'Zen Kaku Gothic New',sans-serif;font-size:.74rem;font-weight:700;
+  color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:8px;
+  padding:.28rem .65rem;cursor:pointer;transition:border-color .15s,background .15s,color .15s;}
+button:hover{border-color:var(--teal);}
+button.sec{border-color:var(--amber);color:var(--amber);}
+button.sec:hover{background:var(--amber);color:#fff;}
+.note{font-size:12px;color:#3a3a36;line-height:1.8;background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:12px 16px;margin-top:16px;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.note b{color:var(--text);}
+.note ol{margin:.3rem 0 0 1.2rem;}
+.note .k{font-family:'JetBrains Mono',monospace;color:var(--teal);}
+footer{text-align:center;color:var(--faint);font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:12px;}
+body.embed{height:100%;display:flex;flex-direction:column;overflow:hidden;background-image:none;}
+body.embed .wrap{max-width:none;margin:0;padding:0;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
+body.embed header,body.embed .lead,body.embed .note,body.embed footer{display:none;}
+body.embed .card-tool{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;border:none;border-radius:0;box-shadow:none;}
+body.embed #stage{flex:1 1 auto;height:auto;min-height:180px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><span class="a">1/9</span>のさじ加減</div>
+    <div class="tag">二項波形の整形スタジオ ── 基本波に三倍波を少し混ぜて「頭を平らに」する</div>
+    <a class="back" href="/">&larr; tnks1407</a>
+  </header>
+  <div class="lead">
+    <p>負荷電流を <span class="k">i(θ) = sinθ + a·sin(3θ+φ₃)</span> と置く（I₁=1固定、<span class="k">a=I₃/I₁</span>）。基本波にほんの少しだけ三倍波を足すと、山のてっぺんが削れて <b>頭の平らな波</b> になる。つまみは2つ ── 混ぜる量 <b>a</b> と、三倍波の位相 <b>φ₃</b> だけ。</p>
+    <p>面白いのは <b>魔法の比率 a=1/9</b> だ。φ₃=0 でここに合わせると、頂点の一階も二階の微分もちょうど 0 になって、山が最大限に平らになる（このとき i=(4/9)sinθ(3−sin²θ)、ピークは <span class="k">8/9</span>）。<b>足りない</b>と山のまま、ちょうどで<b>平ら</b>、<b>入れすぎる</b>と真ん中が凹んで肩が2つに割れる。φ₃ を振ると頂部が斜めに傾く ── そのさじ加減を、下の成績表を見ながら手で探ってみて。</p>
+    <div class="selftest" id="selftest">セルフテスト実行中…</div>
+  </div>
+
+  <div class="card-tool">
+    <div id="stage"><canvas id="c"></canvas></div>
+    <div class="tiles" id="tiles"></div>
+    <div class="ctrl">
+      <div class="cg"><label>a = I₃/I₁ <b id="lA"></b></label>
+        <input id="sA" type="range" min="0" max="0.30" step="0.001" value="0.111"></div>
+      <div class="cg"><label>φ₃ <b id="lP"></b></label>
+        <input id="sP" type="range" min="-90" max="90" step="1" value="0"></div>
+      <div class="modes">
+        <button id="mMagic" class="sec">魔法の比率 a=1/9, φ₃=0</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <p><b>読み方のヒント。</b></p>
+    <ol>
+      <li><b>RMS は φ₃ に依らない</b>。<span class="k">RMS=√((1+a²)/2)</span> ── 基本波と三倍波は直交だから、位相をどう回しても実効値は変わらない。動くのはピークの方だけ。</li>
+      <li><b>中央の曲率</b> <span class="k">d²i/dθ²|_{π/2} = −1 + 9a·cosφ₃</span>。これが 0 で平ら、負なら山、正なら凹む。a=1/9・φ₃=0 で 9a=1 となりゼロ。</li>
+      <li><b>頂部の傾き</b> <span class="k">di/dθ|_{π/2} = 3a·sinφ₃</span>。φ₃ を入れた分だけ頂上が斜めになり、左右が非対称になる。</li>
+      <li>クレストファクタ CF=I_pk/RMS を小さくできると、同じ実効値でピークが低い＝素子に優しい波、という御利益がある。</li>
+    </ol>
+  </div>
+  <footer>triple-resonance &middot; 二項波形整形 &middot; 単一HTML</footer>
+</div>
+
+<script>
+if(window.self!==window.top)document.body.classList.add('embed');
+
+// ============================================================
+//  waveform math:  i(θ) = sinθ + a·sin(3θ+φ),  I1=1
+// ============================================================
+const iof =(th,a,phi)=> Math.sin(th) + a*Math.sin(3*th+phi);
+const d1  =(th,a,phi)=> Math.cos(th) + 3*a*Math.cos(3*th+phi);      // di/dθ
+const d2  =(th,a,phi)=> -Math.sin(th) - 9*a*Math.sin(3*th+phi);     // d²i/dθ²
+
+// numeric peak (positive peak = max|i| by half-wave antisymmetry) over [0,π]
+function peakSearch(a,phi){
+  const N=4000; let pk=-1e30, thpk=0;
+  for(let k=0;k<=N;k++){ const th=Math.PI*k/N, v=iof(th,a,phi);
+    if(v>pk){pk=v;thpk=th;} }
+  // refine with a few golden-ish local samples around thpk
+  let lo=thpk-Math.PI/N, hi=thpk+Math.PI/N;
+  for(let it=0;it<40;it++){
+    const m1=lo+(hi-lo)*0.382, m2=lo+(hi-lo)*0.618;
+    if(iof(m1,a,phi)<iof(m2,a,phi))lo=m1; else hi=m2;
+  }
+  const thr=(lo+hi)/2; const vr=iof(thr,a,phi);
+  if(vr>pk){pk=vr;thpk=thr;}
+  return {pk, th:thpk};
+}
+// mean of |i| over full period, trapezoid
+function meanAbs(a,phi){
+  const N=6000; let s=0;
+  for(let k=0;k<N;k++){ const th=2*Math.PI*(k+0.5)/N; s+=Math.abs(iof(th,a,phi)); }
+  return s/N;
+}
+// local maxima of i on [0,π] with i>0 (shoulder peaks)
+function shoulders(a,phi){
+  const N=2000; const xs=[];
+  let pm=iof(-Math.PI/N,a,phi), p0=iof(0,a,phi);
+  for(let k=1;k<=N;k++){
+    const th=Math.PI*k/N, pp=iof(th,a,phi);
+    if(p0>pm && p0>=pp && p0>0){ xs.push({th:Math.PI*(k-1)/N, v:p0}); }
+    pm=p0; p0=pp;
+  }
+  return xs;
+}
+const rmsOf=(a)=>Math.sqrt((1+a*a)/2);
+
+// ============================================================
+//  SELF-TEST (console + footer)
+// ============================================================
+const stLines=[];
+(function selftest(){
+  const near=(x,y,rel)=>Math.abs(x-y)<=rel*Math.abs(y);
+  const R=[];
+  // 1: I_pk at a=1/9,phi=0 → 8/9
+  const p=peakSearch(1/9,0);
+  R.push(['①I_pk(a=1/9)', p.pk, 8/9, near(p.pk,8/9,1e-3)]);
+  // 2: CF = 8/√41
+  const cf=p.pk/rmsOf(1/9);
+  R.push(['②CF(a=1/9)', cf, 8/Math.sqrt(41), near(cf,8/Math.sqrt(41),1e-3)]);
+  // 3: mean|i|/peak = 7/(3π)
+  const rat=meanAbs(1/9,0)/p.pk;
+  R.push(['③mean|i|/I_pk', rat, 7/(3*Math.PI), near(rat,7/(3*Math.PI),1e-3)]);
+  // 4: zero-cross slope = 4/3
+  const s0=d1(0,1/9,0);
+  R.push(['④di/dθ|₀', s0, 4/3, near(s0,4/3,1e-3)]);
+  // 5: a=0.15,phi=0 → d²i/dθ²|_{π/2} > 0 (dip)
+  const c5=d2(Math.PI/2,0.15,0);
+  R.push(['⑤d²i/dθ²|_{π/2}(a=.15)', c5, '>0', c5>0]);
+
+  console.log('%c[triple-resonance self-test]','color:#3c7876;font-weight:bold');
+  R.forEach(r=>{
+    const meas=r[1], exp=r[2], pass=r[3];
+    console.log((pass?'PASS':'FAIL')+'  '+r[0]+'  meas='+(typeof meas==='number'?meas.toFixed(6):meas)+
+      '  exp='+(typeof exp==='number'?exp.toFixed(6):exp));
+  });
+  const allPass=R.every(r=>r[3]);
+  const ok=(b)=>b?'<b>PASS</b>':'<span style="color:var(--red)">FAIL</span>';
+  document.getElementById('selftest').innerHTML=
+    'セルフテスト（解析値との照合）: '+(allPass?'<b>全PASS</b>':'<span style="color:var(--red)">FAILあり</span>')+'<br>'+
+    '① I_pk='+R[0][1].toFixed(5)+'/(8/9='+(8/9).toFixed(5)+') '+ok(R[0][3])+' &nbsp; '+
+    '② CF='+R[1][1].toFixed(5)+'/(8/√41='+(8/Math.sqrt(41)).toFixed(5)+') '+ok(R[1][3])+'<br>'+
+    '③ mean|i|/I_pk='+R[2][1].toFixed(5)+'/(7/3π='+(7/(3*Math.PI)).toFixed(5)+') '+ok(R[2][3])+' &nbsp; '+
+    '④ di/dθ|₀='+R[3][1].toFixed(5)+'/(4/3) '+ok(R[3][3])+'<br>'+
+    '⑤ a=0.15の中央曲率='+R[4][1].toFixed(4)+'>0(凹む) '+ok(R[4][3]);
+})();
+
+// ============================================================
+//  STATE + drawing
+// ============================================================
+let a=0.111, phi=0;   // phi in radians
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+let W=0,H=0,DPR=1;
+function resize(){
+  const r=cv.getBoundingClientRect();
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  W=r.width;H=r.height;
+  cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  draw();
+}
+window.addEventListener('resize',resize);
+
+const YMAX=1.35;                 // fixed vertical range (peak stays < 1+a ≤ 1.3)
+const THMAX=4*Math.PI;           // 2 periods
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  const padL=10,padR=10,padT=16,padB=18;
+  const x0=padL, x1=W-padR, y0=padT, y1=H-padB;
+  const gx=(th)=> x0 + (th/THMAX)*(x1-x0);
+  const gy=(v)=> (y0+y1)/2 - (v/YMAX)*((y1-y0)*0.5);
+
+  // grid: zero axis
+  ctx.strokeStyle='#ece5da';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(x0,gy(0));ctx.lineTo(x1,gy(0));ctx.stroke();
+  // amplitude ±1 faint refs
+  ctx.strokeStyle='#f0e9df';
+  ctx.beginPath();ctx.moveTo(x0,gy(1));ctx.lineTo(x1,gy(1));ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x0,gy(-1));ctx.lineTo(x1,gy(-1));ctx.stroke();
+  // period ticks at π,2π,3π
+  ctx.fillStyle='#c8c0b4';ctx.font='10px JetBrains Mono, monospace';
+  ctx.textAlign='center';ctx.textBaseline='bottom';
+  [ ['π',Math.PI],['2π',2*Math.PI],['3π',3*Math.PI] ].forEach(t=>{
+    ctx.strokeStyle='#f0e9df';ctx.beginPath();ctx.moveTo(gx(t[1]),y0);ctx.lineTo(gx(t[1]),y1);ctx.stroke();
+    ctx.fillText(t[0],gx(t[1]),y1+13);
+  });
+  // center guides at θ=π/2 (+ each half-period center 3π/2, 5π/2, 7π/2)
+  ctx.strokeStyle='rgba(60,120,118,.35)';ctx.setLineDash([4,3]);ctx.lineWidth=1;
+  [Math.PI/2,3*Math.PI/2,5*Math.PI/2,7*Math.PI/2].forEach((th,ix)=>{
+    ctx.beginPath();ctx.moveTo(gx(th),y0);ctx.lineTo(gx(th),y1);ctx.stroke();
+  });
+  ctx.setLineDash([]);
+  ctx.fillStyle='#3c7876';ctx.textAlign='left';ctx.textBaseline='top';
+  ctx.fillText('θ=π/2', gx(Math.PI/2)+3, y0+1);
+
+  // pure sine reference (dotted, faint)
+  ctx.strokeStyle='rgba(125,117,104,.55)';ctx.setLineDash([2,3]);ctx.lineWidth=1.3;
+  ctx.beginPath();
+  for(let k=0;k<=600;k++){const th=THMAX*k/600;const x=gx(th),y=gy(Math.sin(th));k?ctx.lineTo(x,y):ctx.moveTo(x,y);}
+  ctx.stroke();ctx.setLineDash([]);
+
+  // the shaped waveform
+  ctx.strokeStyle='#c2543d';ctx.lineWidth=2.2;
+  ctx.beginPath();
+  for(let k=0;k<=1200;k++){const th=THMAX*k/1200;const x=gx(th),y=gy(iof(th,a,phi));k?ctx.lineTo(x,y):ctx.moveTo(x,y);}
+  ctx.stroke();
+
+  // shoulder markers (only when split into 2 within a hump)
+  const sh=shoulders(a,phi);
+  if(sh.length>=2){
+    ctx.fillStyle='#c9761f';
+    sh.forEach(s=>{
+      // draw in both periods
+      [s.th, s.th+2*Math.PI].forEach(th=>{
+        const x=gx(th),y=gy(s.v);
+        ctx.beginPath();ctx.arc(x,y,3.4,0,7);ctx.fill();
+      });
+    });
+    ctx.textAlign='center';ctx.textBaseline='bottom';
+    ctx.font='10px JetBrains Mono, monospace';
+    ctx.fillStyle='#c9761f';
+    ctx.fillText('肩ピークが2つに割れた', gx(Math.PI/2), gy(sh[0].v)-6);
+  }
+
+  // legend
+  ctx.textAlign='right';ctx.textBaseline='top';ctx.font='10px JetBrains Mono, monospace';
+  ctx.fillStyle='#c2543d';ctx.fillText('i(θ)=sinθ+a·sin(3θ+φ₃)', x1-2, y0+1);
+  ctx.fillStyle='#9a927f';ctx.fillText('sinθ（点線）', x1-2, y0+14);
+}
+
+// ============================================================
+//  tiles / readout
+// ============================================================
+const tilesEl=document.getElementById('tiles');
+function curvatureState(c2){
+  if(Math.abs(c2)<0.02) return ['平ら（≈0）','teal'];
+  if(c2<0) return ['まだ山（<0）','amber'];
+  return ['凹んだ！（>0）','red'];
+}
+function tile(lab,num,cls,sub){
+  return '<div class="tile"><div class="lab">'+lab+'</div>'+
+    '<div class="num '+(cls||'')+'">'+num+'</div>'+
+    (sub?'<div class="sub">'+sub+'</div>':'')+'</div>';
+}
+function updateTiles(){
+  const p=peakSearch(a,phi);
+  const rms=rmsOf(a);
+  const cf=p.pk/rms;
+  const ma=meanAbs(a,phi);
+  const s0=d1(0,a,phi);                 // 1 + 3a cosφ
+  const sMid=d1(Math.PI/2,a,phi);       // 3a sinφ
+  const c2=d2(Math.PI/2,a,phi);         // -1 + 9a cosφ
+  const cs=curvatureState(c2);
+  const sh=shoulders(a,phi);
+  const split=(sh.length>=2);
+
+  let html='';
+  html+=tile('I_pk（数値探索）', p.pk.toFixed(4), 'red', 'θ_pk='+(p.th/Math.PI).toFixed(3)+'π');
+  html+=tile('RMS =√((1+a²)/2)', rms.toFixed(4), 'teal', 'φ₃に依らない');
+  html+=tile('クレストファクタ CF', cf.toFixed(4), 'amber', 'I_pk/RMS');
+  html+=tile('平均|i| / I_pk', (ma/p.pk).toFixed(4), '', 'mean|i|='+ma.toFixed(4));
+  html+=tile('ゼロ交差傾き di/dθ|₀', s0.toFixed(4), '', '正弦比 ×'+ s0.toFixed(3));
+  html+=tile('頂部傾き di/dθ|_{π/2}', sMid.toFixed(4), (Math.abs(sMid)<1e-3?'':'amber'), '=3a·sinφ₃');
+  html+=tile('中央の曲率 d²i/dθ²|_{π/2}', c2.toFixed(4)+' <span style="font-size:.7em">'+cs[0]+'</span>', cs[1], '=−1+9a·cosφ₃');
+  if(split){
+    html+=tile('肩ピーク', '割れた（2つ）', 'amber', 'a>1/9 で分裂 ('+sh.length+'個)');
+  }else{
+    html+=tile('肩ピーク', '単一', 'teal', '頂点は1つ');
+  }
+  tilesEl.innerHTML=html;
+}
+
+// ============================================================
+//  controls
+// ============================================================
+const sA=document.getElementById('sA'), sP=document.getElementById('sP');
+const lA=document.getElementById('lA'), lP=document.getElementById('lP');
+function readControls(){
+  a=parseFloat(sA.value);
+  phi=parseFloat(sP.value)*Math.PI/180;
+  lA.textContent=a.toFixed(3)+(Math.abs(a-1/9)<0.0006?' (=1/9)':'');
+  lP.textContent=(parseFloat(sP.value)).toFixed(0)+'°';
+  draw();updateTiles();
+  writeHash();
+}
+let hashTimer=0;
+function writeHash(){
+  clearTimeout(hashTimer);
+  hashTimer=setTimeout(()=>{
+    location.replace('#a='+a.toFixed(3)+'&phi='+parseFloat(sP.value).toFixed(0));
+  },250);
+}
+sA.addEventListener('input',readControls);
+sP.addEventListener('input',readControls);
+
+document.getElementById('mMagic').addEventListener('click',()=>{
+  sA.value='0.111'; sP.value='0'; readControls();
+});
+
+(function initHash(){
+  const h=location.hash;
+  const ma=h.match(/a=([-\d.]+)/), mp=h.match(/phi=([-\d.]+)/);
+  if(ma){ let v=parseFloat(ma[1]); if(isFinite(v)) sA.value=Math.min(0.30,Math.max(0,v)).toFixed(3); }
+  if(mp){ let v=parseFloat(mp[1]); if(isFinite(v)) sP.value=Math.min(90,Math.max(-90,v)).toFixed(0); }
+  resize();
+  readControls();
+})();
+</script>
+</body>
+</html>

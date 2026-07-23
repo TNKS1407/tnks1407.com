@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>「共振＝定電流」を測って壊す — 負荷感度メータ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
+  --teal:#3c7876;--red:#c2543d;--amber:#c9761f;--blue:#2563aa;
+  --text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{overflow-x:hidden;max-width:100%;}
+body{
+  font-family:'Zen Kaku Gothic New',sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.6;
+  background-image:radial-gradient(circle at 1px 1px,#e9e4da 1px,transparent 0);
+  background-size:22px 22px;
+}
+.wrap{max-width:820px;margin:0 auto;padding:20px 16px 48px;}
+header{display:flex;align-items:flex-end;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.brand{font-weight:700;font-size:22px;line-height:1.1;color:var(--text);}
+.brand .a{color:var(--amber);}
+.tag{font-size:12px;color:var(--muted);padding-bottom:2px;}
+.back{margin-left:auto;font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;text-decoration:none;white-space:nowrap;}
+.back:hover{color:var(--teal);}
+.lead{background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:13px 16px;margin-bottom:16px;font-size:13px;color:#3a3a36;line-height:1.78;
+  box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.lead p{margin:0 0 .5rem;}.lead p:last-child{margin-bottom:0;}
+.lead b{color:var(--text);}
+.selftest{margin-top:.5rem;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);
+  border-top:1px dashed var(--border);padding-top:.5rem;line-height:1.7;}
+.selftest b{color:var(--teal);}
+.card-tool{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;
+  box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.circuit{background:var(--surface);border-bottom:1px solid var(--border);padding:.5rem .7rem;
+  display:flex;align-items:center;gap:.8rem;}
+.circuit svg{flex:0 0 auto;}
+.circuit .desc{font-size:12px;color:#3a3a36;line-height:1.6;}
+.circuit .desc b{color:var(--text);}
+.circuit .desc .em{color:var(--red);font-weight:600;}
+#stage{position:relative;width:100%;height:clamp(440px,100vw,600px);overflow:hidden;background:var(--surface);}
+canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair;}
+/* sensitivity meter (flowing, not absolute) */
+#meter{flex-shrink:0;border-top:1px solid var(--border);padding:.55rem .7rem;
+  display:flex;align-items:center;gap:.8rem;flex-wrap:wrap;transition:background .25s;}
+#meter .big{font-family:'JetBrains Mono',monospace;font-weight:600;font-size:1.9rem;line-height:1;
+  min-width:5.2ch;text-align:right;}
+#meter .verdict{font-size:.8rem;font-weight:700;letter-spacing:.02em;}
+#meter .plain{font-size:.72rem;color:#3a3a36;line-height:1.5;flex:1 1 220px;min-width:180px;}
+#meter .plain b{font-family:'JetBrains Mono',monospace;}
+#info{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);
+  padding:.45rem .7rem;font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--muted);
+  line-height:1.85;min-height:2.4rem;}
+#info b{color:var(--text);}
+#info .v-teal{color:var(--teal);font-weight:600;}
+#info .v-red{color:var(--red);font-weight:600;}
+#info .v-amber{color:var(--amber);font-weight:600;}
+#info .v-blue{color:var(--blue);font-weight:600;}
+.ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);
+  padding:.5rem .7rem;display:flex;flex-wrap:wrap;gap:.5rem .8rem;align-items:center;}
+.cg{display:flex;align-items:center;gap:.4rem;font-size:.75rem;}
+.cg label{color:var(--muted);white-space:nowrap;font-weight:500;}
+.cg label b{color:var(--text);}
+.cg input[type=range]{width:clamp(72px,15vw,120px);accent-color:var(--amber);}
+.cg .val{font-family:'JetBrains Mono',monospace;color:var(--amber);font-size:.72rem;font-weight:600;min-width:5ch;}
+.modes{display:flex;gap:.4rem;flex-wrap:wrap;}
+button{font-family:'Zen Kaku Gothic New',sans-serif;font-size:.74rem;font-weight:700;
+  color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:8px;
+  padding:.28rem .65rem;cursor:pointer;transition:border-color .15s,background .15s,color .15s;}
+button:hover{border-color:var(--teal);}
+button.on{background:var(--teal);color:#fff;border-color:var(--teal);}
+button.fb.on{background:var(--red);border-color:var(--red);}
+.note{font-size:12px;color:#3a3a36;line-height:1.8;background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:12px 16px;margin-top:16px;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.note b{color:var(--text);}
+footer{text-align:center;color:var(--faint);font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:12px;}
+body.embed{height:100%;display:flex;flex-direction:column;overflow:hidden;background-image:none;}
+body.embed .wrap{max-width:none;margin:0;padding:0;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
+body.embed header,body.embed .lead,body.embed .note,body.embed footer{display:none;}
+body.embed .card-tool{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;border:none;border-radius:0;box-shadow:none;}
+body.embed #stage{flex:1 1 auto;height:auto;min-height:200px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">「共振＝<span class="a">定電流</span>」を測って壊す</div>
+    <div class="tag">共振と電源 #8 ── 負荷感度メータ</div>
+    <a class="back" href="/">&larr; tnks1407</a>
+  </header>
+  <div class="lead">
+    <p>「共振している回路は定電流源だ」と言われることがある。本当かな。ここでは正弦波電圧源 V<sub>s</sub>（振幅1固定）に直列で Rs・L・C・そして<b>負荷 R<sub>L</sub></b> をつないだだけの、いちばん素朴な直列共振回路を触る。負荷を少し増やしたとき、流れる電流 |I| がどれだけ動くか ── その<b>負荷感度 S<sub>R</sub></b> を測るのが目的だよ。</p>
+    <p>共振点（X=0）では |I| = V<sub>s</sub>/(Rs+R<sub>L</sub>) で、R<sub>L</sub> がそのまま分母に居座る。R<sub>L</sub>≫Rs なら、負荷が10%増えれば電流はほぼ10%減る ── <b>ぜんぜん定電流じゃない</b>。逆に大きく離調して |X|≫R にすると感度は0に近づくけれど、それは共振ではなく<b>リアクタンスで電流を絞っている（バラスト動作）</b>別のからくりだ。つまみを回して、この二つを見分けてみて。</p>
+    <div class="selftest" id="selftest">セルフテスト実行中…</div>
+  </div>
+
+  <div class="card-tool">
+    <div class="circuit" id="circuit"></div>
+    <div id="stage"><canvas id="c"></canvas></div>
+    <div id="meter">
+      <div class="big" id="mBig">—</div>
+      <div>
+        <div class="verdict" id="mVerdict">—</div>
+        <div style="font-size:.62rem;color:var(--muted);font-family:'JetBrains Mono',monospace;">S<sub>R</sub> = ∂ln|I| / ∂ln R<sub>L</sub></div>
+      </div>
+      <div class="plain" id="mPlain">—</div>
+    </div>
+    <div id="info"></div>
+    <div class="ctrl">
+      <div class="modes">
+        <button id="p1">共振点で使う</button>
+        <button id="p2">中途半端</button>
+        <button id="p3">大バラスト</button>
+      </div>
+      <div class="cg"><label>ω/ω₀ <b id="lU"></b></label>
+        <input id="sU" type="range" min="0" max="1000" step="1" value="500"></div>
+      <div class="cg"><label>R<sub>L</sub> <b id="lR"></b></label>
+        <input id="sR" type="range" min="0" max="1000" step="1" value="649"></div>
+      <div class="cg"><label>Z₀=√(L/C) <b id="lZ"></b></label>
+        <input id="sZ" type="range" min="0" max="1000" step="1" value="0"></div>
+      <button id="fb" class="fb">能動帰還 OFF</button>
+    </div>
+  </div>
+
+  <div class="note">
+    <p><b>直列共振そのものは定電流源ではない。</b>共振点は「電流の山」だから R<sub>L</sub> の変化がそのまま電流に効く（S<sub>R</sub>≈−1）。感度を殺すには |X|≫R まで離調して電流をリアクタンスで絞るしかないが、それは電流も一緒に小さくなる別動作で、しかも「共振で使う」利点は消えている。定電流が欲しいなら、片方だけを都合よく取れはしない。</p>
+    <p><b>結局いちばん強い定電流は、測って直すこと。</b>右下の「能動帰還」を ON にすると、電流を測って必要な V<sub>s</sub> を都度合わせにいく。R<sub>L</sub> をどれだけ動かしても |I| は目標値に張り付き、代わりに V<sub>s</sub> が動く ── 受動素子の共振点に頼るより、閉ループのほうがよほど頑固な定電流だ。共振の値打ちは定電流ではなく、別のところ（選択性・昇圧）にある。</p>
+  </div>
+  <footer>constant-current · 解析式（数値ソルバなし） · 単一HTML</footer>
+</div>
+
+<script>
+if(window.self!==window.top)document.body.classList.add('embed');
+
+// ===================================================================
+//  physics (normalized: Vs=1, Rs=0.5, C=1; X = Z0*(u - 1/u), Z0=sqrt(L/C))
+//  u = w/w0.  At resonance u=1 -> X=0 (independent of Z0).
+// ===================================================================
+const Vs=1, Rs=0.5;
+let u=1, RL=10, Z0=1;      // live state
+let fbOn=false, fbTarget=null;
+
+const Xof   =(u,Z0)=> Z0*(u - 1/u);
+const Imag  =(u,Z0,RL)=> Vs/Math.hypot(Rs+RL, Xof(u,Z0));
+const SRof  =(u,Z0,RL)=>{ const X=Xof(u,Z0), R=Rs+RL; return -RL*R/(R*R+X*X); };
+
+// ---- log-slider mappings ----
+const logmap=(s,lo,hi)=>lo*Math.pow(hi/lo, s/1000);
+const invlog=(v,lo,hi)=>1000*Math.log(v/lo)/Math.log(hi/lo);
+const U_LO=0.3,U_HI=3, R_LO=0.1,R_HI=100, Z_LO=1,Z_HI=30;
+
+// ===================================================================
+//  SELF-TEST  (runs at load, prints to footer strip + console)
+// ===================================================================
+function selfTest(){
+  const o={};
+  // (1) resonance sensitivity  u=1,Z0=1,RL=10 -> -10/10.5
+  o.sr1=SRof(1,1,10);            o.sr1th=-10/10.5;
+  // (2) resonance current       -> 1/10.5
+  o.i1 =Imag(1,1,10);           o.i1th=1/10.5;
+  // (3) balast: |X|=50, Rs+RL=10.5  -> pick Z0,u giving X=50 exactly.
+  //     X=Z0*(u-1/u)=50 ; use u=3 -> Z0=50/(3-1/3)=18.75
+  const Zb=50/(3-1/3);
+  o.xb=Xof(3,Zb);               o.xbth=50;
+  o.sr3=SRof(3,Zb,10);          o.sr3th=-10*10.5/(10.5*10.5+2500);
+  // (4) analytic S_R vs numeric d ln|I| / d ln RL  (central diff, dlnR=1e-4)
+  const uu=1.7,ZZ=8,RR=4, d=1e-4;
+  const lnI=(RLx)=>Math.log(Imag(uu,ZZ,RLx));
+  o.srAna=SRof(uu,ZZ,RR);
+  o.srNum=(lnI(RR*Math.exp(d))-lnI(RR*Math.exp(-d)))/(2*d);
+  return o;
+}
+const ST=selfTest();
+(function reportST(){
+  const rel=(a,b)=>Math.abs(a/b-1);
+  const c1=rel(ST.sr1,ST.sr1th)<1e-3;
+  const c2=rel(ST.i1,ST.i1th)<1e-3;
+  const c3=rel(ST.sr3,ST.sr3th)<5e-3 && rel(ST.xb,ST.xbth)<5e-3;
+  const c4=rel(ST.srNum,ST.srAna)<5e-3;
+  const all=c1&&c2&&c3&&c4;
+  const ok=(b)=>b?'<b>PASS</b>':'<span style="color:var(--red)">FAIL</span>';
+  document.getElementById('selftest').innerHTML=
+    'セルフテスト（Vs=1, Rs=0.5, C=1, X=Z₀(u−1/u)） 総合 '+ok(all)+'<br>'+
+    '①共振 S_R(u1,Z1,R10) '+ok(c1)+' '+ST.sr1.toFixed(5)+' → −10/10.5 &nbsp; '+
+    '②共振 |I| '+ok(c2)+' '+ST.i1.toFixed(6)+' → 1/10.5<br>'+
+    '③バラスト |X|=50 '+ok(c3)+' S_R='+ST.sr3.toFixed(5)+' (理論 '+ST.sr3th.toFixed(5)+') &nbsp; '+
+    '④解析 vs 数値微分 '+ok(c4)+' '+ST.srAna.toFixed(6)+' / '+ST.srNum.toFixed(6);
+  console.log('[constant-current selftest]',
+    {c1,c2,c3,c4,
+     sr1:ST.sr1, sr1th:ST.sr1th,
+     i1:ST.i1, i1th:ST.i1th,
+     xb:ST.xb, sr3:ST.sr3, sr3th:ST.sr3th,
+     srAna:ST.srAna, srNum:ST.srNum});
+})();
+
+// ===================================================================
+//  circuit diagram (series Vs - Rs - L - C - RL)
+// ===================================================================
+function zig(x0,y,w,n){let d='M'+x0+' '+y,seg=w/(n*2),x=x0;
+  for(let i=0;i<n;i++){x+=seg;d+=' L'+x+' '+(y-6);x+=seg;d+=' L'+x+' '+(y+6);}d+=' L'+(x0+w)+' '+y;return d;}
+function coil(x0,y,w,n){let d='M'+x0+' '+y,seg=w/n,x=x0;
+  for(let i=0;i<n;i++){d+=' A'+(seg/2)+' '+(seg/2)+' 0 0 1 '+(x+seg)+' '+y;x+=seg;}return d;}
+document.getElementById('circuit').innerHTML=`
+<svg width="188" height="112" viewBox="0 0 188 112">
+  <g fill="none" stroke="#7d7568" stroke-width="1.6" stroke-linecap="round">
+    <path d="M18 30 L18 82 M18 82 L170 82 M170 82 L170 30"/>
+    <circle cx="18" cy="56" r="12" fill="#faf8f4" stroke="#2563aa"/>
+    <path d="M18 30 L18 44 M18 68 L18 82" stroke="#2563aa"/>
+    <path d="M18 30 L30 30"/>
+    <path d="${zig(30,30,24,4)}" stroke="#c2543d"/>
+    <path d="M54 30 L62 30"/>
+    <path d="${coil(62,30,24,4)}" stroke="#c9761f"/>
+    <path d="M86 30 L98 30"/>
+    <path d="M102 22 L102 38 M108 22 L108 38" stroke="#3c7876"/>
+    <path d="M98 30 L102 30 M108 30 L120 30"/>
+    <path d="${zig(120,30,34,5)}" stroke="#2563aa"/>
+    <path d="M154 30 L170 30"/>
+  </g>
+  <text x="6" y="60" font-size="10" fill="#2563aa" font-family="JetBrains Mono">Vs</text>
+  <text x="42" y="16" font-size="10" fill="#c2543d" text-anchor="middle" font-family="JetBrains Mono">Rs</text>
+  <text x="74" y="16" font-size="10" fill="#c9761f" text-anchor="middle" font-family="JetBrains Mono">L</text>
+  <text x="105" y="52" font-size="10" fill="#3c7876" text-anchor="middle" font-family="JetBrains Mono">C</text>
+  <text x="137" y="16" font-size="10" fill="#2563aa" text-anchor="middle" font-family="JetBrains Mono">R_L</text>
+</svg>
+<div class="desc"><b>直列 RLC ＋ 負荷 R<sub>L</sub>。</b>電流は輪をひとつ回るだけ。
+<span class="em">R<sub>L</sub> は Rs と足し算で分母に入る</span> ── だから負荷を変えると電流が動く。</div>`;
+
+// ===================================================================
+//  canvas
+// ===================================================================
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const info=document.getElementById('info');
+let W=0,H=0,DPR=1;
+let plotA=null, plotB=null;   // geometry for hit-testing drags
+function resize(){
+  const r=cv.getBoundingClientRect();
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  W=r.width;H=r.height;
+  cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  draw();
+}
+window.addEventListener('resize',resize);
+const MONO='11px JetBrains Mono, monospace';
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  const xL=42, xR=W-14, plotW=xR-xL;
+  const gap=40;
+  const aTop=20, aH=Math.round((H-gap-30)*0.58);
+  const bTop=aTop+aH+gap, bH=(H-6)-bTop;
+
+  drawPanelA(xL,xR,plotW,aTop,aH);
+  drawPanelB(xL,xR,plotW,bTop,bH);
+  updateMeter();
+  updateInfo();
+}
+
+// -------- Panel A : |I| vs R_L (main) --------
+function drawPanelA(xL,xR,plotW,top,h){
+  const X=Xof(u,Z0);
+  const xOf=(r)=> xL + (Math.log(r/R_LO)/Math.log(R_HI/R_LO))*plotW;
+  // sample
+  const N=200, rs=[], is=[]; let ymax=0;
+  for(let i=0;i<=N;i++){
+    const r=R_LO*Math.pow(R_HI/R_LO,i/N), I=Imag(u,Z0,r);
+    rs.push(r); is.push(I); if(I>ymax)ymax=I;
+  }
+  ymax*=1.12; if(ymax<1e-9)ymax=1e-9;
+  const yOf=(I)=> top+h - (I/ymax)*h;
+  plotA={xL,xR,top,h,xOf,r2x:xOf,ymax};
+
+  // frame
+  ctx.strokeStyle='#e3dbd0';ctx.lineWidth=1;ctx.strokeRect(xL,top,plotW,h);
+  // x decade grid + labels
+  ctx.font=MONO;ctx.fillStyle='#aaa49b';ctx.textAlign='center';ctx.textBaseline='top';
+  [0.1,1,10,100].forEach(r=>{
+    const x=xOf(r);
+    ctx.strokeStyle='#f0ebe2';ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,top+h);ctx.stroke();
+    ctx.fillText(r>=1?String(r):r.toString(), x, top+h+3);
+  });
+  ctx.fillStyle='#7d7568';ctx.fillText('R_L →', xR-16, top+h+3);
+  // y grid
+  ctx.textAlign='right';ctx.textBaseline='middle';ctx.fillStyle='#aaa49b';
+  for(let k=0;k<=4;k++){const yy=top+h-(k/4)*h;const v=ymax*k/4;
+    ctx.strokeStyle='#f4efe7';ctx.beginPath();ctx.moveTo(xL,yy);ctx.lineTo(xR,yy);ctx.stroke();
+    ctx.fillText(v.toFixed(v<0.1?3:2),xL-3,yy);}
+  // curve
+  ctx.strokeStyle='#3c7876';ctx.lineWidth=2;ctx.beginPath();
+  for(let i=0;i<=N;i++){const x=xOf(rs[i]),y=yOf(is[i]);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}
+  ctx.stroke();
+
+  // feedback target flat line
+  if(fbOn && fbTarget!=null){
+    const yt=yOf(Math.min(fbTarget,ymax));
+    ctx.strokeStyle='rgba(194,84,61,.9)';ctx.setLineDash([6,4]);ctx.lineWidth=1.8;
+    ctx.beginPath();ctx.moveTo(xL,yt);ctx.lineTo(xR,yt);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='#c2543d';ctx.font=MONO;ctx.textAlign='left';ctx.textBaseline='bottom';
+    ctx.fillText('|I| 目標='+fbTarget.toFixed(4)+'（帰還で保持）', xL+4, yt-2);
+  }
+
+  // operation point marker (open-loop current at current RL)
+  const Iop=Imag(u,Z0,RL);
+  const xm=xOf(RL), ym=yOf(Math.min(Iop,ymax));
+  ctx.strokeStyle='rgba(201,118,31,.5)';ctx.setLineDash([2,3]);ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(xm,top);ctx.lineTo(xm,top+h);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='#c9761f';ctx.beginPath();ctx.arc(xm,ym,4.5,0,7);ctx.fill();
+
+  // slope illustration at op point: tangent triangle showing S_R
+  const SR=SRof(u,Z0,RL);
+  // draw "+10% RL" companion dot
+  const r2=RL*1.1, I2=Imag(u,Z0,r2), x2=xOf(r2), y2=yOf(Math.min(I2,ymax));
+  ctx.fillStyle='rgba(194,84,61,.85)';ctx.beginPath();ctx.arc(x2,y2,3.2,0,7);ctx.fill();
+  ctx.strokeStyle='rgba(194,84,61,.6)';ctx.lineWidth=1.2;
+  ctx.beginPath();ctx.moveTo(xm,ym);ctx.lineTo(x2,y2);ctx.stroke();
+
+  // title
+  ctx.fillStyle='#3c7876';ctx.textAlign='left';ctx.textBaseline='top';ctx.font='11px JetBrains Mono, monospace';
+  ctx.fillText('|I|(R_L)  ── 負荷を変えると電流はどう動く？', xL+3, top+3);
+  ctx.fillStyle='#c2543d';ctx.font=MONO;ctx.fillText('赤点=R_L +10%', xL+3, top+18);
+}
+
+// -------- Panel B : |I| vs omega (resonance curve, where we sit) --------
+function drawPanelB(xL,xR,plotW,top,h){
+  const xOf=(uu)=> xL + (Math.log(uu/U_LO)/Math.log(U_HI/U_LO))*plotW;
+  const N=200, us=[], is=[]; let ymax=0;
+  for(let i=0;i<=N;i++){
+    const uu=U_LO*Math.pow(U_HI/U_LO,i/N), I=Imag(uu,Z0,RL);
+    us.push(uu); is.push(I); if(I>ymax)ymax=I;
+  }
+  ymax*=1.15; if(ymax<1e-9)ymax=1e-9;
+  const yOf=(I)=> top+h - (I/ymax)*h;
+  plotB={xL,xR,top,h,xOf,ymax};
+
+  ctx.strokeStyle='#e3dbd0';ctx.lineWidth=1;ctx.strokeRect(xL,top,plotW,h);
+  // x ticks
+  ctx.font=MONO;ctx.fillStyle='#aaa49b';ctx.textAlign='center';ctx.textBaseline='top';
+  [0.3,0.5,1,2,3].forEach(uu=>{
+    const x=xOf(uu);
+    ctx.strokeStyle=uu===1?'#e6ded3':'#f2ede5';ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,top+h);ctx.stroke();
+    ctx.fillText(String(uu), x, top+h+3);
+  });
+  ctx.fillStyle='#7d7568';ctx.fillText('ω/ω₀ →', xR-20, top+h+3);
+  // resonance dashed (u=1)
+  const x1=xOf(1);
+  ctx.strokeStyle='rgba(194,84,61,.45)';ctx.setLineDash([5,4]);ctx.lineWidth=1.3;
+  ctx.beginPath();ctx.moveTo(x1,top);ctx.lineTo(x1,top+h);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='#c2543d';ctx.textAlign='center';ctx.textBaseline='top';ctx.fillText('ω₀',x1,top+2);
+  // curve
+  ctx.strokeStyle='#c9761f';ctx.lineWidth=2;ctx.beginPath();
+  for(let i=0;i<=N;i++){const x=xOf(us[i]),y=yOf(is[i]);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}
+  ctx.stroke();
+  // where we sit
+  const Iop=Imag(u,Z0,RL), xm=xOf(u), ym=yOf(Iop);
+  ctx.strokeStyle='rgba(37,99,170,.7)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(xm,top);ctx.lineTo(xm,top+h);ctx.stroke();
+  ctx.fillStyle='#2563aa';ctx.beginPath();ctx.arc(xm,ym,4.5,0,7);ctx.fill();
+  // title
+  ctx.fillStyle='#c9761f';ctx.textAlign='left';ctx.textBaseline='top';ctx.font='11px JetBrains Mono, monospace';
+  ctx.fillText('|I|(ω)  ── いま共振カーブのどこに居る？（青=動作点）', xL+3, top+3);
+}
+
+// ===================================================================
+//  sensitivity meter (HTML)
+// ===================================================================
+function lerp(a,b,t){return a+(b-a)*t;}
+function mix(c1,c2,t){return 'rgb('+
+  Math.round(lerp(c1[0],c2[0],t))+','+Math.round(lerp(c1[1],c2[1],t))+','+Math.round(lerp(c1[2],c2[2],t))+')';}
+const C_GREEN=[60,120,118], C_AMBER=[201,118,31], C_RED=[194,84,61];
+function srColor(t){ // t=|S_R| in 0..1
+  return t<0.5 ? mix(C_GREEN,C_AMBER,t/0.5) : mix(C_AMBER,C_RED,(t-0.5)/0.5);
+}
+const meter=document.getElementById('meter');
+const mBig=document.getElementById('mBig'), mVerdict=document.getElementById('mVerdict'), mPlain=document.getElementById('mPlain');
+function updateMeter(){
+  const SR=SRof(u,Z0,RL), t=Math.min(1,Math.abs(SR));
+  const col=srColor(t);
+  mBig.textContent=SR.toFixed(3);
+  mBig.style.color=col;
+  meter.style.background='linear-gradient(90deg,'+
+    'rgba('+C_RED.join(',')+',0.10) 0%, rgba('+C_AMBER.join(',')+',0.06) 50%, rgba('+C_GREEN.join(',')+',0.10) 100%)';
+  let verdict, vcol;
+  if(t>0.6){verdict='定電流ではない';vcol=C_RED;}
+  else if(t>0.25){verdict='まだ効く（中途半端）';vcol=C_AMBER;}
+  else{verdict='鈍い（バラスト気味）';vcol=C_GREEN;}
+  mVerdict.textContent=verdict; mVerdict.style.color='rgb('+vcol.join(',')+')';
+  const pct=(SR*10).toFixed(2);
+  if(fbOn){
+    mPlain.innerHTML='能動帰還 <b style="color:var(--red)">ON</b>：電流は測って直すので、'+
+      '負荷が変わっても実効感度は <b>≈0</b>（下の |Vs| が代わりに動く）。開ループ値は S<sub>R</sub>='+SR.toFixed(3)+'。';
+  }else{
+    mPlain.innerHTML='負荷 R<sub>L</sub> が <b>+10%</b> されたら、電流は <b style="color:'+col+'">'+pct+'%</b> 変わる'+
+      (SR<0?'（減る）':'')+'。｜S<sub>R</sub>｜が1に近いほど「負荷追従」＝定電流から遠い。';
+  }
+}
+
+function updateInfo(){
+  const X=Xof(u,Z0), R=Rs+RL, Iop=Imag(u,Z0,RL), SR=SRof(u,Z0,RL);
+  let s='u = ω/ω₀ = <b class="v-blue">'+u.toFixed(3)+'</b> &nbsp; '+
+    'X = Z₀(u−1/u) = <b class="v-amber">'+X.toFixed(3)+'</b> &nbsp; Z₀ = <b>'+Z0.toFixed(2)+'</b><br>'+
+    'R_L = <b class="v-teal">'+RL.toFixed(2)+'</b> &nbsp; Rs+R_L = <b>'+R.toFixed(2)+'</b> &nbsp; '+
+    '|I| = Vs/√((Rs+R_L)²+X²) = <b>'+Iop.toFixed(4)+'</b> &nbsp; S_R = <b>'+SR.toFixed(4)+'</b>';
+  if(fbOn && fbTarget!=null){
+    const VsReq=fbTarget*Math.hypot(R,X);
+    const pct=((VsReq/1-1)*100);
+    s+='<br>能動帰還: |I|→<b class="v-red">'+fbTarget.toFixed(4)+'</b> 保持のため 必要 |Vs| = '+
+      'target·√((Rs+R_L)²+X²) = <b class="v-red">'+VsReq.toFixed(4)+'</b> '+
+      '（基準1から '+(pct>=0?'+':'')+pct.toFixed(1)+'%）';
+  }
+  info.innerHTML=s;
+}
+
+// ===================================================================
+//  controls
+// ===================================================================
+const sU=document.getElementById('sU'),sR=document.getElementById('sR'),sZ=document.getElementById('sZ');
+const lU=document.getElementById('lU'),lR=document.getElementById('lR'),lZ=document.getElementById('lZ');
+function syncLabels(){
+  lU.textContent=u.toFixed(2);
+  lR.textContent=RL.toFixed(RL<1?2:1);
+  lZ.textContent=Z0.toFixed(1);
+}
+function readParams(){
+  u =logmap(parseFloat(sU.value),U_LO,U_HI);
+  RL=logmap(parseFloat(sR.value),R_LO,R_HI);
+  Z0=logmap(parseFloat(sZ.value),Z_LO,Z_HI);
+  syncLabels();
+}
+function setSliders(){
+  sU.value=invlog(u,U_LO,U_HI);
+  sR.value=invlog(RL,R_LO,R_HI);
+  sZ.value=invlog(Z0,Z_LO,Z_HI);
+  syncLabels();
+}
+[sU,sR,sZ].forEach(s=>s.addEventListener('input',()=>{readParams();draw();}));
+
+// presets
+function preset(nu,nz,nr,el){
+  u=nu; Z0=nz; RL=nr;
+  setSliders(); draw();
+  [b1,b2,b3].forEach(b=>b.classList.remove('on')); el.classList.add('on');
+}
+const b1=document.getElementById('p1'),b2=document.getElementById('p2'),b3=document.getElementById('p3');
+b1.addEventListener('click',()=>{preset(1,1,10,b1);location.hash='mode=resonance';});
+b2.addEventListener('click',()=>{preset(2,6,10,b2);location.hash='mode=middle';});
+b3.addEventListener('click',()=>{preset(3,15,10,b3);location.hash='mode=ballast';});
+
+// feedback toggle
+const fbBtn=document.getElementById('fb');
+fbBtn.addEventListener('click',()=>{
+  fbOn=!fbOn;
+  fbBtn.classList.toggle('on',fbOn);
+  fbBtn.textContent='能動帰還 '+(fbOn?'ON':'OFF');
+  if(fbOn) fbTarget=Imag(u,Z0,RL);   // hold whatever current we have now
+  else fbTarget=null;
+  location.hash='fb='+(fbOn?1:0);
+  draw();
+});
+
+// canvas drag: top plot sets R_L, bottom plot sets omega
+let dragTarget=null;
+function pointerXY(e){
+  const r=cv.getBoundingClientRect();
+  const p=e.touches?e.touches[0]:e;
+  return {x:p.clientX-r.left, y:p.clientY-r.top};
+}
+function applyDrag(x,y){
+  if(dragTarget==='A' && plotA){
+    const t=(x-plotA.xL)/(plotA.xR-plotA.xL);
+    RL=logmap(Math.max(0,Math.min(1,t))*1000,R_LO,R_HI);
+  }else if(dragTarget==='B' && plotB){
+    const t=(x-plotB.xL)/(plotB.xR-plotB.xL);
+    u=logmap(Math.max(0,Math.min(1,t))*1000,U_LO,U_HI);
+  }
+  setSliders(); draw();
+}
+function hit(x,y){
+  if(plotA && y>=plotA.top && y<=plotA.top+plotA.h) return 'A';
+  if(plotB && y>=plotB.top && y<=plotB.top+plotB.h) return 'B';
+  return null;
+}
+function down(e){const {x,y}=pointerXY(e);dragTarget=hit(x,y);if(dragTarget){e.preventDefault();applyDrag(x,y);}}
+function move(e){if(!dragTarget)return;const {x,y}=pointerXY(e);e.preventDefault();applyDrag(x,y);}
+function up(){dragTarget=null;}
+cv.addEventListener('mousedown',down);window.addEventListener('mousemove',move);window.addEventListener('mouseup',up);
+cv.addEventListener('touchstart',down,{passive:false});
+cv.addEventListener('touchmove',move,{passive:false});
+window.addEventListener('touchend',up);
+
+// ===================================================================
+//  init (hash deep-link)
+// ===================================================================
+(function init(){
+  const h=location.hash;
+  if(/mode=resonance/.test(h)){u=1;Z0=1;RL=10;b1.classList.add('on');}
+  else if(/mode=middle/.test(h)){u=2;Z0=6;RL=10;b2.classList.add('on');}
+  else if(/mode=ballast/.test(h)){u=3;Z0=15;RL=10;b3.classList.add('on');}
+  if(/fb=1/.test(h)){fbOn=true;fbBtn.classList.add('on');fbBtn.textContent='能動帰還 ON';}
+  setSliders();
+  if(fbOn) fbTarget=Imag(u,Z0,RL);
+  resize();
+})();
+</script>
+</body>
+</html>

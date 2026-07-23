@@ -30,3 +30,7 @@ dev-server.*.log
 
 .tmp-shot/
 .tmp-shot2/
+.tmp-edge-*/
+.shot/
+public/*/shot-*.png
+public/*/.tmp-shot*/

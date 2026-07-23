@@ -57,6 +57,8 @@ export const labGroups: LabGroup[] = [
       { name: 'チョークの言い分（リップル・逆流・πVinの粘り）', url: '/choke-voice/' },
       { name: 'トランスの中身（結合k・漏れ・反射則）', url: '/transformer-inside/' },
       { name: '巻線の中の波（定在波モード・節と腹・モード分裂）', url: '/winding-waves/' },
+      { name: '波形整形スタジオ（3次を1/9混ぜて頭を平らに）', url: '/triple-resonance/' },
+      { name: '負荷感度メータ（共振≠定電流を測って壊す）', url: '/constant-current/' },
     ],
   },
   {
