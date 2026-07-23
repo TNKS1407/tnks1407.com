@@ -27,3 +27,6 @@ dev-server.*.log
 
 # headless-edge screenshot scratch
 .tmp-shot/
+
+.tmp-shot/
+.tmp-shot2/
