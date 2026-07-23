@@ -176,4 +176,9 @@ $$
 - **開放/短絡ボタン**でLCRメータごっこ：開放で $L_1$、短絡で $L_1(1-k^2)$ が「測れる」
 - $|Z_{\mathrm{in}}|(f)$ のカーブで、低周波の磁化立ち上がり→中域の反射平坦部($\approx Z_L/n^2$)を確認。kを下げると反射則からどうずれていくかも見える
 
+<div class="demo-embed">
+  <iframe src="/transformer-inside/" title="トランスの中身ラボ" loading="lazy"></iframe>
+  <div class="cap"><span>transformer-inside</span><a href="/transformer-inside/" target="_blank" rel="noopener noreferrer">全画面で開く ↗</a></div>
+</div>
+
 次回は、いよいよ三人目の住人が主役になる——巻線の中の波。インダクタンスと容量が分布した巻線は、それ自体がひとつの伝送線路で、固有モードを持ち、1/4波長で共振する。「高圧トランスの二次巻線は、部品ではなく共振器」という話。

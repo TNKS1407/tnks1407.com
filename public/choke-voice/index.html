@@ -12,6 +12,8 @@
   --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
   --teal:#3c7876;--red:#c2543d;--amber:#c9761f;--blue:#2563aa;
   --text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;
+  /* scope trace colors (実機オシロ慣習) */
+  --ch1:#e8c545;--ch2:#4fd8cf;--ch3:#e070d0;
 }
 *{box-sizing:border-box;margin:0;padding:0;}
 html{overflow-x:hidden;max-width:100%;}
@@ -33,12 +35,20 @@ header{display:flex;align-items:flex-end;gap:10px;margin-bottom:14px;flex-wrap:w
   box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
 .lead p{margin:0 0 .5rem;}.lead p:last-child{margin-bottom:0;}
 .lead b{color:var(--text);}
+.lead .c1{color:#a9860a;font-weight:600;}.lead .c2{color:#1f9b93;font-weight:600;}.lead .c3{color:#b445a6;font-weight:600;}
 .selftest{margin-top:.5rem;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);
   border-top:1px dashed var(--border);padding-top:.5rem;}
 .selftest b{color:var(--teal);}
 .card-tool{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;
   box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
-#stage{position:relative;width:100%;height:clamp(340px,68vw,500px);overflow:hidden;background:var(--surface);}
+/* --- circuit schematic --- */
+.schematic{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 8px 4px;}
+.schematic svg{display:block;width:100%;height:auto;max-height:172px;}
+.schematic .wire{stroke:#8a8478;stroke-width:1.6;fill:none;}
+.schematic .lbl{font-family:'JetBrains Mono',monospace;font-size:11px;fill:var(--muted);}
+.schematic .comp{fill:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;}
+.schematic .plbl{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;}
+#stage{position:relative;width:100%;height:clamp(320px,64vw,470px);overflow:hidden;background:#0c1512;}
 canvas{display:block;width:100%;height:100%;touch-action:none;}
 #info{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);
   padding:.45rem .7rem;font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--muted);
@@ -48,6 +58,17 @@ canvas{display:block;width:100%;height:100%;touch-action:none;}
 #info .v-red{color:var(--red);font-weight:600;}
 #info .v-amber{color:var(--amber);font-weight:600;}
 #info .v-blue{color:var(--blue);font-weight:600;}
+/* --- scope controls --- */
+.scopebar{display:flex;flex-wrap:wrap;gap:.35rem .6rem;align-items:center;background:var(--surface);
+  border-top:1px solid var(--border);padding:.5rem .7rem;}
+.chctl{display:flex;align-items:center;gap:.28rem;font-family:'JetBrains Mono',monospace;font-size:.7rem;}
+.chctl .sw{width:12px;height:12px;border-radius:2px;flex:none;cursor:pointer;box-shadow:0 0 0 1px rgba(0,0,0,.18);}
+.chctl.off{opacity:.42;}
+.chctl .nm{color:var(--text);font-weight:600;}
+.chctl .vv{color:var(--text);min-width:6.5ch;text-align:right;}
+.stp{border:1px solid var(--border);background:var(--card);border-radius:5px;width:20px;height:20px;
+  line-height:1;padding:0;font-size:.85rem;font-weight:700;color:var(--text);cursor:pointer;}
+.stp:hover{border-color:var(--teal);}
 .ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);
   padding:.5rem .7rem;display:flex;flex-wrap:wrap;gap:.5rem .8rem;align-items:center;}
 .cg{display:flex;align-items:center;gap:.4rem;font-size:.75rem;}
@@ -74,7 +95,7 @@ body.embed{height:100%;display:flex;flex-direction:column;overflow:hidden;backgr
 body.embed .wrap{max-width:none;margin:0;padding:0;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
 body.embed header,body.embed .lead,body.embed .note,body.embed footer{display:none;}
 body.embed .card-tool{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;border:none;border-radius:0;box-shadow:none;}
-body.embed #stage{flex:1 1 auto;height:auto;min-height:200px;}
+body.embed #stage{flex:1 1 auto;height:auto;min-height:180px;}
 </style>
 </head>
 <body>
@@ -86,13 +107,81 @@ body.embed #stage{flex:1 1 auto;height:auto;min-height:200px;}
   </header>
   <div class="lead">
     <p>コレクタ共振回路では、電源とタンクの間に <b>入力チョーク Lch</b> が座っている。地味な部品だけれど、言い分がある。チョークは直流電流 ich を <b>ならして</b> 注ぎ込む ── つまり「電流源のふり」をしてタンクに給電する。だから <b>V<sub>CE</sub> のピーク ≈ π·Vin</b> が立つ。</p>
-    <p>主役つまみは <b>Lch</b> だ。大きくするとチョーク電流のリップル ΔI<sub>pp</sub> が小さくなり、なめらかな直流電流源になる。小さくするとリップルが暴れ、やがて <b>ich が負まで振れて逆流</b>する ── そうなるともう一方向の電流源ではない。おもしろいのは、それでも <b>Vpk はほぼ π·Vin のまま</b>なこと。チョークの<b>ボルト秒平衡</b>（平均|v|=2Vin）が Lch に依らず成り立ち、良く効くLCタンクが電圧波形を守るからだ。崩れるのは電圧の山より先に <b>電流の質</b> の方。上段が <b>ich(t)</b>（青・リップルと逆流を見る）、下段が <b>v(t)</b>（タンク電圧・π·Vin の赤破線と比べる）。</p>
+    <p>主役つまみは <b>Lch</b> だ。大きくするとチョーク電流のリップル ΔI<sub>pp</sub> が小さくなり、なめらかな直流電流源になる。小さくするとリップルが暴れ、やがて <b>ich が負まで振れて逆流</b>する ── そうなるともう一方向の電流源ではない。おもしろいのは、それでも <b>Vpk はほぼ π·Vin のまま</b>なこと。チョークの<b>ボルト秒平衡</b>（平均|v|=2Vin）が Lch に依らず成り立ち、良く効くLCタンクが電圧波形を守るからだ。崩れるのは電圧の山より先に <b>電流の質</b> の方。</p>
+    <p>画面は実測オシロ風にした。3本のトレースは実機の慣習色 ──
+      <span class="c1">ch1 v_CT</span>（黄・チョーク出口＝センタタップ電圧）、
+      <span class="c2">ch2 i_ch</span>（シアン・チョーク電流。リップルと逆流を見る）、
+      <span class="c3">ch3 v_tank</span>（マゼンタ・タンク差動電圧。±π·Vin に乗るか）。
+      <b>V/div と time/div は 1-2-5 の段階スイッチで手動固定</b>にしてある ── だから Lch を回すとリップルが<b>絶対的な大きさ</b>として伸び縮みする（勝手に縦軸が伸縮しない）。波形が枠から出たら <b>AUTO</b> で一度だけ合わせ直せる（実機の AutoSet と同じ）。左上の回路図の色付きプローブが、どの色の線が回路のどこを測っているかを示す。</p>
     <div class="selftest" id="selftest">セルフテスト実行中…</div>
   </div>
 
   <div class="card-tool">
+    <div class="schematic" id="schematic">
+      <svg viewBox="0 0 760 172" preserveAspectRatio="xMidYMid meet" aria-label="コレクタ共振回路の簡略図">
+        <!-- ground rail -->
+        <path class="wire" d="M60,152 H700"/>
+        <!-- ground symbol -->
+        <path class="wire" d="M380,152 V160 M368,160 H392 M373,164 H387 M377,168 H383"/>
+        <!-- Vin battery, left, ground->top rail -->
+        <path class="wire" d="M70,152 V112"/>
+        <path class="wire" d="M58,112 H82"/>            <!-- long plate + -->
+        <path class="wire" d="M64,104 H76"/>            <!-- short plate - -->
+        <path class="wire" d="M70,104 V96"/>
+        <path class="wire" d="M58,96 H82"/>
+        <path class="wire" d="M64,88 H76"/>
+        <path class="wire" d="M70,88 V44 H120"/>        <!-- up to top rail -->
+        <text class="lbl" x="30" y="104">Vin</text>
+        <!-- choke Lch on top rail -->
+        <path class="wire" d="M120,44 a15,15 0 0 1 30,0 a15,15 0 0 1 30,0 a15,15 0 0 1 30,0 a15,15 0 0 1 30,0"/>
+        <path class="wire" d="M240,44 H380"/>
+        <text class="comp" x="150" y="24">Lch</text>
+        <!-- ch2 current clamp around choke wire (cyan) -->
+        <g>
+          <circle cx="300" cy="44" r="12" fill="none" stroke="var(--ch2)" stroke-width="2.4"/>
+          <path d="M300,32 l0,-0" stroke="var(--ch2)"/>
+          <rect x="296" y="30" width="8" height="6" fill="var(--surface)" stroke="var(--ch2)" stroke-width="1.6"/>
+          <text class="plbl" x="316" y="40" fill="var(--ch2)">ch2 i_ch</text>
+        </g>
+        <!-- center tap node down to tank -->
+        <path class="wire" d="M380,44 V96"/>
+        <!-- ch1 probe at center tap (yellow) -->
+        <circle cx="380" cy="44" r="4.5" fill="var(--ch1)" stroke="#7a5f00" stroke-width="1"/>
+        <text class="plbl" x="388" y="34" fill="#a9860a">ch1 v_CT</text>
+        <!-- tank inductor Ld (center-tapped), y=96 -->
+        <path class="wire" d="M300,96 a12,12 0 0 1 24,0 a12,12 0 0 1 24,0 a12,12 0 0 1 24,0"/>
+        <path class="wire" d="M392,96 a12,12 0 0 1 24,0 a12,12 0 0 1 24,0 a12,12 0 0 1 24,0"/>
+        <text class="comp" x="330" y="120">Ld</text>
+        <!-- Cr across collectors -->
+        <path class="wire" d="M300,96 V128 H372 M388,128 H480 V96"/>
+        <path class="wire" d="M372,120 V136 M388,120 V136"/>   <!-- cap plates -->
+        <text class="comp" x="356" y="150">Cr</text>
+        <!-- ch3 differential probe across collectors (magenta) -->
+        <path d="M300,96 V72 H480 V96" fill="none" stroke="var(--ch3)" stroke-width="1.4" stroke-dasharray="4 3"/>
+        <circle cx="300" cy="96" r="4" fill="var(--ch3)"/>
+        <circle cx="480" cy="96" r="4" fill="var(--ch3)"/>
+        <text class="plbl" x="356" y="66" fill="#b445a6">ch3 v_tank</text>
+        <!-- collectors down to transistors -->
+        <path class="wire" d="M300,96 V116"/>
+        <path class="wire" d="M480,96 V116"/>
+        <!-- Q1 -->
+        <circle class="wire" cx="285" cy="130" r="14" fill="none"/>
+        <path class="wire" d="M285,116 V124 M275,124 V136 M275,128 L299,120 M275,132 L299,140 M299,140 V152"/>
+        <text class="comp" x="252" y="134">Q1</text>
+        <!-- Q2 -->
+        <circle class="wire" cx="495" cy="130" r="14" fill="none"/>
+        <path class="wire" d="M495,116 V124 M485,124 V136 M485,128 L461,120 M485,132 L461,140 M461,140 V152"/>
+        <text class="comp" x="512" y="134">Q2</text>
+        <!-- Rload to the right, across tank -->
+        <path class="wire" d="M480,80 H600 V96"/>
+        <path class="wire" d="M600,96 l7,6 l-14,8 l14,8 l-14,8 l7,6"/>  <!-- resistor zigzag -->
+        <path class="wire" d="M600,140 V152"/>
+        <text class="comp" x="612" y="122">Rload</text>
+      </svg>
+    </div>
     <div id="stage"><canvas id="c"></canvas></div>
     <div id="info"></div>
+    <div class="scopebar" id="scopebar"></div>
     <div class="ctrl">
       <div class="cg star"><label>Lch <b id="lLch"></b></label>
         <input id="sLch" type="range" min="0" max="1000" step="1" value="500"></div>
@@ -167,8 +256,6 @@ const dIppTheo=()=>RIPPLE_COEF*Vin/(f0()*Lch);
 // ===================================================================
 //  SELF-TEST
 // ===================================================================
-// Run to steady state from a near-limit-cycle seed at given Lch, then
-// measure over the last `measFrac` of the run.
 function runSim(LchVal,nPer,measFrac){
   const sav=[Vin,Lch,Ld,Cr,Rload];
   Vin=12; Ld=100e-6; Cr=100e-9; Rload=1000; Lch=LchVal;
@@ -199,6 +286,22 @@ function runSim(LchVal,nPer,measFrac){
 }
 const STbig=runSim(10e-3,220,0.25);   // large choke: ideal-ish
 const STsmall=runSim(0.1e-3,220,0.25); // small choke: current-source lost
+
+// ⑤ fixed-scale clipping does not corrupt the measurement:
+//    display scale (V/div, position) is a pure view transform; the measured
+//    Vpk stays correct even when a deliberately-too-small V/div maps the
+//    trace far off-screen (where it would be clipped away).
+const _CLIP=(function(){
+  const top=0, bot=400, mid=200, pxPerDiv=40, pos=0;
+  const yFor=(val,vdiv)=> mid-(pos+val/vdiv)*pxPerDiv; // same form as scope yOf
+  const vdivTiny=0.001; // 1mV/div : ~37V peak lands ~925k px above screen
+  const yClipped=yFor(STbig.vpk, vdivTiny);
+  const offscreen=(yClipped<top||yClipped>bot);
+  // measurement is read from physics buffers, independent of vdiv -> unchanged
+  const measureIntact=Math.abs(STbig.vpkRatio-1)<0.02;
+  return {offscreen, measureIntact, ok:offscreen&&measureIntact};
+})();
+
 (function reportST(){
   const el=document.getElementById('selftest');
   const ok=(b)=>b?'<b>PASS</b>':'<span style="color:var(--red)">FAIL</span>';
@@ -206,6 +309,7 @@ const STsmall=runSim(0.1e-3,220,0.25); // small choke: current-source lost
   const c2=Math.abs(STbig.vpkRatio-1)<0.02;
   const c3=STsmall.ichMin<0;   // choke current reverses = 電流源でなくなる
   const c4=Math.abs(STbig.pRatio-1)<0.05;
+  const c5=_CLIP.ok;
   el.innerHTML=
     'セルフテスト（Vin12/Ld100µ/Cr100n/R1k）:<br>'+
     '①ΔI_pp '+ok(c1)+' Lch10mH 実測/理論='+STbig.dIppRatio.toFixed(3)+
@@ -213,7 +317,9 @@ const STsmall=runSim(0.1e-3,220,0.25); // small choke: current-source lost
     '②Vpk '+ok(c2)+' Lch10mH 実測/πVin='+STbig.vpkRatio.toFixed(3)+'<br>'+
     '③電流源喪失 '+ok(c3)+' Lch0.1mH ich_min='+(STsmall.ichMin*1e3).toFixed(0)+
       'mA (<0＝逆流) &nbsp; '+
-    '④電力 '+ok(c4)+' Pin/Pload='+STbig.pRatio.toFixed(3);
+    '④電力 '+ok(c4)+' Pin/Pload='+STbig.pRatio.toFixed(3)+'<br>'+
+    '⑤固定スケールでクリップしても計算不変 '+ok(c5)+
+      ' (1mV/divで画面外'+(_CLIP.offscreen?'○':'×')+'・Vpk実測/πVin='+STbig.vpkRatio.toFixed(3)+'を保持)';
 })();
 
 // ===================================================================
@@ -237,7 +343,37 @@ let dt=period()/600;
 let simT=0;
 let settleT=null;   // startup settling time (s) or null
 let vbuf=[],ichbuf=[],tbuf=[];
-const BUFT=()=>6*period();
+
+// ---- scope state ----
+const NHDIV=10, NVDIV=8;
+// 1-2-5 sequence, 1µ .. 5k (covers V, A/mA, and time in seconds)
+const SEQ=(()=>{const a=[];for(let e=-6;e<=3;e++)for(const m of[1,2,5])a.push(m*Math.pow(10,e));return a;})();
+function idxGE(x){ for(let i=0;i<SEQ.length;i++) if(SEQ[i]>=x*0.999) return i; return SEQ.length-1; }
+const channels=[
+  {key:'ch1',name:'v_CT',  color:'#e8c545',base:'V',vi:0,pos:-2.5,on:true, get:(v,ic)=>Math.abs(v)*0.5},
+  {key:'ch2',name:'i_ch',  color:'#4fd8cf',base:'A',vi:0,pos:0,   on:true, get:(v,ic)=>ic},
+  {key:'ch3',name:'v_tank',color:'#e070d0',base:'V',vi:0,pos:0,   on:true, get:(v,ic)=>v},
+];
+let tIndex=0;
+function setDefaultScope(){
+  channels[0].vi=idxGE(5);     // 5V/div
+  channels[0].pos=-2.5;
+  channels[1].vi=idxGE(0.02);  // 20mA/div
+  channels[1].pos=0;
+  channels[2].vi=idxGE(20);    // 20V/div
+  channels[2].pos=0;
+  tIndex=idxGE(1e-5);          // 10µs/div
+}
+const BUFT=()=>Math.max(6*period(), NHDIV*SEQ[tIndex]*1.15);
+
+// ---- number formatting ----
+function trimNum(x){ const r=Math.round(x*1e4)/1e4; return ''+r; }
+function fmtVal(x,base){
+  const a=Math.abs(x);
+  if(base==='A'){ if(a>=1)return trimNum(x)+'A'; if(a>=1e-3)return trimNum(x*1e3)+'mA'; return trimNum(x*1e6)+'µA'; }
+  if(a>=1e3)return trimNum(x/1e3)+'kV'; if(a>=1)return trimNum(x)+'V'; return trimNum(x*1e3)+'mV';
+}
+function fmtTime(x){ if(x>=1e-3)return trimNum(x*1e3)+'ms'; if(x>=1e-6)return trimNum(x*1e6)+'µs'; return trimNum(x*1e9)+'ns'; }
 
 function seedSteady(){
   const Vpk=Math.PI*Vin;
@@ -260,7 +396,6 @@ function step(){
     vbuf.push(y[0]);ichbuf.push(y[2]);tbuf.push(simT);
   }
   while(tbuf.length>2 && (simT-tbuf[0])>keep){ vbuf.shift();ichbuf.shift();tbuf.shift(); }
-  // settling detection (startup): first time recent-period peak reaches 95% of πVin
   if(mode==='start' && settleT===null && simT>2*T){
     let pk=0; const t0=simT-T;
     for(let i=tbuf.length-1;i>=0 && tbuf[i]>=t0;i--) pk=Math.max(pk,Math.abs(vbuf[i]));
@@ -283,96 +418,86 @@ function measure(){
           W:0.5*Lch*meanIch*meanIch};
 }
 
-// ---- drawing ----
+// ---- AUTO (one-shot autoset, like a real scope) ----
+function autoset(){
+  const n=vbuf.length; if(n<12)return;
+  channels.forEach(ch=>{
+    let mn=1e30,mx=-1e30;
+    for(let i=0;i<n;i++){ const val=ch.get(vbuf[i],ichbuf[i]); if(val<mn)mn=val; if(val>mx)mx=val; }
+    const span=Math.max(mx-mn,1e-9), mid=(mn+mx)/2;
+    ch.vi=idxGE(span/5.5);                          // ~5.5 divs peak-to-peak
+    ch.pos=Math.max(-3.4,Math.min(3.4,-mid/SEQ[ch.vi])); // center the mean
+  });
+  tIndex=idxGE(4*period()/NHDIV);                   // ~4 periods across screen
+  updateScopeLabels();
+}
+
+// ---- drawing (oscilloscope screen) ----
 function draw(){
   ctx.clearRect(0,0,W,H);
-  const padL=8,padR=8, sx0=padL, sx1=W-padR, sw=sx1-sx0;
+  ctx.fillStyle='#0c1512'; ctx.fillRect(0,0,W,H);
+
+  const sx0=12, sx1=W-8, sw=sx1-sx0;
+  const sy0=8, botStrip=28, sy1=H-botStrip, sh=sy1-sy0;
+  const midY=(sy0+sy1)/2, pdx=sw/NHDIV, pdy=sh/NVDIV;
+
+  // ---- graticule ----
+  ctx.lineWidth=1;
+  for(let i=0;i<=NHDIV;i++){ const x=sx0+i*pdx;
+    ctx.strokeStyle=(i===NHDIV/2)?'rgba(140,200,175,.32)':'rgba(120,180,160,.12)';
+    ctx.beginPath();ctx.moveTo(x,sy0);ctx.lineTo(x,sy1);ctx.stroke(); }
+  for(let i=0;i<=NVDIV;i++){ const y=sy0+i*pdy;
+    ctx.strokeStyle=(i===NVDIV/2)?'rgba(140,200,175,.32)':'rgba(120,180,160,.12)';
+    ctx.beginPath();ctx.moveTo(sx0,y);ctx.lineTo(sx1,y);ctx.stroke(); }
+  // center-axis fine ticks (0.2 div)
+  ctx.strokeStyle='rgba(140,200,175,.34)';
+  const cxAxis=sx0+(NHDIV/2)*pdx;
+  for(let i=0;i<=NHDIV*5;i++){ const x=sx0+i*pdx/5; ctx.beginPath();ctx.moveTo(x,midY-3);ctx.lineTo(x,midY+3);ctx.stroke(); }
+  for(let i=0;i<=NVDIV*5;i++){ const yy=sy0+i*pdy/5; ctx.beginPath();ctx.moveTo(cxAxis-3,yy);ctx.lineTo(cxAxis+3,yy);ctx.stroke(); }
+  // frame
+  ctx.strokeStyle='rgba(140,200,175,.5)';ctx.lineWidth=1;ctx.strokeRect(sx0,sy0,sw,sh);
+
   const n=vbuf.length;
-  const t1=n>2?tbuf[n-1]:0, win=BUFT(), t0=t1-win;
-  const tX=(t)=> sx0 + ((t-t0)/win)*sw;
+  const tdiv=SEQ[tIndex], win=NHDIV*tdiv;
+  const t1=n>2?tbuf[n-1]:0, t0=t1-win;
+  const xOf=(t)=> sx0+((t-t0)/win)*sw;
 
-  // panel geometry
-  const ichTop=18, ichBot=H*0.46;
-  const vTop=H*0.54, vBot=H-24;
+  // ---- traces (clipped to screen; glow) ----
+  channels.forEach(ch=>{
+    if(!ch.on||n<3)return;
+    const vdiv=SEQ[ch.vi];
+    const yOf=(val)=> midY-(ch.pos+val/vdiv)*pdy;
+    ctx.save();ctx.beginPath();ctx.rect(sx0,sy0,sw,sh);ctx.clip();
+    ctx.shadowColor=ch.color;ctx.shadowBlur=6;ctx.strokeStyle=ch.color;ctx.lineWidth=1.6;
+    ctx.beginPath();let started=false;
+    for(let i=0;i<n;i++){ if(tbuf[i]<t0)continue;
+      const x=xOf(tbuf[i]), yy=yOf(ch.get(vbuf[i],ichbuf[i]));
+      if(!started){ctx.moveTo(x,yy);started=true;} else ctx.lineTo(x,yy); }
+    ctx.stroke();ctx.shadowBlur=0;ctx.restore();
+  });
 
-  // ================= ich panel (top) =================
-  ctx.fillStyle='#7d7568';ctx.font='11px JetBrains Mono, monospace';
-  ctx.textAlign='left';ctx.textBaseline='top';
-  ctx.fillStyle='#2563aa';ctx.fillText('ich(t)  チョーク電流 — リップル ΔI_pp を見る', sx0+2, 4);
-  // autoscale around mean
-  const m=measure();
-  if(m){
-    const mid=m.meanIch;
-    const half=Math.max((m.ichMax-m.ichMin)*0.62, dIppTheo()*0.75, 1e-6);
-    const icY=(v)=> (ichTop+ichBot)/2 - ((v-mid)/half)*((ichBot-ichTop)*0.5);
-    // mean line
-    ctx.strokeStyle='#ece5da';ctx.lineWidth=1;
-    ctx.beginPath();ctx.moveTo(sx0,icY(mid));ctx.lineTo(sx1,icY(mid));ctx.stroke();
-    // theory ripple band (centered on mean, height = ΔI_pp theory)
-    const dth=dIppTheo();
-    ctx.fillStyle='rgba(201,118,31,.13)';
-    ctx.fillRect(sx0, icY(mid+dth/2), sw, icY(mid-dth/2)-icY(mid+dth/2));
-    ctx.strokeStyle='rgba(201,118,31,.5)';ctx.setLineDash([4,3]);ctx.lineWidth=1;
-    ctx.beginPath();ctx.moveTo(sx0,icY(mid+dth/2));ctx.lineTo(sx1,icY(mid+dth/2));ctx.stroke();
-    ctx.beginPath();ctx.moveTo(sx0,icY(mid-dth/2));ctx.lineTo(sx1,icY(mid-dth/2));ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle='#c9761f';ctx.textAlign='right';ctx.textBaseline='bottom';
-    ctx.fillText('ΔI_pp理論 '+(dth*1e3).toFixed(2)+'mA帯', sx1-3, icY(mid-dth/2)-2);
-    // zero line (visible when ich dips toward/below 0 = current-source loss)
-    const zy=icY(0);
-    if(zy>ichTop && zy<ichBot){
-      ctx.strokeStyle='rgba(194,84,61,.6)';ctx.lineWidth=1;
-      ctx.beginPath();ctx.moveTo(sx0,zy);ctx.lineTo(sx1,zy);ctx.stroke();
-      ctx.fillStyle='#c2543d';ctx.textAlign='left';ctx.textBaseline='top';
-      ctx.fillText('ich=0（この下は逆流）', sx0+70, zy+1);
-    }
-    // ich trace (red where negative = reversed)
-    if(n>2){
-      ctx.lineWidth=1.8;
-      for(let i=1;i<n;i++){
-        ctx.strokeStyle=(ichbuf[i]<0||ichbuf[i-1]<0)?'#c2543d':'#2563aa';
-        ctx.beginPath();ctx.moveTo(tX(tbuf[i-1]),icY(ichbuf[i-1]));ctx.lineTo(tX(tbuf[i]),icY(ichbuf[i]));ctx.stroke();
-      }
-    }
-    // measured ΔI_pp bracket on left
-    const bx=sx0+3;
-    ctx.strokeStyle='#c2543d';ctx.lineWidth=1.4;ctx.beginPath();
-    ctx.moveTo(bx,icY(m.ichMax));ctx.lineTo(bx+5,icY(m.ichMax));
-    ctx.moveTo(bx,icY(m.ichMax));ctx.lineTo(bx,icY(m.ichMin));
-    ctx.moveTo(bx,icY(m.ichMin));ctx.lineTo(bx+5,icY(m.ichMin));
-    ctx.stroke();
-    ctx.fillStyle='#c2543d';ctx.textAlign='left';ctx.textBaseline='middle';
-    ctx.fillText((m.dIpp*1e3).toFixed(2)+'mA', bx+8, (icY(m.ichMax)+icY(m.ichMin))/2);
-  }
+  // ---- GND markers (◁) at left edge ----
+  channels.forEach(ch=>{
+    if(!ch.on)return;
+    const gy=midY-ch.pos*pdy, gyc=Math.max(sy0+2,Math.min(sy1-2,gy));
+    ctx.fillStyle=ch.color;
+    ctx.beginPath();ctx.moveTo(sx0+1,gyc);ctx.lineTo(sx0+9,gyc-5);ctx.lineTo(sx0+9,gyc+5);ctx.closePath();ctx.fill();
+    ctx.font='9px JetBrains Mono, monospace';ctx.textAlign='left';ctx.textBaseline='middle';
+    ctx.fillText(ch.key.slice(2),sx0+11,gyc);
+  });
 
-  // divider
-  ctx.strokeStyle='#e3dbd0';ctx.lineWidth=1;
-  ctx.beginPath();ctx.moveTo(sx0,H*0.50);ctx.lineTo(sx1,H*0.50);ctx.stroke();
-
-  // ================= v panel (bottom) =================
-  ctx.fillStyle='#3c7876';ctx.font='11px JetBrains Mono, monospace';
-  ctx.textAlign='left';ctx.textBaseline='top';
-  ctx.fillText('v(t)  タンク電圧 — π·Vin(赤破線)に乗るか', sx0+2, vTop-14);
-  const Vpk=Math.PI*Vin, vmax=Vpk*1.22;
-  const vmid=(vTop+vBot)/2;
-  const vY=(val)=> vmid - (val/vmax)*((vBot-vTop)*0.46);
-  // zero line
-  ctx.strokeStyle='#ece5da';ctx.lineWidth=1;
-  ctx.beginPath();ctx.moveTo(sx0,vmid);ctx.lineTo(sx1,vmid);ctx.stroke();
-  // +/- pi*Vin dashed
-  ctx.strokeStyle='rgba(194,84,61,.55)';ctx.setLineDash([5,4]);ctx.lineWidth=1.3;
-  ctx.beginPath();ctx.moveTo(sx0,vY(Vpk));ctx.lineTo(sx1,vY(Vpk));ctx.stroke();
-  ctx.beginPath();ctx.moveTo(sx0,vY(-Vpk));ctx.lineTo(sx1,vY(-Vpk));ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.fillStyle='#c2543d';ctx.font='11px JetBrains Mono, monospace';
-  ctx.textAlign='right';ctx.textBaseline='bottom';
-  ctx.fillText('+π·Vin='+Vpk.toFixed(1)+'V', sx1-3, vY(Vpk)-2);
-  // v trace
-  if(n>2){
-    ctx.strokeStyle='#3c7876';ctx.lineWidth=2;ctx.beginPath();
-    for(let i=0;i<n;i++){const x=tX(tbuf[i]),yy=vY(vbuf[i]);i?ctx.lineTo(x,yy):ctx.moveTo(x,yy);}
-    ctx.stroke();
-  }
+  // ---- bottom scope readout strip ----
+  ctx.textAlign='left';ctx.textBaseline='middle';ctx.font='10px JetBrains Mono, monospace';
+  let bx=sx0+2; const by=sy1+botStrip/2;
+  channels.forEach(ch=>{
+    const txt=ch.key.slice(2)+':'+(ch.on?fmtVal(SEQ[ch.vi],ch.base):'off');
+    ctx.fillStyle=ch.on?ch.color:'#4a5a54'; ctx.fillText(txt,bx,by);
+    bx+=ctx.measureText(txt).width+12;
+  });
+  ctx.fillStyle='rgba(200,230,215,.78)';
+  const ftxt='M'+fmtTime(SEQ[tIndex])+'  '+(f0()>=1e6?(f0()/1e6).toFixed(2)+'MHz':(f0()/1e3).toFixed(1)+'kHz');
+  if(bx+ctx.measureText(ftxt).width<sx1) ctx.fillText(ftxt,bx,by);
+  else ctx.fillText(fmtTime(SEQ[tIndex]),bx,by);
 }
 
 let raf=0;
@@ -398,7 +523,46 @@ function updateInfo(){
     '<span style="color:var(--faint)">(理想スイッチ→Pin≈Pload)</span>';
 }
 
-// ---- controls ----
+// ---- scope control bar (built in JS) ----
+function buildScopebar(){
+  const bar=document.getElementById('scopebar');
+  channels.forEach((ch,ci)=>{
+    const d=document.createElement('div');d.className='chctl';d.dataset.ci=ci;
+    d.innerHTML='<span class="sw" style="background:'+ch.color+'"></span>'+
+      '<span class="nm" style="color:'+ch.color+';filter:brightness(.72)">'+ch.key+'</span>'+
+      '<button class="stp" data-d="-1" title="V/div −">−</button>'+
+      '<span class="vv"></span>'+
+      '<button class="stp" data-d="1" title="V/div ＋">＋</button>';
+    bar.appendChild(d);
+    d.querySelector('.sw').addEventListener('click',()=>{ch.on=!ch.on;d.classList.toggle('off',!ch.on);});
+    d.querySelectorAll('.stp').forEach(b=>b.addEventListener('click',()=>{
+      ch.vi=Math.max(0,Math.min(SEQ.length-1,ch.vi+ +b.dataset.d)); updateScopeLabels();
+    }));
+  });
+  const tb=document.createElement('div');tb.className='chctl';
+  tb.innerHTML='<span class="nm" style="color:var(--muted)">M time</span>'+
+    '<button class="stp" data-d="-1" title="time/div −">−</button>'+
+    '<span class="vv" id="tbval"></span>'+
+    '<button class="stp" data-d="1" title="time/div ＋">＋</button>';
+  bar.appendChild(tb);
+  tb.querySelectorAll('.stp').forEach(b=>b.addEventListener('click',()=>{
+    tIndex=Math.max(0,Math.min(SEQ.length-1,tIndex+ +b.dataset.d)); updateScopeLabels();
+  }));
+  const ab=document.createElement('button');ab.className='sec';ab.textContent='AUTO';ab.style.marginLeft='auto';
+  ab.title='AutoSet（今の波形に一度だけ合わせる）';
+  ab.addEventListener('click',autoset);
+  bar.appendChild(ab);
+  updateScopeLabels();
+}
+function updateScopeLabels(){
+  document.querySelectorAll('#scopebar .chctl[data-ci]').forEach(d=>{
+    const ch=channels[+d.dataset.ci];
+    d.querySelector('.vv').textContent=fmtVal(SEQ[ch.vi],ch.base)+'/div';
+  });
+  const tv=document.getElementById('tbval'); if(tv)tv.textContent=fmtTime(SEQ[tIndex])+'/div';
+}
+
+// ---- physics controls ----
 const sVin=document.getElementById('sVin'),sLd=document.getElementById('sLd'),
       sCr=document.getElementById('sCr'),sRl=document.getElementById('sRl'),sLch=document.getElementById('sLch'),
       sSpd=document.getElementById('sSpd');
@@ -437,9 +601,11 @@ function setMode(m){
 mSteady.addEventListener('click',()=>setMode('steady'));
 mStart.addEventListener('click',()=>setMode('start'));
 
-(function initHash(){
+(function init(){
   const h=location.hash.match(/mode=(steady|start)/);
   readParams();
+  setDefaultScope();
+  buildScopebar();
   resize();
   setMode(h?h[1]:'steady');
 })();

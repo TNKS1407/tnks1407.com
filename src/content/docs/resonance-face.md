@@ -162,4 +162,9 @@ $$
 - 駆動周波数をω₀に合わせると、**「外の顔」パネルと「中の顔」パネル**の差が開く ── 外から入る量は普通なのに、内側の量(直列なら端子電圧、並列なら循環電流)だけがQ倍まで伸びる。
 - 「追加の位相遅れΔφ」スライダで、発振点がS字の上をずれるのを見る。Qを上げると、同じΔφでもずれが小さくなる ── 錨が効く。
 
+<div class="demo-embed">
+  <iframe src="/resonance-face/" title="共振の顔ラボ" loading="lazy"></iframe>
+  <div class="cap"><span>resonance-face</span><a href="/resonance-face/" target="_blank" rel="noopener noreferrer">全画面で開く ↗</a></div>
+</div>
+
 次回は、さっき後回しにした約束 ── チョークの言い分を聞く。電圧源を電流源に変える、あの地味な巻線が、実は四つも仕事を抱えている話。

@@ -23,6 +23,62 @@ related:
 
 この回路(コレクタ共振回路、ロイヤー型とも呼ばれる)を初めて追いかけると、たいてい迷子になる。トランジスタの動きを目で追って、「こいつがどうやって滑らかな波を作るのか」を探してしまうからだ。私も最初はそうだった。
 
+<figure>
+<svg viewBox="0 0 740 300" xmlns="http://www.w3.org/2000/svg" font-family="'Zen Kaku Gothic New',sans-serif">
+  <g stroke="#2c3a45" stroke-width="1.8" fill="none">
+    <!-- Vin → choke → CT -->
+    <circle cx="35" cy="35" r="3.5" fill="#2c3a45"/>
+    <path d="M35 35 H80"/>
+    <path d="M80 35 q12.5 -18 25 0 q12.5 -18 25 0 q12.5 -18 25 0 q12.5 -18 25 0"/>
+    <path d="M180 35 H370 V70"/>
+    <!-- primary winding A-B -->
+    <path d="M190 70 q10 -14 20 0 q10 -14 20 0 q10 -14 20 0 q10 -14 20 0 q10 -14 20 0 q10 -14 20 0 q10 -14 20 0 q10 -14 20 0 q10 -14 20 0"/>
+    <path d="M370 70 q10 -14 20 0 q10 -14 20 0 q10 -14 20 0 q10 -14 20 0 q10 -14 20 0 q10 -14 20 0 q10 -14 20 0 q10 -14 20 0 q10 -14 20 0"/>
+    <!-- A/B down, tank cap -->
+    <path d="M190 70 V120 M550 70 V120"/>
+    <path d="M190 120 H352 M364 120 H550"/>
+    <path d="M352 105 V135 M364 105 V135" stroke-width="2.4"/>
+    <path d="M190 120 V155 M550 120 V155"/>
+    <!-- Q1 -->
+    <path d="M185 163 V187" stroke-width="3"/>
+    <path d="M190 155 V163 M185 170 L190 163" />
+    <path d="M185 180 L190 190 V255"/>
+    <path d="M188 175 H260 V215 H310" />
+    <!-- Q2 -->
+    <path d="M555 163 V187" stroke-width="3"/>
+    <path d="M550 155 V163 M555 170 L550 163"/>
+    <path d="M555 180 L550 190 V255"/>
+    <path d="M552 175 H480 V215 H430"/>
+    <!-- feedback winding -->
+    <path d="M310 215 q10 -13 20 0 q10 -13 20 0 q10 -13 20 0 q10 -13 20 0 q10 -13 20 0 q10 -13 20 0"/>
+    <!-- startup resistor -->
+    <path d="M640 35 V90 M640 130 V190 H480"/>
+    <rect x="632" y="90" width="16" height="40"/>
+    <path d="M180 35 H640" stroke-dasharray="none"/>
+    <!-- GND rail -->
+    <path d="M150 255 H600"/>
+    <path d="M355 255 V265 M340 265 H370 M346 271 H364 M352 277 H358"/>
+    <!-- polarity dots -->
+    <circle cx="200" cy="52" r="3" fill="#8a3324" stroke="none"/>
+    <circle cx="316" cy="200" r="3" fill="#8a3324" stroke="none"/>
+  </g>
+  <g font-size="12" fill="#5a6a76">
+    <text x="20" y="22">V<tspan font-size="9" dy="3">in</tspan></text>
+    <text x="112" y="16">チョーク L<tspan font-size="9" dy="3">ch</tspan></text>
+    <text x="382" y="58">センタータップ</text>
+    <text x="176" y="60" fill="#2c3a45">A</text>
+    <text x="556" y="60" fill="#2c3a45">B</text>
+    <text x="346" y="98">C<tspan font-size="9" dy="3">r</tspan></text>
+    <text x="150" y="180">Q1</text>
+    <text x="570" y="180">Q2</text>
+    <text x="330" y="242">帰還巻線</text>
+    <text x="652" y="114">R<tspan font-size="9" dy="3">起動</tspan></text>
+    <text x="270" y="90" font-size="11" fill="#8b93a0">一次巻線（A−CT−B）</text>
+  </g>
+</svg>
+<figcaption>コレクタ共振回路の骨格。V<sub>in</sub>からチョークを通ってセンタータップへ電流が届き、Q1/Q2が半周期ごとに交代でA側・B側へ流す。C<sub>r</sub>と一次巻線がLCタンク。帰還巻線がタンクの位相を読んでベースを駆動する（●は巻線の極性。ベース抵抗・二次巻線と負荷は省略）。この図は以降の記事でずっと使うから、A・B・CTの3つの名前だけ覚えておいてほしい。</figcaption>
+</figure>
+
 でも、主役はそこにいない。
 
 > **波形の時間発展を決めているのはLC共振タンク。スイッチは、タンクが失ったエネルギーを良い位相で注ぎ足し、電流の通り道を半周期ごとに選び直しているだけ。**
@@ -67,6 +123,49 @@ $$
 
 正弦波は、誰かが描くものじゃなかった。**LとCを繋ぐと、正弦波は勝手に出てくる。** スイッチの仕事は、これを邪魔しないことだ。
 
+これは机の上で再現できる実験でもある。コンデンサに電池で電荷を溜めておいて、スイッチを電池側からコイル側へ倒す。その瞬間から、誰も何も操作していないのに、電圧は勝手に正弦波を描き始める。
+
+<figure>
+<svg viewBox="0 0 740 175" xmlns="http://www.w3.org/2000/svg" font-family="'Zen Kaku Gothic New',sans-serif">
+  <g stroke="#2c3a45" stroke-width="1.8" fill="none">
+    <!-- battery -->
+    <path d="M30 60 V100 M30 60 H60 M30 100 H60"/>
+    <path d="M60 72 V88 M68 64 V96" stroke-width="2.6"/>
+    <path d="M68 80 H95"/>
+    <!-- switch: lever thrown to L side -->
+    <circle cx="112" cy="80" r="2.5" fill="#2c3a45"/>
+    <path d="M95 80 H109"/>
+    <path d="M112 80 L138 66" stroke="#b8b0a4" stroke-dasharray="3 3"/>
+    <path d="M112 80 L138 94" stroke="#8a3324" stroke-width="2.2"/>
+    <circle cx="141" cy="65" r="2.5" fill="#b8b0a4" stroke="none"/>
+    <circle cx="141" cy="95" r="2.5" fill="#8a3324" stroke="none"/>
+    <!-- C branch -->
+    <path d="M141 95 H170 M170 95 V125 M160 125 H180 M160 133 H180 M170 133 V150 M170 150 H250"/>
+    <!-- L branch -->
+    <path d="M141 95 H196"/>
+    <path d="M196 95 q9 -14 18 0 q9 -14 18 0 q9 -14 18 0"/>
+    <path d="M250 95 V150"/>
+  </g>
+  <g font-size="12" fill="#5a6a76">
+    <text x="24" y="125">電池</text>
+    <text x="120" y="52">a（充電）</text>
+    <text x="118" y="118" fill="#8a3324">b（発振）</text>
+    <text x="150" y="132">C</text>
+    <text x="214" y="72">L</text>
+  </g>
+  <!-- waveform -->
+  <g transform="translate(300,10)">
+    <line x1="0" y1="85" x2="440" y2="85" stroke="#d8d2c8" stroke-width="1"/>
+    <line x1="180" y1="20" x2="180" y2="150" stroke="#8a3324" stroke-width="1.2" stroke-dasharray="4 3"/>
+    <polyline points="0.0,85.0 20.0,85.0 40.0,85.0 60.0,85.0 80.0,85.0 100.0,85.0 120.0,85.0 140.0,85.0 160.0,85.0 180.0,85.0 185.0,76.2 190.0,67.7 195.0,59.7 200.0,52.7 205.0,46.7 210.0,42.0 215.0,38.8 220.0,37.2 225.0,37.2 230.0,38.8 235.0,42.0 240.0,46.7 245.0,52.7 250.0,59.7 255.0,67.7 260.0,76.2 265.0,85.0 270.0,93.8 275.0,102.3 280.0,110.3 285.0,117.3 290.0,123.3 295.0,128.0 300.0,131.2 305.0,132.8 310.0,132.8 315.0,131.2 320.0,128.0 325.0,123.3 330.0,117.3 335.0,110.3 340.0,102.3 345.0,93.8 350.0,85.0 355.0,76.2 360.0,67.7 365.0,59.7 370.0,52.7 375.0,46.7 380.0,42.0 385.0,38.8 390.0,37.2 395.0,37.2 400.0,38.8 405.0,42.0 410.0,46.7 415.0,52.7 420.0,59.7 425.0,67.7 430.0,76.2 435.0,85.0 440.0,93.8" fill="none" stroke="#3c7876" stroke-width="2.2"/>
+    <text x="176" y="14" text-anchor="end" font-size="11.5" fill="#8a3324">スイッチをbへ倒す</text>
+    <text x="8" y="78" font-size="11.5" fill="#8b93a0">v = 一定（充電済み）</text>
+    <text x="300" y="164" text-anchor="middle" font-size="11.5" fill="#3c7876">あとは勝手に正弦波（減衰は省略）</text>
+  </g>
+</svg>
+<figcaption>いちばん小さな「スイッチを押すと正弦波が出てくる」実験。スイッチがしたのは接続の切り替え1回だけで、波形の各点はぜんぶLCが描いている。下の遊び場の「起動」ボタンは、この実験の実機版だ。</figcaption>
+</figure>
+
 ## 半周期のあいだ電流を注いでも、正弦のまま
 
 でも実機のスイッチは、ただ見ているわけじゃない。入力チョークからやってくるほぼ一定の電流を、半周期ごとに右の巻線・左の巻線へ振り分けて、タンクに注ぎ込んでいる。電流を注いだら、せっかくの正弦波が歪むんじゃないか？
@@ -85,6 +184,29 @@ $$
 
 まったく同じ単振動の方程式に戻ってしまった。つまり、一定の電流を注いでいる間も、タンク電圧はやっぱり正弦波の一区間をなぞる。スイッチが波形の各点を作っているのではなくて、スイッチは「一定電流の符号」を半周期ごとに選んでいるだけで、**曲線そのものはずっとLCが描いている。**
 
+<figure>
+<svg viewBox="0 0 740 210" xmlns="http://www.w3.org/2000/svg" font-family="'Zen Kaku Gothic New',sans-serif">
+  <!-- injection bands -->
+  <rect x="0" y="15" width="185" height="120" fill="#3c7876" opacity="0.07"/>
+  <rect x="370" y="15" width="185" height="120" fill="#3c7876" opacity="0.07"/>
+  <rect x="185" y="15" width="185" height="120" fill="#c9761f" opacity="0.07"/>
+  <rect x="555" y="15" width="185" height="120" fill="#c9761f" opacity="0.07"/>
+  <line x1="0" y1="75" x2="740" y2="75" stroke="#d8d2c8" stroke-width="1"/>
+  <polyline points="0.0,75.0 14.8,63.8 29.6,53.3 44.4,44.2 59.2,37.0 74.0,32.2 88.8,30.1 103.6,30.8 118.4,34.3 133.2,40.3 148.0,48.5 162.8,58.4 177.6,69.4 192.4,80.6 207.2,91.6 222.0,101.5 236.8,109.7 251.6,115.7 266.4,119.2 281.2,119.9 296.0,117.8 310.8,113.0 325.6,105.8 340.4,96.7 355.2,86.2 370.0,75.0 384.8,63.8 399.6,53.3 414.4,44.2 429.2,37.0 444.0,32.2 458.8,30.1 473.6,30.8 488.4,34.3 503.2,40.3 518.0,48.5 532.8,58.4 547.6,69.4 562.4,80.6 577.2,91.6 592.0,101.5 606.8,109.7 621.6,115.7 636.4,119.2 651.2,119.9 666.0,117.8 680.8,113.0 695.6,105.8 710.4,96.7 725.2,86.2 740.0,75.0" fill="none" stroke="#3c7876" stroke-width="2.4"/>
+  <!-- injection current square wave -->
+  <g stroke="#8a3324" stroke-width="2" fill="none">
+    <path d="M0 160 H185 M185 160 V185 M185 185 H370 M370 185 V160 M370 160 H555 M555 160 V185 M555 185 H740"/>
+  </g>
+  <g font-size="11.5">
+    <text x="92" y="30" text-anchor="middle" fill="#3c7876">+I を注入</text>
+    <text x="277" y="30" text-anchor="middle" fill="#c9761f">−I を注入</text>
+    <text x="10" y="152" fill="#8a3324">注入電流（矩形波）</text>
+    <text x="600" y="152" fill="#5a6a76">電圧はどの区間でも d²v/dt²+v/LC=0 の解</text>
+  </g>
+</svg>
+<figcaption>上：タンク電圧。下：スイッチが振り分ける注入電流。注入は角ばった矩形波なのに、電圧の曲線には継ぎ目がない——定数Iは微分で消えるから、各半周期の中で電圧は正弦波の一区間そのものになる。</figcaption>
+</figure>
+
 別の顔からも見ておこう。半周期ごとに反転する注入電流は矩形波だから、フーリエで開けば基本波と3次・5次・…の足し合わせだ([足し合わせの話](/docs/superposition/)の出番だね)。タンクの並列インピーダンスは共振周波数でだけ高く、3次や5次に対しては低い。だから矩形波を突っ込んでも、**電圧になれるのはほぼ基本波だけ。** タンクのQが5もあれば、3次成分の電圧は基本波の2.5%程度まで沈む。時間領域で見ても周波数領域で見ても、答えは同じところに落ちる ── 正弦波を選んでいるのはタンクだ。
 
 ## 誰も合図していないのに、動き出す
@@ -94,6 +216,44 @@ $$
 答えは少し意地悪で、**「完全に対称なら、始まらない」**。2つのトランジスタが完璧に同一で、巻線も配線も完璧に対称なら、左右は釣り合ったまま動かない。でも現実の部品はそうじゃない。$V_{BE}$ の差、増幅率の差、巻線抵抗の差、コアの残留磁束、熱雑音 ── どこかに必ず微小な非対称がある。
 
 仮に左の石の電流がほんのわずか大きくなったとする。一次巻線の磁束が変化し、それが帰還巻線に電圧を誘起する。その極性が「左をさらにオン、右をさらにオフ」の向きになるように帰還巻線を繋いであるから、微小な差は正帰還でどんどん育つ。振幅が小さいうちは注ぎ足しが損失に勝って成長し、大きくなるとスイッチの飽和や負荷が効いてきて、やがて一定振幅の周期軌道 ── リミットサイクルに落ち着く。
+
+<figure>
+<svg viewBox="0 0 740 240" xmlns="http://www.w3.org/2000/svg" font-family="'Zen Kaku Gothic New',sans-serif">
+  <g stroke="#2c3a45" stroke-width="1.8" fill="none">
+    <!-- primary winding -->
+    <path d="M190 55 q10 -14 20 0 q10 -14 20 0 q10 -14 20 0 q10 -14 20 0 q10 -14 20 0 q10 -14 20 0 q10 -14 20 0 q10 -14 20 0 q10 -14 20 0 q10 -14 20 0 q10 -14 20 0 q10 -14 20 0 q10 -14 20 0 q10 -14 20 0 q10 -14 20 0 q10 -14 20 0 q10 -14 20 0 q10 -14 20 0"/>
+    <path d="M190 55 V110 M550 55 V110"/>
+    <!-- Q1 highlighted ON -->
+    <path d="M185 118 V142" stroke="#3c7876" stroke-width="3.4"/>
+    <path d="M190 110 V118 M185 125 L190 118 M185 135 L190 145 V175" stroke="#3c7876" stroke-width="2.6"/>
+    <!-- Q2 off -->
+    <path d="M555 118 V142" stroke-width="3"/>
+    <path d="M550 110 V118 M555 125 L550 118 M555 135 L550 145 V175"/>
+    <path d="M160 175 H590"/>
+    <!-- feedback winding -->
+    <path d="M310 205 q10 -13 20 0 q10 -13 20 0 q10 -13 20 0 q10 -13 20 0 q10 -13 20 0 q10 -13 20 0"/>
+    <path d="M310 205 H260 V130 H188 M430 205 H480 V130 H552"/>
+  </g>
+  <!-- flux arrow -->
+  <path d="M370 78 Q400 110 370 145 Q340 175 370 198" fill="none" stroke="#c9761f" stroke-width="2.4" stroke-dasharray="6 4" marker-end="url(#fx)"/>
+  <defs><marker id="fx" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#c9761f"/></marker></defs>
+  <!-- push arrows on bases -->
+  <path d="M245 118 L215 126" stroke="#3c7876" stroke-width="2.4" marker-end="url(#up1)"/>
+  <path d="M495 118 L525 126" stroke="#c2543d" stroke-width="2.4" marker-end="url(#dn1)"/>
+  <defs>
+    <marker id="up1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#3c7876"/></marker>
+    <marker id="dn1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#c2543d"/></marker>
+  </defs>
+  <g font-size="12" fill="#5a6a76">
+    <text x="120" y="130" fill="#3c7876">Q1 わずかに勝つ</text>
+    <text x="570" y="130" fill="#c2543d">Q2 押し下げ</text>
+    <text x="392" y="120" fill="#c9761f">磁束の変化 dΦ/dt</text>
+    <text x="318" y="232">帰還巻線が読んで、勝者をさらに押す</text>
+    <text x="200" y="30" fill="#8b93a0" font-size="11.5">① Q1の電流がほんの少し大きい → ② 磁束が動く → ③ 帰還巻線に電圧 → ④ Q1をさらにオン・Q2をさらにオフ → ①へ</text>
+  </g>
+</svg>
+<figcaption>正帰還の一周。左右のどちらかがわずかに勝てば、その差が磁束→帰還巻線→ベースと一周して、勝ちがさらに大きくなる向きに帰ってくる。完全に対称ならこのループに入力がなく、静止したままだ。</figcaption>
+</figure>
 
 ここでも主役の取り違えに気をつけたい。左右の交代は、トランジスタが時間を数えて決めているんじゃない。**タンクが半周期の運動を終えて電圧の符号が返るのを、帰還巻線が読んで、導通する側を入れ替えている。** 指揮者はタンクで、スイッチは楽譜(タンクの位相)を見て動く演奏者だ。だから発振周波数も、おおよそ
 
@@ -117,6 +277,42 @@ $$
 
 ── **センタータップ電圧の平均は、入力電圧にぴったり等しい。**
 
+<figure>
+<svg viewBox="0 0 740 190" xmlns="http://www.w3.org/2000/svg" font-family="'Zen Kaku Gothic New',sans-serif">
+  <g stroke="#2c3a45" stroke-width="1.8" fill="none">
+    <circle cx="30" cy="60" r="3.5" fill="#2c3a45"/>
+    <path d="M30 60 H60"/>
+    <path d="M60 60 q12.5 -18 25 0 q12.5 -18 25 0 q12.5 -18 25 0 q12.5 -18 25 0"/>
+    <path d="M160 60 H195"/>
+    <circle cx="198" cy="60" r="3.5" fill="#2c3a45"/>
+  </g>
+  <path d="M65 92 H155" stroke="#c2543d" stroke-width="1.8" marker-start="url(#vb1)" marker-end="url(#vb2)" fill="none"/>
+  <defs>
+    <marker id="vb1" viewBox="0 0 10 10" refX="2" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M10 0 L0 5 L10 10 Z" fill="#c2543d"/></marker>
+    <marker id="vb2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 Z" fill="#c2543d"/></marker>
+  </defs>
+  <g font-size="12" fill="#5a6a76">
+    <text x="14" y="42">V<tspan font-size="9" dy="3">in</tspan></text>
+    <text x="86" y="30">L<tspan font-size="9" dy="3">ch</tspan></text>
+    <text x="182" y="42">CT</text>
+    <text x="52" y="112" fill="#c2543d">⟨この電圧⟩＝0 が定常の条件</text>
+    <text x="14" y="150" font-size="11.5" fill="#8b93a0">平均がゼロでないと、チョーク電流は</text>
+    <text x="14" y="166" font-size="11.5" fill="#8b93a0">周期ごとに増え続けるか減り続ける</text>
+  </g>
+  <g transform="translate(228,20)">
+    <polyline points="0.0,105.0 10.0,87.6 20.0,71.3 30.0,57.1 40.0,45.9 50.0,38.4 60.0,35.1 70.0,36.2 80.0,41.7 90.0,51.1 100.0,63.9 110.0,79.2 120.0,96.2 125.0,105.0 135.0,87.6 145.0,71.3 155.0,57.1 165.0,45.9 175.0,38.4 185.0,35.1 195.0,36.2 205.0,41.7 215.0,51.1 225.0,63.9 235.0,79.2 245.0,96.2 250.0,105.0 260.0,87.6 270.0,71.3 280.0,57.1 290.0,45.9 300.0,38.4 310.0,35.1 320.0,36.2 330.0,41.7 340.0,51.1 350.0,63.9 360.0,79.2 370.0,96.2 375.0,105.0 385.0,87.6 395.0,71.3 405.0,57.1 415.0,45.9 425.0,38.4 435.0,35.1 445.0,36.2 455.0,41.7 465.0,51.1 475.0,63.9 485.0,79.2 495.0,96.2 500.0,105.0" fill="none" stroke="#3c7876" stroke-width="2.2"/>
+    <line x1="0" y1="105" x2="500" y2="105" stroke="#b8b0a4" stroke-width="1"/>
+    <line x1="0" y1="60.4" x2="500" y2="60.4" stroke="#c2543d" stroke-width="1.6" stroke-dasharray="6 4"/>
+    <line x1="0" y1="35" x2="500" y2="35" stroke="#d8d2c8" stroke-width="1" stroke-dasharray="2 4"/>
+    <text x="380" y="55" font-size="12" fill="#c2543d">平均 ⟨v_CT⟩ ＝ V_in</text>
+    <text x="10" y="30" font-size="11.5" fill="#8b93a0">ピーク V_pk/2</text>
+    <text x="10" y="122" font-size="11.5" fill="#8b93a0">0</text>
+    <text x="250" y="140" text-anchor="middle" font-size="11.5" fill="#5a6a76">v_CT ＝ 全波整流正弦波（平均はピークの 2/π）</text>
+  </g>
+</svg>
+<figcaption>左：チョークの両端。定常ではチョークにかかる電圧の一周期平均がゼロ＝センタータップ電圧の平均がV<sub>in</sub>に釘付けになる。右：そのセンタータップ波形。赤い破線（平均）がV<sub>in</sub>で、山の高さがV<sub>pk</sub>/2。「平均＝ピーク×2/π」を繋ぐだけでπV<sub>in</sub>が出てくる。</figcaption>
+</figure>
+
 一方で、センタータップの波形は、オフ側コレクタに立つ半正弦波の半分、つまりピーク $V_{\mathrm{pk}}/2$ の全波整流正弦波になっている。そして全波整流正弦波の平均値は、ピークの $2/\pi$ 倍。これは正弦波の面積の話で、$\int_0^\pi \sin\theta\, d\theta = 2$ を区間幅 $\pi$ で割ると $2/\pi$、というだけのことだ。2つを繋ぐと、
 
 $$
@@ -137,6 +333,11 @@ $$
 - エネルギーの棒グラフは、$\tfrac12Cv^2$ と $\tfrac12Li_L^2$ の往復 ── ブランコの帳簿だ。
 
 「スイッチが描いてるんじゃない」という一文は、読むより、つまみを回したほうが早く腑に落ちると思う。
+
+<div class="demo-embed">
+  <iframe src="/collector-resonance/" title="コレクタ共振ラボ" loading="lazy"></iframe>
+  <div class="cap"><span>collector-resonance</span><a href="/collector-resonance/" target="_blank" rel="noopener noreferrer">全画面で開く ↗</a></div>
+</div>
 
 ## 同じ言葉で読める景色
 

@@ -144,6 +144,11 @@ $$
 
 最後のコマには「もし完全対称だったら」も入れてある。左右が釣り合ったまま、いつまでも立ち上がらない回路の顔を見てほしい。あの静けさが、この記事の答えだよ。
 
+<div class="demo-embed">
+  <iframe src="/collector-startup/" title="自励起動ステップ実行" loading="lazy"></iframe>
+  <div class="cap"><span>collector-startup</span><a href="/collector-startup/" target="_blank" rel="noopener noreferrer">全画面で開く ↗</a></div>
+</div>
+
 前回のシミュレータ([コレクタ共振ラボ](/collector-resonance/))で「起動を見る」をスロー再生するのも合わせておすすめしたい。あちらは波形で、こちらは回路図で、同じ出来事を見ている。
 
 次回は、章の土台をもう一段掘る ── 「LとCが共振する」という一文だけでは設計に使えない話。直列と並列、Q、そして位相の勾配。

@@ -121,4 +121,9 @@ $$
 - $a$ を1/9からじわじわ超えて、頂が凹み肩ピークのマーカが割れる瞬間を見る
 - $a = 1/9$ のまま $\phi_3$ だけ回すと、平らだった頭が斜めに傾く——位相の敏感さを指で
 
+<div class="demo-embed">
+  <iframe src="/triple-resonance/" title="波形整形スタジオ" loading="lazy"></iframe>
+  <div class="cap"><span>triple-resonance</span><a href="/triple-resonance/" target="_blank" rel="noopener noreferrer">全画面で開く ↗</a></div>
+</div>
+
 次回は「定電流の作り方」。「二次側を直列共振にすれば定電流になる」という、回路屋の間で長生きしている神話を、感度の式一本で解剖する。

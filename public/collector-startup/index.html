@@ -118,6 +118,15 @@ body.embed .explain{overflow:auto;}
 .tag.show{opacity:1;}
 .tag rect{fill:#fff;stroke:var(--border);}
 .tag text{font-size:11px;font-weight:600;}
+/* base-voltage thermometers */
+.meter rect,.meter circle,.meter line{transition:none;}
+/* feedback push arrows */
+.parr{opacity:0;transition:opacity .25s;}
+.parr.show{opacity:.95;}
+/* tank cap charge current arrows */
+.caparr{opacity:0;transition:opacity .25s;}
+.caparr.show{opacity:.9;}
+.caparr.show path{stroke-dasharray:6 5;animation:flow .5s linear infinite;}
 </style>
 </head>
 <body>
@@ -268,6 +277,12 @@ function npn(id,ox,oy,mir){
 // key coordinates
 const CT=310, AX=150, BX=470, PY=110, RAILY=60, GNDY=340;
 const Q1B=136, Q2B=484, QCT=250, QET=290;
+// --- NEW: base-voltage thermometer + tank-charge gauge geometry ---
+const VBE_TH=0.65, VMAX=1.15;                 // threshold / full-scale volts
+const MTOP=246, MBOT=306, MH=MBOT-MTOP, MW=11;// thermometer tube (60px tall)
+const MQ1X=100, MQ2X=520;                     // tube left-x for Q1 / Q2
+const THY=MBOT - VBE_TH/VMAX*MH;              // y of the 0.65V red line
+const CGX=205, CGW=13, CGTOP=232, CGBOT=292, CGMID=262, CGHALF=30; // v_C gauge (bipolar)
 
 let m='';
 // ---- rails ----
@@ -346,8 +361,8 @@ m+=`<path class="wire" d="M ${AX} ${QCT} V 240"/>`; // collector stub to glyph t
 m+=`<path class="wire" d="M ${AX} 240 V ${QCT}"/>`;
 m+=`<path class="wire" d="M ${AX} ${QET} V ${GNDY}"/>`; // emitter to GND
 m+=`<path class="wire" d="M ${BX} ${QET} V ${GNDY}"/>`;
-m+=`<text class="lblv" x="${Q1B-30}" y="278">Q1</text>`;
-m+=`<text class="lblv" x="${Q2B+14}" y="278">Q2</text>`;
+m+=`<text class="lblv" x="${Q1B-18}" y="300">Q1</text>`;
+m+=`<text class="lblv" x="${Q2B+14}" y="300">Q2</text>`;
 // ---- secondary (small) + load, above rail (out of the way) ----
 m+=`<path class="coil" d="${coilV(96,132,505,3,6,1)}" opacity="0.7"/>`;
 m+=`<path class="wire" d="M 505 96 V 44 H 470" opacity="0.6"/>`;
@@ -369,14 +384,58 @@ m+=polMark('polNL',232,'+'); m+=polMark('polNR',380,'−'); // normal: Q1 wins
 m+=polMark('polFL',232,'−'); m+=polMark('polFR',380,'+');  // flipped: Q2 wins
 // ---- text tags ----
 function tag(id,x,y,w,txt,col){return `<g class="tag" id="${id}"><rect x="${x}" y="${y}" width="${w}" height="18" rx="4"/><text x="${x+w/2}" y="${y+13}" text-anchor="middle" fill="${col}">${txt}</text></g>`;}
-m+=tag('tagHfe',60,300,86,'hFE がわずかに大',   'var(--teal)');
+m+=tag('tagHfe',44,228,86,'hFE がわずかに大',   'var(--teal)');
 m+=tag('tagClamp',AX-30,224,74,'A ≈ GND',   'var(--teal)');
 m+=tag('tagRise',BX-40,180,86,'B ↑ π·Vin', 'var(--amber)');
 m+=tag('tagSwap',258,300,104,'⇄ 半周期ごと交代','var(--red)');
 m+=tag('tagSym',248,300,118,'左右 均衡 → 立たない','var(--muted)');
+
+// ==== NEW A) tank-cap charge gauge (bipolar v_C) ====
+m+=`<path d="M ${CGX+CGW} ${CGMID} L 328 213" stroke="var(--faint)" stroke-width="1" stroke-dasharray="2 3" fill="none" opacity="0.5"/>`;
+m+=`<g class="capgauge">
+  <rect x="${CGX}" y="${CGTOP}" width="${CGW}" height="${CGBOT-CGTOP}" rx="4" fill="#fff" stroke="var(--border)"/>
+  <rect id="capFill" x="${CGX+1.5}" y="${CGMID}" width="${CGW-3}" height="0" fill="var(--amber)"/>
+  <line x1="${CGX-2}" y1="${CGMID}" x2="${CGX+CGW+2}" y2="${CGMID}" stroke="var(--muted)" stroke-width="1"/>
+  <text x="${CGX+CGW/2}" y="${CGTOP-4}" text-anchor="middle" class="lbl" style="fill:var(--text)">v_C</text>
+  <text x="${CGX+CGW+3}" y="${CGTOP+9}" class="lbl" style="fill:var(--amber);font-size:9px">+</text>
+  <text x="${CGX+CGW+3}" y="${CGBOT-1}" class="lbl" style="fill:var(--teal);font-size:9px">−</text>
+</g>`;
+// tank-charge current arrows on the A–Cr–B wire (y=210)
+m+=`<g class="caparr" id="capArrR"><path d="M 350 210 H 404" stroke="var(--amber)" stroke-width="2" fill="none" marker-end="url(#ah)"/></g>`;
+m+=`<g class="caparr" id="capArrL"><path d="M 404 210 H 350" stroke="var(--teal)" stroke-width="2" fill="none" marker-end="url(#aht)"/></g>`;
+// tank-cap plate polarity marks (left plate 298 / right plate 322)
+m+=`<g class="pol" id="capPolL" style="opacity:.15"><circle cx="287" cy="210" r="7"/><text x="287" y="214" text-anchor="middle" font-size="11" font-weight="700" fill="#5a5148">·</text></g>`;
+m+=`<g class="pol" id="capPolR" style="opacity:.15"><circle cx="333" cy="210" r="7"/><text x="333" y="214" text-anchor="middle" font-size="11" font-weight="700" fill="#5a5148">·</text></g>`;
+
+// ==== NEW B) base-voltage thermometers (0.65V red line) ====
+function thermo(fillId,tx,baseX){
+  return `<path d="M ${tx+MW/2} ${MTOP} L ${baseX} 270" stroke="var(--faint)" stroke-width="1" stroke-dasharray="2 3" fill="none" opacity="0.55"/>`
+   +`<g class="meter">
+      <rect x="${tx}" y="${MTOP}" width="${MW}" height="${MH}" rx="5" fill="#fff" stroke="var(--border)"/>
+      <rect id="${fillId}" x="${tx+1.5}" y="${MBOT}" width="${MW-3}" height="0" rx="3" fill="#b9b1a4"/>
+      <circle cx="${tx+MW/2}" cy="${MBOT+7}" r="6" fill="#b9b1a4" stroke="var(--border)"/>
+      <line x1="${tx-2}" y1="${THY.toFixed(1)}" x2="${tx+MW+2}" y2="${THY.toFixed(1)}" stroke="var(--red)" stroke-width="1.4"/>
+      <text x="${tx+MW/2}" y="${MTOP-5}" text-anchor="middle" class="lbl" style="fill:var(--text)">V_B</text>
+      <text x="${tx+MW+4}" y="${(THY+3).toFixed(1)}" class="lbl" style="fill:var(--red);font-size:8px">.65</text>
+    </g>`;
+}
+m+=thermo('mfillQ1',MQ1X,Q1B);
+m+=thermo('mfillQ2',MQ2X,Q2B);
+// feedback push arrows beside each base (up=teal raise / down=red lower)
+function pushArrow(id,x,dir,col){
+  const y0=dir<0?286:258, y1=dir<0?262:282, tip=dir<0?260:284, back=dir<0?tip+6:tip-6;
+  return `<g class="parr" id="${id}"><path d="M ${x} ${y0} L ${x} ${y1}" stroke="${col}" stroke-width="2.2"/><polygon points="${x-3},${back} ${x},${tip} ${x+3},${back}" fill="${col}"/></g>`;
+}
+m+=pushArrow('pushUpQ1',MQ1X-9,-1,'var(--teal)');
+m+=pushArrow('pushDnQ1',MQ1X-9, 1,'var(--red)');
+m+=pushArrow('pushUpQ2',MQ2X+MW+9,-1,'var(--teal)');
+m+=pushArrow('pushDnQ2',MQ2X+MW+9, 1,'var(--red)');
+
 // marker def
 m=`<defs><marker id="ah" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
-   <path d="M0,0 L6,3 L0,6 Z" fill="var(--amber)"/></marker></defs>`+m;
+   <path d="M0,0 L6,3 L0,6 Z" fill="var(--amber)"/></marker>
+   <marker id="aht" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+   <path d="M0,0 L6,3 L0,6 Z" fill="var(--teal)"/></marker></defs>`+m;
 svg.innerHTML=m;
 
 /* =====================================================================
@@ -384,21 +443,21 @@ svg.innerHTML=m;
    ===================================================================== */
 const STEPS=[
  {t:'電源投入',
-  x:'スイッチを入れた。<b>R_start</b> が Vin から両方のベースへ、ほんの少しずつ電流を流し込む（青い点線）。Q1もQ2も“うっすら”オン。まだ誰も合図していない ── 左右そっくりで、何も起きていないように見える。'},
+  x:'スイッチを入れた。<b>R_start</b> が Vin から両方のベースへ、ほんの少しずつ電流を流し込む（青い点線）。でも両側の<b>ベース電位メータ V_B はまだ赤線（0.65V）の下</b> ── サブしきい値の漏れだけで、どちらも本当のオンではない。タンクの<b>電荷ゲージ v_C</b> も空だ。まだ誰も合図していない。'},
  {t:'ばらつき',
-  x:'でも現実の部品はぴったり同じじゃない。ここでは <b>Q1</b> の電流増幅率 hFE がほんの少しだけ大きいとする。すると Q1 に流れる電流がわずかに勝つ（左の経路がうっすら点る）。差はごく小さい ── まだ誰も気づかない差だ。'},
+  x:'でも現実の部品はぴったり同じじゃない。ここでは <b>Q1</b> の電流増幅率 hFE がほんの少しだけ大きいとする。すると Q1 のベース電位メータが<b>赤線を跨ぐ</b> ── ここで初めて Q1 本体が<b>teal に点灯</b>し、左の経路がうっすら点る。差はごく小さい ── まだ誰も気づかない差だ。'},
  {t:'帰還が読む',
-  x:'Q1 の電流が増えると、一次半巻線 <b>Np1</b> を通る電流が増え、コアの磁束 <b>Φ</b> が動きはじめる。動く磁束は帰還巻線に電圧を誘起する（ファラデー）。その極性は ── Q1 をもっとオンに、Q2 をオフに、という向き（＋/−）。回路が自分で“どちらが勝ったか”を読んだ。'},
+  x:'Q1 の電流が増えると、一次半巻線 <b>Np1</b> を通る電流が増え、コアの磁束 <b>Φ</b> が動きはじめる。動く磁束は帰還巻線に電圧を誘起する（ファラデー）。その電圧が Q1 のベースを<b>押し上げ</b>（teal 矢印）、Q2 のベースを<b>押し下げる</b>（赤矢印）── メータでそれが見える。同時にタンク Cr が充電を始め、<b>電荷ゲージ v_C</b> が振れ、電流矢印が向きを示す。回路が自分で“どちらが勝ったか”を読んだ。'},
  {t:'正帰還ラッチ',
   x:'誘起電圧が Q1 をさらに開き、電流が増え、磁束が動き、また Q1 を開く ── 正帰還のループが一気に締まる。<b>Q1 フルオン</b>（太い実線）、<b>Q2 オフ</b>（薄い）。A点は Q1 に引かれて GND 近くへ<b>クランプ</b>される。'},
  {t:'タンクの半周期',
-  x:'Q1 がA点をGNDに留める間、主役は<b>タンク</b>（一次インダクタと Cr）に移る。B点電圧が<b>半正弦</b>で持ち上がり、ピーク ≈ <b>π·Vin</b> まで昇ってまた降りる。描いているのは L と C のエネルギー往復であって、<b>Q1 は時間を数えていない</b>。'},
+  x:'Q1 がA点をGNDに留める間、主役は<b>タンク</b>（一次インダクタと Cr）に移る。B点電圧が<b>半正弦</b>で持ち上がり、ピーク ≈ <b>π·Vin</b> まで昇ってまた降りる。<b>電荷ゲージ v_C は満充電まで振れ切り</b>、ピークでは充電電流がほぼゼロになる（電流矢印が消える＝「いまここ」）。描いているのは L と C のエネルギー往復であって、<b>Q1 は時間を数えていない</b>。'},
  {t:'転流',
-  x:'タンク電圧が一周してゼロを横切り、符号が返る瞬間 ── 磁束の動く向きが<b>反転</b>する。帰還巻線の極性も反転（＋と−が入れ替わる）。今度は <b>Q2 オン・Q1 オフ</b>。合図したのは外部クロックではなく、<b>タンク自身のゼロ交差</b>だ。'},
+  x:'タンク電圧が一周してゼロを横切り、符号が返る瞬間 ── 磁束の動く向きが<b>反転</b>する。帰還巻線の極性も反転し、今度は Q2 のベースメータが<b>赤線を跨ぎ</b>、Q1 のメータは赤線の下へ落ちる。<b>Q2 オン・Q1 オフ</b>。<b>電荷ゲージ v_C の極性と電流矢印も反転</b>する。合図したのは外部クロックではなく、<b>タンク自身のゼロ交差</b>だ。'},
  {t:'成長と定常',
-  x:'あとは繰り返し。半周期ごとに Q1↔Q2 が交代し、そのたびにスイッチが“良い位相で”少しだけエネルギーを注ぎ足す。<b>注ぎ足し &gt; 損失</b> の間は振幅が育ち（包絡線が伸びる）、釣り合った所で成長が止まる ── <b>リミットサイクル</b>。定常の正弦波が立った。'},
+  x:'あとは繰り返し。半周期ごとに Q1↔Q2 が交代し（<b>両メータが赤線を挟んで交互に点灯</b>、<b>電荷ゲージ v_C も左右に振れる</b>）、そのたびにスイッチが“良い位相で”少しだけエネルギーを注ぎ足す。<b>注ぎ足し &gt; 損失</b> の間は振幅が育ち（包絡線が伸びる）、釣り合った所で成長が止まる ── <b>リミットサイクル</b>。定常の正弦波が立った。'},
  {t:'もし完全対称だったら',
-  x:'もし部品が完全に同じで、ばらつきがゼロだったら？ 左右はいつまでも均衡したまま、どちらも勝てない ── 理屈の上では発振は始まらない。実際に起動できるのは、現実の部品が持つ小さな不完全さ。<b>それが種</b>だ（現実には熱雑音だけでも十分）。'},
+  x:'もし部品が完全に同じで、ばらつきがゼロだったら？ 両ベースの電位メータは<b>そろって赤線の下</b>に並んだまま、どちらも跨げない ── 理屈の上では発振は始まらない。実際に起動できるのは、現実の部品が持つ小さな不完全さ。<b>それが種</b>だ（現実には熱雑音だけでも十分）。'},
 ];
 const N=STEPS.length;
 let cur=0, autoOn=false, autoTimer=0;
@@ -422,8 +481,8 @@ function applySVG(s){ // s = 1-based step
   ['Q1','Q2'].forEach(id=>{$(id).classList.remove('qglow','qdim');});
 
   if(s===1){ cls('biasL',true,'show'); cls('biasR',true,'show');
-    cls('Q1',true,'qglow');cls('Q2',true,'qglow'); // both faint-on: use glow lightly
-    $('Q1').style.opacity=.85;$('Q2').style.opacity=.85; return; }
+    // no teal glow yet: both bases sit BELOW the 0.65V red line (sub-threshold trickle)
+    $('Q1').style.opacity=.9;$('Q2').style.opacity=.9; return; }
   $('Q1').style.opacity=1;$('Q2').style.opacity=1;
 
   if(s===2){ cls('biasL',true,'faint');cls('biasR',true,'faint');
@@ -446,6 +505,60 @@ function applySVG(s){ // s = 1-based step
     cls('tagSwap',true,'show'); return; }
   if(s===8){ cls('biasL',true,'faint');cls('biasR',true,'faint');
     $('Q1').style.opacity=.9;$('Q2').style.opacity=.9; cls('tagSym',true,'show'); return; }
+}
+
+/* ---- NEW: per-step target state for base meters + tank-charge gauge ----
+   baseTarget[step-1] = [V_B(Q1), V_B(Q2)] volts ; threshold VBE_TH=0.65
+   capTarget          = signed v_C, +1 = right plate (B side) positive
+   capCurr            = tank charging-current direction (+1 into right plate)
+   pushDir            = feedback push on each base (-1 up / +1 down / 0 none) */
+const baseTarget=[[.55,.55],[.68,.52],[.76,.42],[.88,.18],[.88,.18],[.18,.88],[.55,.55],[.60,.60]];
+const capTarget =[  0,      0.08,     0.34,     0.62,      1.00,      -0.15,    0,        0     ];
+const capCurr   =[  0,      1,        1,        1,         0,         -1,       0,        0     ];
+const pushDir   =[[0,0],   [-1,0],   [-1,1],   [-1,1],    [-1,1],    [1,-1],   [0,0],    [0,0]  ];
+
+function meterYForV(v){ return MBOT - Math.min(Math.max(v,0),VMAX)/VMAX*MH; }
+function setFill(id,v){
+  const y=meterYForV(v), el=$(id);
+  el.setAttribute('y',y.toFixed(1));
+  el.setAttribute('height',Math.max(0,MBOT-y).toFixed(1));
+  el.setAttribute('fill', v>VBE_TH?'var(--teal)':'#b9b1a4');   // ON = crossed red line = teal
+}
+function setCapFill(q){
+  const el=$('capFill');
+  if(q>=0){ const h=q*CGHALF; el.setAttribute('y',(CGMID-h).toFixed(1)); el.setAttribute('height',h.toFixed(1)); el.setAttribute('fill','var(--amber)'); }
+  else    { const h=-q*CGHALF; el.setAttribute('y',CGMID);            el.setAttribute('height',h.toFixed(1)); el.setAttribute('fill','var(--teal)'); }
+}
+function setCapCurrent(dir){ $('capArrR').classList.toggle('show',dir>0); $('capArrL').classList.toggle('show',dir<0); }
+function setCapPolarity(q){
+  const el=$('capPolL'), er=$('capPolR');
+  if(Math.abs(q)<0.07){ el.style.opacity=.15; er.style.opacity=.15;
+    el.querySelector('text').textContent='·'; er.querySelector('text').textContent='·'; return; }
+  el.style.opacity=1; er.style.opacity=1;
+  el.querySelector('text').textContent=q>0?'−':'+';
+  er.querySelector('text').textContent=q>0?'+':'−';
+}
+function setPush(a,b){
+  $('pushUpQ1').classList.toggle('show',a<0); $('pushDnQ1').classList.toggle('show',a>0);
+  $('pushUpQ2').classList.toggle('show',b<0); $('pushDnQ2').classList.toggle('show',b>0);
+}
+let animQ1=.55, animQ2=.55, animCap=0;
+function drawDynamic(now){
+  const s=cur+1;
+  let q1t=baseTarget[cur][0], q2t=baseTarget[cur][1],
+      capT=capTarget[cur], curr=capCurr[cur],
+      pa=pushDir[cur][0], pb=pushDir[cur][1];
+  if(s===7){ // steady alternation: meters + gauge swing in antiphase, live glow
+    const p=Math.sin(now/560);
+    q1t=0.46+0.44*Math.max(0,p); q2t=0.46+0.44*Math.max(0,-p);
+    capT=0.9*p; curr=p>0?1:(p<0?-1:0); pa=p>0?-1:1; pb=p>0?1:-1;
+    $('Q1').classList.toggle('qglow',q1t>VBE_TH); $('Q1').classList.toggle('qdim',q1t<=VBE_TH);
+    $('Q2').classList.toggle('qglow',q2t>VBE_TH); $('Q2').classList.toggle('qdim',q2t<=VBE_TH);
+  }
+  const k=0.16;
+  animQ1+=(q1t-animQ1)*k; animQ2+=(q2t-animQ2)*k; animCap+=(capT-animCap)*k;
+  setFill('mfillQ1',animQ1); setFill('mfillQ2',animQ2);
+  setCapFill(animCap); setCapCurrent(curr); setCapPolarity(animCap); setPush(pa,pb);
 }
 
 function render(){
@@ -540,6 +653,16 @@ function drawWave(){
   // moving cursor for step7
   if(s===7){ const x=tX(trace.t[i1]); wctx.strokeStyle='rgba(37,99,170,.5)';wctx.lineWidth=1;
     wctx.beginPath();wctx.moveTo(x,padT);wctx.lineTo(x,WH-padB);wctx.stroke(); }
+  // "いまここ" phase marker tying the v_C gauge to the waveform (step5 peak / step6 crossing)
+  if(s===5||s===6){
+    let im=i0;
+    if(s===5){ let best=-1; for(let i=i0;i<=i1;i++){const b=Math.max(0,-trace.v[i]); if(b>best){best=b;im=i;}} }
+    else { for(let i=i0+1;i<=i1;i++){ if((trace.v[i-1]<0)!==(trace.v[i]<0)){im=i;break;} } }
+    const mx=tX(trace.t[im]), my=yOf(Math.max(0,-trace.v[im]));
+    wctx.fillStyle='#2563aa'; wctx.beginPath(); wctx.arc(mx,my,3.4,0,7); wctx.fill();
+    wctx.fillStyle='#2563aa'; wctx.textAlign='center'; wctx.textBaseline='bottom'; wctx.font='9px "Zen Kaku Gothic New"';
+    wctx.fillText('いまここ', mx, my-5);
+  }
   // caption
   wctx.fillStyle='#7d7568';wctx.textAlign='left';wctx.textBaseline='top';wctx.font='10px "Zen Kaku Gothic New"';
   const cap = s===5?'定常の一周期：B点が半正弦で π·Vin まで':
@@ -547,7 +670,29 @@ function drawWave(){
                     '振幅が育つ包絡線 → リミットサイクル';
   wctx.fillText(cap, x0+2, WH-14);
 }
-function loop(){ drawWave(); requestAnimationFrame(loop); }
+function loop(now){ drawWave(); drawDynamic(now||performance.now()); requestAnimationFrame(loop); }
+
+/* ---- NEW self-tests (console + UI): meters & tank gauge -------------- */
+(function meterSelfTest(){
+  const ok=b=>b?'PASS':'FAIL';
+  // 1) v_C gauge value actually changes as steps advance
+  const distinct=new Set(capTarget.map(x=>x.toFixed(2))).size;
+  const span=Math.max(...capTarget)-Math.min(...capTarget);
+  const c1=distinct>1 && span>0.5;
+  // 2) a base meter crossing the 0.65V line flips that transistor's ON flag
+  const q1on=i=>baseTarget[i][0]>VBE_TH, q2on=i=>baseTarget[i][1]>VBE_TH;
+  const q1flip = !q1on(0) && q1on(1);          // Q1: below at step1, crosses at step2 -> ON
+  const q2flip = !q2on(4) && q2on(5);          // Q2: below at step5, crosses at step6 -> ON
+  const c2=q1flip && q2flip;
+  console.log('[collector-startup selftest] v_C gauge varies:',ok(c1),
+              {distinct,span:+span.toFixed(2),capTarget});
+  console.log('[collector-startup selftest] base>0.65V flips ON:',ok(c2),
+              {Q1_off_s1:!q1on(0),Q1_on_s2:q1on(1),Q2_off_s5:!q2on(4),Q2_on_s6:q2on(5)});
+  const badge=b=>b?'<b>PASS</b>':'<span style="color:var(--red)">FAIL</span>';
+  const el=document.getElementById('selftest');
+  el.innerHTML+='<br>v_Cゲージ変化 '+badge(c1)+' 幅'+span.toFixed(2)+
+    ' &nbsp; ベース>0.65V→ON '+badge(c2)+' (Q1 s1→s2 / Q2 s5→s6)';
+})();
 
 /* ---- init ---- */
 (function init(){
