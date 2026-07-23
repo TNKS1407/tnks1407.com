@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>巻線の中の波 — LCラダーの固有モード</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
+  --teal:#3c7876;--red:#c2543d;--amber:#c9761f;--blue:#2563aa;
+  --text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{overflow-x:hidden;max-width:100%;}
+body{
+  font-family:'Zen Kaku Gothic New',sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.6;
+  background-image:radial-gradient(circle at 1px 1px,#e9e4da 1px,transparent 0);
+  background-size:22px 22px;
+}
+.wrap{max-width:820px;margin:0 auto;padding:20px 16px 48px;}
+header{display:flex;align-items:flex-end;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.brand{font-weight:700;font-size:22px;line-height:1.1;color:var(--text);}
+.brand .a{color:var(--amber);}
+.tag{font-size:12px;color:var(--muted);padding-bottom:2px;}
+.back{margin-left:auto;font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;text-decoration:none;white-space:nowrap;}
+.back:hover{color:var(--teal);}
+.lead{background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:13px 16px;margin-bottom:16px;font-size:13px;color:#3a3a36;line-height:1.78;
+  box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.lead p{margin:0 0 .5rem;}.lead p:last-child{margin-bottom:0;}
+.lead b{color:var(--text);}
+.selftest{margin-top:.5rem;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);
+  border-top:1px dashed var(--border);padding-top:.5rem;line-height:1.7;}
+.selftest b{color:var(--teal);}
+.card-tool{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;
+  box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.tabs{background:var(--surface);border-bottom:1px solid var(--border);padding:.5rem .7rem;
+  display:flex;gap:.4rem;flex-wrap:wrap;}
+#stage{position:relative;width:100%;height:clamp(480px,118vw,660px);overflow:hidden;background:var(--surface);}
+canvas{display:block;width:100%;height:100%;touch-action:none;}
+#info{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);
+  padding:.45rem .7rem;font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--muted);
+  line-height:1.85;min-height:2.4rem;}
+#info b{color:var(--text);}
+#info .v-teal{color:var(--teal);font-weight:600;}
+#info .v-red{color:var(--red);font-weight:600;}
+#info .v-amber{color:var(--amber);font-weight:600;}
+#info .v-blue{color:var(--blue);font-weight:600;}
+.ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);
+  padding:.5rem .7rem;display:flex;flex-wrap:wrap;gap:.5rem .8rem;align-items:center;}
+.cg{display:flex;align-items:center;gap:.4rem;font-size:.75rem;}
+.cg label{color:var(--muted);white-space:nowrap;font-weight:500;}
+.cg label b{color:var(--text);}
+.cg input[type=range]{width:clamp(80px,17vw,150px);accent-color:var(--amber);}
+.cg .val{font-family:'JetBrains Mono',monospace;color:var(--amber);font-size:.72rem;font-weight:600;min-width:4ch;}
+.modes{display:flex;gap:.35rem;flex-wrap:wrap;}
+button{font-family:'Zen Kaku Gothic New',sans-serif;font-size:.74rem;font-weight:700;
+  color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:8px;
+  padding:.28rem .6rem;cursor:pointer;transition:border-color .15s,background .15s,color .15s;}
+button:hover{border-color:var(--teal);}
+button.on{background:var(--teal);color:#fff;border-color:var(--teal);}
+button.mk.on{background:var(--amber);border-color:var(--amber);}
+.note{font-size:12px;color:#3a3a36;line-height:1.8;background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:12px 16px;margin-top:16px;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.note b{color:var(--text);}
+footer{text-align:center;color:var(--faint);font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:12px;}
+.hide{display:none !important;}
+body.embed{height:100%;display:flex;flex-direction:column;overflow:hidden;background-image:none;}
+body.embed .wrap{max-width:none;margin:0;padding:0;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
+body.embed header,body.embed .lead,body.embed .note,body.embed footer{display:none;}
+body.embed .card-tool{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;border:none;border-radius:0;box-shadow:none;}
+body.embed #stage{flex:1 1 auto;height:auto;min-height:240px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">巻線の中の<span class="a">波</span></div>
+    <div class="tag">共振と電源 #6 ── 倍音列は境界条件の産物</div>
+    <a class="back" href="/">&larr; tnks1407</a>
+  </header>
+  <div class="lead">
+    <p>コイルは「一つの L」ではない。長い巻線は、区間ごとの <b>L</b> と、線間・対地の <b>C</b> が延々と連なった <b>LCラダー</b>だ。だから弦や気柱と同じように、<b>定在波</b>を張る ── 決まった形（固有モード）と、決まった振動数（固有周波数）を持つ。</p>
+    <p>左端を <b>短絡（接地）</b>、右端を <b>開放（高圧端）</b>にすると、モード形は u<sub>j</sub>=sin(jθ<sub>k</sub>)、周波数は ω<sub>k</sub>=(2/√(lc))·sin((2k−1)π/(4N+2))。低次はきれいな <b>奇数倍列</b>（1,3,5,7…）に乗り、高次は離散分散で下へ垂れる。つまみを回して、巻線の中で立つ波を見てみて。</p>
+    <div class="selftest" id="selftest">セルフテスト実行中…</div>
+  </div>
+
+  <div class="card-tool">
+    <div class="tabs">
+      <button id="tMode" class="on">定在波モード</button>
+      <button id="tSplit">モード分裂（2コイル）</button>
+    </div>
+    <div id="stage"><canvas id="c"></canvas></div>
+    <div id="info"></div>
+
+    <!-- controls: mode tab -->
+    <div class="ctrl" id="ctrlMode">
+      <div class="modes" id="modeBtns">
+        <span style="font-size:.72rem;color:var(--muted);align-self:center;">モード k</span>
+        <button class="mk on" data-k="1">1</button>
+        <button class="mk" data-k="2">2</button>
+        <button class="mk" data-k="3">3</button>
+        <button class="mk" data-k="4">4</button>
+        <button class="mk" data-k="5">5</button>
+        <button class="mk" data-k="6">6</button>
+      </div>
+      <div class="cg"><label>区間数 N <b id="lN"></b></label>
+        <input id="sN" type="range" min="4" max="48" step="1" value="24"></div>
+      <div class="cg"><label>駆動位置 j<sub>d</sub> <b id="lJd"></b></label>
+        <input id="sJd" type="range" min="1" max="24" step="1" value="7"></div>
+    </div>
+
+    <!-- controls: split tab -->
+    <div class="ctrl hide" id="ctrlSplit">
+      <div class="cg"><label>結合 k<sub>c</sub> <b id="lKc"></b></label>
+        <input id="sKc" type="range" min="0.02" max="0.8" step="0.005" value="0.6"></div>
+      <div class="modes">
+        <button id="pIn" class="on">同相（低い方 ω₋）</button>
+        <button id="pAnti">逆相（高い方 ω₊）</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <p><b>倍音列は部品の性質ではなく、境界条件の産物。</b>短絡-開放だから奇数倍（1,3,5,7…）になる。もし両端が同種（両端開放や両端短絡）なら整数倍列になる。弦（両端固定）も気柱（両端開）も整数倍、クラリネット（片閉管）は奇数倍 ── 巻線はクラリネットの仲間だ。</p>
+    <p>N が小さいほど離散分散が効いて高次が早く「垂れる」。実機のコイルで高調波が理想の奇数倍からずれて見えるのは、この有限区間の分散が主因のひとつ。駆動点をモードの<b>節</b>に置くと、そのモードは呼べない ── 帰還巻線をどこに巻くか、という設計の勘所につながる。</p>
+  </div>
+  <footer>winding-waves · 閉形式（sin展開・数値ソルバなし） · 単一HTML</footer>
+</div>
+
+<script>
+if(window.self!==window.top)document.body.classList.add('embed');
+
+// ===================================================================
+//  physics — closed form
+//  N-section LC ladder, left short / right open
+//  mode shape  u_j^(k) = sin(j*theta_k),  theta_k=(2k-1)pi/(2N+1)
+//  eigen freq  w_k = (2/sqrt(lc))*sin((2k-1)pi/(4N+2))
+// ===================================================================
+function theta(k,N){ return (2*k-1)*Math.PI/(2*N+1); }
+// relative eigenfrequency (drop the 2/sqrt(lc) prefactor; we only use ratios)
+function wrel(k,N){ return Math.sin((2*k-1)*Math.PI/(4*N+2)); }
+function ratio(k,N){ return wrel(k,N)/wrel(1,N); }        // w_k / w_1
+function shape(j,k,N){ return Math.sin(j*theta(k,N)); }
+
+// mode-splitting (two coupled series LC resonators)
+function wSplit(kc,sign){ return 1/Math.sqrt(1+sign*kc); } // sign=-1 -> lower(w-), +1 -> ... see below
+// convention: w- = w0/sqrt(1+kc) (in-phase, lower), w+ = w0/sqrt(1-kc) (anti-phase, higher)
+const wMinus = kc=> 1/Math.sqrt(1+kc);
+const wPlus  = kc=> 1/Math.sqrt(1-kc);
+
+// ===================================================================
+//  SELF-TEST — runs at load
+// ===================================================================
+function selfTest(){
+  const o={};
+  o.r2  = ratio(2,24);        // expect 2.995891
+  o.r3  = ratio(3,24);        // expect 4.979471
+  o.r2_8  = Math.abs(ratio(2,8)-3);
+  o.r2_48 = Math.abs(ratio(2,48)-3);
+  o.wp  = wPlus(0.6);         // expect 1.581139
+  // drive at a node of mode 2: node where j*theta_2 = m*pi -> j = m*pi/theta_2
+  const N=24, th2=theta(2,24);
+  const jnode = Math.PI/th2;  // first interior node (non-integer in general)
+  o.couplNode = Math.abs(shape(jnode,2,24));  // sin(m pi)=0 by construction
+  return o;
+}
+const ST=selfTest();
+(function reportST(){
+  const el=document.getElementById('selftest');
+  const ok=b=>b?'<b>PASS</b>':'<span style="color:var(--red)">FAIL</span>';
+  const rel=(a,b)=>Math.abs(a/b-1);
+  const c1=rel(ST.r2,2.995891)<1e-4;
+  const c2=rel(ST.r3,4.979471)<1e-4;
+  const c3=ST.r2_48<ST.r2_8;
+  const c4=rel(ST.wp,1.581139)<1e-3;
+  const c5=ST.couplNode<1e-6;
+  el.innerHTML=
+    'セルフテスト（左短絡・右開放, 閉形式）<br>'+
+    '①N=24 ω₂/ω₁ '+ok(c1)+' '+ST.r2.toFixed(6)+' (理論2.995891) &nbsp; '+
+    '②ω₃/ω₁ '+ok(c2)+' '+ST.r3.toFixed(6)+' (4.979471)<br>'+
+    '③N大で奇数倍へ接近 '+ok(c3)+' |ω₂/ω₁−3|: N48='+ST.r2_48.toFixed(4)+' &lt; N8='+ST.r2_8.toFixed(4)+'<br>'+
+    '④分裂 k_c=0.6 ω₊/ω₀ '+ok(c4)+' '+ST.wp.toFixed(6)+' (1.581139) &nbsp; '+
+    '⑤節での結合≈0 '+ok(c5)+' '+ST.couplNode.toExponential(2);
+})();
+
+// ===================================================================
+//  state
+// ===================================================================
+let tab='mode';        // 'mode' | 'split'
+let K=1;               // selected mode 1..6
+let N=24;              // sections
+let Jd=7;              // drive position 1..N
+let Kc=0.6;            // coupling
+let pPhase='in';       // 'in' | 'anti'  (pendulum tab)
+
+// ===================================================================
+//  canvas
+// ===================================================================
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const info=document.getElementById('info');
+let W=0,H=0,DPR=1;
+function resize(){
+  const r=cv.getBoundingClientRect();
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  W=r.width;H=r.height;
+  cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+window.addEventListener('resize',resize);
+const MONO='11px JetBrains Mono, monospace';
+const MONOs='10px JetBrains Mono, monospace';
+
+// colors per mode k (for the ladder + bars)
+const KCOL=['#3c7876','#c9761f','#c2543d','#2563aa','#7d7568','#8a6d3b'];
+
+// ---------------- main animation ----------------
+let t0=performance.now();
+function frame(now){
+  const t=(now-t0)/1000;
+  ctx.clearRect(0,0,W,H);
+  if(tab==='mode') drawMode(t); else drawSplit(t);
+  requestAnimationFrame(frame);
+}
+
+// ==================== MODE TAB ====================
+function drawMode(t){
+  const padL=14, padR=14;
+  const x0=padL, x1=W-padR, plotW=x1-x0;
+  // regions
+  const swTop=24, swH=Math.round(H*0.40);
+  const lowTop=swTop+swH+40;
+  const lowH=H-lowTop-14;
+
+  // ---------- standing wave ----------
+  const midY=swTop+swH/2;
+  const amp=swH*0.40;
+  // displayed phase: mode k oscillates at rate ~ ratio(k,N) (relative), mode1 ~ 2.6s period
+  const w = 2*Math.PI/2.6 * ratio(K,N);
+  const mod = Math.cos(w*t);
+
+  // baseline
+  ctx.strokeStyle='#ece5da';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(x0,midY);ctx.lineTo(x1,midY);ctx.stroke();
+
+  // map winding position: x in [0..N] over plot. node 0 = short at left.
+  const xOf = xx => x0 + (xx/N)*plotW;
+  const th=theta(K,N);
+
+  // envelope (continuous sin(x*th)) — faint upper/lower
+  ctx.strokeStyle='rgba(60,120,118,.22)';ctx.lineWidth=1.2;
+  for(const s of [1,-1]){
+    ctx.beginPath();
+    for(let i=0;i<=240;i++){ const xx=N*i/240; const y=midY - s*amp*Math.sin(xx*th);
+      i?ctx.lineTo(xOf(xx),y):ctx.moveTo(xOf(xx),y);}
+    ctx.stroke();
+  }
+  // instantaneous continuous wave
+  ctx.strokeStyle=KCOL[K-1];ctx.lineWidth=2.2;
+  ctx.beginPath();
+  for(let i=0;i<=240;i++){ const xx=N*i/240; const y=midY - amp*Math.sin(xx*th)*mod;
+    i?ctx.lineTo(xOf(xx),y):ctx.moveTo(xOf(xx),y);}
+  ctx.stroke();
+
+  // discrete node dots (the actual LC junctions j=1..N)
+  for(let j=1;j<=N;j++){
+    const y=midY - amp*shape(j,K,N)*mod;
+    ctx.fillStyle=KCOL[K-1];
+    const rr=N<=28?2.6:1.8;
+    ctx.beginPath();ctx.arc(xOf(j),y,rr,0,7);ctx.fill();
+  }
+
+  // nodes (zeros of envelope) and antinodes (extrema) markers on baseline
+  // zeros: x*th = m*pi -> x = m*pi/th ; antinodes: x*th=(m+.5)pi
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  for(let m=0;;m++){ const xx=m*Math.PI/th; if(xx>N+1e-6)break;
+    if(xx<=N){ // node
+      ctx.fillStyle='#7d7568';
+      ctx.beginPath();ctx.arc(xOf(xx),midY,3,0,7);ctx.fill();
+      ctx.strokeStyle='#faf8f4';ctx.lineWidth=1;ctx.stroke();
+    }
+  }
+  for(let m=0;;m++){ const xx=(m+0.5)*Math.PI/th; if(xx>N)break;
+    // antinode small tick
+    ctx.strokeStyle='rgba(201,118,31,.5)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(xOf(xx),midY-amp-4);ctx.lineTo(xOf(xx),midY-amp+2);ctx.stroke();
+  }
+
+  // end labels
+  ctx.fillStyle='#c2543d';ctx.font=MONOs;ctx.textAlign='left';ctx.textBaseline='top';
+  ctx.fillText('■ 短絡 (接地・電圧0)', x0, swTop-4+swH+6);
+  ctx.textAlign='right';
+  ctx.fillStyle='#c9761f';
+  ctx.fillText('開放 (高圧端) ●', x1, swTop-4+swH+6);
+
+  // drive position marker (blue arrow at Jd)
+  const xd=xOf(Jd);
+  ctx.strokeStyle='rgba(37,99,170,.85)';ctx.lineWidth=1.6;
+  ctx.beginPath();ctx.moveTo(xd,swTop-2);ctx.lineTo(xd,midY+amp+6);ctx.stroke();
+  ctx.fillStyle='#2563aa';
+  ctx.beginPath();ctx.moveTo(xd,swTop-2);ctx.lineTo(xd-4,swTop+6);ctx.lineTo(xd+4,swTop+6);ctx.closePath();ctx.fill();
+  ctx.textAlign='center';ctx.textBaseline='bottom';ctx.font=MONOs;
+  ctx.fillText('駆動 j_d', xd, swTop-3);
+
+  // title
+  ctx.fillStyle=KCOL[K-1];ctx.textAlign='left';ctx.textBaseline='top';ctx.font='11px JetBrains Mono, monospace';
+  ctx.fillText('定在波 モード k='+K+'  (u_j = sin(j·θ_k))', x0+2, swTop+2);
+
+  // ---------- lower: freq ladder (left) + coupling bars (right) ----------
+  const splitX = x0 + plotW*0.42;
+
+  // ===== frequency ladder =====
+  const laX0=x0+34, laX1=splitX-16;
+  const yBot=lowTop+lowH-18, yTop=lowTop+16;
+  const fmax=12;
+  const yOfF = f => yBot - ((f-1)/(fmax-1))*(yBot-yTop);
+  // frame
+  ctx.strokeStyle='#e3dbd0';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(laX0,yTop-6);ctx.lineTo(laX0,yBot);ctx.lineTo(laX1,yBot);ctx.stroke();
+  // ideal odd multiples (faint) 1,3,5,7,9,11
+  ctx.textAlign='right';ctx.textBaseline='middle';ctx.font=MONOs;
+  for(let odd=1;odd<=11;odd+=2){ const y=yOfF(odd);
+    ctx.strokeStyle='#ece5da';ctx.setLineDash([3,3]);ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(laX0,y);ctx.lineTo(laX1,y);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='#c9b8a0';ctx.fillText(odd,laX0-4,y);
+  }
+  // actual f_k/f_1 rungs for k=1..6
+  for(let k=1;k<=6;k++){ const f=ratio(k,N); if(f>fmax)continue;
+    const y=yOfF(f);
+    ctx.strokeStyle=KCOL[k-1];ctx.lineWidth=(k===K)?3:2;
+    ctx.globalAlpha=(k===K)?1:0.55;
+    ctx.beginPath();ctx.moveTo(laX0+2,y);ctx.lineTo(laX1,y);ctx.stroke();
+    ctx.globalAlpha=1;
+    if(k===K){ ctx.fillStyle=KCOL[k-1];ctx.textAlign='left';
+      ctx.fillText('k'+k+'='+f.toFixed(3), laX1-2, y-7);ctx.textAlign='right'; }
+  }
+  ctx.fillStyle='#7d7568';ctx.textAlign='left';ctx.textBaseline='top';ctx.font=MONOs;
+  ctx.fillText('f_k / f_1  （点線=理想の奇数倍）', laX0-30, lowTop-2);
+  ctx.fillStyle='#aaa49b';ctx.textBaseline='bottom';
+  ctx.fillText('低次は乗る / 高次は分散で下へ垂れる', laX0-30, yBot+16);
+
+  // ===== coupling bars =====
+  const cbX0=splitX+18, cbX1=x1-6;
+  const barsBot=lowTop+lowH-30, barsTop=lowTop+18;
+  const bAreaH=barsBot-barsTop;
+  ctx.strokeStyle='#f0ebe2';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(cbX0,barsBot);ctx.lineTo(cbX1,barsBot);ctx.stroke();
+  const nb=6, slot=(cbX1-cbX0)/nb;
+  const bw=Math.min(slot*0.6,26);
+  for(let k=1;k<=6;k++){
+    const cpl=Math.abs(shape(Jd,k,N)); // |u_jd^k|, 0..1
+    const bx=cbX0+slot*(k-0.5)-bw/2;
+    const bh=cpl*bAreaH;
+    ctx.fillStyle='rgba(0,0,0,.04)';ctx.fillRect(bx,barsTop,bw,bAreaH);
+    ctx.fillStyle=KCOL[k-1];ctx.globalAlpha=(k===K)?1:0.6;
+    ctx.fillRect(bx,barsBot-bh,bw,bh);ctx.globalAlpha=1;
+    ctx.fillStyle=(k===K)?KCOL[k-1]:'#7d7568';ctx.textAlign='center';ctx.textBaseline='top';ctx.font=MONOs;
+    ctx.fillText('k'+k,bx+bw/2,barsBot+3);
+    ctx.textBaseline='bottom';
+    ctx.fillText(cpl.toFixed(2),bx+bw/2,barsBot-bh-2);
+  }
+  ctx.fillStyle='#7d7568';ctx.textAlign='left';ctx.textBaseline='top';ctx.font=MONOs;
+  ctx.fillText('駆動 j_d の各モードへの結合 |u_{j_d}^k|', cbX0-4, lowTop-2);
+  ctx.fillStyle='#aaa49b';ctx.textBaseline='bottom';
+  ctx.fillText('節(≈0)に置くとそのモードは呼べない', cbX0-4, lowTop+lowH-4);
+
+  // divider
+  ctx.strokeStyle='#e8e0d5';ctx.setLineDash([3,4]);ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(splitX,lowTop+4);ctx.lineTo(splitX,lowTop+lowH-4);ctx.stroke();ctx.setLineDash([]);
+
+  // info bar
+  const fk=ratio(K,N);
+  const idealOdd=2*K-1;
+  const droop=(fk/idealOdd-1)*100;
+  info.innerHTML=
+    'N = <b class="v-amber">'+N+'</b> 区間 &nbsp; モード <b class="v-teal">k='+K+'</b> &nbsp;|&nbsp; '+
+    'f_k/f_1 = <b class="v-red">'+fk.toFixed(4)+'</b> &nbsp; 理想奇数倍 = <b>'+idealOdd+'</b> '+
+    '(垂れ <b class="v-amber">'+droop.toFixed(2)+'%</b>)<br>'+
+    '駆動 j_d = <b class="v-blue">'+Jd+'</b>/'+N+' &nbsp; このモードへの結合 |u| = <b>'+Math.abs(shape(Jd,K,N)).toFixed(3)+'</b>'+
+    (Math.abs(shape(Jd,K,N))<0.03?' &nbsp;<span class="v-red">← ほぼ節：呼べない</span>':'');
+}
+
+// ==================== SPLIT TAB ====================
+function drawSplit(t){
+  const padL=14,padR=14;
+  const x0=padL,x1=W-padR,plotW=x1-x0;
+
+  // ----- top: pendulums -----
+  const pTop=20, pH=Math.round(H*0.40);
+  const w0len=pH*0.55;
+  const pivY=pTop+18;
+  const cx1=x0+plotW*0.32, cx2=x0+plotW*0.68;
+  // normal-mode angular rate (relative to w0), scaled for visibility
+  const wr = (pPhase==='in'? wMinus(Kc): wPlus(Kc));
+  const w = 2*Math.PI/2.4 * wr;
+  const A=0.42; // rad
+  const a1=A*Math.cos(w*t);
+  const a2=(pPhase==='in'?1:-1)*A*Math.cos(w*t);
+  // coupling spring baseline
+  function bob(cx,ang){ return [cx+Math.sin(ang)*w0len, pivY+Math.cos(ang)*w0len]; }
+  const [bx1,by1]=bob(cx1,a1), [bx2,by2]=bob(cx2,a2);
+  // ceiling
+  ctx.strokeStyle='#d8cfc2';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(x0+30,pivY);ctx.lineTo(x1-30,pivY);ctx.stroke();
+  // coupling spring between bobs
+  ctx.strokeStyle='rgba(201,118,31,.7)';ctx.lineWidth=1.5;
+  ctx.beginPath();
+  const segs=12;
+  for(let i=0;i<=segs;i++){ const f=i/segs; const xx=bx1+(bx2-bx1)*f;
+    const yy=by1+(by2-by1)*f + (i>0&&i<segs? (i%2?6:-6):0);
+    i?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy);}
+  ctx.stroke();
+  // rods + bobs
+  [[cx1,bx1,by1,'#3c7876'],[cx2,bx2,by2,'#c2543d']].forEach(([cx,bx,by,col])=>{
+    ctx.strokeStyle='#9c9284';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(cx,pivY);ctx.lineTo(bx,by);ctx.stroke();
+    ctx.fillStyle=col;ctx.beginPath();ctx.arc(bx,by,11,0,7);ctx.fill();
+    ctx.fillStyle='#7d7568';ctx.beginPath();ctx.arc(cx,pivY,2.5,0,7);ctx.fill();
+  });
+  ctx.fillStyle=(pPhase==='in')?'#3c7876':'#c2543d';ctx.textAlign='center';ctx.textBaseline='top';ctx.font='11px JetBrains Mono, monospace';
+  ctx.fillText(pPhase==='in'?'同相モード：二つが一緒に振れる → 低い方 ω₋':'逆相モード：反対に振れる → 高い方 ω₊',
+    (x0+x1)/2, pTop+pH-2);
+
+  // ----- bottom: splitting plot omega±/omega0 vs kc -----
+  const gTop=pTop+pH+34, gH=H-gTop-16;
+  const gx0=x0+40, gx1=x1-10, gy0=gTop+8, gy1=gTop+gH-20;
+  const kcMax=0.8, yMax=2.3, yMin=0.7;
+  const xOf=kc=> gx0+(kc/kcMax)*(gx1-gx0);
+  const yOf=v => gy1-((v-yMin)/(yMax-yMin))*(gy1-gy0);
+  // frame + gridlines
+  ctx.strokeStyle='#e3dbd0';ctx.lineWidth=1;ctx.strokeRect(gx0,gy0,gx1-gx0,gy1-gy0);
+  ctx.textAlign='right';ctx.textBaseline='middle';ctx.font=MONOs;ctx.fillStyle='#aaa49b';
+  [0.8,1.0,1.5,2.0].forEach(v=>{ if(v<yMin||v>yMax)return; const y=yOf(v);
+    ctx.strokeStyle=v===1?'#e6ded3':'#f2ede5';ctx.beginPath();ctx.moveTo(gx0,y);ctx.lineTo(gx1,y);ctx.stroke();
+    ctx.fillStyle='#aaa49b';ctx.fillText(v.toFixed(1),gx0-4,y);
+  });
+  ctx.textAlign='center';ctx.textBaseline='top';
+  [0.2,0.4,0.6,0.8].forEach(kc=>{ const x=xOf(kc);
+    ctx.fillStyle='#aaa49b';ctx.fillText(kc.toFixed(1),x,gy1+3);});
+  // omega- (lower, teal) and omega+ (higher, red)
+  function curve(fn,col){ ctx.strokeStyle=col;ctx.lineWidth=2;ctx.beginPath();
+    for(let i=0;i<=160;i++){ const kc=0.02+(kcMax-0.02)*i/160; const v=fn(kc);
+      const x=xOf(kc),y=yOf(Math.min(v,yMax)); i?ctx.lineTo(x,y):ctx.moveTo(x,y);}
+    ctx.stroke();}
+  curve(wMinus,'#3c7876');
+  curve(wPlus,'#c2543d');
+  // w0 = 1 reference
+  ctx.strokeStyle='rgba(125,117,104,.45)';ctx.setLineDash([4,3]);ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(gx0,yOf(1));ctx.lineTo(gx1,yOf(1));ctx.stroke();ctx.setLineDash([]);
+  // cursor at current kc
+  const cxk=xOf(Kc);
+  ctx.strokeStyle='rgba(37,99,170,.8)';ctx.lineWidth=1.4;
+  ctx.beginPath();ctx.moveTo(cxk,gy0);ctx.lineTo(cxk,gy1);ctx.stroke();
+  const vM=wMinus(Kc), vP=wPlus(Kc);
+  ctx.fillStyle='#3c7876';ctx.beginPath();ctx.arc(cxk,yOf(vM),4,0,7);ctx.fill();
+  ctx.fillStyle='#c2543d';ctx.beginPath();ctx.arc(cxk,yOf(Math.min(vP,yMax)),4,0,7);ctx.fill();
+  // labels
+  ctx.fillStyle='#7d7568';ctx.textAlign='left';ctx.textBaseline='top';ctx.font=MONOs;
+  ctx.fillText('ω/ω₀ vs 結合 k_c', gx0-32, gTop-6);
+  ctx.fillStyle='#3c7876';ctx.textBaseline='bottom';
+  ctx.fillText('ω₋=1/√(1+k_c)', gx0+6, yOf(wMinus(0.7))+16);
+  ctx.fillStyle='#c2543d';
+  ctx.fillText('ω₊=1/√(1−k_c)', gx0+6, yOf(1)-6);
+
+  info.innerHTML=
+    '結合 k_c = <b class="v-amber">'+Kc.toFixed(3)+'</b> &nbsp;|&nbsp; '+
+    'ω₋/ω₀ = <b class="v-teal">'+vM.toFixed(4)+'</b> &nbsp; ω₊/ω₀ = <b class="v-red">'+vP.toFixed(4)+'</b> '+
+    '&nbsp; 分裂比 = <b>'+(vP/vM).toFixed(3)+'</b><br>'+
+    '同調した2つのLC共振器を結合すると、一つの山が<b>二つ</b>に割れる ── '+
+    'ワイヤレス給電やテスラコイルの2コイルが2山になる理由。';
+}
+
+// ===================================================================
+//  controls
+// ===================================================================
+const sN=document.getElementById('sN'),sJd=document.getElementById('sJd'),sKc=document.getElementById('sKc');
+const lN=document.getElementById('lN'),lJd=document.getElementById('lJd'),lKc=document.getElementById('lKc');
+function syncLabels(){
+  lN.textContent=N;
+  sJd.max=N; if(Jd>N){Jd=N;sJd.value=N;}
+  lJd.textContent=Jd;
+  lKc.textContent=Kc.toFixed(3);
+}
+sN.addEventListener('input',()=>{ N=parseInt(sN.value); if(Jd>N){Jd=N;sJd.value=N;} syncLabels(); pushHash(); });
+sJd.addEventListener('input',()=>{ Jd=parseInt(sJd.value); syncLabels(); pushHash(); });
+sKc.addEventListener('input',()=>{ Kc=parseFloat(sKc.value); syncLabels(); pushHash(); });
+
+document.querySelectorAll('.mk').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.mk').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); K=parseInt(b.dataset.k); pushHash();
+}));
+
+const pIn=document.getElementById('pIn'),pAnti=document.getElementById('pAnti');
+pIn.addEventListener('click',()=>{pPhase='in';pIn.classList.add('on');pAnti.classList.remove('on');});
+pAnti.addEventListener('click',()=>{pPhase='anti';pAnti.classList.add('on');pIn.classList.remove('on');});
+
+const tMode=document.getElementById('tMode'),tSplit=document.getElementById('tSplit');
+const ctrlMode=document.getElementById('ctrlMode'),ctrlSplit=document.getElementById('ctrlSplit');
+function setTab(tb){
+  tab=tb; t0=performance.now();
+  tMode.classList.toggle('on',tb==='mode');
+  tSplit.classList.toggle('on',tb==='split');
+  ctrlMode.classList.toggle('hide',tb!=='mode');
+  ctrlSplit.classList.toggle('hide',tb!=='mode'?false:true); // ensure correct
+  ctrlSplit.classList.toggle('hide',tb!=='split');
+  pushHash();
+}
+tMode.addEventListener('click',()=>setTab('mode'));
+tSplit.addEventListener('click',()=>setTab('split'));
+
+function pushHash(){
+  const p = tab==='mode'
+    ? 'tab=mode&k='+K+'&N='+N+'&jd='+Jd
+    : 'tab=split&kc='+Kc.toFixed(3);
+  history.replaceState(null,'','#'+p);
+}
+function readHash(){
+  const h=location.hash.slice(1); if(!h)return;
+  const q=Object.fromEntries(h.split('&').map(s=>s.split('=')));
+  if(q.tab==='split')tab='split';
+  if(q.k)K=Math.max(1,Math.min(6,parseInt(q.k)||1));
+  if(q.N)N=Math.max(4,Math.min(48,parseInt(q.N)||24));
+  if(q.jd)Jd=Math.max(1,Math.min(N,parseInt(q.jd)||7));
+  if(q.kc)Kc=Math.max(0.02,Math.min(0.8,parseFloat(q.kc)||0.6));
+}
+
+// init
+(function init(){
+  readHash();
+  sN.value=N; sJd.value=Jd; sKc.value=Kc;
+  document.querySelectorAll('.mk').forEach(x=>x.classList.toggle('on',parseInt(x.dataset.k)===K));
+  syncLabels();
+  setTab(tab);
+  resize();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

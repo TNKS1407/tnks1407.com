@@ -56,6 +56,7 @@ export const labGroups: LabGroup[] = [
       { name: '共振の顔（直列の谷・並列の山・Q倍の内側）', url: '/resonance-face/' },
       { name: 'チョークの言い分（リップル・逆流・πVinの粘り）', url: '/choke-voice/' },
       { name: 'トランスの中身（結合k・漏れ・反射則）', url: '/transformer-inside/' },
+      { name: '巻線の中の波（定在波モード・節と腹・モード分裂）', url: '/winding-waves/' },
     ],
   },
   {
