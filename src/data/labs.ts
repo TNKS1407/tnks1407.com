@@ -59,6 +59,7 @@ export const labGroups: LabGroup[] = [
       { name: '巻線の中の波（定在波モード・節と腹・モード分裂）', url: '/winding-waves/' },
       { name: '波形整形スタジオ（3次を1/9混ぜて頭を平らに）', url: '/triple-resonance/' },
       { name: '負荷感度メータ（共振≠定電流を測って壊す）', url: '/constant-current/' },
+      { name: '故障カルテ（症状から物理を逆引きする診察室）', url: '/failure-clinic/' },
     ],
   },
   {

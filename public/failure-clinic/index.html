@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>故障カルテ ── 症状から物理を逆引きする</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
+    --teal:#3c7876;--red:#c2543d;--amber:#c9761f;
+    --text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{height:100%;max-width:100%;overflow-x:hidden;}
+  body{font-family:'Zen Kaku Gothic New',system-ui,sans-serif;background:var(--bg);color:var(--text);
+    min-height:100%;line-height:1.6;overflow-x:hidden;
+    background-image:radial-gradient(circle at 1px 1px,#e9e4da 1px,transparent 0);background-size:22px 22px;}
+  .wrap{max-width:1000px;margin:0 auto;padding:24px 18px 40px;}
+  header{display:flex;align-items:flex-end;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+  .brand{font-weight:700;font-size:25px;line-height:1.1;font-family:'Zen Maru Gothic','Zen Kaku Gothic New',sans-serif;color:var(--text);}
+  .brand .a{color:var(--teal);}
+  .tag{font-size:12px;color:var(--muted);padding-bottom:3px;flex:1 1 220px;min-width:0;overflow-wrap:anywhere;}
+  .back{margin-left:auto;font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;text-decoration:none;white-space:nowrap;}
+  .back:hover{color:var(--teal);}
+  .lead{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:15px 18px;margin-bottom:18px;
+    font-size:13px;color:#3a3a36;line-height:1.78;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+  .lead p{margin:0 0 .55rem;} .lead p:last-child{margin-bottom:0;}
+  .lead b{color:var(--text);}
+  .card-tool{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;
+    box-shadow:0 6px 20px -16px rgba(20,40,40,.4);display:flex;flex-direction:column;}
+  footer{text-align:center;color:var(--faint);font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:14px;}
+
+  /* ── clinic layout ── */
+  .clinic{display:flex;flex-wrap:nowrap;align-items:stretch;min-width:0;}
+  .qlist{flex:0 0 202px;background:var(--surface);border-right:1px solid var(--border);padding:12px 10px;min-width:0;}
+  .qlist .qhead{font-family:'JetBrains Mono',monospace;font-size:.66rem;font-weight:700;color:var(--muted);
+    letter-spacing:.04em;text-transform:uppercase;margin:0 4px 8px;}
+  .qbtn{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:var(--card);
+    border:1px solid var(--border);border-radius:9px;padding:.5rem .55rem;margin-bottom:7px;cursor:pointer;
+    font:inherit;font-size:.8rem;color:var(--text);line-height:1.35;}
+  .qbtn:hover{border-color:var(--teal);}
+  .qbtn.on{border-color:var(--teal);background:rgba(60,120,118,.10);}
+  .qbtn .num{flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:.72rem;
+    color:var(--teal);background:rgba(60,120,118,.12);border-radius:6px;padding:.05rem .4rem;}
+  .qbtn.on .num{background:var(--teal);color:#fff;}
+
+  .chart{flex:1 1 auto;min-width:0;padding:16px 18px 18px;}
+  .ctitle{font-family:'Zen Maru Gothic','Zen Kaku Gothic New',sans-serif;font-weight:700;font-size:1.12rem;
+    color:var(--text);line-height:1.3;margin-bottom:2px;}
+  .csub{font-family:'JetBrains Mono',monospace;font-size:.66rem;color:var(--faint);margin-bottom:12px;}
+  .sec{margin-top:16px;}
+  .sec > .h{font-family:'JetBrains Mono',monospace;font-size:.68rem;font-weight:700;color:var(--muted);
+    letter-spacing:.03em;text-transform:uppercase;margin-bottom:7px;display:flex;align-items:center;gap:6px;}
+  .sec > .h::before{content:"";width:9px;height:9px;border-radius:2px;background:var(--teal);flex:0 0 auto;}
+  .sec.suspects > .h::before{background:var(--amber);}
+  .sec.measure > .h::before{background:var(--teal);}
+  .chainbox{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px 10px;overflow:hidden;}
+  .chainbox svg{display:block;width:100%;height:auto;}
+
+  .suspect{display:flex;align-items:flex-start;gap:9px;padding:.36rem .1rem;cursor:pointer;font-size:.86rem;
+    line-height:1.45;color:var(--text);border-bottom:1px dashed var(--border);}
+  .suspect:last-child{border-bottom:none;}
+  .suspect .box{flex:0 0 auto;width:16px;height:16px;margin-top:2px;border:1.6px solid var(--amber);border-radius:4px;
+    display:flex;align-items:center;justify-content:center;font-size:11px;color:transparent;line-height:1;}
+  .suspect.struck{color:var(--faint);}
+  .suspect.struck .t{text-decoration:line-through;}
+  .suspect.struck .box{background:var(--amber);color:#fff;border-color:var(--amber);}
+  .suspect .t{min-width:0;}
+  .hint{font-size:.68rem;color:var(--faint);margin-top:6px;font-family:'JetBrains Mono',monospace;}
+
+  .measure-t{font-size:.88rem;line-height:1.65;color:var(--text);}
+  .lesson{border-left:3px solid var(--red);background:rgba(194,84,61,.06);border-radius:0 8px 8px 0;
+    padding:10px 14px;font-size:.9rem;line-height:1.6;color:#3a3230;}
+  .lesson b{color:var(--red);}
+  .caution{border-left:3px solid var(--amber);background:rgba(201,118,31,.07);border-radius:0 8px 8px 0;
+    padding:9px 13px;font-size:.82rem;line-height:1.55;color:#4a3f2e;margin-top:8px;}
+  .links a{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:.76rem;color:var(--teal);
+    text-decoration:none;border:1px solid var(--border);border-radius:8px;padding:.28rem .6rem;margin:0 .4rem .4rem 0;}
+  .links a:hover{border-color:var(--teal);background:rgba(60,120,118,.08);}
+  .links a::before{content:"→ ";color:var(--faint);}
+
+  .safety{background:#2b2622;color:#f0ebe2;font-family:'JetBrains Mono',monospace;font-size:.72rem;
+    padding:.6rem .9rem;line-height:1.55;display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;}
+  .safety .warn{color:#e8b04a;font-weight:700;flex:0 0 auto;}
+  .selftest{background:var(--surface);border-top:1px solid var(--border);font-family:'JetBrains Mono',monospace;
+    font-size:.68rem;color:var(--muted);padding:.4rem .9rem;}
+  .selftest .ok{color:var(--teal);font-weight:700;} .selftest .ng{color:var(--red);font-weight:700;}
+
+  /* ── iframe 埋め込み時は枠を消す ── */
+  body.embed{height:100%;overflow:auto;background-image:none;}
+  body.embed .wrap{max-width:none;margin:0;padding:0;}
+  body.embed header,body.embed .lead,body.embed footer{display:none;}
+  body.embed .card-tool{border:none;border-radius:0;box-shadow:none;min-height:100%;}
+
+  @media(max-width:560px){
+    .clinic{flex-direction:column;}
+    .qlist{flex:0 0 auto;border-right:none;border-bottom:1px solid var(--border);}
+    .qlist .qgrid{display:flex;flex-wrap:wrap;gap:6px;}
+    .qbtn{margin-bottom:0;flex:1 1 46%;}
+    .chart{padding:14px 14px 16px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">故障<span class="a">カルテ</span></div>
+    <div class="tag">コレクタ共振回路の症状を、物理で逆引きする診察室</div>
+    <a class="back" href="/">← tnks1407</a>
+  </header>
+  <div class="lead">
+    <p>壊れた回路を前にして、いちばん危ういのは「たぶんこの部品だろう」と手を動かし始めることだと思う。症状の裏には<b>因果の連鎖</b>があって、その一本道を辿らないと、正しい容疑者に辿り着けない。ここは、共振電源（CCFL インバータのようなコレクタ共振回路）で繰り返し出会う 7 つの症状を、<b>症状 → 因果 → 容疑者 → 測るもの → 教訓</b>の順でひらく参照ツールだよ。</p>
+    <p>これはシミュレータじゃない。でも各症状に<b>因果チェーンの小図解</b>を付けてある ── 「なぜその症状になるか」を物理で一度腑に落とすと、勘の当てものが、切り分けの手順に変わる。容疑者はタップすると打ち消し線が引ける（切り分けメモとして保存されるよ）。左（スマホでは上）の問診票から、今の症状を選んで。</p>
+  </div>
+  <div class="card-tool">
+    <div class="clinic">
+      <div class="qlist">
+        <div class="qhead">問診票 / symptom</div>
+        <div class="qgrid" id="qgrid"></div>
+      </div>
+      <div class="chart" id="chart"></div>
+    </div>
+    <div class="safety">
+      <span class="warn">⚠ 高圧回路</span>
+      <span>通電診断は、電流制限・絶縁・一人でやらない ── この 3 つを必ず守る。</span>
+    </div>
+    <div class="selftest" id="selftest">self-test: running…</div>
+  </div>
+  <footer>tnks1407 — 故障を物理で読む（章「共振と電源」第9回 付属ラボ）</footer>
+</div>
+
+<script>
+if(window.self!==window.top)document.body.classList.add('embed');
+
+/* ── データ（症状カルテ） ───────────────────────────── */
+const SYMPTOMS=[
+ { id:1, title:'発振しない',
+   chain:[
+     {t:'起動時の微小ノイズ（発振の種）',k:'start'},
+     {t:'帰還ループを一周する利得 < 1',k:'key'},
+     {t:'一周ごとに振幅が減衰していく',k:'step'},
+     {t:'発振が立ち上がらない',k:'bad'}],
+   suspects:[
+     '帰還極性が逆','起動バイアスが不足／過大','負荷が重く、起動時の利得 < 1',
+     'チョークが小さく、電源がタンクをクランプ','巻線の誤接続','BJT の逆ベース破壊',
+     '（MOSFET）ゲート電圧不足','意図したモードの Q が低すぎる'],
+   measure:'一周のループ利得を追う：起動バイアス、帰還の極性と振幅、負荷を軽くすると発振するか。個々の部品が生きていても「一周の利得 ≥ 1」でなければ発振は生まれない。',
+   caution:'発振停止時に、かえって入力電流が増える回路もある → 必ず電流制限下で診断する。',
+   lesson:'発振は「ループを一周して利得 ≥ 1 か」で決まる。種が育つ土壌（利得）が無ければ、部品が正常でも発振しない。',
+   links:[{h:'/docs/collector-startup/',l:'コレクタ共振の起動'}] },
+
+ { id:2, title:'片側だけ発熱する',
+   chain:[
+     {t:'半周期のボルト秒 ∫v·dt が左右で非対称',k:'start'},
+     {t:'毎周期、磁束が少しずつ片側へ寄る（フラックスウォーク）',k:'key'},
+     {t:'その側の電流が増える',k:'step'},
+     {t:'片側だけ発熱',k:'bad'}],
+   suspects:[
+     '左右のボルト秒が非対称','BJT の蓄積時間の左右差','ゲート抵抗の左右差',
+     '巻線抵抗の左右差','帰還結合の左右差','コアの残留磁束','レイアウト寄生の左右差'],
+   measure:'左右のベース（ゲート）電流と、半周期ごとの ∫v_p·dt を比較する。片側だけ熱い時は、一点故障より左右対称性（ボルト秒バランス）を疑う。',
+   lesson:'原因は「毎周期のわずかな面積差」。小さな非対称が磁束の片寄りとして毎周期蓄積し、片側の電流増 → 発熱になる。',
+   links:[{h:'/docs/collector-startup/',l:'コレクタ共振の起動'}] },
+
+ { id:3, title:'無負荷で壊れる',
+   chain:[
+     {t:'負荷が外れる（開放・点灯前）',k:'start'},
+     {t:'タンクから抜ける損失が減り、Q が上昇',k:'key'},
+     {t:'二次電圧・内部電圧が跳ね上がる',k:'step'},
+     {t:'絶縁破壊・部品破損（主発振モードが移ることも）',k:'bad'}],
+   suspects:[
+     '負荷（放電管・二次負荷）が外れている／点灯前','軽負荷で Q が過大に上がる設計',
+     '二次・内部の耐圧マージン不足','軽負荷で主発振モードが別モードへ移動',
+     'クランプ／スナバなど過電圧保護が無い'],
+   measure:'負荷を外した瞬間の二次電圧・内部電圧の上昇量、軽負荷での Q と共振周波数。開放条件を安全側（電流制限・耐圧確認）で作って測る。',
+   lesson:'負荷電流が小さいから安全、ではない。高圧共振系では“開放”が最悪条件になり得る。',
+   links:[{h:'/docs/resonance-face/',l:'共振の顔（Q と電圧上昇）'},{h:'/docs/transformer-inside/',l:'トランスの内側'}] },
+
+ { id:4, title:'短絡で壊れる',
+   chain:[
+     {t:'出力が短絡',k:'start'},
+     {t:'タンクの Q 低下 → 帰還電圧が不足 → 発振停止',k:'key'},
+     {t:'でも起動バイアスがスイッチを半導通に保つ',k:'step'},
+     {t:'チョーク経由で定常大電流 → 破壊',k:'bad'}],
+   suspects:[
+     '出力・二次側の短絡／過負荷','短絡時、起動バイアスがスイッチを半導通に保つ',
+     'チョークが定常短絡電流を止められない','電流制限・過電流保護が無い／遅い',
+     'スイッチの SOA（安全動作領域）超過'],
+   measure:'短絡時のスイッチ電流とチョーク電流、起動バイアスでの導通状態。必ず電流制限下で。発振停止≠安全であることを確かめる。',
+   lesson:'チョークは電流上昇を遅らせるだけで、定常短絡を止めない。発振が止まっても、半導通と直流経路が残れば壊れる。',
+   links:[{h:'/docs/choke-voice/',l:'チョークの役割'}] },
+
+ { id:5, title:'周波数が二通りある',
+   chain:[
+     {t:'複数の共振モードが起動利得 > 1 を持つ',k:'start'},
+     {t:'負荷・立上り速度・残留磁束・温度で勝者が変わる',k:'key'},
+     {t:'起動のたびに、勝つモードが入れ替わる',k:'step'},
+     {t:'周波数が二通り（以上）に見える',k:'bad'}],
+   suspects:[
+     '不要モードの Q が高いまま','不要モードへの帰還結合が残っている',
+     '負荷条件で勝者が変わる','立上り速度（電源スルー）で変わる',
+     'コアの残留磁束で変わる','温度で変わる'],
+   measure:'起動ごとの発振周波数のばらつき。負荷・温度・立上りを変えた時に、どちらのモードが勝つかを記録する。',
+   lesson:'対策は「どちらが勝つか当てる」ことではなく、不要モードの Q と帰還結合を下げること。勝負を成立させないのが正解。',
+   links:[{h:'/docs/winding-waves/',l:'巻線の波'}] },
+
+ { id:6, title:'筐体へ入れると変わる',
+   chain:[
+     {t:'筐体・反射板・シールドを近づける',k:'start'},
+     {t:'二次側の対地容量・共通モード経路が変わる',k:'key'},
+     {t:'共振回路の境界条件そのものが変わる',k:'step'},
+     {t:'周波数・モード・電圧分布が基板単体と別物に',k:'bad'}],
+   suspects:[
+     '筐体・反射板・シールドの近接','二次側の対地容量の変化',
+     '共通モード経路（アース・配線）の変化','基板単体でしか評価していない',
+     '実装状態が試作と量産で違う'],
+   measure:'基板単体 vs 組込み後で、共振周波数・電圧分布・二次側容量を測り比べる。固定位置・シールド距離も変数として振る。',
+   lesson:'基板単体と組込み後は、別回路として扱う。筐体は寄生ではなく、共振の境界条件の一部だよ。',
+   links:[{h:'/docs/winding-waves/',l:'巻線の波'}] },
+
+ { id:7, title:'端子電圧は正常なのに巻線が壊れる',
+   chain:[
+     {t:'巻線に内部の高次モードが立つ',k:'start'},
+     {t:'電圧の腹（最大点）が巻線の内部にできる',k:'key'},
+     {t:'層間・ターン間に電界が集中',k:'step'},
+     {t:'部分放電 → 絶縁劣化 → 巻線破壊（端子は正常表示）',k:'bad'}],
+   suspects:[
+     '巻線内部の高次モード（電圧腹）','層間・ターン間の電界集中','部分放電（コロナ）',
+     '層間絶縁・含浸の不足','巻き方（レイヤ配置）で内部電界が高い',
+     '端子電圧だけで内部最大電圧を判断している'],
+   measure:'端子電圧だけでなく、巻線各部の電圧分布（内部の電圧腹の位置）と部分放電の有無。',
+   lesson:'端子電圧だけで内部の最大電圧は決まらない。巻線の中に、端子より高い電圧腹があり得る。',
+   links:[{h:'/docs/winding-waves/',l:'巻線の波'},{h:'/docs/triple-resonance/',l:'三重共振'}] },
+];
+
+/* selftest 用：リンク先の期待値（ハードコード照合） */
+const EXPECTED_LINKS={
+  1:['/docs/collector-startup/'],
+  2:['/docs/collector-startup/'],
+  3:['/docs/resonance-face/','/docs/transformer-inside/'],
+  4:['/docs/choke-voice/'],
+  5:['/docs/winding-waves/'],
+  6:['/docs/winding-waves/'],
+  7:['/docs/winding-waves/','/docs/triple-resonance/'],
+};
+
+/* ── SVG 因果チェーン図 ─────────────────────────────── */
+const measureCv=document.createElement('canvas');
+const mctx=measureCv.getContext('2d');
+const CHAIN_FONT="13px 'Zen Kaku Gothic New', sans-serif";
+function wrapText(text,maxW){
+  mctx.font=CHAIN_FONT;
+  const lines=[]; let cur='';
+  for(const ch of text){
+    const test=cur+ch;
+    if(mctx.measureText(test).width>maxW && cur){ lines.push(cur); cur=ch; }
+    else cur=test;
+  }
+  if(cur)lines.push(cur);
+  return lines;
+}
+const KIND={
+  start:{fill:'#eef4f3',stroke:'#3c7876',tag:''},
+  step :{fill:'#faf8f4',stroke:'#d8cfc2',tag:''},
+  key  :{fill:'#fbf1e2',stroke:'#c9761f',tag:'核心'},
+  bad  :{fill:'#f7e7e2',stroke:'#c2543d',tag:''},
+};
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function buildChainSVG(chain,W){
+  const pad=8, boxPad=11, lineH=19, vpad=9, arrowGap=22;
+  const boxW=Math.max(120,W-2*pad), innerW=boxW-2*boxPad-24; // 24=右のtag余白
+  let y=0; const parts=[]; const cx=pad+boxW/2;
+  chain.forEach((node,i)=>{
+    const kd=KIND[node.k]||KIND.step;
+    const lines=wrapText(node.t,innerW);
+    const h=lines.length*lineH+2*vpad;
+    parts.push('<rect x="'+pad+'" y="'+y+'" width="'+boxW+'" height="'+h+'" rx="8" fill="'+kd.fill+'" stroke="'+kd.stroke+'" stroke-width="1.4"/>');
+    lines.forEach((ln,j)=>{
+      const ty=y+vpad+lineH*(j+1)-5;
+      parts.push('<text x="'+(pad+boxPad)+'" y="'+ty+'" font-family="Zen Kaku Gothic New, sans-serif" font-size="13" fill="#1d1b17">'+esc(ln)+'</text>');
+    });
+    if(kd.tag){
+      parts.push('<text x="'+(pad+boxW-8)+'" y="'+(y+14)+'" text-anchor="end" font-family="JetBrains Mono, monospace" font-size="9" font-weight="700" fill="'+kd.stroke+'">'+kd.tag+'</text>');
+    }
+    y+=h;
+    if(i<chain.length-1){
+      const y0=y+3, y1=y+arrowGap-4;
+      parts.push('<line x1="'+cx+'" y1="'+y0+'" x2="'+cx+'" y2="'+(y1-4)+'" stroke="#b3a99c" stroke-width="1.6"/>');
+      parts.push('<path d="M'+(cx-4)+' '+(y1-4)+' L'+(cx+4)+' '+(y1-4)+' L'+cx+' '+(y1+2)+' Z" fill="#b3a99c"/>');
+      y+=arrowGap;
+    }
+  });
+  // width/height属性は付けない（付けると固有幅として親を押し広げる）。viewBox＋CSS width:100% で追従。
+  return '<svg viewBox="0 0 '+W+' '+y+'" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">'+parts.join('')+'</svg>';
+}
+
+/* ── 状態（切り分けメモの永続化）─────────────────────── */
+const LS_KEY='failureClinic.strike.v1';
+function loadStrikes(){ try{return JSON.parse(localStorage.getItem(LS_KEY))||{};}catch(e){return {};} }
+function saveStrikes(o){ try{localStorage.setItem(LS_KEY,JSON.stringify(o));}catch(e){} }
+let strikes=loadStrikes();
+
+/* ── 描画 ───────────────────────────────────────────── */
+const chartEl=document.getElementById('chart');
+const qgridEl=document.getElementById('qgrid');
+let current=1;
+
+function buildQlist(){
+  qgridEl.innerHTML=SYMPTOMS.map(s=>
+    '<button class="qbtn" data-id="'+s.id+'"><span class="num">'+s.id+'</span><span>'+s.title+'</span></button>'
+  ).join('');
+  qgridEl.querySelectorAll('.qbtn').forEach(b=>b.addEventListener('click',()=>select(parseInt(b.dataset.id,10))));
+}
+
+function renderChart(){
+  const s=SYMPTOMS.find(x=>x.id===current);
+  const st=strikes[current]||{};
+  const suspectsHTML=s.suspects.map((t,i)=>
+    '<div class="suspect'+(st[i]?' struck':'')+'" data-i="'+i+'"><span class="box">✓</span><span class="t">'+t+'</span></div>'
+  ).join('');
+  const linksHTML=s.links.map(l=>'<a href="'+l.h+'">'+l.l+'</a>').join('');
+  chartEl.innerHTML=
+    '<div class="ctitle">'+s.title+'</div>'+
+    '<div class="csub">CASE #'+s.id+' / 7</div>'+
+    '<div class="sec"><div class="h">因果チェーン</div><div class="chainbox" id="chainbox"></div></div>'+
+    '<div class="sec suspects"><div class="h">容疑者 — タップで切り分けメモ</div>'+suspectsHTML+
+      '<div class="hint">押すと打ち消し線。状態はこの端末に保存されるよ。</div></div>'+
+    '<div class="sec measure"><div class="h">測るもの</div><div class="measure-t">'+s.measure+'</div>'+
+      (s.caution?'<div class="caution">⚠ '+s.caution+'</div>':'')+'</div>'+
+    '<div class="sec"><div class="h">教訓</div><div class="lesson">'+s.lesson+'</div></div>'+
+    '<div class="sec links"><div class="h">関連記事</div><div>'+linksHTML+'</div></div>';
+  // suspects interactions
+  chartEl.querySelectorAll('.suspect').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const i=parseInt(el.dataset.i,10);
+      const cur=strikes[current]||(strikes[current]={});
+      cur[i]=!cur[i];
+      el.classList.toggle('struck',!!cur[i]);
+      saveStrikes(strikes);
+    });
+  });
+  drawChain();
+}
+
+function drawChain(){
+  const box=document.getElementById('chainbox');
+  if(!box)return;
+  const s=SYMPTOMS.find(x=>x.id===current);
+  // clientWidth を wrap レイアウト幅に使う（viewBoxで最終的にスケールするので厳密でなくてよい）。異常値をclamp。
+  let W=box.clientWidth||320;
+  W=Math.max(200,Math.min(560,W));
+  box.innerHTML=buildChainSVG(s.chain,W);
+}
+
+function select(id){
+  current=id;
+  qgridEl.querySelectorAll('.qbtn').forEach(b=>b.classList.toggle('on',parseInt(b.dataset.id,10)===id));
+  try{ if(history.replaceState) history.replaceState(null,'','#s='+id); else location.hash='s='+id; }catch(e){}
+  renderChart();
+}
+
+let rT;
+window.addEventListener('resize',()=>{ clearTimeout(rT); rT=setTimeout(drawChain,120); });
+
+/* ── セルフテスト ──────────────────────────────────── */
+function selfTest(){
+  const fails=[]; let checks=0;
+  const need=['chain','suspects','measure','lesson','links'];
+  const ids=SYMPTOMS.map(s=>s.id).sort((a,b)=>a-b);
+  if(JSON.stringify(ids)!==JSON.stringify([1,2,3,4,5,6,7])) fails.push('症状IDが1..7で揃っていない');
+  SYMPTOMS.forEach(s=>{
+    need.forEach(k=>{ checks++;
+      const v=s[k];
+      if(v===undefined||v===null||(Array.isArray(v)&&v.length<1)||(typeof v==='string'&&!v.trim()))
+        fails.push('#'+s.id+' の '+k+' が欠落');
+    });
+    // chain node 3-5段
+    if(s.chain.length<3||s.chain.length>5) fails.push('#'+s.id+' の因果図が3-5段でない('+s.chain.length+')');
+    // link 照合
+    const got=s.links.map(l=>l.h);
+    const exp=EXPECTED_LINKS[s.id]||[];
+    checks++;
+    if(JSON.stringify(got)!==JSON.stringify(exp)) fails.push('#'+s.id+' のリンク不一致 got='+JSON.stringify(got));
+  });
+  // localStorage 往復
+  let lsOK=false;
+  try{
+    const tk='failureClinic.__test', tv='v'+Date.now();
+    localStorage.setItem(tk,tv);
+    lsOK=(localStorage.getItem(tk)===tv);
+    localStorage.removeItem(tk);
+  }catch(e){ lsOK=false; }
+  checks++;
+  if(!lsOK) fails.push('localStorageの保存/復元が失敗');
+
+  const el=document.getElementById('selftest');
+  if(fails.length===0){
+    el.innerHTML='self-test: <span class="ok">PASS</span> — 7症状 × {因果図/容疑者/測るもの/教訓/リンク} 整合、リンク照合一致、localStorage往復OK ('+checks+' checks)';
+    console.log('[failure-clinic] self-test PASS ('+checks+' checks)');
+  }else{
+    el.innerHTML='self-test: <span class="ng">FAIL</span> — '+fails.join(' / ');
+    console.error('[failure-clinic] self-test FAIL:',fails);
+  }
+  return fails.length===0;
+}
+
+/* ── 起動 ──────────────────────────────────────────── */
+buildQlist();
+selfTest();
+(function(){
+  const m=(location.hash||'').match(/s=(\d)/);
+  const id=m?Math.max(1,Math.min(7,parseInt(m[1],10))):1;
+  select(id);
+})();
+</script>
+</body>
+</html>
