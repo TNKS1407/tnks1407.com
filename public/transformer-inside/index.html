@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="robots" content="noindex, nofollow" />
+<title>トランスは巻数比の箱じゃない — 結合 k エクスプローラ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --bg:#f5f2ec;--surface:#faf8f4;--card:#fff;--border:#e3dbd0;
+  --teal:#3c7876;--red:#c2543d;--amber:#c9761f;--blue:#2563aa;
+  --text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{overflow-x:hidden;max-width:100%;}
+body{
+  font-family:'Zen Kaku Gothic New',sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.6;
+  background-image:radial-gradient(circle at 1px 1px,#e9e4da 1px,transparent 0);
+  background-size:22px 22px;
+}
+.wrap{max-width:820px;margin:0 auto;padding:20px 16px 48px;}
+header{display:flex;align-items:flex-end;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.brand{font-weight:700;font-size:22px;line-height:1.1;color:var(--text);}
+.brand .a{color:var(--amber);}
+.tag{font-size:12px;color:var(--muted);padding-bottom:2px;}
+.back{margin-left:auto;font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;text-decoration:none;white-space:nowrap;}
+.back:hover{color:var(--teal);}
+.lead{background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:13px 16px;margin-bottom:16px;font-size:13px;color:#3a3a36;line-height:1.78;
+  box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.lead p{margin:0 0 .5rem;}.lead p:last-child{margin-bottom:0;}
+.lead b{color:var(--text);}
+.selftest{margin-top:.5rem;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);
+  border-top:1px dashed var(--border);padding-top:.5rem;line-height:1.7;}
+.selftest b{color:var(--teal);}
+.card-tool{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;
+  box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+#cross{background:var(--surface);border-bottom:1px solid var(--border);display:block;width:100%;}
+#cross svg{display:block;width:100%;height:auto;}
+#stage{position:relative;width:100%;height:clamp(360px,84vw,470px);overflow:hidden;background:var(--surface);}
+canvas{display:block;width:100%;height:100%;touch-action:none;}
+#info{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);
+  padding:.45rem .7rem;font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--muted);
+  line-height:1.9;min-height:2.4rem;}
+#info b{color:var(--text);}
+#info .v-teal{color:var(--teal);font-weight:600;}
+#info .v-red{color:var(--red);font-weight:600;}
+#info .v-amber{color:var(--amber);font-weight:600;}
+#info .v-blue{color:var(--blue);font-weight:600;}
+.ctrl{flex-shrink:0;background:var(--surface);border-top:1px solid var(--border);
+  padding:.5rem .7rem;display:flex;flex-wrap:wrap;gap:.5rem .8rem;align-items:center;}
+.cg{display:flex;align-items:center;gap:.4rem;font-size:.75rem;}
+.cg label{color:var(--muted);white-space:nowrap;font-weight:500;}
+.cg label b{color:var(--text);}
+.cg input[type=range]{width:clamp(72px,15vw,120px);accent-color:var(--amber);}
+.modes{display:flex;gap:.4rem;flex-wrap:wrap;}
+button{font-family:'Zen Kaku Gothic New',sans-serif;font-size:.74rem;font-weight:700;
+  color:var(--text);background:var(--card);border:1px solid var(--border);border-radius:8px;
+  padding:.28rem .65rem;cursor:pointer;transition:border-color .15s,background .15s,color .15s;}
+button:hover{border-color:var(--teal);}
+button.on{background:var(--teal);color:#fff;border-color:var(--teal);}
+.note{font-size:12px;color:#3a3a36;line-height:1.8;background:var(--card);border:1px solid var(--border);
+  border-radius:12px;padding:12px 16px;margin-top:16px;box-shadow:0 6px 20px -16px rgba(20,40,40,.4);}
+.note b{color:var(--text);}
+footer{text-align:center;color:var(--faint);font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:12px;}
+body.embed{height:100%;display:flex;flex-direction:column;overflow:hidden;background-image:none;}
+body.embed .wrap{max-width:none;margin:0;padding:0;display:flex;flex-direction:column;flex:1 1 auto;min-height:0;}
+body.embed header,body.embed .lead,body.embed .note,body.embed footer{display:none;}
+body.embed .card-tool{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;border:none;border-radius:0;box-shadow:none;}
+body.embed #stage{flex:1 1 auto;height:auto;min-height:200px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">巻数比の<span class="a">箱</span>じゃない</div>
+    <div class="tag">共振と電源 #5 ── 二巻線トランスの結合 k</div>
+    <a class="back" href="/">&larr; tnks1407</a>
+  </header>
+  <div class="lead">
+    <p>教科書の「電圧は巻数比 n 倍」は、<b>低周波・密結合（k≈1）の極限の顔</b>にすぎない。実物の二巻線トランスは、一次から見たインピーダンス <b>Z<sub>in</sub>(jω) = R₁ + jωL₁ + ω²M²/(R₂+jωL₂+R<sub>L</sub>)</b> という一本の式で全部決まる。ここで <b>M = k√(L₁L₂)</b>、結合係数 k がすべての鍵だ。</p>
+    <p>この式には三つの物理が同居している ── 低域で立ち上がる <b class="lead" style="color:var(--blue)">磁化インダクタンス</b>（∝ωL₁）、中域の <b style="color:var(--teal)">反射平坦部</b>（≈R<sub>L</sub>·L₁/L₂ = R<sub>L</sub>/n²）、そして k が下がると直列に立ちはだかる <b style="color:var(--amber)">漏れインダクタンス</b>（∝ωL₁(1−k²)）。断面図の磁束と、下の |Z<sub>in</sub>|(f) 曲線を、つまみで一緒に動かしてみて。</p>
+    <div class="selftest" id="selftest">セルフテスト実行中…</div>
+  </div>
+
+  <div class="card-tool">
+    <div id="cross"></div>
+    <div id="stage"><canvas id="c"></canvas></div>
+    <div id="info"></div>
+    <div class="ctrl">
+      <div class="modes">
+        <button id="mNorm" class="on">負荷 R<sub>L</sub></button>
+        <button id="mOpen">開放（測 L₁）</button>
+        <button id="mShort">短絡（測 漏れ）</button>
+      </div>
+      <div class="cg"><label>結合 k <b id="lK"></b></label>
+        <input id="sK" type="range" min="300" max="999" step="1" value="950"></div>
+      <div class="cg"><label>L₁ <b id="lL1"></b></label>
+        <input id="sL1" type="range" min="0" max="1000" step="1" value="500"></div>
+      <div class="cg"><label>巻数比 n <b id="lN"></b></label>
+        <input id="sN" type="range" min="1" max="30" step="0.5" value="3"></div>
+      <div class="cg"><label>負荷 R<sub>L</sub> <b id="lRL"></b></label>
+        <input id="sRL" type="range" min="0" max="1000" step="1" value="500"></div>
+      <div class="cg"><label>マーカ f <b id="lF"></b></label>
+        <input id="sF" type="range" min="0" max="1000" step="1" value="500"></div>
+    </div>
+  </div>
+
+  <div class="note">
+    <p><b>巻数比 n² の反射則は、低周波・密結合の極限の顔だ。</b>k を下げると漏れインダクタンス L₁(1−k²) が直列に立ちはだかり、反射平坦部は 1/(1−k²) の幅しか続かない ── k=0.99 なら約 1.7 桁、k=0.3 なら平坦部はほぼ消えて、漏れがすぐ支配する。そして巻線間の容量が絡むと（次回）、この綺麗な絵はもっと崩れる。</p>
+    <p><b>「開放で測れば L₁、短絡で測れば漏れが見える」</b> ── LCRメータの二回測定はこの式の低周波/高周波漸近をなぞっているだけだ。開放（R<sub>L</sub>=∞）で Z<sub>in</sub>=R₁+jωL₁ → 傾きが L₁。短絡（R<sub>L</sub>=0）で高域漸近が jωL₁(1−k²) → 傾きが漏れ。二つの測定値から k が逆算できる。</p>
+  </div>
+  <footer>transformer-inside · 解析式（ODEなし） · 単一HTML</footer>
+</div>
+
+<script>
+if(window.self!==window.top)document.body.classList.add('embed');
+
+// ===================================================================
+//  physics — all analytic
+//  Zin(jw) = R1 + jwL1 + w^2 M^2 / (R2 + jwL2 + RL),  M = k sqrt(L1 L2)
+// ===================================================================
+const R1=0.5, R2=0.5;                     // fixed winding resistances (Ohm)
+function zc(w,L1,L2,k,RL){                 // complex Zin -> {re,im,mag,ph}
+  const M=k*Math.sqrt(L1*L2);
+  const dRe=R2+RL, dIm=w*L2, dm2=dRe*dRe+dIm*dIm, num=w*w*M*M;
+  const re=R1 + num*dRe/dm2;
+  const im=w*L1 - num*dIm/dm2;
+  return {re,im,mag:Math.hypot(re,im),ph:Math.atan2(im,re)};
+}
+const OPEN=1e15, SHORT=0;
+
+// live params
+let k=0.95, L1=10e-3, N=3, L2=N*N*L1, RL=1000;
+let loadMode='normal';                    // 'normal' | 'open' | 'short'
+let fFrac=0.5;                            // marker position (0..1 of plot range)
+const logmap=(s,lo,hi)=>lo*Math.pow(hi/lo, s/1000);
+const dispRL=()=> loadMode==='open'?OPEN : loadMode==='short'?SHORT : RL;
+
+// measurements (LCR-meter style)
+function measLopen(){ const w=1000; return zc(w,L1,L2,k,OPEN).im/w; }          // = L1 (exact)
+function measLsc(){ const w=1000*R2/L2; return zc(w,L1,L2,k,SHORT).im/w; }     // -> L1(1-k^2)
+function reflRatio(){                                                          // |Zin(plateau)| / (RL L1/L2)
+  const wpl=RL/(L2*Math.sqrt(1-k*k));
+  return zc(wpl,L1,L2,k,RL).mag/(RL*L1/L2);
+}
+function ranges(){
+  const wp=RL/L2, wz=RL/(L2*(1-k*k));
+  let flo=wp/(2*Math.PI)/30, fhi=wz/(2*Math.PI)*30;
+  flo=Math.max(flo,0.05); fhi=Math.min(fhi,1e9);
+  if(fhi<flo*100) fhi=flo*1000;
+  return {flo,fhi,fp:wp/(2*Math.PI),fz:wz/(2*Math.PI)};
+}
+
+// ===================================================================
+//  SELF-TEST (runs at load)
+// ===================================================================
+function selfTest(){
+  const out={};
+  // (1) k=0.99, RL=1k, n=1 -> reflected plateau ratio ~ 1
+  { const L1=10e-3,L2=10e-3,k=0.99,RL=1000;
+    const wpl=RL/(L2*Math.sqrt(1-k*k));
+    out.refl=zc(wpl,L1,L2,k,RL).mag/(RL*L1/L2); }
+  // (2) short measurement / L1(1-k^2), k=0.9
+  { const L1=10e-3,L2=40e-3,k=0.9;
+    const w=1000*R2/L2, Lsc=zc(w,L1,L2,k,SHORT).im/w;
+    out.sc=Lsc/(L1*(1-k*k)); }
+  // (3) open measurement / L1
+  { const L1=7e-3,L2=20e-3,k=0.7;
+    const w=1000, Lop=zc(w,L1,L2,k,OPEN).im/w;
+    out.op=Lop/L1; }
+  // (4) |M| <= sqrt(L1 L2)  (k<1 guarantees; check across a sweep)
+  { let ok=true;
+    for(const L1 of [1e-3,50e-3,100e-3]) for(const n of [1,10,30]) for(const k of [0.3,0.9,0.999]){
+      const L2=n*n*L1, M=k*Math.sqrt(L1*L2);
+      if(M > Math.sqrt(L1*L2)+1e-18) ok=false;
+    }
+    out.m=ok; }
+  return out;
+}
+const ST=selfTest();
+(function reportST(){
+  const el=document.getElementById('selftest');
+  const ok=b=>b?'<b>PASS</b>':'<span style="color:var(--red)">FAIL</span>';
+  const rel=(a,b)=>Math.abs(a/b-1);
+  const c1=rel(ST.refl,1)<0.05, c2=rel(ST.sc,1)<0.02, c3=rel(ST.op,1)<0.02, c4=ST.m;
+  el.innerHTML=
+    '①k=.99反射比 |Z|÷(R<sub>L</sub>L₁/L₂)='+ST.refl.toFixed(4)+' '+ok(c1)+' &nbsp; '+
+    '②短絡測定÷L₁(1−k²)='+ST.sc.toFixed(4)+' '+ok(c2)+'<br>'+
+    '③開放測定÷L₁='+ST.op.toFixed(4)+' '+ok(c3)+' &nbsp; '+
+    '④|M|≤√(L₁L₂) 全域 '+ok(c4);
+})();
+
+// ===================================================================
+//  CROSS-SECTION (SVG, redrawn on k)
+// ===================================================================
+function buildCross(){
+  const cw=(2+22*k).toFixed(1);                 // common-flux ribbon width  ~ k
+  const lo=1-k*k;                                // leakage strength
+  const lw=(1.5+13*lo).toFixed(1);              // leakage loop width
+  const lop=(0.12+0.72*lo).toFixed(2);         // leakage opacity
+  // winding turn lines
+  let pTurns='',sTurns='';
+  for(let y=72;y<=138;y+=9){
+    pTurns+=`<line x1="126" y1="${y}" x2="150" y2="${y}"/>`;
+    sTurns+=`<line x1="290" y1="${y}" x2="314" y2="${y}"/>`;
+  }
+  // E-field striations between windings
+  let ef='';
+  for(let x=162;x<=278;x+=13){
+    ef+=`<line x1="${x}" y1="72" x2="${x}" y2="138" stroke="#aaa49b" stroke-width="1" stroke-dasharray="3 4" opacity="0.6"/>`;
+  }
+  const svg=`
+<svg viewBox="0 0 440 214" font-family="JetBrains Mono, monospace">
+  <!-- core -->
+  <g fill="#ddd6ca" stroke="#b8b0a2" stroke-width="1">
+    <rect x="84" y="36" width="272" height="28"/>
+    <rect x="84" y="150" width="272" height="28"/>
+    <rect x="84" y="36" width="40" height="142"/>
+    <rect x="316" y="36" width="40" height="142"/>
+  </g>
+  <text x="97" y="112" font-size="9" fill="#8a8275" text-anchor="middle" transform="rotate(-90 97 112)">core</text>
+  <!-- common flux ribbon (teal), through core centre loop -->
+  <rect x="104" y="50" width="232" height="114" rx="22" fill="none"
+        stroke="#3c7876" stroke-width="${cw}" stroke-linejoin="round" opacity="0.85"/>
+  <!-- flux circulation arrows -->
+  <path d="M214 50 l-9 -5 l0 10 z" fill="#3c7876"/>
+  <path d="M226 164 l9 5 l0 -10 z" fill="#3c7876"/>
+  <!-- windings (window-facing blocks) -->
+  <rect x="126" y="66" width="24" height="80" rx="4" fill="#f3e6d2" stroke="#c9761f" stroke-width="1.2"/>
+  <rect x="290" y="66" width="24" height="80" rx="4" fill="#f3e6d2" stroke="#c9761f" stroke-width="1.2"/>
+  <g stroke="#c9761f" stroke-width="1">${pTurns}${sTurns}</g>
+  <!-- E-field striations between windings -->
+  ${ef}
+  <!-- leakage flux loops (amber), links one winding only -->
+  <g fill="none" stroke="#c9761f" stroke-width="${lw}" opacity="${lop}">
+    <ellipse cx="170" cy="106" rx="11" ry="34"/>
+    <ellipse cx="270" cy="106" rx="11" ry="34"/>
+  </g>
+  <!-- labels -->
+  <text x="138" y="60" font-size="10" fill="#a8621a" text-anchor="middle">N₁</text>
+  <text x="302" y="60" font-size="10" fill="#a8621a" text-anchor="middle">N₂</text>
+  <text x="220" y="18" font-size="10.5" fill="#3c7876" text-anchor="middle">共通磁束 Φ (両巻線を貫く) ∝ k</text>
+  <text x="168" y="200" font-size="9" fill="#c9761f" text-anchor="middle">漏れ ∝1−k²</text>
+  <text x="272" y="200" font-size="9" fill="#c9761f" text-anchor="middle">漏れ</text>
+  <text x="220" y="210" font-size="9" fill="#8a8275" text-anchor="middle">電界(巻線間容量)</text>
+  <text x="404" y="46" font-size="11" fill="#3c7876" text-anchor="middle">k=${k.toFixed(3)}</text>
+</svg>`;
+  document.getElementById('cross').innerHTML=svg;
+}
+
+// ===================================================================
+//  CANVAS  (|Zin|(f) log-log  +  phase strip)
+// ===================================================================
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const info=document.getElementById('info');
+let W=0,H=0,DPR=1;
+function resize(){
+  const r=cv.getBoundingClientRect();
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  W=r.width;H=r.height;
+  cv.width=Math.round(W*DPR);cv.height=Math.round(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  draw();
+}
+window.addEventListener('resize',resize);
+const MONO='11px JetBrains Mono, monospace';
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  const {flo,fhi,fp,fz}=ranges();
+  const RLd=dispRL();
+  const xL=46, xR=W-14, plotW=xR-xL;
+  const xOf=f=> xL + (Math.log(f/flo)/Math.log(fhi/flo))*plotW;
+
+  const mTop=16, mH=Math.round(H*0.60);
+  const pTop=mTop+mH+30, pH=H-pTop-24;
+
+  // sample active curve
+  const Nn=240, fs=[], zs=[], phs=[];
+  let ymin=1e30,ymax=-1e30;
+  for(let i=0;i<=Nn;i++){
+    const f=flo*Math.pow(fhi/flo,i/Nn), w=2*Math.PI*f, z=zc(w,L1,L2,k,RLd);
+    fs.push(f); zs.push(z.mag); phs.push(z.ph);
+    if(z.mag<ymin)ymin=z.mag; if(z.mag>ymax)ymax=z.mag;
+  }
+  // include guide levels in y-range
+  const plateau=RL*L1/L2;
+  ymin=Math.min(ymin,plateau,R1)*0.6; ymax=Math.max(ymax,plateau)*1.6;
+  const lymin=Math.log10(ymin), lymax=Math.log10(ymax);
+  const yOfZ=z=> mTop+mH - ((Math.log10(z)-lymin)/(lymax-lymin))*mH;
+
+  // frame + decade grid
+  ctx.strokeStyle='#e3dbd0';ctx.lineWidth=1;ctx.strokeRect(xL,mTop,plotW,mH);
+  ctx.textAlign='right';ctx.textBaseline='middle';ctx.font=MONO;
+  for(let e=Math.ceil(lymin);e<=Math.floor(lymax);e++){
+    const y=yOfZ(Math.pow(10,e)); if(y<mTop||y>mTop+mH)continue;
+    ctx.strokeStyle='#f0ebe2';ctx.beginPath();ctx.moveTo(xL,y);ctx.lineTo(xR,y);ctx.stroke();
+    const v=Math.pow(10,e);
+    ctx.fillStyle='#aaa49b';
+    ctx.fillText(v>=1e6?(v/1e6)+'M':v>=1e3?(v/1e3)+'k':v+'Ω', xL-3, y);
+  }
+  // decade grid on freq
+  {const d0=Math.ceil(Math.log10(flo)),d1=Math.floor(Math.log10(fhi));
+   ctx.strokeStyle='#f2ede5';
+   for(let e=d0;e<=d1;e++){const x=xOf(Math.pow(10,e));
+     ctx.beginPath();ctx.moveTo(x,mTop);ctx.lineTo(x,pTop+pH);ctx.stroke();}}
+
+  // guide asymptotes (the three physics)
+  function guideLine(fn,color,dash){
+    ctx.strokeStyle=color;ctx.setLineDash(dash);ctx.lineWidth=1.3;ctx.beginPath();
+    for(let i=0;i<=Nn;i++){const v=fn(fs[i]); const y=yOfZ(Math.max(v,ymin));
+      const x=xOf(fs[i]); i?ctx.lineTo(x,y):ctx.moveTo(x,y);}
+    ctx.stroke();ctx.setLineDash([]);
+  }
+  guideLine(f=>2*Math.PI*f*L1, 'rgba(37,99,170,.5)', [5,4]);            // magnetizing wL1
+  guideLine(f=>2*Math.PI*f*L1*(1-k*k), 'rgba(201,118,31,.6)', [5,4]);  // leakage wL1(1-k^2)
+  { // plateau horizontal
+    const y=yOfZ(plateau);
+    ctx.strokeStyle='rgba(60,120,118,.55)';ctx.setLineDash([6,4]);ctx.lineWidth=1.4;
+    ctx.beginPath();ctx.moveTo(xL,y);ctx.lineTo(xR,y);ctx.stroke();ctx.setLineDash([]);
+  }
+  // corner freq markers fp, fz (based on normal RL)
+  [[fp,'f_p'],[fz,'f_z']].forEach(([fc,lab])=>{
+    if(fc<flo||fc>fhi)return;
+    const x=xOf(fc);
+    ctx.strokeStyle='rgba(125,117,104,.4)';ctx.setLineDash([2,3]);ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(x,mTop);ctx.lineTo(x,mTop+mH);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='#8a8275';ctx.font=MONO;ctx.textAlign='center';ctx.textBaseline='top';
+    ctx.fillText(lab,x,mTop+2);
+  });
+
+  // active |Zin| curve
+  ctx.strokeStyle='#3c7876';ctx.lineWidth=2.4;ctx.beginPath();
+  for(let i=0;i<=Nn;i++){const x=xOf(fs[i]),y=yOfZ(zs[i]);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}
+  ctx.stroke();
+
+  // marker
+  const fMark=flo*Math.pow(fhi/flo,fFrac), wM=2*Math.PI*fMark, zM=zc(wM,L1,L2,k,RLd);
+  const xm=xOf(fMark);
+  ctx.strokeStyle='rgba(194,84,61,.8)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(xm,mTop);ctx.lineTo(xm,pTop+pH);ctx.stroke();
+  ctx.fillStyle='#c2543d';ctx.beginPath();ctx.arc(xm,yOfZ(zM.mag),4,0,7);ctx.fill();
+
+  // region labels
+  ctx.font='10.5px JetBrains Mono, monospace';ctx.textBaseline='top';
+  ctx.fillStyle='#2563aa';ctx.textAlign='center';
+  if(fp>flo)ctx.fillText('磁化 ∝ωL₁', xOf(Math.max(flo*2,fp*0.25)), mTop+mH-16);
+  ctx.fillStyle='#3c7876';
+  if(fz>fp&&fp<fhi){const cx=Math.sqrt(fp*fz); if(cx>flo&&cx<fhi)ctx.fillText('反射平坦 R'+'ᴸ'+'·L₁/L₂', xOf(cx), yOfZ(plateau)-14);}
+  ctx.fillStyle='#c9761f';
+  if(fz<fhi)ctx.fillText('漏れ ∝ωL₁(1−k²)', xOf(Math.min(fhi*0.5,fz*4)), mTop+16);
+  // title
+  ctx.fillStyle='#3c7876';ctx.textAlign='left';ctx.textBaseline='top';ctx.font='11px JetBrains Mono, monospace';
+  ctx.fillText('|Z'+'ᵢₙ'+'|(f)  '+(loadMode==='open'?'開放':loadMode==='short'?'短絡':'負荷')+' ── log-log', xL+3, mTop+3);
+
+  // ================= phase strip =================
+  ctx.strokeStyle='#e3dbd0';ctx.lineWidth=1;ctx.strokeRect(xL,pTop,plotW,pH);
+  const yOfP=deg=> pTop+pH - (deg/90)*(pH-2);
+  ctx.textAlign='right';ctx.textBaseline='middle';ctx.font=MONO;
+  [0,45,90].forEach(d=>{const y=yOfP(d);
+    ctx.strokeStyle=d===0?'#e6ded3':'#f2ede5';ctx.beginPath();ctx.moveTo(xL,y);ctx.lineTo(xR,y);ctx.stroke();
+    ctx.fillStyle='#aaa49b';ctx.fillText(d+'°',xL-3,y);});
+  ctx.strokeStyle='#c9761f';ctx.lineWidth=2;ctx.beginPath();
+  for(let i=0;i<=Nn;i++){const deg=phs[i]*180/Math.PI;const x=xOf(fs[i]),y=yOfP(Math.max(0,Math.min(90,deg)));
+    i?ctx.lineTo(x,y):ctx.moveTo(x,y);}
+  ctx.stroke();
+  ctx.fillStyle='#c9761f';ctx.textAlign='left';ctx.textBaseline='top';ctx.font='11px JetBrains Mono, monospace';
+  ctx.fillText('位相 φ(f)', xL+3, pTop+3);
+  // freq axis labels
+  ctx.fillStyle='#aaa49b';ctx.font=MONO;ctx.textAlign='center';ctx.textBaseline='top';
+  {const d0=Math.ceil(Math.log10(flo)),d1=Math.floor(Math.log10(fhi));
+   for(let e=d0;e<=d1;e++){const f=Math.pow(10,e),x=xOf(f);
+     ctx.fillText(f>=1e6?(f/1e6)+'M':f>=1e3?(f/1e3)+'k':f+'', x, pTop+pH+4);}}
+  ctx.fillStyle='#c2543d';ctx.fillText('↑f', xm, pTop+pH+4);
+
+  updateInfo(fMark,zM,fp,fz,plateau);
+}
+
+function updateInfo(fMark,zM,fp,fz,plateau){
+  const M=k*Math.sqrt(L1*L2);
+  const Lop=measLopen(), Lsc=measLsc(), LscTh=L1*(1-k*k), rr=reflRatio();
+  let s='k = <b class="v-teal">'+k.toFixed(3)+'</b> &nbsp; n=√(L₂/L₁) = <b class="v-amber">'+N.toFixed(1)+'</b> &nbsp; '+
+        'L₁=<b>'+fmtL(L1)+'</b> L₂=<b>'+fmtL(L2)+'</b> &nbsp; M=k√(L₁L₂)=<b class="v-teal">'+fmtL(M)+'</b> ≤ √(L₁L₂)=<b>'+fmtL(Math.sqrt(L1*L2))+'</b><br>'+
+        'マーカ f=<b class="v-red">'+fmtF(fMark)+'</b> → |Z'+'ᵢₙ'+'|=<b>'+fmtOhm(zM.mag)+'</b> φ=<b>'+(zM.ph*180/Math.PI).toFixed(1)+'°</b> &nbsp;|&nbsp; '+
+        '極 f_p=<b>'+fmtF(fp)+'</b> 零 f_z=<b>'+fmtF(fz)+'</b><br>'+
+        '<b>測定:</b> 開放→L'+'ₒ'+'ᵨₑₙ=<b class="v-blue">'+fmtL(Lop)+'</b> (=L₁) &nbsp; '+
+        '短絡→L_sc=<b class="v-amber">'+fmtL(Lsc)+'</b> vs 理論 L₁(1−k²)=<b>'+fmtL(LscTh)+'</b> &nbsp;|&nbsp; '+
+        '反射比 |Z(平坦)|÷(R'+'ʟ'+'·L₁/L₂)=<b class="v-teal">'+rr.toFixed(3)+'</b>';
+  info.innerHTML=s;
+}
+function fmtF(f){ return f>=1e6?(f/1e6).toFixed(2)+'MHz':f>=1e3?(f/1e3).toFixed(2)+'kHz':f.toFixed(1)+'Hz'; }
+function fmtOhm(z){ return z>=1e6?(z/1e6).toFixed(2)+'MΩ':z>=1e3?(z/1e3).toFixed(2)+'kΩ':z.toFixed(2)+'Ω'; }
+function fmtL(l){ return l>=1?l.toFixed(2)+'H':l>=1e-3?(l*1e3).toFixed(2)+'mH':(l*1e6).toFixed(1)+'µH'; }
+
+// ===================================================================
+//  controls
+// ===================================================================
+const sK=document.getElementById('sK'),sL1=document.getElementById('sL1'),sN=document.getElementById('sN'),
+      sRL=document.getElementById('sRL'),sF=document.getElementById('sF');
+const lK=document.getElementById('lK'),lL1=document.getElementById('lL1'),lN=document.getElementById('lN'),
+      lRL=document.getElementById('lRL'),lF=document.getElementById('lF');
+function readParams(){
+  k=parseInt(sK.value)/1000;
+  L1=logmap(parseFloat(sL1.value),1e-3,100e-3);
+  N=parseFloat(sN.value); L2=N*N*L1;
+  RL=logmap(parseFloat(sRL.value),10,1e6);
+  fFrac=parseFloat(sF.value)/1000;
+  lK.textContent=k.toFixed(3);
+  lL1.textContent=fmtL(L1);
+  lN.textContent=N.toFixed(1);
+  lRL.textContent=fmtOhm(RL);
+  const {flo,fhi}=ranges();
+  lF.textContent=fmtF(flo*Math.pow(fhi/flo,fFrac));
+}
+sK.addEventListener('input',()=>{readParams();buildCross();draw();});
+[sL1,sN,sRL,sF].forEach(s=>s.addEventListener('input',()=>{readParams();draw();}));
+
+const mNorm=document.getElementById('mNorm'),mOpen=document.getElementById('mOpen'),mShort=document.getElementById('mShort');
+function setLoad(m){
+  loadMode=m;
+  mNorm.classList.toggle('on',m==='normal');
+  mOpen.classList.toggle('on',m==='open');
+  mShort.classList.toggle('on',m==='short');
+  location.hash='load='+m;
+  draw();
+}
+mNorm.addEventListener('click',()=>setLoad('normal'));
+mOpen.addEventListener('click',()=>setLoad('open'));
+mShort.addEventListener('click',()=>setLoad('short'));
+
+// init
+(function init(){
+  const h=location.hash.match(/load=(normal|open|short)/);
+  loadMode=h?h[1]:'normal';
+  mNorm.classList.toggle('on',loadMode==='normal');
+  mOpen.classList.toggle('on',loadMode==='open');
+  mShort.classList.toggle('on',loadMode==='short');
+  readParams();
+  buildCross();
+  resize();
+})();
+</script>
+</body>
+</html>
