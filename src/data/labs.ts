@@ -118,6 +118,13 @@ export const labGroups: LabGroup[] = [
     ],
   },
   {
+    label: '遊び（頭と手のゲーム）',
+    items: [
+      { name: 'サイコロ計算ビンゴ（最短は一筆書き）', url: '/dice-bingo/' },
+      { name: 'ヨシ！（指差呼称でミスは減るか）', url: '/yoshi/' },
+    ],
+  },
+  {
     label: '畑の自動化',
     items: [
       { name: '畑の計器盤（土壌水分・給水履歴）', url: '/garden/' },

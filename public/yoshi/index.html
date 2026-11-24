@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="robots" content="noindex,nofollow">
+<title>ヨシ！反射 ― 指差呼称チャレンジ</title>
+<style>
+:root{
+  --hue:258; --fever:0;
+  --neon:#3cf2ff; --pink:#ff3fa4; --lime:#b6ff3c; --gold:#ffd23c; --red:#ff3b3b;
+  --text:#ffffff; --muted:#b9b3d6;
+  --num:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none}
+body{
+  color:var(--text);
+  font-family:"Zen Kaku Gothic New","Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI",system-ui,sans-serif;
+  background:#0a0718;
+  touch-action:manipulation; user-select:none; -webkit-user-select:none;
+}
+#app{
+  position:fixed; inset:0; display:flex; flex-direction:column;
+  background:
+    radial-gradient(120% 70% at 50% 0%, hsl(var(--hue) 80% 28%) 0%, transparent 70%),
+    radial-gradient(120% 60% at 50% 100%, hsl(calc(var(--hue) + 60) 80% 20%) 0%, transparent 70%),
+    #0a0718;
+  transition:background .35s;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+/* FEVER edge glow (slow pulse, not a flash) */
+#edge{position:fixed; inset:0; pointer-events:none; z-index:5; border-radius:0;
+  box-shadow: inset 0 0 0 0 transparent; transition:box-shadow .3s}
+body.f1 #edge{box-shadow: inset 0 0 22px 4px var(--neon)}
+body.f2 #edge{box-shadow: inset 0 0 30px 7px var(--lime)}
+body.f3 #edge{box-shadow: inset 0 0 38px 10px var(--gold)}
+body.f4 #edge{box-shadow: inset 0 0 46px 14px var(--pink)}
+body.f1 #edge,body.f2 #edge,body.f3 #edge,body.f4 #edge{animation:edgepulse 1.1s ease-in-out infinite}
+@keyframes edgepulse{50%{opacity:.55}}
+
+#flash{position:fixed; inset:0; background:var(--red); opacity:0; pointer-events:none; z-index:6; transition:opacity .28s ease-out}
+#fx{position:fixed; inset:0; pointer-events:none; z-index:7}
+
+.screen{display:none; flex:1; flex-direction:column; min-height:0}
+.screen.on{display:flex}
+
+button{font:inherit; color:inherit; border:0; cursor:pointer}
+.btn{
+  display:block; width:100%; padding:18px 16px; border-radius:18px;
+  font-size:22px; font-weight:900; letter-spacing:.04em;
+  background:linear-gradient(135deg,var(--pink),#ff7a3c); color:#fff;
+  box-shadow:0 6px 0 #8a1450, 0 0 24px rgba(255,63,164,.45);
+}
+.btn:active{transform:translateY(4px); box-shadow:0 2px 0 #8a1450}
+.btn.sub{background:linear-gradient(135deg,#2c2754,#3a3370); box-shadow:0 5px 0 #15122c; font-size:17px; padding:14px}
+.row{display:flex; gap:10px}
+.row .btn{flex:1}
+
+/* ---------- title ---------- */
+#title{justify-content:center; padding:22px; gap:18px; overflow-y:auto}
+.logo{font-size:64px; font-weight:900; line-height:1; text-align:center;
+  background:linear-gradient(180deg,#fff,var(--neon)); -webkit-background-clip:text; background-clip:text; color:transparent;
+  filter:drop-shadow(0 0 14px rgba(60,242,255,.6)); transform:rotate(-4deg)}
+.logo small{display:block; font-size:18px; letter-spacing:.3em; color:var(--gold); -webkit-text-fill-color:var(--gold); margin-top:8px; transform:none}
+.howto{background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); border-radius:16px; padding:14px 16px; font-size:15px; line-height:1.65}
+.howto b{color:var(--gold)}
+.howto .ex{font-family:var(--num); font-weight:800}
+.best{font-size:13px; color:var(--muted); text-align:center; font-family:var(--num)}
+
+/* ---------- play ---------- */
+#hud{display:flex; align-items:center; gap:10px; padding:10px 14px 4px}
+#score{font-family:var(--num); font-weight:900; font-size:28px; min-width:5ch; display:inline-block}
+#score.bump{animation:bump .22s}
+@keyframes bump{40%{transform:scale(1.35); color:var(--gold)}}
+#modeTag{font-size:12px; font-weight:900; padding:4px 8px; border-radius:8px; background:rgba(255,255,255,.12); white-space:nowrap}
+#timeWrap{flex:1; height:10px; border-radius:6px; background:rgba(255,255,255,.12); overflow:hidden}
+#timeBar{height:100%; width:100%; background:linear-gradient(90deg,var(--lime),var(--neon)); transform-origin:left}
+#timeTxt{font-family:var(--num); font-weight:800; font-size:16px; width:3.6ch; text-align:right}
+.mute{width:44px; height:44px; border-radius:12px; background:rgba(255,255,255,.1); font-size:13px; font-weight:900; flex:none}
+
+#band{
+  margin:8px 14px 6px; border-radius:20px; padding:16px 10px; text-align:center;
+  background:#16122e; border:3px solid rgba(255,255,255,.35);
+  font-size:34px; font-weight:900; letter-spacing:.04em; line-height:1.15;
+  position:relative; min-height:104px; display:flex; flex-direction:column; justify-content:center;
+}
+#band .sub{font-size:13px; font-weight:700; color:var(--muted); letter-spacing:.1em; margin-top:6px; min-height:1.2em}
+/* B mode: waiting for the pointing tap */
+#band.need{border-color:var(--gold); animation:needpulse .9s ease-in-out infinite; cursor:pointer}
+#band.need .sub{color:var(--gold)}
+@keyframes needpulse{50%{box-shadow:0 0 22px rgba(255,210,60,.55)}}
+#band.ok{border-color:var(--lime); box-shadow:0 0 18px rgba(182,255,60,.45)}
+#band.ok .sub{color:var(--lime)}
+#band.nudge{animation:nudge .25s}
+@keyframes nudge{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+
+#arena{flex:1; min-height:0; position:relative; display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:6px 14px 10px}
+.cell{
+  border-radius:22px; background:rgba(255,255,255,.07); border:2px solid rgba(255,255,255,.14);
+  display:flex; align-items:center; justify-content:center; overflow:hidden;
+  font-family:var(--num); font-weight:800; line-height:1; color:#fff;
+  transition:opacity .08s, transform .08s;
+}
+.cell:active{transform:scale(.97)}
+.cell .d{display:block}
+.cell.big .d{font-size:min(40vw,30vh)}
+.cell.small .d{font-size:min(14vw,10.5vh)}
+.cell.pop .d{animation:pop .14s ease-out}
+@keyframes pop{from{transform:scale(.6); opacity:.2}}
+#arena.locked .cell{opacity:.28}
+.cell.wrong{border-color:var(--red); background:rgba(255,59,59,.22)}
+.cell.right{border-color:var(--lime)}
+
+#combo{position:absolute; left:0; right:0; top:42%; text-align:center; pointer-events:none; z-index:3;
+  font-weight:900; font-size:54px; color:var(--gold); opacity:0;
+  text-shadow:0 0 18px rgba(255,210,60,.8), 0 4px 0 #6b4a00}
+#combo small{display:block; font-size:18px; letter-spacing:.3em}
+#combo.show{animation:comboPop .5s ease-out}
+@keyframes comboPop{0%{opacity:1; transform:scale(1.6)}60%{opacity:1; transform:scale(1)}100%{opacity:0; transform:scale(1) translateY(-20px)}}
+#yoshiPop{position:fixed; left:0; right:0; top:28%; text-align:center; pointer-events:none; z-index:8;
+  font-size:64px; font-weight:900; color:#fff; opacity:0;
+  -webkit-text-stroke:2px var(--pink); text-shadow:0 0 24px var(--pink), 0 6px 0 #7a0f48}
+#yoshiPop.show{animation:yoshi .55s ease-out}
+@keyframes yoshi{0%{opacity:1; transform:scale(.4) rotate(-8deg)}25%{opacity:1; transform:scale(1.15) rotate(-4deg)}75%{opacity:1; transform:scale(1) rotate(-4deg)}100%{opacity:0; transform:scale(1.05) rotate(-4deg)}}
+
+#foot{padding:0 14px 12px; text-align:center; font-size:14px; color:var(--muted); min-height:30px}
+#foot b{color:var(--gold)}
+
+#app.shake{animation:shake .3s}
+@keyframes shake{20%{transform:translate(-10px,4px)}40%{transform:translate(9px,-5px)}60%{transform:translate(-6px,3px)}80%{transform:translate(4px,-2px)}}
+
+/* ---------- overlays: countdown / brief ---------- */
+#count{position:fixed; inset:0; z-index:9; display:none; align-items:center; justify-content:center; background:rgba(10,7,24,.72)}
+#count.on{display:flex}
+#countTxt{font-size:120px; font-weight:900; color:#fff; text-shadow:0 0 30px var(--neon); text-align:center; line-height:1.1}
+#countTxt.word{font-size:58px; color:var(--gold); text-shadow:0 0 30px var(--pink)}
+#countTxt.tick{animation:pop .3s ease-out}
+
+#brief{justify-content:center; padding:24px; gap:18px}
+#brief h2{margin:0; font-size:34px; text-align:center; color:var(--gold)}
+#brief .howto{font-size:16px}
+
+/* ---------- result ---------- */
+#result{padding:18px 14px; gap:12px; overflow-y:auto}
+#result h2{margin:4px 0 0; text-align:center; font-size:30px}
+.verdict{background:rgba(255,255,255,.07); border:2px solid var(--neon); border-radius:16px; padding:14px; font-size:18px; font-weight:800; line-height:1.6; text-align:center}
+.verdict .n{font-family:var(--num); color:var(--gold)}
+.verdict .sm{display:block; font-size:14px; font-weight:600; color:var(--muted); margin-top:4px}
+table.cmp{width:100%; border-collapse:collapse; font-size:15px}
+table.cmp th, table.cmp td{padding:8px 6px; border-bottom:1px solid rgba(255,255,255,.12); text-align:center}
+table.cmp th:first-child, table.cmp td:first-child{text-align:left; color:var(--muted); font-weight:600; font-size:13px}
+table.cmp td{font-family:var(--num); font-weight:800}
+table.cmp thead th{font-size:14px; color:var(--gold)}
+.titles{display:flex; gap:10px}
+.ttl{flex:1; text-align:center; border-radius:14px; padding:10px 6px; background:linear-gradient(135deg,rgba(255,63,164,.25),rgba(60,242,255,.2)); border:1px solid rgba(255,255,255,.2)}
+.ttl .m{font-size:12px; color:var(--muted)}
+.ttl .t{font-size:19px; font-weight:900; margin-top:2px}
+.newbest{color:var(--lime); font-weight:900; text-align:center; font-size:15px; min-height:1.2em}
+
+@media (prefers-reduced-motion: reduce){
+  #app.shake{animation:none}
+  #edge{animation:none !important}
+  #band.need{animation:none}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <!-- TITLE -->
+  <section id="title" class="screen on">
+    <div class="logo">ヨシ！<br>反射<small>指差呼称チャレンジ</small></div>
+    <div class="howto">
+      数字が2つ出る。上のお題に合う方をタップ。<br>
+      お題は <b>「数字が大きい方」</b> か <b>「文字が大きい方」</b>。毎問変わる。<br>
+      1ラウンド <b>30秒</b>。<br>
+      <b>A そのまま</b> → <b>B ヨシ！</b>（お題を指差し＝タップしてから答える）の順で遊んで、最後に自分の数字で比べる。
+    </div>
+    <button class="btn" id="startBtn">A → B で遊ぶ</button>
+    <div class="row">
+      <button class="btn sub" id="onlyA">Aだけ</button>
+      <button class="btn sub" id="onlyB">Bだけ</button>
+      <button class="btn sub" id="muteT" style="flex:none;width:64px">音</button>
+    </div>
+    <div class="best" id="bestT"></div>
+  </section>
+
+  <!-- BRIEF (before B) -->
+  <section id="brief" class="screen">
+    <h2 id="briefH">次は ヨシ！モード</h2>
+    <div class="howto" id="briefBody"></div>
+    <button class="btn" id="briefGo">ヨシ！ いくぞ</button>
+  </section>
+
+  <!-- PLAY -->
+  <section id="play" class="screen">
+    <div id="hud">
+      <span id="modeTag">A</span>
+      <span id="score">0</span>
+      <div id="timeWrap"><div id="timeBar"></div></div>
+      <span id="timeTxt">30</span>
+      <button class="mute" id="muteP">音</button>
+    </div>
+    <div id="band"><div id="bandTxt">数字が大きい方</div><div class="sub" id="bandSub"></div></div>
+    <div id="arena">
+      <button class="cell" data-i="0"><span class="d">9</span></button>
+      <button class="cell" data-i="1"><span class="d">3</span></button>
+      <div id="combo"></div>
+    </div>
+    <div id="foot"></div>
+  </section>
+
+  <!-- RESULT -->
+  <section id="result" class="screen">
+    <h2>ご安全に！</h2>
+    <div class="titles" id="titles"></div>
+    <div class="verdict" id="verdict"></div>
+    <table class="cmp" id="cmp"></table>
+    <div class="newbest" id="newbest"></div>
+    <button class="btn" id="retry">もう一回（A → B）</button>
+    <div class="row">
+      <button class="btn sub" id="retryA">Aだけ</button>
+      <button class="btn sub" id="retryB">Bだけ</button>
+      <button class="btn sub" id="toTitle">タイトル</button>
+    </div>
+  </section>
+</div>
+<div id="edge"></div>
+<div id="flash"></div>
+<canvas id="fx"></canvas>
+<div id="yoshiPop"></div>
+<div id="count"><div id="countTxt"></div></div>
+
+<script>
+// ======================= LOGIC-BEGIN (pure; tested from Node) =======================
+const ROUND_MS = 30000;
+const INCONG_P = 0.65;          // share of incongruent trials (bigger font on the SMALLER number)
+const MAX_RUN  = 2;             // same task at most 2 in a row
+
+// one trial. vals[0]=left, vals[1]=right
+function makeQuestion(rnd, hist){
+  const a = 1 + Math.floor(rnd()*9);
+  let b; do { b = 1 + Math.floor(rnd()*9); } while (b === a);
+  const incong = rnd() < INCONG_P;
+  const bigNumSide  = a > b ? 0 : 1;
+  const bigFontSide = incong ? 1 - bigNumSide : bigNumSide;
+  let task;
+  const n = hist.length;
+  let run = 0; for (let k = n-1; k >= 0 && hist[k] === hist[n-1]; k--) run++;
+  if (n > 0 && run >= MAX_RUN) task = hist[n-1] === 'num' ? 'size' : 'num';
+  else task = rnd() < 0.5 ? 'num' : 'size';
+  return { vals:[a,b], bigNumSide, bigFontSide, incong, task, confirmed:false, t0:0 };
+}
+function correctSide(q){ return q.task === 'num' ? q.bigNumSide : q.bigFontSide; }
+function newStats(){ return { n:0, ok:0, miss:0, time:0, inc:0, incMiss:0, score:0, combo:0, maxCombo:0, blocked:0 }; }
+
+// returns {blocked:true} if B-mode and the prompt hasn't been pointed at yet (not counted at all)
+function answer(st, q, side, mode, now){
+  if (mode === 'B' && !q.confirmed){ st.blocked++; return { blocked:true }; }
+  const ok = side === correctSide(q);
+  const dt = now - q.t0;
+  st.n++; st.time += dt;
+  if (q.incong){ st.inc++; if (!ok) st.incMiss++; }
+  let gain = 0;
+  if (ok){
+    st.ok++; st.combo++; if (st.combo > st.maxCombo) st.maxCombo = st.combo;
+    gain = 100 + Math.min(st.combo, 30)*10 + Math.max(0, Math.round((1500 - dt)/10));
+    st.score += gain;
+  } else { st.miss++; st.combo = 0; }
+  return { ok, dt, gain, blocked:false };
+}
+function summarize(st){
+  return {
+    n: st.n, ok: st.ok, miss: st.miss, score: st.score, maxCombo: st.maxCombo, blocked: st.blocked,
+    acc:  st.n ? st.ok/st.n : null,
+    missRate: st.n ? st.miss/st.n : null,
+    avg:  st.n ? st.time/st.n/1000 : null,
+    inc: st.inc, incMiss: st.incMiss,
+    incMissRate: st.inc ? st.incMiss/st.inc : null
+  };
+}
+function titleFor(s){
+  if (!s || s.n < 3) return '様子見中';
+  const fast = s.avg < 0.85, slow = s.avg > 1.4;
+  if (s.acc >= 0.95 && fast) return '神速ヨシ職人';
+  if (s.acc >= 0.95)         return slow ? '石橋たたき名人' : 'ご安全マイスター';
+  if (s.acc >= 0.85 && fast) return '反射番長';
+  if (s.acc >= 0.85)         return '堅実ヨシ係';
+  if (s.acc < 0.7 && fast)   return '暴走ドーパミン';
+  if (s.acc < 0.7)           return '迷子の指先';
+  return '見習い指差し員';
+}
+const pct = x => x == null ? '—' : Math.round(x*100) + '%';
+// honest one-liner: reports whatever happened, never assumes B is better
+function compareLine(A, B){
+  if (!A || !B || !A.n || !B.n) return null;
+  const d = B.avg - A.avg;
+  const sp = Math.abs(d) < 0.005 ? '速さはほぼ同じで'
+           : `1問あたり <span class="n">${Math.abs(d).toFixed(2)}秒</span> ${d > 0 ? '遅く' : '速く'}なって`;
+  let ms;
+  if (B.missRate < A.missRate)      ms = `ミス率が <span class="n">${pct(A.missRate)} → ${pct(B.missRate)}</span> に下がった`;
+  else if (B.missRate === A.missRate) ms = `ミス率は <span class="n">${pct(A.missRate)}</span> のまま変わらなかった`;
+  else                               ms = `ミス率は <span class="n">${pct(A.missRate)} → ${pct(B.missRate)}</span>（今回は下がらなかった）`;
+  let inc = '';
+  if (A.inc && B.inc) inc = `食い違い問題だけ: ミス率 ${pct(A.incMissRate)} → ${pct(B.incMissRate)}`;
+  return { main: `ヨシ！すると、${sp}、${ms}。`, inc };
+}
+// ======================= LOGIC-END =======================
+
+if (typeof window !== 'undefined') (function(){
+const $ = s => document.querySelector(s);
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const app = $('#app');
+
+// ---------- storage ----------
+const store = {
+  get(){ try { return JSON.parse(localStorage.getItem('yoshi-best') || '{}') || {}; } catch(e){ return {}; } },
+  set(o){ try { localStorage.setItem('yoshi-best', JSON.stringify(o)); } catch(e){} }
+};
+function renderBest(){
+  const b = store.get();
+  $('#bestT').textContent = `自己ベスト  A: ${b.A || 0}  /  B: ${b.B || 0}`;
+}
+renderBest();
+
+// ---------- audio ----------
+let AC = null, master = null;
+let muted = false; try { muted = localStorage.getItem('yoshi-mute') === '1'; } catch(e){}
+function ensureAudio(){
+  if (!AC){
+    try { AC = new (window.AudioContext || window.webkitAudioContext)(); master = AC.createGain(); master.gain.value = .5; master.connect(AC.destination); }
+    catch(e){ AC = null; }
+  }
+  if (AC && AC.state === 'suspended') AC.resume();
+}
+function tone(f, dur, type='square', vol=.15, delay=0, f2=null){
+  if (!AC || muted) return;
+  const t = AC.currentTime + delay;
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t);
+  if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + .008);
+  g.gain.exponentialRampToValueAtTime(.0001, t + dur);
+  o.connect(g); g.connect(master); o.start(t); o.stop(t + dur + .02);
+}
+const PENTA = [0,2,4,7,9,12,14,16,19,21,24];
+const sfx = {
+  ok(combo){ const s = PENTA[Math.min(combo-1, PENTA.length-1)] || 0; const f = 523.25*Math.pow(2, s/12);
+             tone(f, .09, 'square', .12); tone(f*1.5, .12, 'triangle', .10, .05); },
+  miss(){ tone(140, .32, 'sawtooth', .22, 0, 60); tone(90, .32, 'square', .12); },
+  yoshi(){ tone(880, .08, 'triangle', .2); tone(1318.5, .16, 'triangle', .2, .07); },
+  block(){ tone(300, .06, 'square', .08); },
+  count(hi){ tone(hi ? 1046.5 : 659.25, hi ? .3 : .1, 'square', .12); },
+  fever(){ [0,4,7,12].forEach((s,i)=>tone(659.25*Math.pow(2,s/12), .12, 'square', .1, i*.06)); },
+  end(){ [12,7,4,0].forEach((s,i)=>tone(523.25*Math.pow(2,s/12), .14, 'triangle', .14, i*.08)); }
+};
+// tiny "BGM": bass + hat loop. tempo and key rise with FEVER level
+let bgmTimer = null, bgmStep = 0, feverLv = 0;
+function bgmTick(){
+  if (!AC || muted) return;
+  const key = feverLv*2;                       // +2 semitones per FEVER level
+  const bass = [0,0,7,0,5,0,7,10][bgmStep % 8];
+  tone(65.41*Math.pow(2,(bass+key)/12), .12, 'triangle', .16);
+  if (bgmStep % 2) tone(6000, .02, 'square', .02);
+  bgmStep++;
+}
+function bgmStart(){ bgmStop(); bgmStep = 0; const loop = () => { bgmTick(); bgmTimer = setTimeout(loop, 60000/(132 + feverLv*14)/2); }; loop(); }
+function bgmStop(){ if (bgmTimer) clearTimeout(bgmTimer); bgmTimer = null; }
+function setMuteLabels(){ document.querySelectorAll('#muteT,#muteP').forEach(b => b.textContent = muted ? '消音' : '音'); }
+function toggleMute(e){ e.stopPropagation(); ensureAudio(); muted = !muted; try { localStorage.setItem('yoshi-mute', muted ? '1' : '0'); } catch(_){} setMuteLabels(); }
+$('#muteT').addEventListener('pointerdown', toggleMute);
+$('#muteP').addEventListener('pointerdown', toggleMute);
+setMuteLabels();
+
+// ---------- particles ----------
+const cv = $('#fx'), cx = cv.getContext('2d');
+let DPR = 1, parts = [], fxRunning = false;
+function resize(){ DPR = Math.min(window.devicePixelRatio || 1, 2); cv.width = innerWidth*DPR; cv.height = innerHeight*DPR; cv.style.width = innerWidth+'px'; cv.style.height = innerHeight+'px'; }
+addEventListener('resize', resize); resize();
+const COLS = ['#3cf2ff','#ff3fa4','#b6ff3c','#ffd23c','#ffffff'];
+function burst(x, y, n, big){
+  for (let i = 0; i < n; i++){
+    const a = Math.random()*Math.PI*2, v = (big ? 4 : 2.5) + Math.random()*(big ? 9 : 6);
+    parts.push({ x, y, vx:Math.cos(a)*v, vy:Math.sin(a)*v - 3, r:3 + Math.random()*5, life:1, c:COLS[(Math.random()*COLS.length)|0], sq:Math.random() < .5 });
+  }
+  if (!fxRunning){ fxRunning = true; requestAnimationFrame(fxLoop); }
+}
+function fxLoop(){
+  cx.setTransform(DPR,0,0,DPR,0,0); cx.clearRect(0,0,innerWidth,innerHeight);
+  parts = parts.filter(p => p.life > 0);
+  for (const p of parts){
+    p.x += p.vx; p.y += p.vy; p.vy += .35; p.vx *= .98; p.life -= .028;
+    cx.globalAlpha = Math.max(0, p.life); cx.fillStyle = p.c;
+    if (p.sq) cx.fillRect(p.x-p.r/2, p.y-p.r/2, p.r, p.r); else { cx.beginPath(); cx.arc(p.x, p.y, p.r/2, 0, 7); cx.fill(); }
+  }
+  cx.globalAlpha = 1;
+  if (parts.length) requestAnimationFrame(fxLoop); else { fxRunning = false; cx.clearRect(0,0,innerWidth,innerHeight); }
+}
+
+// ---------- effects ----------
+let lastFlash = 0;
+function redFlash(){
+  const now = performance.now();
+  if (now - lastFlash < 400) return;            // never more than ~2.5 full-screen flashes per second
+  lastFlash = now;
+  const f = $('#flash'); f.style.transition = 'none'; f.style.opacity = RM ? .12 : .4;
+  requestAnimationFrame(() => requestAnimationFrame(() => { f.style.transition = 'opacity .28s ease-out'; f.style.opacity = 0; }));
+}
+function restartAnim(el, cls){ el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+function shake(){ if (!RM) restartAnim(app, 'shake'); }
+function vibrate(ms){ try { navigator.vibrate && navigator.vibrate(ms); } catch(e){} }
+function setFever(combo){
+  const lv = Math.min(4, Math.floor(combo/5));
+  document.documentElement.style.setProperty('--hue', String(258 - Math.min(combo,40)*5));
+  if (lv !== feverLv){
+    document.body.classList.remove('f1','f2','f3','f4');
+    if (lv) document.body.classList.add('f'+lv);
+    if (lv > feverLv) sfx.fever();
+    feverLv = lv;
+  }
+}
+function showCombo(c){
+  const el = $('#combo');
+  const lv = Math.floor(c/5);
+  el.innerHTML = c + (c >= 5 && c % 5 === 0 ? `<small>FEVER ${'!'.repeat(Math.min(lv,4))}</small>` : '<small>COMBO</small>');
+  el.style.fontSize = Math.min(54 + c*2, 96) + 'px';
+  restartAnim(el, 'show');
+}
+function yoshiPop(txt){ const el = $('#yoshiPop'); el.textContent = txt; restartAnim(el, 'show'); }
+
+// ---------- game state ----------
+let plan = [], planIdx = 0, mode = 'A', st = null, q = null, hist = [], playing = false, tEnd = 0, inputLock = false;
+let results = { A:null, B:null };
+let isDemo = false;
+const cells = [...document.querySelectorAll('.cell')];
+function show(id){ parts = []; cx.clearRect(0,0,cv.width,cv.height); document.querySelectorAll('.screen').forEach(e => e.classList.toggle('on', e.id === id)); }
+
+function startFlow(modes){
+  ensureAudio();
+  plan = modes; planIdx = 0;
+  if (modes.length === 2) results = { A:null, B:null };
+  try { history.replaceState(null, '', modes.length === 2 ? '#ab' : '#' + modes[0].toLowerCase()); } catch(e){}
+  if (modes[0] === 'B' && modes.length === 1) brief(); else countdown();
+}
+function brief(){
+  show('brief');
+  $('#briefBody').innerHTML =
+    '毎問、まず <b>お題の帯をタップ</b>して「数字ヨシ！」「文字ヨシ！」と確認。<br>' +
+    'それまで数字は押せない（暗く表示）。<br>' +
+    '<b>指差し → 呼称 → 動作</b> の一拍を入れると、どうなるか。';
+}
+function countdown(){
+  show('play'); prepHud(); renderIdle();
+  const ov = $('#count'), t = $('#countTxt');
+  ov.classList.add('on');
+  const seq = ['3','2','1','ご安全に！'];
+  let i = 0;
+  const step = () => {
+    if (i >= seq.length){ ov.classList.remove('on'); beginRound(); return; }
+    t.textContent = seq[i]; t.className = i === 3 ? 'word' : ''; restartAnim(t, 'tick');
+    sfx.count(i === 3);
+    i++; setTimeout(step, i === 4 ? 650 : 420);
+  };
+  step();
+}
+function prepHud(){
+  mode = plan[planIdx];
+  $('#modeTag').textContent = mode === 'A' ? 'A そのまま' : 'B ヨシ！';
+  $('#score').textContent = '0';
+  $('#timeBar').style.transform = 'scaleX(1)'; $('#timeTxt').textContent = '30';
+  $('#foot').innerHTML = mode === 'A' ? '出たら即タップ' : 'まず <b>お題をタップ</b> してから';
+}
+function renderIdle(){ $('#bandTxt').textContent = '―'; $('#bandSub').textContent = ''; $('#band').className = ''; cells.forEach(c => { c.className = 'cell'; c.querySelector('.d').textContent = ''; }); }
+function beginRound(){
+  st = newStats(); hist = []; feverLv = 0; setFever(0);
+  playing = true; inputLock = false; tEnd = performance.now() + ROUND_MS;
+  bgmStart(); nextQuestion(); requestAnimationFrame(tick);
+}
+function tick(){
+  if (!playing) return;
+  const left = tEnd - performance.now();
+  if (left <= 0){ endRound(); return; }
+  $('#timeBar').style.transform = `scaleX(${left/ROUND_MS})`;
+  $('#timeTxt').textContent = (left/1000).toFixed(left < 10000 ? 1 : 0);
+  requestAnimationFrame(tick);
+}
+function nextQuestion(){
+  q = makeQuestion(Math.random, hist); hist.push(q.task);
+  if (hist.length > 8) hist.shift();
+  $('#bandTxt').textContent = q.task === 'num' ? '数字が大きい方' : '文字が大きい方';  // same look every time; only words change
+  const band = $('#band'), arena = $('#arena');
+  if (mode === 'B'){ band.className = 'need'; $('#bandSub').textContent = '指差して確認 ▶ タップ'; arena.classList.add('locked'); }
+  else { band.className = ''; $('#bandSub').textContent = ''; arena.classList.remove('locked'); }
+  cells.forEach((c, i) => {
+    c.className = 'cell ' + (i === q.bigFontSide ? 'big' : 'small');
+    c.querySelector('.d').textContent = q.vals[i];
+    restartAnim(c, 'pop');
+  });
+  q.t0 = performance.now();
+}
+function onBand(e){
+  e.preventDefault();
+  if (!playing || mode !== 'B' || !q || q.confirmed) return;
+  q.confirmed = true;
+  yoshiPop(q.task === 'num' ? '数字ヨシ！' : '文字ヨシ！');
+  sfx.yoshi(); vibrate(15);
+  $('#band').className = 'ok'; $('#bandSub').textContent = 'ヨシ！';
+  $('#arena').classList.remove('locked');
+}
+function onCell(e){
+  e.preventDefault();
+  if (!playing || inputLock || !q) return;
+  const i = +e.currentTarget.dataset.i;
+  const r = answer(st, q, i, mode, performance.now());
+  if (r.blocked){ restartAnim($('#band'), 'nudge'); sfx.block(); $('#foot').innerHTML = '<b>先にお題を指差し！</b>'; return; }
+  const rect = e.currentTarget.getBoundingClientRect();
+  if (r.ok){
+    sfx.ok(st.combo);
+    burst(rect.left + rect.width/2, rect.top + rect.height/2, 22 + Math.min(st.combo, 20)*2, st.combo >= 5);
+    $('#score').textContent = st.score; restartAnim($('#score'), 'bump');
+    if (st.combo >= 2) showCombo(st.combo);
+    setFever(st.combo);
+    if (mode === 'B') $('#foot').innerHTML = 'まず <b>お題をタップ</b> してから';
+    nextQuestion();                                  // 0 ms: no waiting
+  } else {
+    sfx.miss(); vibrate([60,40,60]); redFlash(); shake();
+    e.currentTarget.classList.add('wrong'); cells[correctSide(q)].classList.add('right');
+    setFever(0);
+    inputLock = true;
+    setTimeout(() => { inputLock = false; if (playing) nextQuestion(); }, 120);   // brief look at the right answer
+  }
+}
+cells.forEach(c => c.addEventListener('pointerdown', onCell));
+$('#band').addEventListener('pointerdown', onBand);
+
+function endRound(){
+  playing = false; bgmStop(); sfx.end();
+  setFever(0); document.body.classList.remove('f1','f2','f3','f4');
+  results[mode] = summarize(st);
+  planIdx++;
+  if (planIdx < plan.length){ brief(); }
+  else showResult();
+}
+function showResult(){
+  show('result');
+  const A = results.A, B = results.B;
+  const best = store.get(); let nb = [];
+  for (const m of plan){ const s = results[m]; if (s && s.score > (best[m] || 0)){ best[m] = s.score; nb.push(m); } }
+  if (!isDemo) store.set(best); renderBest();
+  $('#newbest').textContent = nb.length ? `自己ベスト更新！ (${nb.join(' / ')})` : `自己ベスト  A: ${best.A || 0} / B: ${best.B || 0}`;
+  $('#titles').innerHTML = ['A','B'].map(m => `<div class="ttl"><div class="m">${m === 'A' ? 'A そのまま' : 'B ヨシ！'}</div><div class="t">${results[m] ? titleFor(results[m]) : '未プレイ'}</div></div>`).join('');
+  const c = compareLine(A, B);
+  $('#verdict').innerHTML = c ? `${c.main}${c.inc ? `<span class="sm">${c.inc}</span>` : ''}` : 'A と B の両方を遊ぶと、ここに<br>自分の数字での比較が出るよ。';
+  const f = (s, k) => {
+    if (!s || !s.n) return '—';
+    if (k === 'acc') return pct(s.acc);
+    if (k === 'miss') return s.miss;
+    if (k === 'avg') return s.avg.toFixed(2) + 's';
+    if (k === 'inc') return s.inc ? `${pct(s.incMissRate)}` : '—';
+    if (k === 'n') return s.n;
+    if (k === 'score') return s.score;
+    if (k === 'combo') return s.maxCombo;
+  };
+  const rows = [['正答率','acc'],['ミス数','miss'],['1問あたり平均','avg'],['食い違い問題のミス率','inc'],['解いた数','n'],['スコア','score'],['最大コンボ','combo']];
+  $('#cmp').innerHTML = '<thead><tr><th></th><th>A そのまま</th><th>B ヨシ！</th></tr></thead><tbody>' +
+    rows.map(([lab,k]) => `<tr><td>${lab}</td><td>${f(A,k)}</td><td>${f(B,k)}</td></tr>`).join('') + '</tbody>';
+}
+
+let startModes = ['A','B'];
+$('#startBtn').addEventListener('click', () => startFlow(startModes));
+$('#onlyA').addEventListener('click', () => startFlow(['A']));
+$('#onlyB').addEventListener('click', () => startFlow(['B']));
+$('#briefGo').addEventListener('click', () => { ensureAudio(); countdown(); });
+$('#retry').addEventListener('click', () => startFlow(['A','B']));
+$('#retryA').addEventListener('click', () => startFlow(['A']));
+$('#retryB').addEventListener('click', () => startFlow(['B']));
+$('#toTitle').addEventListener('click', () => { show('title'); try { history.replaceState(null, '', location.pathname); } catch(e){} });
+
+// deep-link label (#a / #b / #ab): just highlights; audio still needs the first tap
+const h = location.hash.toLowerCase();
+if (h === '#a'){ startModes = ['A']; $('#startBtn').textContent = 'A そのまま で遊ぶ'; }
+if (h === '#b'){ startModes = ['B']; $('#startBtn').textContent = 'B ヨシ！ で遊ぶ'; }
+// preview for screenshots: ?demo=play / ?demo=result
+const demo = new URLSearchParams(location.search).get('demo');
+isDemo = !!demo;
+if (demo === 'play'){ plan = ['B']; planIdx = 0; show('play'); prepHud(); mode = 'B'; st = newStats(); hist = []; nextQuestion(); }
+if (demo === 'result'){
+  plan = ['A','B'];
+  results.A = { n:31, ok:24, miss:7, score:5400, maxCombo:9, acc:24/31, missRate:7/31, avg:0.93, inc:20, incMiss:6, incMissRate:.3 };
+  results.B = { n:22, ok:21, miss:1, score:4100, maxCombo:14, acc:21/22, missRate:1/22, avg:1.33, inc:14, incMiss:1, incMissRate:1/14 };
+  showResult();
+}
+})();
+</script>
+</body>
+</html>

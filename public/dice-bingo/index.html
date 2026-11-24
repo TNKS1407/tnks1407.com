@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>サイコロ計算ビンゴ</title>
+<style>
+:root{--teal:#3c7876;--red:#c2543d;--blue:#2f6db0;--amber:#c9761f;--text:#1d1b17;--muted:#7d7568;--faint:#aaa49b;--bg:#f5f2ec;--surface:#faf8f4;--border:#e3dbd0;
+--sans:"Zen Kaku Gothic New","Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic UI","Meiryo",sans-serif;
+--mono:"JetBrains Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;overflow-x:hidden}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);
+  background-image:radial-gradient(rgba(125,117,104,.07) 1px,transparent 1px);background-size:14px 14px}
+button{font-family:inherit;color:inherit;touch-action:manipulation;cursor:pointer}
+.wrap{max-width:560px;margin:0 auto;padding:16px 14px 28px}
+header.site{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+header.site h1{font-size:22px;margin:0;letter-spacing:.04em}
+header.site a{color:var(--muted);font-size:13px;text-decoration:none}
+.lead{color:var(--muted);font-size:14px;line-height:1.7;margin:4px 0 14px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:12px}
+.card h2{font-size:15px;margin:0 0 10px;color:var(--muted);font-weight:600}
+.big-btn{display:block;width:100%;border:0;border-radius:14px;padding:16px;font-size:20px;font-weight:700;color:#fff;margin-bottom:10px;box-shadow:0 3px 0 rgba(0,0,0,.15)}
+.big-btn small{display:block;font-size:12px;font-weight:400;opacity:.9;margin-top:2px}
+.b-solo{background:var(--teal)} .b-vs{background:linear-gradient(90deg,var(--red) 50%,var(--blue) 50%)}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{flex:1;min-width:120px;border:2px solid var(--border);background:#fff;border-radius:10px;padding:10px 6px;font-size:15px}
+.seg button.on{border-color:var(--amber);background:#fff6ea;font-weight:700}
+footer{color:var(--faint);font-size:12px;text-align:center;margin-top:10px}
+.hidden{display:none!important}
+
+/* ---- game screen ---- */
+#game{height:100vh;height:100dvh;display:flex;flex-direction:column;padding:6px 8px calc(6px + env(safe-area-inset-bottom));gap:6px;max-width:560px;margin:0 auto}
+body.playing header.site, body.playing .lead, body.playing footer, body.playing #menu, body.playing #result{display:none}
+body.playing .wrap{padding:0;max-width:none}
+.bar{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);flex:0 0 auto;flex-wrap:wrap}
+.bar .stat{font-family:var(--mono);color:var(--text);font-size:15px}
+.bar .chip{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:4px 7px}
+.bar .sp{flex:1}
+.mini{border:1px solid var(--border);background:#fff;border-radius:8px;padding:5px 8px;font-size:13px}
+.mini.on{background:#fff6ea;border-color:var(--amber)}
+#boardBox{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center}
+.board{position:relative;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr);gap:4px;background:var(--border);border-radius:12px;padding:4px}
+.cell{background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;color:var(--text);transition:background .2s,color .2s,transform .2s;position:relative}
+.cell.t0{background:var(--teal);color:#fff}
+.cell.tr{background:var(--red);color:#fff}
+.cell.tb{background:var(--blue);color:#fff}
+.cell.pop{animation:pop .35s}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
+.cell .no{position:absolute;top:2px;left:4px;font-size:10px;font-weight:400;opacity:.85}
+.board svg{position:absolute;inset:4px;width:calc(100% - 8px);height:calc(100% - 8px);pointer-events:none}
+
+.panel{flex:0 0 auto;background:var(--surface);border:2px solid var(--border);border-radius:14px;padding:6px}
+.panel.c0{border-color:var(--teal)} .panel.cr{border-color:var(--red)} .panel.cb{border-color:var(--blue)}
+.panel.rot{transform:rotate(180deg)}
+.panel.shake{animation:shake .35s}
+@keyframes shake{0%,100%{translate:0}20%{translate:-8px}40%{translate:8px}60%{translate:-5px}80%{translate:5px}}
+.panel.miss{background:#fbe9e4}
+.pinfo{display:flex;align-items:baseline;justify-content:space-between;padding:0 4px 4px;gap:6px}
+.pinfo .score{font-size:14px;font-weight:700}
+.panel.cr .score{color:var(--red)} .panel.cb .score{color:var(--blue)} .panel.c0 .score{color:var(--teal)}
+.pinfo .expr{font-family:var(--mono);font-size:26px;font-weight:700;letter-spacing:.02em;white-space:nowrap}
+.pinfo .expr .q{color:var(--faint)}
+.pinfo .msg{font-size:13px;color:var(--red);min-width:3em;text-align:right}
+.dicerow{display:grid;grid-template-columns:1fr 1fr 1fr 1.1fr;gap:6px}
+.die{display:flex;flex-direction:column;border-radius:12px;background:#fff;border:2px solid var(--border);overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+.die button{border:0;background:#f1ece3;font-size:15px;padding:6px 0;color:var(--muted)}
+.die button:active{background:#e6dfd3}
+.die .face{flex:1;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:34px;min-height:56px;cursor:ns-resize}
+.die.d1 .face{color:var(--amber)}
+.die.flash .face{animation:flash .18s}
+@keyframes flash{0%{background:#fff6ea}100%{background:#fff}}
+.go{border:0;border-radius:12px;font-size:22px;font-weight:700;color:#fff;box-shadow:0 3px 0 rgba(0,0,0,.18)}
+.go:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.18)}
+.panel.c0 .go{background:var(--teal)} .panel.cr .go{background:var(--red)} .panel.cb .go{background:var(--blue)}
+.mid{flex:0 0 auto;display:flex;justify-content:center;align-items:center;gap:10px;font-family:var(--mono);font-size:15px}
+.mid .r{color:var(--red);font-weight:700} .mid .b{color:var(--blue);font-weight:700}
+body.vs .die .face{font-size:30px;min-height:46px}
+body.vs .die button{padding:4px 0}
+body.vs .pinfo .expr{font-size:22px}
+
+/* ---- result ---- */
+#result h2.title{font-size:24px;margin:0 0 6px;text-align:center}
+.stats{width:100%;border-collapse:collapse;font-size:14px}
+.stats td{padding:5px 4px;border-bottom:1px dashed var(--border)}
+.stats td.v{font-family:var(--mono);text-align:right;font-weight:700}
+.stats th{font-size:13px;text-align:right;color:var(--muted);font-weight:400}
+.stats th:first-child{text-align:left}
+#resBoardBox{display:flex;justify-content:center;margin:10px 0}
+.route{font-family:var(--mono);font-size:14px;line-height:2;word-break:break-word}
+.route .st{display:inline-block;background:#fff;border:1px solid var(--border);border-radius:6px;padding:0 5px;margin:2px 1px;white-space:nowrap}
+.route .ch{color:var(--red);text-decoration:underline}
+.route .ar{color:var(--faint)}
+.note{font-size:13px;color:var(--muted);line-height:1.6}
+.row2{display:flex;gap:8px}
+.row2 button{flex:1;border:2px solid var(--border);background:#fff;border-radius:10px;padding:11px 4px;font-size:15px}
+.row2 button.pri{background:var(--amber);color:#fff;border-color:var(--amber);font-weight:700}
+
+/* embed (iframe) : chrome off */
+body.embed header.site, body.embed .lead, body.embed footer{display:none}
+body.embed .wrap{padding:8px}
+body.playing.embed .wrap{padding:0}
+</style>
+</head>
+<body>
+<script>if(window.self!==window.top)document.body.classList.add('embed');</script>
+<div class="wrap">
+  <header class="site"><h1>サイコロ計算ビンゴ</h1><a href="https://tnks1407.com/">← tnks1407</a></header>
+  <p class="lead">左のサイコロ（7〜12）・まんなかの記号（＋−×）・右のサイコロ（1〜6）で式を作って「決定」。答えが盤面にあればそのマスがとれる。25マス全部とるまで、どれだけ速く回れるかな。</p>
+
+  <section id="menu">
+    <div class="card">
+      <h2>あそびかた</h2>
+      <button class="big-btn b-solo" id="btnSolo">ひとりでタイムアタック<small>25マス全部とるまでの時間</small></button>
+      <button class="big-btn b-vs" id="btnVs">ふたりで対戦（赤 vs 青）<small>1台を向かい合って。先にとった色になる</small></button>
+    </div>
+    <div class="card">
+      <h2>盤面</h2>
+      <div class="seg" id="segBoard"><button data-v="random" class="on">ランダム</button><button data-v="preset">展示の盤面</button></div>
+    </div>
+    <div class="card">
+      <h2>設定</h2>
+      <div class="seg" id="segVal"><button data-v="off" class="on">答えをかくす（暗算勝負）</button><button data-v="on">答えを表示（練習）</button></div>
+      <div class="seg" id="segSnd" style="margin-top:6px"><button data-v="on" class="on">効果音あり</button><button data-v="off">効果音なし</button></div>
+    </div>
+  </section>
+
+  <section id="game" class="hidden"></section>
+
+  <section id="result" class="hidden">
+    <div class="card">
+      <h2 class="title" id="resTitle"></h2>
+      <table class="stats" id="resStats"></table>
+      <div id="resBoardBox"></div>
+      <button class="big-btn" style="background:var(--amber)" id="btnRoute">最短ルートを見る</button>
+      <div id="routeOut"></div>
+    </div>
+    <div class="row2">
+      <button class="pri" id="btnSame">もう一度</button>
+      <button id="btnNew">新しい盤面</button>
+      <button id="btnMenu">メニュー</button>
+    </div>
+  </section>
+
+  <footer>サイコロは振らずに、好きな面を選ぶルール。▲▼・上下スワイプ・タップで面を送れる。</footer>
+</div>
+
+<script>
+/*CORE-START*/
+const A_FACES=[7,8,9,10,11,12], OPS=['+','−','×'], B_FACES=[1,2,3,4,5,6];
+const FACES=[A_FACES,OPS,B_FACES];
+const PRESET=[33,40,24,32,66, 6,18,35,72,27, 1,17,55,36,45, 10,14,20,5,28, 12,9,16,7,42];
+function calc(a,op,b){return op==='+'?a+b:op==='−'?a-b:a*b;}
+function allExprs(){const r=[];for(const a of A_FACES)for(const op of OPS)for(const b of B_FACES){const v=calc(a,op,b);if(v>0)r.push({a,op,b,v});}return r;}
+function reachableValues(){return [...new Set(allExprs().map(e=>e.v))].sort((x,y)=>x-y);}
+function randomBoard(rnd=Math.random){
+  const vs=reachableValues();
+  for(let i=vs.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[vs[i],vs[j]]=[vs[j],vs[i]];}
+  return vs.slice(0,25);
+}
+function diffCount(p,q){return (p.a!==q.a)+(p.op!==q.op)+(p.b!==q.b);}
+
+/* 一筆書き探索：ノード=(数字,式)。隣接=サイコロ1個だけ違う。各数字1回のハミルトン路をDFS。
+   時間上限あり。見つからなければ「サイコロ変更総数」最小に近い順路を多始点貪欲で出す（近似）。 */
+function solveRoute(board,limitMs=2000,now=()=>Date.now()){
+  const t0=now(), n=board.length, idx=new Map(board.map((v,i)=>[v,i]));
+  const nodes=allExprs().filter(e=>idx.has(e.v)).map(e=>({...e,vi:idx.get(e.v)}));
+  const byVal=Array.from({length:n},()=>[]); nodes.forEach((p,i)=>byVal[p.vi].push(i));
+  if(byVal.some(l=>l.length===0)) return {exact:false,error:'式で作れない数字がある'};
+  const adj=nodes.map((p,i)=>{const a=[];nodes.forEach((q,j)=>{if(q.vi!==p.vi&&diffCount(p,q)===1)a.push(j);});return a;});
+  const used=new Uint8Array(n), path=[], stamp=new Int32Array(n+1); let stampId=0, steps=0, timeout=false;
+  const onward=j=>{let c=0;for(const k of adj[j])if(!used[nodes[k].vi])c++;return c;};
+  // 枝刈り：残りの数字のうち、(未訪問∪現在ノード)とつながる相手が0 → 不可能、1 → 終点候補。終点候補が2つ以上 → 不可能。
+  function prune(cur,remaining){
+    let ends=0;
+    for(let v=0;v<n;v++){ if(used[v])continue;
+      stampId++; let deg=0;
+      for(const j of byVal[v]) for(const k of adj[j]){
+        const w=nodes[k].vi; const key=used[w]?(k===cur?n:-1):w;
+        if(key<0||stamp[key]===stampId)continue; stamp[key]=stampId; deg++;
+      }
+      if(deg===0)return true;
+      if(deg===1&&remaining>1){ if(++ends>1)return true; }
+    }
+    return false;
+  }
+  function dfs(cur,depth){
+    if(depth===n)return true;
+    if((++steps&255)===0&&now()-t0>limitMs)timeout=true;
+    if(timeout)return false;
+    if(prune(cur,n-depth))return false;
+    const cand=adj[cur].filter(k=>!used[nodes[k].vi]).map(k=>[k,onward(k)]).sort((x,y)=>x[1]-y[1]);
+    for(const [k] of cand){
+      used[nodes[k].vi]=1;path.push(k);
+      if(dfs(k,depth+1))return true;
+      path.pop();used[nodes[k].vi]=0;
+      if(timeout)return false;
+    }
+    return false;
+  }
+  // 始点の順：式の候補が少ない数字 → 次数の小さいノード（端になりやすい）
+  const starts=nodes.map((p,i)=>i).sort((x,y)=>(byVal[nodes[x].vi].length-byVal[nodes[y].vi].length)||(adj[x].length-adj[y].length));
+  for(const s of starts){
+    used.fill(0);path.length=0;used[nodes[s].vi]=1;path.push(s);
+    if(dfs(s,1)){const route=path.map(k=>nodes[k]);return {exact:true,route,changes:n-1,ms:now()-t0,steps};}
+    if(timeout)break;
+  }
+  const exhausted=!timeout;
+  // 近似：多始点の貪欲（変更数最小→次の行き先が少ない方を優先、同点はランダム）。残り時間で回す。
+  let best=null; const budget=Math.max(300,limitMs*0.4), t1=now(); let it=0;
+  let seed=12345; const rnd=()=>((seed=(seed*1103515245+12345)&0x7fffffff)/0x7fffffff);
+  while(it<starts.length||now()-t1<budget){
+    const s=starts[it%starts.length]; it++;
+    used.fill(0); const r=[s]; used[nodes[s].vi]=1; let cost=0;
+    while(r.length<n){
+      const cur=r[r.length-1]; let bk=-1,bc=1e9,bo=1e9,br=0;
+      for(let k=0;k<nodes.length;k++){ if(used[nodes[k].vi])continue;
+        const c=diffCount(nodes[cur],nodes[k]); const o=onward(k); const rr=rnd();
+        if(c<bc||(c===bc&&(o<bo||(o===bo&&rr<br)))){bk=k;bc=c;bo=o;br=rr;}
+      }
+      used[nodes[bk].vi]=1; r.push(bk); cost+=bc;
+    }
+    if(!best||cost<best.cost)best={cost,r};
+    if(it>5000)break;
+  }
+  return {exact:best.cost===n-1,exhausted,timeout,route:best.r.map(k=>nodes[k]),changes:best.cost,ms:now()-t0,steps};
+}
+/*CORE-END*/
+
+// ---------------- UI ----------------
+const $=s=>document.querySelector(s);
+const S={mode:'solo',boardKind:'random',showVal:false,sound:true,board:[],owner:[],players:[],t0:0,tEnd:0,timer:null,over:false,log:[]};
+
+// --- sound ---
+let AC=null;
+function ac(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();return AC;}
+function tone(f,t,d,type='sine',g=.15){const a=ac();if(!a||!S.sound)return;const o=a.createOscillator(),v=a.createGain();o.type=type;o.frequency.value=f;
+  const s=a.currentTime+t;v.gain.setValueAtTime(0,s);v.gain.linearRampToValueAtTime(g,s+.01);v.gain.exponentialRampToValueAtTime(.001,s+d);o.connect(v).connect(a.destination);o.start(s);o.stop(s+d+.02);}
+const sfx={
+  take(){tone(660,0,.12,'triangle');tone(990,.07,.16,'triangle');},
+  miss(){tone(180,0,.22,'sawtooth',.08);tone(140,.08,.2,'sawtooth',.06);},
+  click(){tone(1400,0,.03,'square',.03);},
+  clear(){[523,659,784,1047].forEach((f,i)=>tone(f,i*.11,.3,'triangle'));tone(1319,.48,.6,'triangle',.12);}
+};
+
+// --- menu ---
+function seg(id,cb){$(id).addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;[...$(id).children].forEach(x=>x.classList.toggle('on',x===b));cb(b.dataset.v);});}
+function setSeg(id,v){[...$(id).children].forEach(x=>x.classList.toggle('on',x.dataset.v===v));}
+seg('#segBoard',v=>S.boardKind=v);
+seg('#segVal',v=>S.showVal=v==='on');
+seg('#segSnd',v=>S.sound=v==='on');
+$('#btnSolo').onclick=()=>{ac();start('solo',true);};
+$('#btnVs').onclick=()=>{ac();start('versus',true);};
+$('#btnSame').onclick=()=>start(S.mode,false);
+$('#btnNew').onclick=()=>start(S.mode,true);
+$('#btnMenu').onclick=toMenu;
+$('#btnRoute').onclick=showRoute;
+
+function toMenu(){stopTimer();document.body.classList.remove('playing','vs');$('#game').classList.add('hidden');$('#result').classList.add('hidden');$('#menu').classList.remove('hidden');history.replaceState(null,'',location.pathname+location.search);}
+
+function start(mode,newBoard){
+  S.mode=mode;
+  if(newBoard||!S.board.length) S.board=S.boardKind==='preset'?PRESET.slice():randomBoard();
+  S.owner=new Array(25).fill(-1); S.over=false; S.log=[];
+  const mk=(id,cls,name)=>({id,cls,name,dice:[0,0,0],takes:0,misses:0,changes:0,lastTake:null,el:null});
+  S.players= mode==='solo'?[mk(0,'c0','あなた')]:[mk(0,'cb','青'),mk(1,'cr','赤')];
+  if(mode==='versus'){S.players[0].dice=[0,0,0];S.players[1].dice=[0,0,0];}
+  history.replaceState(null,'','#'+mode+(S.boardKind==='preset'?'&preset':'')+(S.showVal?'&show':''));
+  buildGame();
+}
+
+function exprOf(p){return {a:A_FACES[p.dice[0]],op:OPS[p.dice[1]],b:B_FACES[p.dice[2]]};}
+
+function panelHTML(p,rot){
+  return `<div class="panel ${p.cls}${rot?' rot':''}" data-p="${p.id}">
+    <div class="pinfo"><span class="score"></span><span class="expr"></span><span class="msg"></span></div>
+    <div class="dicerow">${[0,1,2].map(k=>`<div class="die d${k}" data-k="${k}"><button class="up" aria-label="次の面">▲</button><div class="face"></div><button class="dn" aria-label="前の面">▼</button></div>`).join('')}
+    <button class="go">決定</button></div></div>`;
+}
+
+function buildGame(){
+  document.body.classList.add('playing');document.body.classList.toggle('vs',S.mode==='versus');
+  $('#menu').classList.add('hidden');$('#result').classList.add('hidden');
+  const g=$('#game');g.classList.remove('hidden');
+  const topbar=`<div class="bar"><button class="mini" id="gBack">← もどる</button>
+    ${S.mode==='solo'?`<span class="chip">時間 <span class="stat" id="gTime">0.0</span></span><span class="chip">取得 <span class="stat" id="gCount">0</span>/25</span><span class="chip">平均 <span class="stat" id="gAvg">-</span>秒</span>`:''}
+    <span class="sp"></span><button class="mini${S.showVal?' on':''}" id="gVal">答え${S.showVal?'表示':'かくす'}</button><button class="mini" id="gSnd">音${S.sound?'あり':'なし'}</button></div>`;
+  if(S.mode==='solo'){
+    g.innerHTML=topbar+`<div id="boardBox"><div class="board" id="board"></div></div>`+panelHTML(S.players[0],false);
+  }else{
+    g.innerHTML=panelHTML(S.players[1],true)+`<div id="boardBox"><div class="board" id="board"></div></div>`+
+      `<div class="mid"><span class="r" id="mR">赤 0</span><span id="gTime">0.0</span><span class="b" id="mB">青 0</span></div>`+topbar+panelHTML(S.players[0],false);
+  }
+  S.players.forEach(p=>{p.el=g.querySelector(`.panel[data-p="${p.id}"]`);wirePanel(p);renderPanel(p);});
+  $('#gBack').onclick=toMenu;
+  $('#gVal').onclick=e=>{S.showVal=!S.showVal;e.target.classList.toggle('on',S.showVal);e.target.textContent='答え'+(S.showVal?'表示':'かくす');setSeg('#segVal',S.showVal?'on':'off');S.players.forEach(renderPanel);};
+  $('#gSnd').onclick=e=>{S.sound=!S.sound;e.target.textContent='音'+(S.sound?'あり':'なし');setSeg('#segSnd',S.sound?'on':'off');};
+  renderBoard($('#board'),false);
+  sizeBoard();
+  S.t0=performance.now();stopTimer();S.timer=setInterval(tick,100);tick();
+}
+
+function sizeBoard(){
+  const box=$('#boardBox'),b=$('#board');if(!box||!b)return;
+  const s=Math.max(160,Math.min(box.clientWidth,box.clientHeight,520));
+  b.style.width=b.style.height=s+'px';b.style.fontSize=(s/5*0.36)+'px';
+}
+addEventListener('resize',sizeBoard);
+
+function cellCls(o){return o<0?'':S.mode==='solo'?'t0':(o===0?'tb':'tr');}
+function renderBoard(el,withNo){
+  el.innerHTML=S.board.map((v,i)=>`<div class="cell ${cellCls(S.owner[i])}" data-i="${i}">${v}</div>`).join('');
+}
+
+function renderPanel(p){
+  const e=exprOf(p),el=p.el;
+  el.querySelectorAll('.die').forEach(d=>{const k=+d.dataset.k;d.querySelector('.face').textContent=FACES[k][p.dice[k]];});
+  el.querySelector('.expr').innerHTML=`${e.a} ${e.op} ${e.b} = ${S.showVal?calc(e.a,e.op,e.b):'<span class="q">?</span>'}`;
+  const sc=el.querySelector('.score');
+  sc.textContent=S.mode==='solo'?'':`${p.name} ${p.takes}枚`;
+}
+
+function wirePanel(p){
+  const rot=p.el.classList.contains('rot');
+  p.el.querySelectorAll('.die').forEach(d=>{
+    const k=+d.dataset.k;
+    const step=s=>{if(S.over)return;const L=FACES[k].length;p.dice[k]=(p.dice[k]+s+L)%L;sfx.click();d.classList.remove('flash');void d.offsetWidth;d.classList.add('flash');renderPanel(p);};
+    d.querySelector('.up').addEventListener('click',()=>step(1));
+    d.querySelector('.dn').addEventListener('click',()=>step(-1));
+    const f=d.querySelector('.face');let y0=null;
+    f.addEventListener('pointerdown',ev=>{y0=ev.clientY;try{f.setPointerCapture(ev.pointerId);}catch(_){}});
+    f.addEventListener('pointerup',ev=>{if(y0===null)return;let dy=ev.clientY-y0;y0=null;if(rot)dy=-dy;
+      if(Math.abs(dy)>16)step(dy<0?1:-1);else step(1);});
+    f.addEventListener('pointercancel',()=>{y0=null;});
+  });
+  p.el.querySelector('.go').addEventListener('click',()=>decide(p));
+}
+
+function decide(p){
+  if(S.over)return;
+  const e=exprOf(p);const v=calc(e.a,e.op,e.b);e.v=v;
+  const i=S.board.indexOf(v);
+  const msg=p.el.querySelector('.msg');
+  if(i>=0&&S.owner[i]<0){
+    S.owner[i]=p.id;p.takes++;
+    if(p.lastTake)p.changes+=diffCount(p.lastTake,e);
+    p.lastTake=e;S.log.push({p:p.id,e,t:performance.now()-S.t0});
+    const c=$('#board').children[i];c.className='cell pop '+cellCls(p.id);
+    sfx.take();msg.textContent='';
+    if(navigator.vibrate)navigator.vibrate(15);
+  }else{
+    p.misses++;sfx.miss();
+    msg.textContent=i<0?'ないよ':'とられ済';
+    p.el.classList.remove('shake');void p.el.offsetWidth;p.el.classList.add('shake','miss');
+    setTimeout(()=>p.el.classList.remove('miss'),350);
+    clearTimeout(p._mt);p._mt=setTimeout(()=>msg.textContent='',900);
+    if(navigator.vibrate)navigator.vibrate([30,40,30]);
+  }
+  S.players.forEach(renderPanel);tick();
+  if(S.owner.every(o=>o>=0)){S.over=true;S.tEnd=performance.now()-S.t0;stopTimer();sfx.clear();setTimeout(showResult,700);}
+}
+
+function stopTimer(){if(S.timer){clearInterval(S.timer);S.timer=null;}}
+function tick(){
+  const t=(S.over?S.tEnd:performance.now()-S.t0)/1000;
+  const tt=$('#gTime');if(tt)tt.textContent=t.toFixed(1);
+  if(S.mode==='solo'){const p=S.players[0];$('#gCount').textContent=p.takes;$('#gAvg').textContent=p.takes?(t/p.takes).toFixed(1):'-';}
+  else{$('#mR').textContent='赤 '+S.players[1].takes;$('#mB').textContent='青 '+S.players[0].takes;}
+}
+
+// --- result ---
+function showResult(){
+  document.body.classList.remove('playing','vs');
+  $('#game').classList.add('hidden');$('#result').classList.remove('hidden');$('#routeOut').innerHTML='';
+  $('#btnRoute').classList.remove('hidden');
+  const t=S.tEnd/1000;
+  if(S.mode==='solo'){
+    const p=S.players[0];
+    $('#resTitle').textContent=`クリア！ ${t.toFixed(1)} 秒`;
+    $('#resStats').innerHTML=`<tr><td>平均計算時間</td><td class="v">${(t/25).toFixed(2)} 秒/マス</td></tr>
+      <tr><td>決定した回数（手数）</td><td class="v">${p.takes+p.misses} 手</td></tr>
+      <tr><td>ミス</td><td class="v">${p.misses} 回</td></tr>
+      <tr><td>マスとマスの間で動かしたサイコロ</td><td class="v">${p.changes} 個</td></tr>`;
+  }else{
+    const [B,R]=S.players;
+    $('#resTitle').innerHTML=R.takes>B.takes?'<span style="color:var(--red)">赤の勝ち！</span>':B.takes>R.takes?'<span style="color:var(--blue)">青の勝ち！</span>':'引き分け！';
+    $('#resStats').innerHTML=`<tr><th></th><th style="color:var(--red)">赤</th><th style="color:var(--blue)">青</th></tr>
+      <tr><td>とったマス</td><td class="v">${R.takes}</td><td class="v">${B.takes}</td></tr>
+      <tr><td>ミス</td><td class="v">${R.misses}</td><td class="v">${B.misses}</td></tr>
+      <tr><td>動かしたサイコロ</td><td class="v">${R.changes}</td><td class="v">${B.changes}</td></tr>
+      <tr><td>時間</td><td class="v" colspan="2">${t.toFixed(1)} 秒</td></tr>`;
+  }
+  const box=$('#resBoardBox');box.innerHTML='<div class="board" id="resBoard"></div>';
+  const rb=$('#resBoard');renderBoard(rb);const s=Math.min(box.clientWidth||340,360);rb.style.width=rb.style.height=s+'px';rb.style.fontSize=(s/5*0.34)+'px';
+  scrollTo(0,0);
+}
+
+function showRoute(){
+  const out=$('#routeOut');out.innerHTML='<p class="note">探索中…（最大2秒）</p>';
+  setTimeout(()=>{
+    const r=solveRoute(S.board,2000);
+    if(r.error){out.innerHTML=`<p class="note">${r.error}</p>`;return;}
+    const parts=r.route.map((e,i)=>{
+      const pv=r.route[i-1];const c=(x,key)=>pv&&pv[key]!==e[key]?`<span class="ch">${x}</span>`:x;
+      return `<span class="st">${c(e.a,'a')}${c(e.op,'op')}${c(e.b,'b')}=${e.v}</span>`;
+    });
+    let head;
+    if(r.exact) head=`<p><b>一筆書きできた！</b> サイコロを毎回<b>1個だけ</b>変えて、25マスを${r.route.length-1}回の変更で回り切れる。</p>`;
+    else head=`<p><b>1個だけでは回り切れない盤面${r.exhausted?'':'かもしれない'}</b>。${r.exhausted?'全部さがしても一筆書きは無かった。':'2秒では一筆書きが見つからなかった。'}かわりに、動かすサイコロが少なめの順路（近似）：合計 <b>${r.changes}</b> 個。</p>`;
+    let cmp='';
+    if(S.mode==='solo'){const p=S.players[0];cmp=`<p class="note">あなた：${p.takes+p.misses}手（ミス${p.misses}）・サイコロ ${p.changes} 個　／　このルート：25手・サイコロ ${r.changes} 個</p>`;}
+    else{const [B,R]=S.players;cmp=`<p class="note">赤：サイコロ ${R.changes} 個・青：${B.changes} 個（それぞれ自分のマスの間で）／　このルート：ひとりで25マス・${r.changes} 個</p>`;}
+    out.innerHTML=head+cmp+`<div class="route">${parts.join('<span class="ar"> → </span>')}</div><p class="note">赤い下線＝前の式から変えたサイコロ。盤面の線は回る順番。${(r.ms/1000).toFixed(2)}秒で探索。</p>`;
+    drawRouteOn($('#resBoard'),r.route);
+    $('#btnRoute').classList.add('hidden');
+  },30);
+}
+
+function drawRouteOn(boardEl,route){
+  const pos=route.map(e=>{const i=S.board.indexOf(e.v);return [i%5+.5,Math.floor(i/5)+.5];});
+  const pts=pos.map(p=>p.join(',')).join(' ');
+  [...boardEl.children].forEach(c=>{const k=route.findIndex(e=>e.v===S.board[+c.dataset.i]);if(k>=0)c.insertAdjacentHTML('beforeend',`<span class="no">${k+1}</span>`);});
+  boardEl.insertAdjacentHTML('beforeend',`<svg viewBox="0 0 5 5"><polyline points="${pts}" fill="none" stroke="#c9761f" stroke-width=".05" stroke-linejoin="round" stroke-linecap="round" opacity=".6"/>
+    <circle cx="${pos[0][0]}" cy="${pos[0][1]}" r=".36" fill="none" stroke="#f5f2ec" stroke-width=".06"/><circle cx="${pos.at(-1)[0]}" cy="${pos.at(-1)[1]}" r=".36" fill="none" stroke="#c9761f" stroke-width=".06"/></svg>`);
+}
+
+// --- deep link: #solo / #versus (+ &preset, &show) ---
+(function(){
+  const h=location.hash.slice(1).split('&');
+  if(h.includes('preset')){S.boardKind='preset';setSeg('#segBoard','preset');}
+  if(h.includes('show')){S.showVal=true;setSeg('#segVal','on');}
+  if(h[0]==='solo'||h[0]==='versus')start(h[0],true);
+  // 確認用：&demo で最短ルートを自動で踏んで結果画面まで進める
+  if(h.includes('demo')&&S.players.length){
+    S.sound=false;const r=solveRoute(S.board,2000);let i=0;
+    const iv=setInterval(()=>{if(i>=r.route.length){clearInterval(iv);setTimeout(showRoute,900);return;}
+      const e=r.route[i],p=S.players[i%S.players.length];p.dice=[A_FACES.indexOf(e.a),OPS.indexOf(e.op),B_FACES.indexOf(e.b)];decide(p);i++;},40);
+  }
+})();
+</script>
+</body>
+</html>
