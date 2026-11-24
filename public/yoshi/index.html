@@ -144,6 +144,7 @@ button{font:inherit; color:inherit; border:0; cursor:pointer}
 /* ---------- result ---------- */
 #result{padding:18px 14px; gap:12px; overflow-y:auto}
 #result h2{margin:4px 0 0; text-align:center; font-size:30px}
+#result > *{flex-shrink:0}
 .verdict{background:rgba(255,255,255,.07); border:2px solid var(--neon); border-radius:16px; padding:14px; font-size:18px; font-weight:800; line-height:1.6; text-align:center}
 .verdict .n{font-family:var(--num); color:var(--gold)}
 .verdict .sm{display:block; font-size:14px; font-weight:600; color:var(--muted); margin-top:4px}
@@ -158,7 +159,118 @@ table.cmp thead th{font-size:14px; color:var(--gold)}
 .ttl .t{font-size:19px; font-weight:900; margin-top:2px}
 .newbest{color:var(--lime); font-weight:900; text-align:center; font-size:15px; min-height:1.2em}
 
+/* ---------- share / ranking ---------- */
+a.btn{text-decoration:none; text-align:center}
+.btn.x{background:linear-gradient(135deg,#1a1a2a,#2b2b44); border:2px solid rgba(255,255,255,.35); box-shadow:0 5px 0 #000, 0 0 18px rgba(60,242,255,.25); font-size:18px; padding:14px}
+.btn.x:active{box-shadow:0 1px 0 #000}
+.btn:disabled{opacity:.45; cursor:default; transform:none}
+.reg{background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14); border-radius:16px; padding:12px 14px; display:flex; flex-direction:column; gap:10px}
+.reg .lab{font-size:13px; color:var(--muted); text-align:center; letter-spacing:.08em}
+.reg .in{display:flex; gap:10px; align-items:stretch}
+#nameIn{
+  width:7.2ch; flex:none; padding:6px 4px 6px 12px; border-radius:14px;
+  background:#06040f; color:var(--gold); border:2px solid var(--neon); outline:none;
+  font-family:var(--num); font-weight:900; font-size:30px; letter-spacing:.35em; text-transform:uppercase; text-align:left;
+  box-shadow:0 0 14px rgba(60,242,255,.35) inset; user-select:text; -webkit-user-select:text;
+}
+#nameIn:focus{border-color:var(--gold); box-shadow:0 0 16px rgba(255,210,60,.5)}
+#nameIn::placeholder{color:rgba(255,210,60,.3)}
+.reg .in .btn{flex:1; font-size:17px; padding:12px 10px}
+.rmsg{font-size:14px; text-align:center; min-height:1.3em; font-weight:700; color:var(--muted)}
+.rmsg.good{color:var(--lime); font-family:var(--num); font-size:17px}
+.rmsg.bad{color:#ff8a8a}
+details.rk{background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.14); border-radius:16px}
+details.rk summary{list-style:none; cursor:pointer; padding:14px 16px; font-weight:900; font-size:17px; display:flex; justify-content:space-between; align-items:center}
+details.rk summary::-webkit-details-marker{display:none}
+details.rk summary::after{content:'▼'; font-size:12px; color:var(--neon); transition:transform .2s}
+details.rk[open] summary::after{transform:rotate(180deg)}
+details.rk .rbody{padding:0 12px 12px}
+.rtabs{display:flex; gap:8px; margin-bottom:8px}
+.rtabs button{flex:1; padding:10px 6px; border-radius:12px; background:rgba(255,255,255,.08); font-weight:900; font-size:15px; color:var(--muted); border:2px solid transparent}
+.rtabs button.on{color:#fff; border-color:var(--neon); background:rgba(60,242,255,.14)}
+.rstat{font-size:14px; color:var(--muted); text-align:center; padding:6px 4px; min-height:1.2em}
+.rstat:empty{display:none}
+ol.rlist{list-style:none; margin:0; padding:0}
+ol.rlist li{display:flex; align-items:center; gap:10px; padding:7px 8px; border-bottom:1px solid rgba(255,255,255,.08); font-family:var(--num); font-weight:800; font-size:17px}
+ol.rlist .rn{width:2.6ch; text-align:right; color:var(--muted)}
+ol.rlist li:nth-child(1) .rn{color:var(--gold)}
+ol.rlist li:nth-child(2) .rn{color:#dfe6ff}
+ol.rlist li:nth-child(3) .rn{color:#ff9a5a}
+ol.rlist .nm{flex:1; letter-spacing:.2em}
+ol.rlist .sc{text-align:right}
+ol.rlist li.me{background:rgba(255,63,164,.22); border-radius:10px; box-shadow:0 0 0 2px var(--pink) inset}
+ol.rlist li.me .nm::after{content:' ← YOU'; font-size:11px; letter-spacing:.05em; color:var(--pink)}
+#rankModal{position:fixed; inset:0; z-index:10; display:none; align-items:center; justify-content:center; padding:16px; background:rgba(10,7,24,.82)}
+#rankModal.on{display:flex}
+#rankModal .card{width:100%; max-width:420px; max-height:100%; overflow-y:auto; background:#16122e; border:2px solid var(--neon); border-radius:20px; padding:14px; box-shadow:0 0 30px rgba(60,242,255,.35)}
+#rankModal h3{margin:2px 0 10px; text-align:center; font-size:22px; color:var(--gold)}
+#rankModal .btn{margin-top:12px}
+
+/* center when it fits, scroll from the top when it doesn't (plain justify-content:center clips the top) */
+#title, #vsSetup{justify-content:flex-start}
+#title > *, #vsSetup > *{flex-shrink:0}
+#title > :first-child, #vsSetup > :first-child{margin-top:auto}
+#title > :last-child, #vsSetup > :last-child{margin-bottom:auto}
+
+/* ---------- difficulty ---------- */
+.diff{display:flex; gap:10px; align-items:center; justify-content:center}
+.diff .lab{font-size:13px; color:var(--muted); letter-spacing:.1em}
+.seg{display:flex; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.14); border-radius:14px; padding:4px; gap:4px}
+.seg button{min-height:44px; padding:8px 16px; border-radius:10px; font-weight:900; font-size:16px; color:var(--muted); background:transparent}
+.seg button.on{background:linear-gradient(135deg,var(--neon),#7a5cff); color:#0b0820}
+.seg button.on[data-d="hard"]{background:linear-gradient(135deg,var(--gold),var(--pink)); color:#2a0718}
+.dhint{font-size:12px; color:var(--muted); text-align:center; margin-top:-10px; min-height:1.2em}
+#arena.hard{display:block}
+#arena.hard .cell{position:absolute; border-radius:18px}
+.rtabs.dt{margin-bottom:6px}
+.rtabs.dt button{padding:7px 6px; font-size:13px}
+.rtabs.dt button.on[data-d="hard"]{border-color:var(--gold); background:rgba(255,210,60,.14)}
+
+/* ---------- versus ---------- */
+.btn.vsb{background:linear-gradient(90deg,#d8324a,#7a3cff 50%,#2a8cff); box-shadow:0 5px 0 #2a1450, 0 0 20px rgba(122,60,255,.45); font-size:19px; padding:14px}
+#vsSetup{justify-content:center; padding:22px; gap:16px; overflow-y:auto}
+#vsSetup h2{margin:0; text-align:center; font-size:32px}
+#vsSetup h2 .r{color:#ff5a6e} #vsSetup h2 .b{color:#5ab4ff}
+#versus{touch-action:none; gap:0}
+.half{flex:1; min-height:0; display:flex; flex-direction:column; padding:8px 12px; position:relative; transition:filter .2s}
+.half.red{transform:rotate(180deg); background:linear-gradient(0deg, rgba(255,59,90,.05), rgba(255,59,90,.22))}
+.half.blue{background:linear-gradient(180deg, rgba(42,140,255,.05), rgba(42,140,255,.22))}
+.half .vh{display:flex; align-items:center; gap:10px; padding:2px 2px 6px}
+.half .who{font-weight:900; font-size:15px; padding:3px 10px; border-radius:8px}
+.half.red .who{background:#ff3b5a} .half.blue .who{background:#2a8cff}
+.half .vsc{font-family:var(--num); font-weight:900; font-size:30px; margin-left:auto}
+.half .vband{border-radius:16px; padding:8px; text-align:center; background:#16122e; border:3px solid rgba(255,255,255,.35); font-size:clamp(20px,4.2vh,30px); font-weight:900; line-height:1.15}
+.half .vband .sub{font-size:12px; color:var(--muted); font-weight:700; min-height:1.2em; letter-spacing:.08em}
+.half .vband.need{border-color:var(--gold); animation:needpulse .9s ease-in-out infinite}
+.half .vband.need .sub{color:var(--gold)}
+.half .vband.ok{border-color:var(--lime)} .half .vband.ok .sub{color:var(--lime)}
+.half .varena{flex:1; min-height:0; display:grid; grid-template-columns:1fr 1fr; gap:10px; padding-top:8px}
+.half .varena .cell .d{font-size:min(30vw,17vh)}
+.half .varena .cell.small .d{font-size:min(10.5vw,6vh)}
+.half.locked .varena .cell{opacity:.28}
+.half.out{filter:brightness(.4) saturate(.5)}
+.half.out .vband .sub{color:#ff8a8a}
+.half.got{animation:got .45s ease-out}
+.half.red.got{box-shadow:inset 0 0 40px 8px rgba(255,90,110,.9)}
+.half.blue.got{box-shadow:inset 0 0 40px 8px rgba(90,180,255,.9)}
+@keyframes got{0%{filter:brightness(1.8)}100%{filter:brightness(1)}}
+.half.red.shake{animation:vshakeR .3s} .half.blue.shake{animation:vshake .3s}
+@keyframes vshake{25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+@keyframes vshakeR{25%{transform:rotate(180deg) translateX(-8px)}75%{transform:rotate(180deg) translateX(8px)}}
+#vMid{flex:none; display:flex; align-items:center; gap:10px; padding:4px 12px; background:#0a0718; border-top:2px solid #ff3b5a; border-bottom:2px solid #2a8cff}
+#vMid .vt{flex:1; height:8px; border-radius:6px; background:rgba(255,255,255,.12); overflow:hidden}
+#vMid .vt div{height:100%; background:linear-gradient(90deg,#ff3b5a,#7a3cff,#2a8cff); transform-origin:left}
+#vTime{font-family:var(--num); font-weight:800; font-size:15px; min-width:4.6ch; text-align:center}
+#vTime.sd{color:var(--gold)}
+#vQuit{padding:6px 10px; border-radius:10px; background:rgba(255,255,255,.1); font-size:12px; font-weight:900; min-height:36px}
+#vsResult{padding:18px 14px; gap:12px; overflow-y:auto}
+#vsResult > *{flex-shrink:0}
+#vsResult h2{margin:4px 0 0; text-align:center; font-size:36px}
+.vscore{text-align:center; font-family:var(--num); font-weight:900; font-size:44px}
+.vscore .r{color:#ff5a6e} .vscore .b{color:#5ab4ff}
+
 @media (prefers-reduced-motion: reduce){
+  .half.got,.half.shake{animation:none}
   #app.shake{animation:none}
   #edge{animation:none !important}
   #band.need{animation:none}
@@ -176,13 +288,58 @@ table.cmp thead th{font-size:14px; color:var(--gold)}
       1ラウンド <b>30秒</b>。<br>
       <b>A そのまま</b> → <b>B ヨシ！</b>（お題を指差し＝タップしてから答える）の順で遊んで、最後に自分の数字で比べる。
     </div>
+    <div class="diff"><span class="lab">難易度</span><div class="seg" id="diffSeg"><button type="button" data-d="normal">ふつう</button><button type="button" data-d="hard">むずかしい</button></div></div>
+    <div class="dhint" id="diffHint"></div>
     <button class="btn" id="startBtn">A → B で遊ぶ</button>
     <div class="row">
       <button class="btn sub" id="onlyA">Aだけ</button>
       <button class="btn sub" id="onlyB">Bだけ</button>
       <button class="btn sub" id="muteT" style="flex:none;width:64px">音</button>
     </div>
+    <button class="btn vsb" id="openVs">ふたりで対戦</button>
+    <button class="btn sub" id="openRank">ランキングを見る</button>
     <div class="best" id="bestT"></div>
+  </section>
+
+  <!-- VERSUS: setup -->
+  <section id="vsSetup" class="screen">
+    <h2><span class="r">赤</span> vs <span class="b">青</span></h2>
+    <div class="howto">
+      スマホを机に置いて、向かい合って遊ぶ。<b>上半分が赤</b>、<b>下半分が青</b>。<br>
+      ふたりに同じ問題。<b>先に正しい方をタップ</b>した側が 1点。<br>
+      まちがえると <b>お手つき</b>：その問題は押せなくなって −1点。<br>
+      先に <b>10点</b>、または <b>45秒</b> で多い方の勝ち。同点ならサドンデス。<br>
+      <span style="color:var(--muted);font-size:13px">対戦は「ふつう」固定。ランキングには載らない。</span>
+    </div>
+    <div class="diff"><span class="lab">指差し確認</span><div class="seg" id="vsYoshiSeg"><button type="button" data-y="0">なし</button><button type="button" data-y="1">あり</button></div></div>
+    <div class="dhint" id="vsYoshiHint"></div>
+    <button class="btn vsb" id="vsGo" style="font-size:22px;padding:18px">対戦スタート</button>
+    <button class="btn sub" id="vsBack">タイトル</button>
+  </section>
+
+  <!-- VERSUS: play -->
+  <section id="versus" class="screen">
+    <div class="half red" id="vh0">
+      <div class="vh"><span class="who">赤</span><span class="vsc" id="vsc0">0</span></div>
+      <div class="vband" data-p="0"><div class="vtxt">―</div><div class="sub"></div></div>
+      <div class="varena"><button class="cell" data-p="0" data-i="0"><span class="d"></span></button><button class="cell" data-p="0" data-i="1"><span class="d"></span></button></div>
+    </div>
+    <div id="vMid"><button id="vQuit">やめる</button><div class="vt"><div id="vBar"></div></div><span id="vTime">45</span></div>
+    <div class="half blue" id="vh1">
+      <div class="vh"><span class="who">青</span><span class="vsc" id="vsc1">0</span></div>
+      <div class="vband" data-p="1"><div class="vtxt">―</div><div class="sub"></div></div>
+      <div class="varena"><button class="cell" data-p="1" data-i="0"><span class="d"></span></button><button class="cell" data-p="1" data-i="1"><span class="d"></span></button></div>
+    </div>
+  </section>
+
+  <!-- VERSUS: result -->
+  <section id="vsResult" class="screen">
+    <h2 id="vsWin">―</h2>
+    <div class="vscore"><span class="r" id="vsR">0</span> − <span class="b" id="vsB">0</span></div>
+    <table class="cmp" id="vsCmp"></table>
+    <a class="btn x" id="vsShare" href="https://twitter.com/intent/tweet" target="_blank" rel="noopener noreferrer">Xでシェア</a>
+    <button class="btn vsb" id="vsAgain" style="font-size:22px;padding:18px">もう一回 対戦</button>
+    <div class="row"><button class="btn sub" id="vsSet">設定</button><button class="btn sub" id="vsTitle">タイトル</button></div>
   </section>
 
   <!-- BRIEF (before B) -->
@@ -217,6 +374,16 @@ table.cmp thead th{font-size:14px; color:var(--gold)}
     <div class="verdict" id="verdict"></div>
     <table class="cmp" id="cmp"></table>
     <div class="newbest" id="newbest"></div>
+    <a class="btn x" id="shareX" href="https://twitter.com/intent/tweet" target="_blank" rel="noopener noreferrer">Xでシェア</a>
+    <div class="reg" id="reg">
+      <div class="lab">ランキングに登録 ― 名前は英数3文字</div>
+      <div class="in">
+        <input id="nameIn" maxlength="3" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" placeholder="AAA" aria-label="名前（英数3文字）">
+        <button class="btn" id="regBtn">登録</button>
+      </div>
+      <div class="rmsg" id="regMsg"></div>
+    </div>
+    <details class="rk" id="rkRes"><summary>ランキング</summary><div class="rbody" id="rankRes"></div></details>
     <button class="btn" id="retry">もう一回（A → B）</button>
     <div class="row">
       <button class="btn sub" id="retryA">Aだけ</button>
@@ -230,6 +397,7 @@ table.cmp thead th{font-size:14px; color:var(--gold)}
 <canvas id="fx"></canvas>
 <div id="yoshiPop"></div>
 <div id="count"><div id="countTxt"></div></div>
+<div id="rankModal" role="dialog" aria-label="ランキング"><div class="card"><h3>ランキング</h3><div id="rankTitle"></div><button class="btn sub" id="closeRank">閉じる</button></div></div>
 
 <script>
 // ======================= LOGIC-BEGIN (pure; tested from Node) =======================
@@ -305,6 +473,81 @@ function compareLine(A, B){
   if (A.inc && B.inc) inc = `食い違い問題だけ: ミス率 ${pct(A.incMissRate)} → ${pct(B.incMissRate)}`;
   return { main: `ヨシ！すると、${sp}、${ms}。`, inc };
 }
+// share text for X. A/B = summaries of the modes played THIS time (null if not played). plain text, honest.
+function shareText(A, B, hard){
+  const has = s => !!(s && s.n);
+  const L = [], H = hard ? '（むずかしい）' : '';
+  if (has(A) && has(B)){
+    const d = B.avg - A.avg;
+    const sp = Math.abs(d) < 0.005 ? '速さはほぼ同じで' : `1問あたり${Math.abs(d).toFixed(2)}秒${d > 0 ? '遅く' : '速く'}なって`;
+    let ms;
+    if (B.missRate < A.missRate)        ms = `ミス率 ${pct(A.missRate)} → ${pct(B.missRate)}。`;
+    else if (B.missRate === A.missRate) ms = `ミス率は ${pct(A.missRate)} のまま。`;
+    else                                ms = `ミス率 ${pct(A.missRate)} → ${pct(B.missRate)}、今回は下がらなかった。`;
+    L.push(`ヨシ！すると ${sp}、${ms}`);
+    L.push(`A ${A.score}点 / B ${B.score}点${H}`);
+  } else if (has(A)) L.push(`ヨシ！反射${H} Aそのまま ${A.score}点（正答率${pct(A.acc)}）`);
+  else if (has(B))   L.push(`ヨシ！反射${H} Bヨシ！モード ${B.score}点（正答率${pct(B.acc)}）`);
+  else               L.push(`ヨシ！反射${H} で遊んだ`);
+  L.push('#ヨシ #指差呼称');
+  return L.join('\n');
+}
+// ---- "むずかしい": each digit gets its own square tap area at a random, non-overlapping spot ----
+const HARD_GAP = 12;          // px between the two tap areas
+const HARD_MIN = 88;          // min tap-area side (px)
+const HARD_RATIO = 2.0;       // big/small font ratio (ふつう is ~2.9). still clearly tellable
+const HARD_TILT = 15;         // ± degrees
+// side of each square for an available W×H region. stays >= HARD_MIN unless the region itself is smaller
+function hardSize(W, H){
+  let S = Math.max(HARD_MIN, Math.min(170, 0.42*Math.min(W, H)));
+  return Math.max(0, Math.min(S, Math.min(W, H), (Math.max(W, H) - HARD_GAP)/2));
+}
+// two S×S squares inside [0,W]×[0,H], separated by >= HARD_GAP on x or y. returns top-left corners
+function placeTwo(W, H, S, rnd){
+  const fx = () => rnd()*Math.max(0, W - S), fy = () => rnd()*Math.max(0, H - S);
+  for (let k = 0; k < 60; k++){
+    const a = { x:fx(), y:fy() }, b = { x:fx(), y:fy() };
+    if (Math.abs(a.x - b.x) >= S + HARD_GAP || Math.abs(a.y - b.y) >= S + HARD_GAP) return rnd() < .5 ? [a, b] : [b, a];
+  }
+  // fallback (rare): opposite ends of the long side
+  const p = W >= H ? [{ x:0, y:fy() }, { x:W - S, y:fy() }] : [{ x:fx(), y:0 }, { x:fx(), y:H - S }];
+  return rnd() < .5 ? p : [p[1], p[0]];
+}
+const SHARE_URL = 'https://tnks1407.com/yoshi/';
+function shareHref(text){ return 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(SHARE_URL); }
+function cleanName(v){ let s = String(v || ''); try { s = s.normalize('NFKC'); } catch(e){} return s.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3); }
+// ---- versus (2 players on one device). p = 0 red (top, rotated) / 1 blue (bottom) ----
+const VS_TARGET = 10, VS_MS = 45000;
+function vsNew(needYoshi){
+  return { needYoshi:!!needYoshi, score:[0,0], ok:[0,0], miss:[0,0], rt:[0,0],
+           q:null, locked:[false,false], confirmed:[false,false], resolved:false, sudden:false, over:false, winner:null };
+}
+function vsSetQuestion(vs, q, now){ vs.q = q; q.t0 = now; vs.locked = [false,false]; vs.confirmed = [false,false]; vs.resolved = false; }
+function vsConfirm(vs, p){ if (!vs.q || vs.over || vs.resolved || vs.locked[p] || vs.confirmed[p]) return false; vs.confirmed[p] = true; return true; }
+// result: {ignored} | {blocked} | {ok:true, win} | {ok:false, both}
+function vsAnswer(vs, p, side, now){
+  if (!vs.q || vs.over || vs.resolved || vs.locked[p]) return { ignored:true };
+  if (vs.needYoshi && !vs.confirmed[p]) return { blocked:true };
+  if (side === correctSide(vs.q)){
+    vs.score[p]++; vs.ok[p]++; vs.rt[p] += now - vs.q.t0; vs.resolved = true;
+    if (vs.sudden || vs.score[p] >= VS_TARGET){ vs.over = true; vs.winner = p; }
+    return { ok:true, win:vs.over };
+  }
+  vs.miss[p]++; vs.score[p] = Math.max(0, vs.score[p] - 1); vs.locked[p] = true;
+  const both = vs.locked[0] && vs.locked[1];
+  if (both) vs.resolved = true;                        // nobody got it: drop the question
+  return { ok:false, both };
+}
+// time is up: higher score wins; a tie goes to sudden death (next correct answer wins)
+function vsTimeUp(vs){
+  if (vs.over) return;
+  if (vs.score[0] !== vs.score[1]){ vs.over = true; vs.winner = vs.score[0] > vs.score[1] ? 0 : 1; }
+  else vs.sudden = true;
+}
+function vsShareText(vs){
+  const w = vs.winner === 0 ? '赤の勝ち' : vs.winner === 1 ? '青の勝ち' : '';
+  return `ヨシ！対戦 赤${vs.score[0]}−青${vs.score[1]}${w ? ' ' + w : ''}（お手つき 赤${vs.miss[0]}・青${vs.miss[1]}）${vs.needYoshi ? '\n指差し確認あり' : ''}\n#ヨシ #指差呼称`;
+}
 // ======================= LOGIC-END =======================
 
 if (typeof window !== 'undefined') (function(){
@@ -317,11 +560,25 @@ const store = {
   get(){ try { return JSON.parse(localStorage.getItem('yoshi-best') || '{}') || {}; } catch(e){ return {}; } },
   set(o){ try { localStorage.setItem('yoshi-best', JSON.stringify(o)); } catch(e){} }
 };
+// difficulty: 'normal' (unchanged original) / 'hard'. hard bests live in the same object as 'A-hard'/'B-hard'
+let diff = 'normal'; try { if (localStorage.getItem('yoshi-diff') === 'hard') diff = 'hard'; } catch(e){}
+let playDiff = diff;                                // difficulty of the run being played / shown
+const bk = (m, d) => d === 'hard' ? m + '-hard' : m;
 function renderBest(){
   const b = store.get();
-  $('#bestT').textContent = `自己ベスト  A: ${b.A || 0}  /  B: ${b.B || 0}`;
+  $('#bestT').textContent = diff === 'hard'
+    ? `自己ベスト（むずかしい）  A: ${b['A-hard'] || 0}  /  B: ${b['B-hard'] || 0}`
+    : `自己ベスト  A: ${b.A || 0}  /  B: ${b.B || 0}`;
 }
-renderBest();
+function setDiff(d, save){
+  diff = d === 'hard' ? 'hard' : 'normal';
+  if (save){ try { localStorage.setItem('yoshi-diff', diff); } catch(e){} }
+  document.querySelectorAll('#diffSeg button').forEach(b => b.classList.toggle('on', b.dataset.d === diff));
+  $('#diffHint').textContent = diff === 'hard' ? '数字の位置と傾きが毎問変わる。文字の大小差も少し小さい' : '';
+  renderBest();
+}
+document.querySelectorAll('#diffSeg button').forEach(b => b.addEventListener('click', () => setDiff(b.dataset.d, true)));
+setDiff(diff, false);
 
 // ---------- audio ----------
 let AC = null, master = null;
@@ -432,13 +689,14 @@ function yoshiPop(txt){ const el = $('#yoshiPop'); el.textContent = txt; restart
 let plan = [], planIdx = 0, mode = 'A', st = null, q = null, hist = [], playing = false, tEnd = 0, inputLock = false;
 let results = { A:null, B:null };
 let isDemo = false;
-const cells = [...document.querySelectorAll('.cell')];
+const cells = [...document.querySelectorAll('#arena .cell')];
 function show(id){ parts = []; cx.clearRect(0,0,cv.width,cv.height); document.querySelectorAll('.screen').forEach(e => e.classList.toggle('on', e.id === id)); }
 
 function startFlow(modes){
   ensureAudio();
   plan = modes; planIdx = 0;
-  if (modes.length === 2) results = { A:null, B:null };
+  if (modes.length === 2 || playDiff !== diff) results = { A:null, B:null };   // never compare across difficulties
+  playDiff = diff;
   try { history.replaceState(null, '', modes.length === 2 ? '#ab' : '#' + modes[0].toLowerCase()); } catch(e){}
   if (modes[0] === 'B' && modes.length === 1) brief(); else countdown();
 }
@@ -465,12 +723,29 @@ function countdown(){
 }
 function prepHud(){
   mode = plan[planIdx];
-  $('#modeTag').textContent = mode === 'A' ? 'A そのまま' : 'B ヨシ！';
+  $('#modeTag').textContent = (mode === 'A' ? 'A そのまま' : 'B ヨシ！') + (playDiff === 'hard' ? '・難' : '');
+  $('#arena').classList.toggle('hard', playDiff === 'hard');
+  if (playDiff !== 'hard') cells.forEach(c => { c.removeAttribute('style'); c.querySelector('.d').removeAttribute('style'); });
   $('#score').textContent = '0';
   $('#timeBar').style.transform = 'scaleX(1)'; $('#timeTxt').textContent = '30';
   $('#foot').innerHTML = mode === 'A' ? '出たら即タップ' : 'まず <b>お題をタップ</b> してから';
 }
-function renderIdle(){ $('#bandTxt').textContent = '―'; $('#bandSub').textContent = ''; $('#band').className = ''; cells.forEach(c => { c.className = 'cell'; c.querySelector('.d').textContent = ''; }); }
+function renderIdle(){ $('#bandTxt').textContent = '―'; $('#bandSub').textContent = ''; $('#band').className = ''; cells.forEach(c => { c.className = 'cell'; c.querySelector('.d').textContent = ''; }); if (playDiff === 'hard') layoutHard(null); }
+// hard: place the two tap squares at random inside the arena's padding box, tilt the digits
+function layoutHard(qq){
+  const ar = $('#arena'), cs = getComputedStyle(ar);
+  const pl = parseFloat(cs.paddingLeft), pr = parseFloat(cs.paddingRight), pt = parseFloat(cs.paddingTop), pb = parseFloat(cs.paddingBottom);
+  const W = ar.clientWidth - pl - pr, H = ar.clientHeight - pt - pb;
+  const S = hardSize(W, H), pos = placeTwo(W, H, S, Math.random);
+  cells.forEach((c, i) => {
+    c.style.left = (pl + pos[i].x) + 'px'; c.style.top = (pt + pos[i].y) + 'px';
+    c.style.width = c.style.height = S + 'px';
+    const d = c.querySelector('.d');
+    d.style.fontSize = (qq && i === qq.bigFontSide ? S*0.8 : S*0.8/HARD_RATIO) + 'px';
+    d.style.rotate = qq ? ((Math.random()*2 - 1)*HARD_TILT).toFixed(1) + 'deg' : '0deg';
+  });
+}
+addEventListener('resize', () => { if (playDiff === 'hard' && $('#play').classList.contains('on') && q) layoutHard(q); });
 function beginRound(){
   st = newStats(); hist = []; feverLv = 0; setFever(0);
   playing = true; inputLock = false; tEnd = performance.now() + ROUND_MS;
@@ -496,6 +771,7 @@ function nextQuestion(){
     c.querySelector('.d').textContent = q.vals[i];
     restartAnim(c, 'pop');
   });
+  if (playDiff === 'hard') layoutHard(q);
   q.t0 = performance.now();
 }
 function onBand(e){
@@ -545,9 +821,10 @@ function showResult(){
   show('result');
   const A = results.A, B = results.B;
   const best = store.get(); let nb = [];
-  for (const m of plan){ const s = results[m]; if (s && s.score > (best[m] || 0)){ best[m] = s.score; nb.push(m); } }
+  const K = m => bk(m, playDiff), HD = playDiff === 'hard' ? '（むずかしい）' : '';
+  for (const m of plan){ const s = results[m]; if (s && s.score > (best[K(m)] || 0)){ best[K(m)] = s.score; nb.push(m); } }
   if (!isDemo) store.set(best); renderBest();
-  $('#newbest').textContent = nb.length ? `自己ベスト更新！ (${nb.join(' / ')})` : `自己ベスト  A: ${best.A || 0} / B: ${best.B || 0}`;
+  $('#newbest').textContent = nb.length ? `自己ベスト更新！${HD} (${nb.join(' / ')})` : `自己ベスト${HD}  A: ${best[K('A')] || 0} / B: ${best[K('B')] || 0}`;
   $('#titles').innerHTML = ['A','B'].map(m => `<div class="ttl"><div class="m">${m === 'A' ? 'A そのまま' : 'B ヨシ！'}</div><div class="t">${results[m] ? titleFor(results[m]) : '未プレイ'}</div></div>`).join('');
   const c = compareLine(A, B);
   $('#verdict').innerHTML = c ? `${c.main}${c.inc ? `<span class="sm">${c.inc}</span>` : ''}` : 'A と B の両方を遊ぶと、ここに<br>自分の数字での比較が出るよ。';
@@ -564,7 +841,262 @@ function showResult(){
   const rows = [['正答率','acc'],['ミス数','miss'],['1問あたり平均','avg'],['食い違い問題のミス率','inc'],['解いた数','n'],['スコア','score'],['最大コンボ','combo']];
   $('#cmp').innerHTML = '<thead><tr><th></th><th>A そのまま</th><th>B ヨシ！</th></tr></thead><tbody>' +
     rows.map(([lab,k]) => `<tr><td>${lab}</td><td>${f(A,k)}</td><td>${f(B,k)}</td></tr>`).join('') + '</tbody>';
+  resultExtras();
 }
+
+// ---------- ranking + X share ----------
+// API: GET /rank?board=  /  POST /rank {board,name,score}. name = exactly 3 [A-Z0-9]. failures never break the game.
+const RANK_API = 'https://feedback.tnks1407.com/rank';
+const boardId = (m, d) => 'yoshi-' + m.toLowerCase() + (d === 'hard' ? '-hard' : '');
+async function rankFetch(opt){
+  const ac = new AbortController(); const tm = setTimeout(() => ac.abort(), 8000);
+  try {
+    const r = opt.body
+      ? await fetch(RANK_API, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(opt.body), signal:ac.signal, cache:'no-store' })
+      : await fetch(RANK_API + '?board=' + encodeURIComponent(opt.board), { signal:ac.signal, cache:'no-store' });
+    let d = null; try { d = await r.json(); } catch(e){}
+    return { ok:r.ok, status:r.status, data:d };
+  } catch(e){ return { ok:false, status:0, data:null }; }
+  finally { clearTimeout(tm); }
+}
+function failText(st){
+  if (st === 429) return '送りすぎ。少し待ってからもう一度';
+  if (st === 400) return '名前は英数3文字で';
+  if (st === 0)   return '通信できなかった';
+  return 'エラー ' + st;
+}
+// "me": rows I registered (name + best score per board), kept across visits
+const meStore = {
+  get(){ try { return JSON.parse(localStorage.getItem('yoshi-rank-me') || '{}') || {}; } catch(e){ return {}; } },
+  set(o){ try { localStorage.setItem('yoshi-rank-me', JSON.stringify(o)); } catch(e){} }
+};
+function rankBoard(root){
+  root.innerHTML = '<div class="rtabs dt"><button type="button" data-d="normal" class="on">ふつう</button><button type="button" data-d="hard">むずかしい</button></div>' +
+    '<div class="rtabs"><button type="button" data-m="A" class="on">A そのまま</button><button type="button" data-m="B">B ヨシ！</button></div><div class="rstat"></div><ol class="rlist"></ol>';
+  const stat = root.querySelector('.rstat'), list = root.querySelector('.rlist');
+  const tabs = [...root.querySelectorAll('.rtabs button[data-m]')], dtabs = [...root.querySelectorAll('.rtabs button[data-d]')];
+  let cur = 'A', curD = 'normal', seq = 0;
+  function setTab(m, d){
+    if (m) cur = m; if (d) curD = d;
+    tabs.forEach(b => b.classList.toggle('on', b.dataset.m === cur));
+    dtabs.forEach(b => b.classList.toggle('on', b.dataset.d === curD));
+  }
+  function render(top){
+    list.textContent = '';
+    const rows = (Array.isArray(top) ? top : []).slice(0, 10);
+    if (!rows.length){ stat.textContent = 'まだ誰もいない。最初の一人になろう'; return; }
+    stat.textContent = '';
+    const me = meStore.get()[boardId(cur, curD)];
+    rows.forEach((e, i) => {
+      const li = document.createElement('li');
+      const name = String(e && e.name != null ? e.name : '').slice(0, 12), score = Number(e && e.score) || 0;
+      if (me && me.name === name && me.score === score) li.className = 'me';
+      const rn = document.createElement('span'); rn.className = 'rn'; rn.textContent = i + 1;
+      const nm = document.createElement('span'); nm.className = 'nm'; nm.textContent = name;
+      const sc = document.createElement('span'); sc.className = 'sc'; sc.textContent = score;
+      li.append(rn, nm, sc); list.appendChild(li);
+    });
+  }
+  async function load(m, d){
+    setTab(m, d);
+    const my = ++seq;
+    list.textContent = ''; stat.textContent = '読み込み中…';
+    const r = await rankFetch({ board:boardId(cur, curD) });
+    if (my !== seq) return;
+    if (!r.ok || !r.data || !Array.isArray(r.data.top)){ stat.textContent = 'ランキングを読めなかった（' + failText(r.status) + '）。タブを押すと再読み込み'; return; }
+    render(r.data.top);
+  }
+  function showTop(m, d, top){ setTab(m, d); seq++; render(top); }
+  tabs.forEach(b => b.addEventListener('click', () => load(b.dataset.m)));
+  dtabs.forEach(b => b.addEventListener('click', () => load(null, b.dataset.d)));
+  return { load, showTop, setTab };
+}
+const rkRes = rankBoard($('#rankRes')), rkTitle = rankBoard($('#rankTitle'));
+const rkDet = $('#rkRes');
+rkDet.addEventListener('toggle', () => { if (rkDet.open && !rkDet.dataset.filled){ rkDet.dataset.filled = '1'; rkRes.load(); } });
+$('#openRank').addEventListener('click', () => { $('#rankModal').classList.add('on'); rkTitle.load(null, diff); });
+$('#closeRank').addEventListener('click', () => $('#rankModal').classList.remove('on'));
+$('#rankModal').addEventListener('click', e => { if (e.target.id === 'rankModal') $('#rankModal').classList.remove('on'); });
+addEventListener('keydown', e => { if (e.key === 'Escape') $('#rankModal').classList.remove('on'); });
+
+// name input: arcade style, 3 chars [A-Z0-9], remembered
+const nameIn = $('#nameIn');
+try { nameIn.value = cleanName(localStorage.getItem('yoshi-name')); } catch(e){}
+let composing = false;
+nameIn.addEventListener('compositionstart', () => composing = true);
+nameIn.addEventListener('compositionend', () => { composing = false; nameIn.value = cleanName(nameIn.value); });
+nameIn.addEventListener('input', () => { if (!composing){ const v = cleanName(nameIn.value); if (v !== nameIn.value) nameIn.value = v; } });
+nameIn.addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); $('#regBtn').click(); } });
+
+let reg = { boards:[], done:{}, rank:{}, busy:false };
+function regMsg(t, cls){ const el = $('#regMsg'); el.textContent = t; el.className = 'rmsg' + (cls ? ' ' + cls : ''); }
+function regRankLine(){ return reg.boards.filter(m => reg.done[m]).map(m => `${m} ${reg.rank[m] ? reg.rank[m] + '位' : '圏外'}`).join(' / '); }
+// called at the end of showResult(): reset per-result state
+function resultExtras(){
+  const played = ['A','B'].filter(m => plan.includes(m) && results[m] && results[m].n);
+  const pA = played.includes('A') ? results.A : null, pB = played.includes('B') ? results.B : null;
+  $('#shareX').href = shareHref(shareText(pA, pB, playDiff === 'hard'));
+  reg = { boards: played.filter(m => results[m].score > 0), diff: playDiff, done:{}, rank:{}, busy:false };
+  rkRes.setTab(played[0] || 'A', playDiff);
+  $('#reg').style.display = isDemo ? 'none' : '';     // demo/bot scores never reach the board
+  const btn = $('#regBtn');
+  btn.disabled = !reg.boards.length; btn.textContent = '登録';
+  regMsg(reg.boards.length ? `登録するスコア: ${reg.boards.map(m => `${m} ${results[m].score}点`).join(' / ')}` : '0点は登録できない');
+  rkDet.open = false; delete rkDet.dataset.filled;
+}
+$('#regBtn').addEventListener('click', async () => {
+  if (isDemo || reg.busy) return;
+  const todo = reg.boards.filter(m => !reg.done[m]);
+  if (!todo.length) return;
+  const name = cleanName(nameIn.value); nameIn.value = name;
+  if (name.length !== 3){ regMsg('名前は英数3文字で', 'bad'); nameIn.focus(); return; }
+  try { localStorage.setItem('yoshi-name', name); } catch(e){}
+  const btn = $('#regBtn'); reg.busy = true; btn.disabled = true; btn.textContent = '送信中…'; regMsg('');
+  const fails = []; let lastTop = null, lastM = null;
+  const mine = reg;                                   // a new result may replace `reg` while we wait
+  for (const m of todo){
+    const r = await rankFetch({ body:{ board:boardId(m, mine.diff), name, score:results[m].score } });
+    if (r.ok && r.data && r.data.ok){
+      mine.done[m] = true; mine.rank[m] = r.data.rank;
+      const me = meStore.get(); me[boardId(m, mine.diff)] = { name, score: Number(r.data.best) || results[m].score }; meStore.set(me);
+      if (Array.isArray(r.data.top)){ lastTop = r.data.top; lastM = m; }
+    } else { fails.push(`${m}: ${failText(r.status)}`); if (r.status === 429) break; }
+  }
+  mine.busy = false;
+  if (mine !== reg) return;
+  const line = regRankLine();
+  if (!fails.length){ btn.textContent = '登録済み'; regMsg(line, 'good'); }
+  else { btn.disabled = false; btn.textContent = 'もう一度'; regMsg((line ? line + ' ／ ' : '') + '登録できなかった（' + fails.join('、') + '）', 'bad'); }
+  if (lastTop){ rkDet.open = true; rkDet.dataset.filled = '1'; rkRes.showTop(lastM, mine.diff, lastTop); }
+});
+
+// ---------- versus (one device, two players) ----------
+let vs = null, vsPlaying = false, vsEnd = 0, vsHist = [], vsNextT = null;
+let vsYoshi = false; try { vsYoshi = localStorage.getItem('yoshi-vs-yoshi') === '1'; } catch(e){}
+const vH = [$('#vh0'), $('#vh1')];
+const vBand = [...document.querySelectorAll('#versus .vband')];
+const vCells = [[...vH[0].querySelectorAll('.cell')], [...vH[1].querySelectorAll('.cell')]];
+function vsSetYoshi(y){
+  vsYoshi = !!y; try { localStorage.setItem('yoshi-vs-yoshi', vsYoshi ? '1' : '0'); } catch(e){}
+  document.querySelectorAll('#vsYoshiSeg button').forEach(b => b.classList.toggle('on', (b.dataset.y === '1') === vsYoshi));
+  $('#vsYoshiHint').textContent = vsYoshi ? '毎問、自分の帯をタップ（ヨシ！）してから数字を押す' : '';
+}
+document.querySelectorAll('#vsYoshiSeg button').forEach(b => b.addEventListener('click', () => vsSetYoshi(b.dataset.y === '1')));
+vsSetYoshi(vsYoshi);
+function vsSetup(){ vsStop(); show('vsSetup'); try { history.replaceState(null, '', '#vs'); } catch(e){} }
+function vsStop(){ vsPlaying = false; bgmStop(); if (vsNextT){ clearTimeout(vsNextT); vsNextT = null; } $('#count').classList.remove('on'); }
+function vsRenderScore(){ $('#vsc0').textContent = vs.score[0]; $('#vsc1').textContent = vs.score[1]; }
+function vsIdle(){
+  for (let p = 0; p < 2; p++){
+    vH[p].classList.remove('out','locked','got'); vBand[p].className = 'vband';
+    vBand[p].querySelector('.vtxt').textContent = '―'; vBand[p].querySelector('.sub').textContent = '';
+    vCells[p].forEach(c => { c.className = 'cell'; c.querySelector('.d').textContent = ''; });
+  }
+}
+function vsStart(){
+  ensureAudio(); vsStop();
+  vs = vsNew(vsYoshi); vsHist = [];
+  show('versus'); vsIdle(); vsRenderScore();
+  $('#vBar').style.transform = 'scaleX(1)'; $('#vTime').textContent = '45'; $('#vTime').className = '';
+  try { history.replaceState(null, '', '#vs'); } catch(e){}
+  const ov = $('#count'), t = $('#countTxt'); ov.classList.add('on');
+  const seq = ['3','2','1','ヨシ！']; let i = 0;
+  const step = () => {
+    if (!$('#versus').classList.contains('on')) return;
+    if (i >= seq.length){ ov.classList.remove('on'); vsPlaying = true; vsEnd = performance.now() + VS_MS; bgmStart(); vsNext(); requestAnimationFrame(vsTick); return; }
+    t.textContent = seq[i]; t.className = i === 3 ? 'word' : ''; restartAnim(t, 'tick'); sfx.count(i === 3);
+    i++; setTimeout(step, i === 4 ? 650 : 420);
+  };
+  step();
+}
+function vsTick(){
+  if (!vsPlaying) return;
+  if (!vs.sudden){
+    const left = vsEnd - performance.now();
+    if (left <= 0){
+      vsTimeUp(vs);
+      if (vs.over){ vsFinish(); return; }
+      $('#vBar').style.transform = 'scaleX(0)'; $('#vTime').textContent = 'SD'; $('#vTime').className = 'sd';
+      sfx.fever(); vsNext();                             // tie: fresh sudden-death question
+    } else {
+      $('#vBar').style.transform = `scaleX(${left/VS_MS})`;
+      $('#vTime').textContent = (left/1000).toFixed(left < 10000 ? 1 : 0);
+    }
+  }
+  requestAnimationFrame(vsTick);
+}
+function vsNext(){
+  if (vsNextT){ clearTimeout(vsNextT); vsNextT = null; }
+  const qq = makeQuestion(Math.random, vsHist); vsHist.push(qq.task); if (vsHist.length > 8) vsHist.shift();
+  vsSetQuestion(vs, qq, performance.now());
+  const word = qq.task === 'num' ? '数字が大きい方' : '文字が大きい方';
+  for (let p = 0; p < 2; p++){
+    vH[p].classList.remove('out','got');
+    vH[p].classList.toggle('locked', vs.needYoshi);
+    vBand[p].className = 'vband' + (vs.needYoshi ? ' need' : '');
+    vBand[p].querySelector('.vtxt').textContent = word;
+    vBand[p].querySelector('.sub').textContent = vs.sudden ? 'サドンデス！ 先に取った方の勝ち' : vs.needYoshi ? '指差して確認 ▶ タップ' : '';
+    vCells[p].forEach((c, i) => {
+      c.className = 'cell ' + (i === qq.bigFontSide ? 'big' : 'small');
+      c.querySelector('.d').textContent = qq.vals[i];
+      restartAnim(c, 'pop');
+    });
+  }
+}
+function vsOnBand(e){
+  if (!vsPlaying) return;
+  const p = +e.currentTarget.dataset.p;
+  if (!vs.needYoshi || !vsConfirm(vs, p)) return;
+  sfx.yoshi(); vibrate(15);
+  vH[p].classList.remove('locked'); vBand[p].className = 'vband ok'; vBand[p].querySelector('.sub').textContent = 'ヨシ！';
+}
+function vsOnCell(e){
+  if (!vsPlaying) return;
+  const c = e.currentTarget, p = +c.dataset.p, i = +c.dataset.i;
+  const r = vsAnswer(vs, p, i, performance.now());
+  if (r.ignored) return;
+  if (r.blocked){ restartAnim(vBand[p], 'nudge'); sfx.block(); return; }
+  const rect = c.getBoundingClientRect();
+  if (r.ok){
+    sfx.ok(Math.min(vs.score[p] + 1, 11)); vibrate(20);
+    burst(rect.left + rect.width/2, rect.top + rect.height/2, 26, true);
+    vsRenderScore(); restartAnim(vH[p], 'got');
+    vCells[p][i].classList.add('right');
+    vH[1-p].classList.add('out');
+    if (r.win){ vsPlaying = false; bgmStop(); setTimeout(vsFinish, 500); return; }
+    vsNextT = setTimeout(vsNext, 220);
+  } else {
+    sfx.miss(); vibrate([60,40,60]);
+    vsRenderScore(); c.classList.add('wrong');
+    vH[p].classList.add('out'); restartAnim(vH[p], 'shake');
+    vBand[p].querySelector('.sub').textContent = 'お手つき！ −1';
+    if (r.both){ vsNextT = setTimeout(vsNext, 420); }
+  }
+}
+// pointerdown per element: each finger is its own pointer, so both sides can press at the same time
+vBand.forEach(b => b.addEventListener('pointerdown', vsOnBand));
+vCells.flat().forEach(c => c.addEventListener('pointerdown', vsOnCell));
+$('#versus').addEventListener('contextmenu', e => e.preventDefault());
+function vsFinish(){
+  vsStop(); sfx.end();
+  show('vsResult');
+  const w = vs.winner;
+  $('#vsWin').textContent = w === 0 ? '赤の勝ち！' : w === 1 ? '青の勝ち！' : '引き分け';
+  $('#vsWin').style.color = w === 0 ? '#ff5a6e' : w === 1 ? '#5ab4ff' : '';
+  $('#vsR').textContent = vs.score[0]; $('#vsB').textContent = vs.score[1];
+  const avg = p => vs.ok[p] ? (vs.rt[p]/vs.ok[p]/1000).toFixed(2) + 's' : '—';
+  const rows = [['得点', p => vs.score[p]], ['正解数', p => vs.ok[p]], ['お手つき', p => vs.miss[p]], ['平均反応時間（正解）', avg]];
+  $('#vsCmp').innerHTML = '<thead><tr><th></th><th style="color:#ff5a6e">赤</th><th style="color:#5ab4ff">青</th></tr></thead><tbody>' +
+    rows.map(([l, f]) => `<tr><td>${l}</td><td>${f(0)}</td><td>${f(1)}</td></tr>`).join('') + '</tbody>';
+  $('#vsShare').href = shareHref(vsShareText(vs));
+}
+$('#openVs').addEventListener('click', vsSetup);
+$('#vsBack').addEventListener('click', () => { show('title'); try { history.replaceState(null, '', location.pathname); } catch(e){} });
+$('#vsGo').addEventListener('click', vsStart);
+$('#vsAgain').addEventListener('click', vsStart);
+$('#vsSet').addEventListener('click', vsSetup);
+$('#vsTitle').addEventListener('click', () => { show('title'); try { history.replaceState(null, '', location.pathname); } catch(e){} });
+$('#vQuit').addEventListener('click', () => { vsStop(); vsSetup(); });
 
 let startModes = ['A','B'];
 $('#startBtn').addEventListener('click', () => startFlow(startModes));
@@ -583,6 +1115,20 @@ if (h === '#b'){ startModes = ['B']; $('#startBtn').textContent = 'B ヨシ！ �
 // preview for screenshots: ?demo=play / ?demo=result
 const demo = new URLSearchParams(location.search).get('demo');
 isDemo = !!demo;
+if (h === '#vs' && !demo) vsSetup();
+// versus previews: ?demo=vs (mid-game) / ?demo=vs-result
+if (demo === 'vs' || demo === 'vs-result'){
+  vs = vsNew(new URLSearchParams(location.search).has('yoshi')); vsHist = [];
+  vs.score = [6,4]; vs.ok = [8,6]; vs.miss = [2,2]; vs.rt = [8*820, 6*910];
+  if (demo === 'vs'){
+    show('versus'); vsIdle(); vsRenderScore(); vsNext();
+    $('#vBar').style.transform = 'scaleX(.42)'; $('#vTime').textContent = '19';
+    vCells[0][correctSide(vs.q)].classList.add('right'); vH[0].classList.add('got'); vH[1].classList.add('out');
+    vBand[1].querySelector('.sub').textContent = 'お手つき！ −1';
+  } else { vs.score = [10,7]; vs.ok = [11,8]; vs.miss = [1,4]; vs.rt = [11*780, 8*930]; vs.winner = 0; vs.over = true; vsFinish(); }
+}
+if (new URLSearchParams(location.search).has('hard')) playDiff = 'hard';
+if (demo === 'hard' || demo === 'hard-a'){ playDiff = 'hard'; plan = [demo === 'hard' ? 'B' : 'A']; planIdx = 0; show('play'); prepHud(); st = newStats(); hist = []; nextQuestion(); }
 if (demo === 'play'){ plan = ['B']; planIdx = 0; show('play'); prepHud(); mode = 'B'; st = newStats(); hist = []; nextQuestion(); }
 if (demo === 'result'){
   plan = ['A','B'];
