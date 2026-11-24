@@ -31,16 +31,26 @@ footer{color:var(--faint);font-size:12px;text-align:center;margin-top:10px}
 .hidden{display:none!important}
 
 /* ---- game screen ---- */
-#game{height:100vh;height:100dvh;display:flex;flex-direction:column;padding:6px 8px calc(6px + env(safe-area-inset-bottom));gap:6px;max-width:560px;margin:0 auto}
+/* 操作は指の届く画面端へ。サイコロは本体そのものを押す（上半分＝▲、下半分＝▼）、決定はパネルの高さいっぱい。 */
+#game{--dieH:clamp(124px,19vh,170px);--goW:clamp(88px,24vw,120px);
+  height:100vh;height:100dvh;display:flex;flex-direction:column;gap:8px;max-width:560px;margin:0 auto;touch-action:manipulation;
+  padding:calc(4px + env(safe-area-inset-top)) calc(4px + env(safe-area-inset-right)) calc(4px + env(safe-area-inset-bottom)) calc(4px + env(safe-area-inset-left))}
 body.playing header.site, body.playing .lead, body.playing footer, body.playing #menu, body.playing #result{display:none}
 body.playing .wrap{padding:0;max-width:none}
-.bar{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);flex:0 0 auto;flex-wrap:wrap}
+body.playing{overscroll-behavior:none}
+.bar{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted);flex:0 0 auto;flex-wrap:wrap;min-height:40px}
 .bar .stat{font-family:var(--mono);color:var(--text);font-size:15px}
 .bar .chip{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:4px 7px}
 .bar .sp{flex:1}
-.mini{border:1px solid var(--border);background:#fff;border-radius:8px;padding:5px 8px;font-size:13px}
+.mini{border:1px solid var(--border);background:#fff;border-radius:8px;padding:0 10px;font-size:13px;min-height:36px;min-width:44px}
 .mini.on{background:#fff6ea;border-color:var(--amber)}
+.mini.warn{background:var(--red);border-color:var(--red);color:#fff}
+.vsbar{justify-content:space-between;flex-wrap:nowrap;gap:4px;margin-bottom:4px;font-family:var(--mono);font-size:15px;color:var(--text)}
+.vsbar .r{color:var(--red);font-weight:700} .vsbar .b{color:var(--blue);font-weight:700}
+.vsbar #gTime{min-width:3.5em;text-align:center}
+.vsbar>span:last-child{display:flex;gap:4px}
 #boardBox{flex:1 1 auto;min-height:0;display:flex;align-items:center;justify-content:center}
+body.playing:not(.vs) #boardBox{align-items:flex-end}
 .board{position:relative;display:grid;grid-template-columns:repeat(5,1fr);grid-template-rows:repeat(5,1fr);gap:4px;background:var(--border);border-radius:12px;padding:4px}
 .cell{background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;color:var(--text);transition:background .2s,color .2s,transform .2s;position:relative}
 .cell.t0{background:var(--teal);color:#fff}
@@ -51,34 +61,35 @@ body.playing .wrap{padding:0;max-width:none}
 .cell .no{position:absolute;top:2px;left:4px;font-size:10px;font-weight:400;opacity:.85}
 .board svg{position:absolute;inset:4px;width:calc(100% - 8px);height:calc(100% - 8px);pointer-events:none}
 
-.panel{flex:0 0 auto;background:var(--surface);border:2px solid var(--border);border-radius:14px;padding:6px}
+.panel{flex:0 0 auto;background:var(--surface);border:2px solid var(--border);border-radius:14px;padding:5px;
+  display:grid;grid-template-columns:1fr var(--goW);grid-template-areas:"info go" "dice go";gap:5px 6px;touch-action:none;user-select:none;-webkit-user-select:none}
+.panel.lefty{grid-template-columns:var(--goW) 1fr;grid-template-areas:"go info" "go dice"}
 .panel.c0{border-color:var(--teal)} .panel.cr{border-color:var(--red)} .panel.cb{border-color:var(--blue)}
 .panel.rot{transform:rotate(180deg)}
 .panel.shake{animation:shake .35s}
 @keyframes shake{0%,100%{translate:0}20%{translate:-8px}40%{translate:8px}60%{translate:-5px}80%{translate:5px}}
 .panel.miss{background:#fbe9e4}
-.pinfo{display:flex;align-items:baseline;justify-content:space-between;padding:0 4px 4px;gap:6px}
-.pinfo .score{font-size:14px;font-weight:700}
+.pinfo{grid-area:info;position:relative;display:flex;align-items:center;gap:6px;padding:0 4px;min-height:34px;min-width:0}
+.pinfo .score{font-size:14px;font-weight:700;white-space:nowrap}
+.pinfo .score:empty{display:none}
 .panel.cr .score{color:var(--red)} .panel.cb .score{color:var(--blue)} .panel.c0 .score{color:var(--teal)}
-.pinfo .expr{font-family:var(--mono);font-size:26px;font-weight:700;letter-spacing:.02em;white-space:nowrap}
+.pinfo .expr{flex:1;text-align:center;font-family:var(--mono);font-size:clamp(21px,7vw,30px);font-weight:700;letter-spacing:.02em;white-space:nowrap}
 .pinfo .expr .q{color:var(--faint)}
-.pinfo .msg{font-size:13px;color:var(--red);min-width:3em;text-align:right}
-.dicerow{display:grid;grid-template-columns:1fr 1fr 1fr 1.1fr;gap:6px}
-.die{display:flex;flex-direction:column;border-radius:12px;background:#fff;border:2px solid var(--border);overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
-.die button{border:0;background:#f1ece3;font-size:15px;padding:6px 0;color:var(--muted)}
-.die button:active{background:#e6dfd3}
-.die .face{flex:1;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:34px;min-height:56px;cursor:ns-resize}
+.pinfo .msg{position:absolute;right:2px;top:50%;translate:0 -50%;font-size:14px;font-weight:700;color:#fff;background:var(--red);border-radius:8px;padding:3px 8px;pointer-events:none}
+.pinfo .msg:empty{display:none}
+.dice{grid-area:dice;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.die{position:relative;height:var(--dieH);display:grid;grid-template-rows:1fr 1fr;border-radius:12px;background:#fff;border:2px solid var(--border);overflow:hidden;touch-action:none;cursor:ns-resize}
+.die button{border:0;margin:0;background:#fff;font-size:14px;color:var(--faint);display:flex;justify-content:center;padding:4px 0;touch-action:none}
+.die .up{align-items:flex-start;border-bottom:1px dashed #eee6da}
+.die .dn{align-items:flex-end}
+.die button.press{background:#f1ece3}
+.die .face{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:clamp(34px,11vw,46px);pointer-events:none}
 .die.d1 .face{color:var(--amber)}
 .die.flash .face{animation:flash .18s}
-@keyframes flash{0%{background:#fff6ea}100%{background:#fff}}
-.go{border:0;border-radius:12px;font-size:22px;font-weight:700;color:#fff;box-shadow:0 3px 0 rgba(0,0,0,.18)}
-.go:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.18)}
+@keyframes flash{0%{background:rgba(255,246,234,.9)}100%{background:rgba(255,255,255,0)}}
+.go{grid-area:go;border:0;border-radius:12px;font-size:22px;font-weight:700;color:#fff;box-shadow:0 3px 0 rgba(0,0,0,.18);min-height:88px;touch-action:none}
+.go.press{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.18);filter:brightness(.92)}
 .panel.c0 .go{background:var(--teal)} .panel.cr .go{background:var(--red)} .panel.cb .go{background:var(--blue)}
-.mid{flex:0 0 auto;display:flex;justify-content:center;align-items:center;gap:10px;font-family:var(--mono);font-size:15px}
-.mid .r{color:var(--red);font-weight:700} .mid .b{color:var(--blue);font-weight:700}
-body.vs .die .face{font-size:30px;min-height:46px}
-body.vs .die button{padding:4px 0}
-body.vs .pinfo .expr{font-size:22px}
 
 /* ---- result ---- */
 #result h2.title{font-size:24px;margin:0 0 6px;text-align:center}
@@ -96,6 +107,31 @@ body.vs .pinfo .expr{font-size:22px}
 .row2{display:flex;gap:8px}
 .row2 button{flex:1;border:2px solid var(--border);background:#fff;border-radius:10px;padding:11px 4px;font-size:15px}
 .row2 button.pri{background:var(--amber);color:#fff;border-color:var(--amber);font-weight:700}
+
+/* ---- ranking / share ---- */
+.reg{margin:10px 0 4px;padding:10px;border:1px dashed var(--border);border-radius:10px;background:#fff}
+.reg .lbl{font-size:13px;color:var(--muted);margin-bottom:6px}
+.reg .rrow{display:flex;gap:8px;align-items:stretch}
+.reg input{width:5.4em;flex:0 0 auto;font-family:var(--mono);font-size:24px;font-weight:700;letter-spacing:.25em;text-align:center;text-transform:uppercase;border:2px solid var(--border);border-radius:10px;padding:6px 2px 6px 8px;background:var(--surface);color:var(--text)}
+.reg input:focus{outline:none;border-color:var(--amber)}
+.reg button{flex:1;border:0;border-radius:10px;background:var(--teal);color:#fff;font-size:16px;font-weight:700;padding:8px 6px}
+.reg button:disabled{opacity:.55;cursor:default}
+.reg .rmsg{font-size:13px;line-height:1.6;margin-top:6px;min-height:1em}
+.reg .rmsg.err{color:var(--red)}
+.why{font-size:13px;color:var(--muted);margin:10px 0 2px;text-align:center}
+.share{display:block;width:100%;border:0;border-radius:12px;padding:12px;font-size:16px;font-weight:700;background:var(--text);color:#fff;margin-bottom:10px;box-shadow:0 3px 0 rgba(0,0,0,.15)}
+details.rk summary{cursor:pointer;font-size:15px;color:var(--muted);font-weight:600;padding:2px 0;list-style-position:inside}
+details.rk[open] summary{margin-bottom:8px}
+.rtabs button{min-width:100px;padding:8px 6px;font-size:14px}
+.rstat{margin:8px 0 2px;text-align:center}
+.rtab{width:100%;border-collapse:collapse;font-size:15px;margin-top:4px}
+.rtab td{padding:5px 6px;border-bottom:1px dashed var(--border)}
+.rtab td.k{width:2.6em;color:var(--muted);font-family:var(--mono)}
+.rtab td.n{font-family:var(--mono);font-weight:700;letter-spacing:.14em}
+.rtab td.t{font-family:var(--mono);text-align:right}
+.rtab tr.me td{background:#fff6ea}
+.rtab tr.me td.n{color:var(--amber)}
+.rtab tr.me td.n::after{content:" ← あなた";font-family:var(--sans);font-weight:400;font-size:12px;letter-spacing:0;color:var(--amber)}
 
 /* embed (iframe) : chrome off */
 body.embed header.site, body.embed .lead, body.embed footer{display:none}
@@ -123,6 +159,10 @@ body.playing.embed .wrap{padding:0}
       <h2>設定</h2>
       <div class="seg" id="segVal"><button data-v="off" class="on">答えをかくす（暗算勝負）</button><button data-v="on">答えを表示（練習）</button></div>
       <div class="seg" id="segSnd" style="margin-top:6px"><button data-v="on" class="on">効果音あり</button><button data-v="off">効果音なし</button></div>
+      <div class="seg" id="segHand" style="margin-top:6px"><button data-v="r" class="on">決定ボタンは右（右利き）</button><button data-v="l">決定ボタンは左（左利き）</button></div>
+    </div>
+    <div class="card">
+      <details class="rk" id="menuRankDet"><summary>ランキングを見る（ひとりタイムアタック）</summary><div id="menuRank"></div></details>
     </div>
   </section>
 
@@ -132,14 +172,19 @@ body.playing.embed .wrap{padding:0}
     <div class="card">
       <h2 class="title" id="resTitle"></h2>
       <table class="stats" id="resStats"></table>
+      <div id="regBox"></div>
       <div id="resBoardBox"></div>
       <button class="big-btn" style="background:var(--amber)" id="btnRoute">最短ルートを見る</button>
       <div id="routeOut"></div>
     </div>
+    <button class="share" id="btnShare">Xでシェア</button>
     <div class="row2">
       <button class="pri" id="btnSame">もう一度</button>
       <button id="btnNew">新しい盤面</button>
       <button id="btnMenu">メニュー</button>
+    </div>
+    <div class="card" style="margin-top:12px">
+      <details class="rk" id="resRankDet"><summary>ランキングを見る</summary><div id="resRank"></div></details>
     </div>
   </section>
 
@@ -230,7 +275,8 @@ function solveRoute(board,limitMs=2000,now=()=>Date.now()){
 
 // ---------------- UI ----------------
 const $=s=>document.querySelector(s);
-const S={mode:'solo',boardKind:'random',showVal:false,sound:true,board:[],owner:[],players:[],t0:0,tEnd:0,timer:null,over:false,log:[]};
+const S={mode:'solo',boardKind:'random',showVal:false,sound:true,board:[],owner:[],players:[],t0:0,tEnd:0,timer:null,over:false,log:[],
+  started:false,everShown:false,demo:false,route:null,lefty:false};
 
 // --- sound ---
 let AC=null;
@@ -250,6 +296,8 @@ function setSeg(id,v){[...$(id).children].forEach(x=>x.classList.toggle('on',x.d
 seg('#segBoard',v=>S.boardKind=v);
 seg('#segVal',v=>S.showVal=v==='on');
 seg('#segSnd',v=>S.sound=v==='on');
+seg('#segHand',v=>{S.lefty=v==='l';try{localStorage.setItem('diceBingo.lefty',S.lefty?'1':'0');}catch(_){}});
+try{if(localStorage.getItem('diceBingo.lefty')==='1'){S.lefty=true;setSeg('#segHand','l');}}catch(_){}
 $('#btnSolo').onclick=()=>{ac();start('solo',true);};
 $('#btnVs').onclick=()=>{ac();start('versus',true);};
 $('#btnSame').onclick=()=>start(S.mode,false);
@@ -263,47 +311,62 @@ function start(mode,newBoard){
   S.mode=mode;
   if(newBoard||!S.board.length) S.board=S.boardKind==='preset'?PRESET.slice():randomBoard();
   S.owner=new Array(25).fill(-1); S.over=false; S.log=[];
+  S.everShown=S.showVal; S.demo=false; S.route=null;
   const mk=(id,cls,name)=>({id,cls,name,dice:[0,0,0],takes:0,misses:0,changes:0,lastTake:null,el:null});
   S.players= mode==='solo'?[mk(0,'c0','あなた')]:[mk(0,'cb','青'),mk(1,'cr','赤')];
   if(mode==='versus'){S.players[0].dice=[0,0,0];S.players[1].dice=[0,0,0];}
-  history.replaceState(null,'','#'+mode+(S.boardKind==='preset'?'&preset':'')+(S.showVal?'&show':''));
+  history.replaceState(null,'','#'+mode+(S.boardKind==='preset'?'&preset':'')+(S.showVal?'&show':'')+(S.lefty?'&left':''));
   buildGame();
 }
 
 function exprOf(p){return {a:A_FACES[p.dice[0]],op:OPS[p.dice[1]],b:B_FACES[p.dice[2]]};}
 
 function panelHTML(p,rot){
-  return `<div class="panel ${p.cls}${rot?' rot':''}" data-p="${p.id}">
+  return `<div class="panel ${p.cls}${rot?' rot':''}${S.lefty?' lefty':''}" data-p="${p.id}">
     <div class="pinfo"><span class="score"></span><span class="expr"></span><span class="msg"></span></div>
-    <div class="dicerow">${[0,1,2].map(k=>`<div class="die d${k}" data-k="${k}"><button class="up" aria-label="次の面">▲</button><div class="face"></div><button class="dn" aria-label="前の面">▼</button></div>`).join('')}
-    <button class="go">決定</button></div></div>`;
+    <div class="dice">${[0,1,2].map(k=>`<div class="die d${k}" data-k="${k}"><button class="up" aria-label="次の面">▲</button><button class="dn" aria-label="前の面">▼</button><div class="face"></div></div>`).join('')}</div>
+    <button class="go">決定</button></div>`;
 }
 
 function buildGame(){
   document.body.classList.add('playing');document.body.classList.toggle('vs',S.mode==='versus');
   $('#menu').classList.add('hidden');$('#result').classList.add('hidden');
   const g=$('#game');g.classList.remove('hidden');
-  const topbar=`<div class="bar"><button class="mini" id="gBack">← もどる</button>
-    ${S.mode==='solo'?`<span class="chip">時間 <span class="stat" id="gTime">0.0</span></span><span class="chip">取得 <span class="stat" id="gCount">0</span>/25</span><span class="chip">平均 <span class="stat" id="gAvg">-</span>秒</span>`:''}
-    <span class="sp"></span><button class="mini${S.showVal?' on':''}" id="gVal">答え${S.showVal?'表示':'かくす'}</button><button class="mini" id="gSnd">音${S.sound?'あり':'なし'}</button></div>`;
+  const btns=`<button class="mini${S.showVal?' on':''}" id="gVal" aria-label="答えの表示">${valLbl()}</button><button class="mini" id="gSnd" aria-label="効果音">${sndLbl()}</button>`;
   if(S.mode==='solo'){
+    // ひとり：情報は上（親指から遠い）、盤面はパネルのすぐ上に寄せる
+    const topbar=`<div class="bar"><button class="mini" id="gBack">← もどる</button>
+      <span class="chip">時間 <span class="stat" id="gTime">0.0</span></span><span class="chip">取得 <span class="stat" id="gCount">0</span>/25</span><span class="chip">平均 <span class="stat" id="gAvg">-</span>秒</span>
+      <span class="sp"></span>${btns}</div>`;
     g.innerHTML=topbar+`<div id="boardBox"><div class="board" id="board"></div></div>`+panelHTML(S.players[0],false);
   }else{
+    // 対戦：赤パネル(180度)｜盤面｜細い情報帯｜青パネル。パネルは画面の上端・下端いっぱい。
     g.innerHTML=panelHTML(S.players[1],true)+`<div id="boardBox"><div class="board" id="board"></div></div>`+
-      `<div class="mid"><span class="r" id="mR">赤 0</span><span id="gTime">0.0</span><span class="b" id="mB">青 0</span></div>`+topbar+panelHTML(S.players[0],false);
+      `<div class="bar vsbar"><button class="mini" id="gBack">もどる</button><span class="r" id="mR">赤 0</span><span id="gTime">0.0</span><span class="b" id="mB">青 0</span><span>${btns}</span></div>`+
+      panelHTML(S.players[0],false);
   }
   S.players.forEach(p=>{p.el=g.querySelector(`.panel[data-p="${p.id}"]`);wirePanel(p);renderPanel(p);});
-  $('#gBack').onclick=toMenu;
-  $('#gVal').onclick=e=>{S.showVal=!S.showVal;e.target.classList.toggle('on',S.showVal);e.target.textContent='答え'+(S.showVal?'表示':'かくす');setSeg('#segVal',S.showVal?'on':'off');S.players.forEach(renderPanel);};
-  $('#gSnd').onclick=e=>{S.sound=!S.sound;e.target.textContent='音'+(S.sound?'あり':'なし');setSeg('#segSnd',S.sound?'on':'off');};
+  // もどる：ゲーム中は2回押し（1回目で赤くなり「もう一度」→2秒で元に戻る）
+  $('#gBack').onclick=e=>{const b=e.currentTarget;
+    if(!S.started||S.over||b.classList.contains('warn')){toMenu();return;}
+    const t=b.textContent;b.classList.add('warn');b.textContent='もう一度で戻る';
+    clearTimeout(b._t);b._t=setTimeout(()=>{b.classList.remove('warn');b.textContent=t;},2000);};
+  $('#gVal').onclick=e=>{S.showVal=!S.showVal;if(S.showVal)S.everShown=true;e.target.classList.toggle('on',S.showVal);e.target.textContent=valLbl();setSeg('#segVal',S.showVal?'on':'off');S.players.forEach(renderPanel);};
+  $('#gSnd').onclick=e=>{S.sound=!S.sound;e.target.textContent=sndLbl();setSeg('#segSnd',S.sound?'on':'off');};
   renderBoard($('#board'),false);
   sizeBoard();
-  S.t0=performance.now();stopTimer();S.timer=setInterval(tick,100);tick();
+  // ひとり：最初のサイコロ操作か「決定」で計時開始（ランキングの公平のため）。対戦：従来どおり即開始。
+  stopTimer();S.started=false;S.t0=0;
+  if(S.mode!=='solo')startClock();
+  tick();
 }
+function valLbl(){return '答え '+(S.showVal?'○':'✕');}
+function sndLbl(){return '音 '+(S.sound?'○':'✕');}
+function startClock(){if(S.started||S.over)return;S.started=true;S.t0=performance.now();stopTimer();S.timer=setInterval(tick,100);}
 
 function sizeBoard(){
   const box=$('#boardBox'),b=$('#board');if(!box||!b)return;
-  const s=Math.max(160,Math.min(box.clientWidth,box.clientHeight,520));
+  const s=Math.max(120,Math.min(box.clientWidth,box.clientHeight,520));
   b.style.width=b.style.height=s+'px';b.style.fontSize=(s/5*0.36)+'px';
 }
 addEventListener('resize',sizeBoard);
@@ -325,20 +388,32 @@ function wirePanel(p){
   const rot=p.el.classList.contains('rot');
   p.el.querySelectorAll('.die').forEach(d=>{
     const k=+d.dataset.k;
-    const step=s=>{if(S.over)return;const L=FACES[k].length;p.dice[k]=(p.dice[k]+s+L)%L;sfx.click();d.classList.remove('flash');void d.offsetWidth;d.classList.add('flash');renderPanel(p);};
-    d.querySelector('.up').addEventListener('click',()=>step(1));
-    d.querySelector('.dn').addEventListener('click',()=>step(-1));
-    const f=d.querySelector('.face');let y0=null;
-    f.addEventListener('pointerdown',ev=>{y0=ev.clientY;try{f.setPointerCapture(ev.pointerId);}catch(_){}});
-    f.addEventListener('pointerup',ev=>{if(y0===null)return;let dy=ev.clientY-y0;y0=null;if(rot)dy=-dy;
-      if(Math.abs(dy)>16)step(dy<0?1:-1);else step(1);});
-    f.addEventListener('pointercancel',()=>{y0=null;});
+    const step=s=>{if(S.over)return;startClock();const L=FACES[k].length;p.dice[k]=(p.dice[k]+s+L)%L;sfx.click();d.classList.remove('flash');void d.offsetWidth;d.classList.add('flash');renderPanel(p);};
+    // サイコロ本体を押す：上半分（▲）＝次の面、下半分（▼）＝前の面。上下スワイプも可。
+    // pointer イベントで要素ごとに指を追う（click は同時タッチで落ちることがあるため使わない。キーボード操作の click だけ拾う）。
+    let act=null;
+    d.addEventListener('pointerdown',ev=>{if(act)return;const half=ev.target.closest('button');
+      act={id:ev.pointerId,y:ev.clientY,dir:half&&half.classList.contains('dn')?-1:1,btn:half};
+      if(half)half.classList.add('press');try{d.setPointerCapture(ev.pointerId);}catch(_){}ev.preventDefault();});
+    const end=(ev,cancel)=>{if(!act||ev.pointerId!==act.id)return;const a=act;act=null;if(a.btn)a.btn.classList.remove('press');
+      if(cancel)return;let dy=ev.clientY-a.y;if(rot)dy=-dy;
+      if(Math.abs(dy)>16)step(dy<0?1:-1);else step(a.dir);};
+    d.addEventListener('pointerup',ev=>end(ev,false));
+    d.addEventListener('pointercancel',ev=>end(ev,true));
+    d.querySelector('.up').addEventListener('click',e=>{if(e.detail===0)step(1);});
+    d.querySelector('.dn').addEventListener('click',e=>{if(e.detail===0)step(-1);});
   });
-  p.el.querySelector('.go').addEventListener('click',()=>decide(p));
+  const go=p.el.querySelector('.go');let gid=null;
+  go.addEventListener('pointerdown',ev=>{if(gid!==null)return;gid=ev.pointerId;go.classList.add('press');try{go.setPointerCapture(ev.pointerId);}catch(_){}ev.preventDefault();});
+  go.addEventListener('pointerup',ev=>{if(ev.pointerId!==gid)return;gid=null;go.classList.remove('press');
+    const r=go.getBoundingClientRect();if(ev.clientX>=r.left-8&&ev.clientX<=r.right+8&&ev.clientY>=r.top-8&&ev.clientY<=r.bottom+8)decide(p);});
+  go.addEventListener('pointercancel',ev=>{if(ev.pointerId!==gid)return;gid=null;go.classList.remove('press');});
+  go.addEventListener('click',e=>{if(e.detail===0)decide(p);});
 }
 
 function decide(p){
   if(S.over)return;
+  startClock();
   const e=exprOf(p);const v=calc(e.a,e.op,e.b);e.v=v;
   const i=S.board.indexOf(v);
   const msg=p.el.querySelector('.msg');
@@ -363,7 +438,7 @@ function decide(p){
 
 function stopTimer(){if(S.timer){clearInterval(S.timer);S.timer=null;}}
 function tick(){
-  const t=(S.over?S.tEnd:performance.now()-S.t0)/1000;
+  const t=(S.over?S.tEnd:S.started?performance.now()-S.t0:0)/1000;
   const tt=$('#gTime');if(tt)tt.textContent=t.toFixed(1);
   if(S.mode==='solo'){const p=S.players[0];$('#gCount').textContent=p.takes;$('#gAvg').textContent=p.takes?(t/p.takes).toFixed(1):'-';}
   else{$('#mR').textContent='赤 '+S.players[1].takes;$('#mB').textContent='青 '+S.players[0].takes;}
@@ -393,6 +468,9 @@ function showResult(){
   }
   const box=$('#resBoardBox');box.innerHTML='<div class="board" id="resBoard"></div>';
   const rb=$('#resBoard');renderBoard(rb);const s=Math.min(box.clientWidth||340,360);rb.style.width=rb.style.height=s+'px';rb.style.fontSize=(s/5*0.34)+'px';
+  S.route=null;
+  renderReg();
+  $('#resRankDet').open=false;
   scrollTo(0,0);
 }
 
@@ -401,6 +479,7 @@ function showRoute(){
   setTimeout(()=>{
     const r=solveRoute(S.board,2000);
     if(r.error){out.innerHTML=`<p class="note">${r.error}</p>`;return;}
+    S.route=r;
     const parts=r.route.map((e,i)=>{
       const pv=r.route[i-1];const c=(x,key)=>pv&&pv[key]!==e[key]?`<span class="ch">${x}</span>`:x;
       return `<span class="st">${c(e.a,'a')}${c(e.op,'op')}${c(e.b,'b')}=${e.v}</span>`;
@@ -425,15 +504,152 @@ function drawRouteOn(boardEl,route){
     <circle cx="${pos[0][0]}" cy="${pos[0][1]}" r=".36" fill="none" stroke="#f5f2ec" stroke-width=".06"/><circle cx="${pos.at(-1)[0]}" cy="${pos.at(-1)[1]}" r=".36" fill="none" stroke="#c9761f" stroke-width=".06"/></svg>`);
 }
 
+// --- time format: 59.9秒 / 1:00.0 / 10:05.2 （0.1秒に丸め）---
+function fmtTime(ms){
+  const d=Math.round(ms/100), m=Math.floor(d/600), s=(d%600)/10;
+  return m===0?s.toFixed(1)+'秒':m+':'+(s<10?'0':'')+s.toFixed(1);
+}
+
+// --- share (X の投稿画面を開くだけ。投稿するかは本人が決める) ---
+const SHARE_URL='https://tnks1407.com/dice-bingo/';
+function shareText(){
+  const tag='\n#サイコロ計算ビンゴ';
+  if(S.mode==='solo'){
+    const p=S.players[0], r=S.route;
+    let tail='';
+    if(r) tail=r.exact?`、最短は${r.changes}個`:`、近似ルートは${r.changes}個`;
+    return `サイコロ計算ビンゴ 25マスを ${fmtTime(S.tEnd)} でクリア（1マス平均 ${(S.tEnd/1000/25).toFixed(1)}秒${S.everShown?'・答え表示':''}）。動かしたサイコロ ${p.changes}個${tail}。`+tag;
+  }
+  const [B,R]=S.players;
+  const res=R.takes>B.takes?'赤の勝ち':B.takes>R.takes?'青の勝ち':'引き分け';
+  return `サイコロ計算ビンゴ 対戦で 赤${R.takes} − 青${B.takes}、${res}（${fmtTime(S.tEnd)}）。`+tag;
+}
+function shareURL(){return 'https://twitter.com/intent/tweet?text='+encodeURIComponent(shareText())+'&url='+encodeURIComponent(SHARE_URL);}
+$('#btnShare').onclick=()=>{window.open(shareURL(),'_blank','noopener');};
+
+// --- ranking API ---
+const RANK_API='https://feedback.tnks1407.com/rank';
+const BOARD_ID={preset:'bingo-preset',random:'bingo-random'};
+const BOARD_LABEL={'bingo-preset':'展示の盤面','bingo-random':'ランダム盤面'};
+const LS_NAME='diceBingo.rankName', LS_MINE='diceBingo.rankMine';
+function lsGet(k){try{return localStorage.getItem(k);}catch(_){return null;}}
+function lsSet(k,v){try{localStorage.setItem(k,v);}catch(_){}}
+function mine(){try{return JSON.parse(lsGet(LS_MINE)||'{}')||{};}catch(_){return {};}}
+async function rankFetch(opt){
+  const ctl=new AbortController(), to=setTimeout(()=>ctl.abort(),8000);
+  try{
+    const r=await fetch(opt.url,{...opt.init,signal:ctl.signal});
+    let j=null;try{j=await r.json();}catch(_){}
+    return {ok:r.ok&&!!j,status:r.status,j};
+  }catch(_){return {ok:false,status:0,j:null};}
+  finally{clearTimeout(to);}
+}
+function normName(v){
+  return (v||'').replace(/[Ａ-Ｚａ-ｚ０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0))
+    .toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3);
+}
+
+// ランキング表示（タブ＋上位10件）。同じ部品をメニューと結果画面で使う。
+function mountRank(root){
+  root.innerHTML=`<div class="seg rtabs"><button data-b="bingo-preset">展示の盤面</button><button data-b="bingo-random">ランダム</button></div>
+    <p class="note rstat"></p><table class="rtab"></table>`;
+  const o={root,board:null,seq:0};
+  root.querySelector('.rtabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)loadRank(o,b.dataset.b);});
+  return o;
+}
+async function loadRank(o,board,pre){
+  o.board=board;const id=++o.seq;
+  o.root.querySelectorAll('.rtabs button').forEach(b=>b.classList.toggle('on',b.dataset.b===board));
+  const st=o.root.querySelector('.rstat'),tb=o.root.querySelector('.rtab');
+  let top=pre;
+  if(!top){
+    st.textContent='読み込み中…';st.classList.remove('hidden');tb.replaceChildren();
+    const r=await rankFetch({url:RANK_API+'?board='+encodeURIComponent(board)});
+    if(id!==o.seq)return;
+    if(!r.ok||!Array.isArray(r.j.top)){st.textContent=r.status===429?'混みあっているみたい。少しおいて開き直してね。':'ランキングを読めなかった（通信できない）。';return;}
+    top=r.j.top;
+  }
+  renderRank(o,top);
+}
+function renderRank(o,top){
+  const st=o.root.querySelector('.rstat'),tb=o.root.querySelector('.rtab');
+  tb.replaceChildren();
+  const list=(top||[]).slice(0,10);
+  if(!list.length){st.textContent='まだ誰もいない。最初の一人になろう';st.classList.remove('hidden');return;}
+  st.classList.add('hidden');
+  const me=mine()[o.board];
+  list.forEach((e,i)=>{
+    const tr=document.createElement('tr');
+    const name=String(e&&e.name!=null?e.name:'???'), sc=Number(e&&e.score);
+    if(me&&me.name===name&&me.score===sc)tr.className='me';
+    const td=(c,t)=>{const x=document.createElement('td');x.className=c;x.textContent=t;tr.appendChild(x);};
+    td('k',(i+1)+'.');td('n',name);td('t',Number.isFinite(sc)?fmtTime(sc):'-');
+    tb.appendChild(tr);
+  });
+}
+const RV={menu:mountRank($('#menuRank')),res:mountRank($('#resRank'))};
+$('#menuRankDet').addEventListener('toggle',e=>{if(e.target.open)loadRank(RV.menu,RV.menu.board||BOARD_ID[S.boardKind]);});
+$('#resRankDet').addEventListener('toggle',e=>{if(e.target.open&&!RV.res.keep)loadRank(RV.res,BOARD_ID[S.boardKind]);RV.res.keep=false;});
+
+// 登録できるか：ひとり／答え表示オフ（途中で表示した回も×）／デモでない／25マス
+function regBlock(){
+  if(S.mode!=='solo')return '対戦はランキングの対象外だよ';
+  if(S.demo)return 'デモ再生の回は記録に残らないよ';
+  if(S.everShown)return '答えを表示した回は記録に残らないよ';
+  if(S.players[0].takes!==25)return '25マス全部とった回だけ記録できるよ';
+  if(S.tEnd<10000)return '10秒未満の記録は受け付けていないよ';
+  if(S.tEnd>3600000)return '1時間をこえた記録は登録できないよ';
+  return '';
+}
+function renderReg(){
+  const box=$('#regBox');box.replaceChildren();
+  if(S.mode!=='solo')return;            // 対戦は欄ごと出さない
+  const why=regBlock();
+  if(why){const p=document.createElement('p');p.className='why';p.textContent=why;box.appendChild(p);return;}
+  const board=BOARD_ID[S.boardKind];
+  box.innerHTML=`<div class="reg"><div class="lbl">ランキングに登録（${BOARD_LABEL[board]}）— 名前は英数字3文字</div>
+    <div class="rrow"><input id="regName" maxlength="3" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="名前（英数字3文字）" placeholder="AAA"><button id="regBtn">登録する</button></div>
+    <div class="rmsg" id="regMsg"></div></div>`;
+  const inp=$('#regName'),btn=$('#regBtn'),msg=$('#regMsg');
+  inp.value=normName(lsGet(LS_NAME)||'');
+  const fix=()=>{const v=normName(inp.value);if(v!==inp.value)inp.value=v;btn.disabled=v.length!==3;};
+  inp.addEventListener('input',e=>{if(!e.isComposing)fix();});
+  inp.addEventListener('compositionend',fix);
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter'&&!btn.disabled)btn.click();});
+  fix();
+  btn.onclick=async()=>{
+    const name=normName(inp.value);if(name.length!==3||btn.disabled)return;
+    btn.disabled=true;inp.disabled=true;msg.className='rmsg';msg.textContent='送信中…';
+    lsSet(LS_NAME,name);
+    const score=Math.round(S.tEnd);
+    const r=await rankFetch({url:RANK_API,init:{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({board,name,score})}});
+    if(r.ok&&r.j.ok){
+      const best=Number(r.j.best)||score;
+      const m=mine();m[board]={name,score:best};lsSet(LS_MINE,JSON.stringify(m));
+      const rank=r.j.rank;
+      msg.textContent=(rank?`登録した！ ${BOARD_LABEL[board]}で ${rank} 位`:'登録した！（上位20件の外）')+
+        (best<score?`。自己ベスト ${fmtTime(best)} のほうが残っているよ`:'');
+      btn.textContent='登録済み';
+      if(Array.isArray(r.j.top)){RV.res.keep=true;const d=$('#resRankDet');if(d.open)RV.res.keep=false;d.open=true;loadRank(RV.res,board,r.j.top);}
+    }else{
+      msg.className='rmsg err';
+      msg.textContent=r.status===429?'登録が続きすぎたみたい。少し時間をおいてね。':
+        r.status>=400&&r.status<500?'この記録は受け付けられなかった。':'通信できなかった。あとでもう一度どうぞ。';
+      btn.disabled=false;inp.disabled=false;
+    }
+  };
+}
+
 // --- deep link: #solo / #versus (+ &preset, &show) ---
 (function(){
   const h=location.hash.slice(1).split('&');
   if(h.includes('preset')){S.boardKind='preset';setSeg('#segBoard','preset');}
   if(h.includes('show')){S.showVal=true;setSeg('#segVal','on');}
+  if(h.includes('left')){S.lefty=true;setSeg('#segHand','l');}
   if(h[0]==='solo'||h[0]==='versus')start(h[0],true);
   // 確認用：&demo で最短ルートを自動で踏んで結果画面まで進める
   if(h.includes('demo')&&S.players.length){
-    S.sound=false;const r=solveRoute(S.board,2000);let i=0;
+    S.demo=true;S.sound=false;const r=solveRoute(S.board,2000);let i=0;
     const iv=setInterval(()=>{if(i>=r.route.length){clearInterval(iv);setTimeout(showRoute,900);return;}
       const e=r.route[i],p=S.players[i%S.players.length];p.dice=[A_FACES.indexOf(e.a),OPS.indexOf(e.op),B_FACES.indexOf(e.b)];decide(p);i++;},40);
   }
