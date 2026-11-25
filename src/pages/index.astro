@@ -14,6 +14,21 @@ type Work = {
 // 解説（Explainers）は専用のロードマップページ /docs/ に独立。トップでは件数だけ使う。
 const explainers = await getCollection('docs');
 
+// トップの「あそぶ」に出すゲーム。棚(labs.ts)の「遊び」グループと同じ2本を、大きい入口として見せる。
+type Game = { key: string; url: string; kicker: string; title: string; desc: string; tags: string[]; art: string };
+const games: Game[] = [
+  {
+    key: 'yoshi', url: '/yoshi/', kicker: '反射 × 指差呼称', title: 'ヨシ！',
+    desc: '「数字が大きい方」か「文字が大きい方」か。30秒の反射ゲームを、そのまま／指差し確認してから、の2通りで遊んで、自分のミス率を比べる。',
+    tags: ['30秒', 'ふたり対戦', 'ランキング'], art: '3 9',
+  },
+  {
+    key: 'bingo', url: '/dice-bingo/', kicker: '暗算 × 一筆書き', title: 'サイコロ計算ビンゴ',
+    desc: 'サイコロ3個で式を作って25マスを取る。クリアすると、サイコロを1個ずつ変えるだけで回り切る最短ルートの答え合わせが見られる。',
+    tags: ['タイムアタック', 'ふたり対戦', 'ランキング'], art: '7×6',
+  },
+];
+
 type QuickLink = { label: string; url: string; icon: string; featured?: boolean; cat?: 'eng' | 'data' | 'other' };
 const quickLinks: QuickLink[] = [
   { label: "tnkblog.net", url: "https://tnkblog.net", icon: "📝", featured: true },
@@ -435,6 +450,35 @@ const favKey = (w: Work) => {
         padding:0.05rem 0.45rem;font-family:'JetBrains Mono',monospace;}
       .explainer-sub-title{font-weight:600;font-size:0.82rem;color:var(--text-muted);
         white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+      /* あそぶ：ゲームカード */
+      .play{margin-bottom:2rem;scroll-margin-top:4.5rem;}
+      .play-grid{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;}
+      .game-card{position:relative;display:flex;flex-direction:column;gap:.3rem;min-height:11.5rem;padding:1.2rem 1.3rem 1.1rem;border-radius:16px;
+        text-decoration:none;overflow:hidden;border:1px solid var(--border);box-shadow:0 2px 12px var(--shadow);transition:transform .18s,box-shadow .18s,border-color .18s;}
+      .game-card:hover{transform:translateY(-3px);box-shadow:0 10px 26px var(--shadow-md);}
+      .game-yoshi{background:linear-gradient(150deg,#1a1040 0%,#3a1250 68%,#5a1446 100%);color:#fff;border-color:#2a1c5c;}
+      .game-bingo{background:linear-gradient(150deg,#fffaf0 0%,#f1e8d6 100%);color:var(--text);}
+      .game-bingo:hover{border-color:var(--accent);}
+      .game-kicker{font-family:'JetBrains Mono',monospace;font-size:.68rem;font-weight:700;letter-spacing:.12em;}
+      .game-yoshi .game-kicker{color:#3cf2ff;}
+      .game-bingo .game-kicker{color:var(--accent);}
+      .game-title{font-size:1.35rem;font-weight:800;line-height:1.25;}
+      .game-desc{font-size:.82rem;line-height:1.65;max-width:31em;position:relative;}
+      .game-yoshi .game-desc{color:rgba(255,255,255,.82);}
+      .game-bingo .game-desc{color:var(--text-muted);}
+      .game-tags{display:flex;gap:.35rem;flex-wrap:wrap;margin-top:auto;padding:.7rem 6.2rem 0 0;}
+      .game-tag{font-family:'JetBrains Mono',monospace;font-size:.66rem;padding:.14rem .55rem;border-radius:999px;border:1px solid currentColor;opacity:.72;}
+      .game-go{position:absolute;right:1.1rem;bottom:1.05rem;font-family:'JetBrains Mono',monospace;font-size:.8rem;font-weight:700;padding:.42rem .85rem;border-radius:999px;}
+      .game-yoshi .game-go{background:#ffd23c;color:#1a1040;}
+      .game-bingo .game-go{background:var(--accent);color:#fff;}
+      .game-art{position:absolute;right:.9rem;top:.35rem;font-family:'JetBrains Mono',monospace;font-weight:800;font-size:3.4rem;line-height:1;letter-spacing:-.04em;opacity:.13;pointer-events:none;white-space:nowrap;}
+      /* よむ・さわる：ティーザーを詰めて並べる */
+      .read{margin-bottom:2rem;scroll-margin-top:4.5rem;}
+      .read .docs-teaser{margin-bottom:.9rem;}
+      .teaser-pair{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;margin-bottom:.9rem;}
+      .teaser-pair .docs-teaser{margin-bottom:0;align-items:flex-start;}
+      .read .lab-shelf{margin-top:0;margin-bottom:0;}
+      @media(max-width:700px){.play-grid,.teaser-pair{grid-template-columns:1fr;}}
       /* Docs roadmap teaser（解説は専用ページ /docs/ へ） */
       .docs-teaser{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;
         background:linear-gradient(135deg,var(--accent-soft) 0%,var(--card) 72%);border:1px solid var(--border);border-radius:16px;
@@ -582,6 +626,7 @@ const favKey = (w: Work) => {
       <div class="header-inner">
         <span class="logo">TNK<span>S</span>1407</span>
         <nav class="nav-links">
+          <a href="#play">あそぶ</a>
           <a href="/docs/">解説</a>
           <a href="#works">Works</a>
           <a href="https://tnkblog.net" target="_blank" rel="noopener noreferrer">Blog ↗</a>
@@ -615,21 +660,83 @@ const favKey = (w: Work) => {
         </div>
       </div>
 
-      <!-- About / ものづくりの姿勢 -->
-      <section class="about">
-        <div class="section-title">About</div>
-        <div class="about-lead">
-          <p>RF・電力制御・信号処理・データサイエンス・画像処理・結晶学。私（ランキン）が「面白い」と思った分野の道具と学習ラボを、ここに少しずつ並べているよ。難しい理屈ほど、読むより先に触って動かせるように作りたいと思っている。作っていく過程は <a href="https://tnkblog.net" target="_blank" rel="noopener noreferrer">tnkblog.net</a> に書き残しているから、よかったらそちらも。</p>
-          <span class="sig">— TNKS1407 / designed by ランキン</span>
-        </div>
-        <div class="about-principles">
-          <div class="principle"><span class="k">01</span><b>触ってわかる</b><span class="d">スライダーを動かすと結果が変わる。数式や理論を、読む前に手で体感できるようにする。</span></div>
-          <div class="principle"><span class="k">02</span><b>中身を自分で書く</b><span class="d">既製の重いライブラリに頼らず、numpy や Canvas で。なぜ動くかが見えるのが楽しい。</span></div>
-          <div class="principle"><span class="k">03</span><b>つまずきを入口にする</b><span class="d">バグや素朴な疑問を、消すだけでなく覗き込む。そこから記事や道具が生まれることがある。</span></div>
-          <div class="principle"><span class="k">04</span><b>軽く、長く動く</b><span class="d">外部依存を減らし、単一ファイルやブラウザ完結で。何年後でも開けるものを目指す。</span></div>
+      <!-- あそぶ：ゲームへの入口（正本は frontmatter の games） -->
+      <section class="play" id="play">
+        <div class="section-title">あそぶ — PLAY</div>
+        <div class="play-grid">
+          {games.map(g => (
+            <a class={`game-card game-${g.key}`} href={g.url}>
+              <span class="game-art" aria-hidden="true">{g.art}</span>
+              <span class="game-kicker">{g.kicker}</span>
+              <span class="game-title">{g.title}</span>
+              <span class="game-desc">{g.desc}</span>
+              <span class="game-tags">{g.tags.map(t => <span class="game-tag">{t}</span>)}</span>
+              <span class="game-go">あそぶ →</span>
+            </a>
+          ))}
         </div>
       </section>
 
+      <!-- よむ・さわる：解説ロードマップと実験の棚 -->
+      <section class="read" id="read">
+        <div class="section-title">よむ・さわる — 解説と実験</div>
+      <!-- Explainers / 解説記事 → 専用ロードマップページへ -->
+      {explainers.length > 0 && (
+        <a id="docs" class="docs-teaser" href="/docs/">
+          <div class="docs-teaser-text">
+            <span class="docs-teaser-kicker">解説 — ROADMAP</span>
+            <span class="docs-teaser-title">見える物理を、触りながら一歩ずつ</span>
+            <span class="docs-teaser-desc">力学の基礎 → 声と共鳴 → 足し合わせと保存で場を掴む。{explainers.length} 本の解説を読む順に並べ、この先（発散・ガウス・グリーン関数）まで見渡せる“地図”。</span>
+          </div>
+          <span class="docs-teaser-go">ロードマップを開く →</span>
+        </a>
+      )}
+
+      <div class="teaser-pair">
+      <a class="docs-teaser" href="/docs/#crystal">
+        <div class="docs-teaser-text">
+          <span class="docs-teaser-kicker">解説 — 結晶と対称</span>
+          <span class="docs-teaser-title">結晶は、約束でできている</span>
+          <span class="docs-teaser-desc">「同じ模様が並進でくり返す」── たった一つの約束から、許される対称・五角形がない理由・そして並進を捨てた準結晶まで。触れる play を埋め込みながら一歩ずつ。</span>
+        </div>
+        <span class="docs-teaser-go">ロードマップを開く →</span>
+      </a>
+
+      <a class="docs-teaser" href="/docs/#communication">
+        <div class="docs-teaser-text">
+          <span class="docs-teaser-kicker">解説 — 通信のしくみ（全9回＋地図）</span>
+          <span class="docs-teaser-title">線一本から、工場のリアルタイムまで</span>
+          <span class="docs-teaser-desc">ハードは分かるのにプログラミングが…という人へ。UART → SPI/I²C → IO-Link → RS-485 → CAN → Ethernet → TCP/IP → 産業Ethernet → EtherCAT。下から一段ずつ積むと「あ、これさっきのだ」が辿れる、触れる widget つきの一本道。冒頭に紛らわしい名前の見取り図つき。</span>
+        </div>
+        <span class="docs-teaser-go">ロードマップを開く →</span>
+      </a>
+      </div>
+
+      <!-- 実験の棚：単一HTMLの触れるwidget全部（正本は src/data/labs.ts、工房と共有） -->
+      <details class="lab-shelf" id="labs">
+        <summary class="lab-shelf-summary">
+          <span class="lab-shelf-kicker">実験の棚 — WIDGETS</span>
+          <span class="lab-shelf-title">触れる実験、ぜんぶで {labCount} 個</span>
+          <span class="lab-shelf-hint">開く ▾</span>
+        </summary>
+        <div class="lab-shelf-body">
+          {labGroups.map((g) => (
+            <div class="lab-shelf-group">
+              <span class="lab-shelf-label">{g.label}</span>
+              <div class="lab-shelf-chips">
+                {g.items.map((it) => (
+                  <a class="lab-chip" href={it.url}>{it.name}</a>
+                ))}
+              </div>
+            </div>
+          ))}
+          <p class="lab-shelf-foot">制作の経緯は<a href="/workshop/">工房（制作ログ）</a>に。</p>
+        </div>
+      </details>
+      </section>
+
+      <!-- つかう：ツール群へのクイックリンク -->
+      <div class="section-title" id="tools">つかう — TOOLS</div>
       <div class="quick-links-wrap">
         <div class="ql-head">
           <span class="ql-label">おすすめ</span>
@@ -671,57 +778,20 @@ const favKey = (w: Work) => {
         </div>
       </div>
 
-      <!-- Explainers / 解説記事 → 専用ロードマップページへ -->
-      {explainers.length > 0 && (
-        <a id="docs" class="docs-teaser" href="/docs/">
-          <div class="docs-teaser-text">
-            <span class="docs-teaser-kicker">解説 — ROADMAP</span>
-            <span class="docs-teaser-title">見える物理を、触りながら一歩ずつ</span>
-            <span class="docs-teaser-desc">力学の基礎 → 声と共鳴 → 足し合わせと保存で場を掴む。{explainers.length} 本の解説を読む順に並べ、この先（発散・ガウス・グリーン関数）まで見渡せる“地図”。</span>
-          </div>
-          <span class="docs-teaser-go">ロードマップを開く →</span>
-        </a>
-      )}
-
-      <a class="docs-teaser" href="/docs/#crystal" style="margin-top:.9rem;">
-        <div class="docs-teaser-text">
-          <span class="docs-teaser-kicker">解説 — 結晶と対称</span>
-          <span class="docs-teaser-title">結晶は、約束でできている</span>
-          <span class="docs-teaser-desc">「同じ模様が並進でくり返す」── たった一つの約束から、許される対称・五角形がない理由・そして並進を捨てた準結晶まで。触れる play を埋め込みながら一歩ずつ。</span>
+      <!-- About / ものづくりの姿勢 -->
+      <section class="about">
+        <div class="section-title">About</div>
+        <div class="about-lead">
+          <p>RF・電力制御・信号処理・データサイエンス・画像処理・結晶学。私（ランキン）が「面白い」と思った分野の道具と学習ラボを、ここに少しずつ並べているよ。難しい理屈ほど、読むより先に触って動かせるように作りたいと思っている。作っていく過程は <a href="https://tnkblog.net" target="_blank" rel="noopener noreferrer">tnkblog.net</a> に書き残しているから、よかったらそちらも。</p>
+          <span class="sig">— TNKS1407 / designed by ランキン</span>
         </div>
-        <span class="docs-teaser-go">ロードマップを開く →</span>
-      </a>
-
-      <a class="docs-teaser" href="/docs/#communication" style="margin-top:.9rem;">
-        <div class="docs-teaser-text">
-          <span class="docs-teaser-kicker">解説 — 通信のしくみ（全9回＋地図）</span>
-          <span class="docs-teaser-title">線一本から、工場のリアルタイムまで</span>
-          <span class="docs-teaser-desc">ハードは分かるのにプログラミングが…という人へ。UART → SPI/I²C → IO-Link → RS-485 → CAN → Ethernet → TCP/IP → 産業Ethernet → EtherCAT。下から一段ずつ積むと「あ、これさっきのだ」が辿れる、触れる widget つきの一本道。冒頭に紛らわしい名前の見取り図つき。</span>
+        <div class="about-principles">
+          <div class="principle"><span class="k">01</span><b>触ってわかる</b><span class="d">スライダーを動かすと結果が変わる。数式や理論を、読む前に手で体感できるようにする。</span></div>
+          <div class="principle"><span class="k">02</span><b>中身を自分で書く</b><span class="d">既製の重いライブラリに頼らず、numpy や Canvas で。なぜ動くかが見えるのが楽しい。</span></div>
+          <div class="principle"><span class="k">03</span><b>つまずきを入口にする</b><span class="d">バグや素朴な疑問を、消すだけでなく覗き込む。そこから記事や道具が生まれることがある。</span></div>
+          <div class="principle"><span class="k">04</span><b>軽く、長く動く</b><span class="d">外部依存を減らし、単一ファイルやブラウザ完結で。何年後でも開けるものを目指す。</span></div>
         </div>
-        <span class="docs-teaser-go">ロードマップを開く →</span>
-      </a>
-
-      <!-- 実験の棚：単一HTMLの触れるwidget全部（正本は src/data/labs.ts、工房と共有） -->
-      <details class="lab-shelf" id="labs">
-        <summary class="lab-shelf-summary">
-          <span class="lab-shelf-kicker">実験の棚 — WIDGETS</span>
-          <span class="lab-shelf-title">触れる実験、ぜんぶで {labCount} 個</span>
-          <span class="lab-shelf-hint">開く ▾</span>
-        </summary>
-        <div class="lab-shelf-body">
-          {labGroups.map((g) => (
-            <div class="lab-shelf-group">
-              <span class="lab-shelf-label">{g.label}</span>
-              <div class="lab-shelf-chips">
-                {g.items.map((it) => (
-                  <a class="lab-chip" href={it.url}>{it.name}</a>
-                ))}
-              </div>
-            </div>
-          ))}
-          <p class="lab-shelf-foot">制作の経緯は<a href="/workshop/">工房（制作ログ）</a>に。</p>
-        </div>
-      </details>
+      </section>
 
       <!-- Works by group -->
       <div id="works">
