@@ -284,7 +284,7 @@ ol.rlist li.me .nm::after{content:' ← YOU'; font-size:11px; letter-spacing:.05
     <div class="logo">ヨシ！<br>反射<small>指差呼称チャレンジ</small></div>
     <div class="howto">
       数字が2つ出る。上のお題に合う方をタップ。<br>
-      お題は <b>「数字が大きい方」</b> か <b>「文字が大きい方」</b>。毎問変わる。<br>
+      お題は <b>「数が大きい方」</b> か <b>「文字が大きい方」</b>。毎問変わる。<br>
       1ラウンド <b>30秒</b>。<br>
       <b>A そのまま</b> → <b>B ヨシ！</b>（お題を指差し＝タップしてから答える）の順で遊んで、最後に自分の数字で比べる。
     </div>
@@ -358,7 +358,7 @@ ol.rlist li.me .nm::after{content:' ← YOU'; font-size:11px; letter-spacing:.05
       <span id="timeTxt">30</span>
       <button class="mute" id="muteP">音</button>
     </div>
-    <div id="band"><div id="bandTxt">数字が大きい方</div><div class="sub" id="bandSub"></div></div>
+    <div id="band"><div id="bandTxt">数が大きい方</div><div class="sub" id="bandSub"></div></div>
     <div id="arena">
       <button class="cell" data-i="0"><span class="d">9</span></button>
       <button class="cell" data-i="1"><span class="d">3</span></button>
@@ -703,7 +703,7 @@ function startFlow(modes){
 function brief(){
   show('brief');
   $('#briefBody').innerHTML =
-    '毎問、まず <b>お題の帯をタップ</b>して「数字ヨシ！」「文字ヨシ！」と確認。<br>' +
+    '毎問、まず <b>お題の帯をタップ</b>して「数ヨシ！」「文字ヨシ！」と確認。<br>' +
     'それまで数字は押せない（暗く表示）。<br>' +
     '<b>指差し → 呼称 → 動作</b> の一拍を入れると、どうなるか。';
 }
@@ -762,7 +762,7 @@ function tick(){
 function nextQuestion(){
   q = makeQuestion(Math.random, hist); hist.push(q.task);
   if (hist.length > 8) hist.shift();
-  $('#bandTxt').textContent = q.task === 'num' ? '数字が大きい方' : '文字が大きい方';  // same look every time; only words change
+  $('#bandTxt').textContent = q.task === 'num' ? '数が大きい方' : '文字が大きい方';  // same look every time; only words change
   const band = $('#band'), arena = $('#arena');
   if (mode === 'B'){ band.className = 'need'; $('#bandSub').textContent = '指差して確認 ▶ タップ'; arena.classList.add('locked'); }
   else { band.className = ''; $('#bandSub').textContent = ''; arena.classList.remove('locked'); }
@@ -778,7 +778,7 @@ function onBand(e){
   e.preventDefault();
   if (!playing || mode !== 'B' || !q || q.confirmed) return;
   q.confirmed = true;
-  yoshiPop(q.task === 'num' ? '数字ヨシ！' : '文字ヨシ！');
+  yoshiPop(q.task === 'num' ? '数ヨシ！' : '文字ヨシ！');
   sfx.yoshi(); vibrate(15);
   $('#band').className = 'ok'; $('#bandSub').textContent = 'ヨシ！';
   $('#arena').classList.remove('locked');
@@ -1029,7 +1029,7 @@ function vsNext(){
   if (vsNextT){ clearTimeout(vsNextT); vsNextT = null; }
   const qq = makeQuestion(Math.random, vsHist); vsHist.push(qq.task); if (vsHist.length > 8) vsHist.shift();
   vsSetQuestion(vs, qq, performance.now());
-  const word = qq.task === 'num' ? '数字が大きい方' : '文字が大きい方';
+  const word = qq.task === 'num' ? '数が大きい方' : '文字が大きい方';
   for (let p = 0; p < 2; p++){
     vH[p].classList.remove('out','got');
     vH[p].classList.toggle('locked', vs.needYoshi);
