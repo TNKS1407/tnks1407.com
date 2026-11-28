@@ -14,7 +14,8 @@ type Work = {
 // 解説（Explainers）は専用のロードマップページ /docs/ に独立。トップでは件数だけ使う。
 const explainers = await getCollection('docs');
 
-// トップの「あそぶ」に出すゲーム。棚(labs.ts)の「遊び」グループと同じ2本を、大きい入口として見せる。
+// トップの「あそぶ」に出すゲーム。棚(labs.ts)の「遊び」グループと同じものを、大きい入口として見せる。
+// smith は別ホスト(smith.tnks1407.com・母艦配信)の2本立て（今日のスミスチャート／スミスゴルフ）なので、横いっぱいの1枚にして外へ送る。
 type Game = { key: string; url: string; kicker: string; title: string; desc: string; tags: string[]; art: string };
 const games: Game[] = [
   {
@@ -26,6 +27,11 @@ const games: Game[] = [
     key: 'bingo', url: '/dice-bingo/', kicker: '暗算 × 一筆書き', title: 'サイコロ計算ビンゴ',
     desc: 'サイコロ3個で式を作って25マスを取る。クリアすると、サイコロを1個ずつ変えるだけで回り切る最短ルートの答え合わせが見られる。',
     tags: ['タイムアタック', 'ふたり対戦', 'ランキング'], art: '7×6',
+  },
+  {
+    key: 'smith', url: 'https://smith.tnks1407.com/', kicker: 'RF × 整合設計', title: '今日のスミスチャート',
+    desc: '毎日1問、全員が同じ負荷と帯域。E12 の L と C を並べて 50 Ω に整合させ、負荷に届いた電力で点を競う。コイルの損失も帯域の端も、ぜんぶ点に出る。手で円に乗せる「スミスゴルフ」も同じ場所に。',
+    tags: ['毎日1問', '代表例つき', 'スミスゴルフ', 'Xでシェア'], art: 'Γ=0',
   },
 ];
 
@@ -459,18 +465,22 @@ const favKey = (w: Work) => {
       .game-yoshi{background:linear-gradient(150deg,#1a1040 0%,#3a1250 68%,#5a1446 100%);color:#fff;border-color:#2a1c5c;}
       .game-bingo{background:linear-gradient(150deg,#fffaf0 0%,#f1e8d6 100%);color:var(--text);}
       .game-bingo:hover{border-color:var(--accent);}
+      .game-smith{grid-column:1 / -1;min-height:9.5rem;background:linear-gradient(150deg,#0b1512 0%,#12261f 62%,#1d3a2c 100%);color:#fff;border-color:#1f3d31;}
       .game-kicker{font-family:'JetBrains Mono',monospace;font-size:.68rem;font-weight:700;letter-spacing:.12em;}
       .game-yoshi .game-kicker{color:#3cf2ff;}
       .game-bingo .game-kicker{color:var(--accent);}
+      .game-smith .game-kicker{color:#7fe0b0;}
       .game-title{font-size:1.35rem;font-weight:800;line-height:1.25;}
       .game-desc{font-size:.82rem;line-height:1.65;max-width:31em;position:relative;}
       .game-yoshi .game-desc{color:rgba(255,255,255,.82);}
       .game-bingo .game-desc{color:var(--text-muted);}
+      .game-smith .game-desc{color:rgba(255,255,255,.82);max-width:46em;}
       .game-tags{display:flex;gap:.35rem;flex-wrap:wrap;margin-top:auto;padding:.7rem 6.2rem 0 0;}
       .game-tag{font-family:'JetBrains Mono',monospace;font-size:.66rem;padding:.14rem .55rem;border-radius:999px;border:1px solid currentColor;opacity:.72;}
       .game-go{position:absolute;right:1.1rem;bottom:1.05rem;font-family:'JetBrains Mono',monospace;font-size:.8rem;font-weight:700;padding:.42rem .85rem;border-radius:999px;}
       .game-yoshi .game-go{background:#ffd23c;color:#1a1040;}
       .game-bingo .game-go{background:var(--accent);color:#fff;}
+      .game-smith .game-go{background:#ffd27a;color:#0b1512;}
       .game-art{position:absolute;right:.9rem;top:.35rem;font-family:'JetBrains Mono',monospace;font-weight:800;font-size:3.4rem;line-height:1;letter-spacing:-.04em;opacity:.13;pointer-events:none;white-space:nowrap;}
       /* よむ・さわる：ティーザーを詰めて並べる */
       .read{margin-bottom:2rem;scroll-margin-top:4.5rem;}

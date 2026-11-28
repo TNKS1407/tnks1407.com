@@ -122,6 +122,8 @@ export const labGroups: LabGroup[] = [
     items: [
       { name: 'サイコロ計算ビンゴ（最短は一筆書き）', url: '/dice-bingo/' },
       { name: 'ヨシ！（指差呼称でミスは減るか）', url: '/yoshi/' },
+      { name: '今日のスミスチャート（毎日1問の整合設計）', url: 'https://smith.tnks1407.com/' },
+      { name: 'スミスゴルフ（定Q線のコース）', url: 'https://smith.tnks1407.com/golf/' },
     ],
   },
   {
