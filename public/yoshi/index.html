@@ -285,7 +285,7 @@ ol.rlist li.me .nm::after{content:' ← YOU'; font-size:11px; letter-spacing:.05
     <div class="howto">
       数字が2つ出る。上のお題に合う方をタップ。<br>
       お題は <b>「数が大きい方」</b> か <b>「文字が大きい方」</b>。毎問変わる。<br>
-      1ラウンド <b>30秒</b>。<br>
+      1ラウンド <b>30秒</b>。正解は速いほど、続けるほど高得点。<b>ミスは −400 点</b>でコンボも切れる。<br>
       <b>A そのまま</b> → <b>B ヨシ！</b>（お題を指差し＝タップしてから答える）の順で遊んで、最後に自分の数字で比べる。
     </div>
     <div class="diff"><span class="lab">難易度</span><div class="seg" id="diffSeg"><button type="button" data-d="normal">ふつう</button><button type="button" data-d="hard">むずかしい</button></div></div>
@@ -420,7 +420,14 @@ function makeQuestion(rnd, hist){
   return { vals:[a,b], bigNumSide, bigFontSide, incong, task, confirmed:false, t0:0 };
 }
 function correctSide(q){ return q.task === 'num' ? q.bigNumSide : q.bigFontSide; }
-function newStats(){ return { n:0, ok:0, miss:0, time:0, inc:0, incMiss:0, score:0, combo:0, maxCombo:0, blocked:0 }; }
+// 点数の決め（2026-11-28 改定）。前は「ミスは 0 点」だったので、考えずに連打するほうが高得点になった
+// （当てずっぽうでも半分は当たり、速さの加点が満額つく）。ミスに減点を入れ、コンボの加点を厚くした。
+//   正解：BASE ＋ 速さ（0〜SPEED_MAX、1.5 秒で 0）＋ コンボ（COMBO_STEP × 連続正解数、COMBO_CAP 連続で頭打ち）
+//   ミス：−MISS（0 点より下にはしない）。コンボは切れる
+// MISS=400 の根拠：当てずっぽうの連打は 1 回の正解で約 100＋140＋40＝280 点。五分五分で当たるので、
+// 減点が 280 を超えていれば押すほど減る。400 なら 1 押しあたり平均 −60 点。
+const PT = { BASE:100, SPEED_MAX:150, COMBO_STEP:20, COMBO_CAP:25, MISS:400 };
+function newStats(){ return { n:0, ok:0, miss:0, time:0, inc:0, incMiss:0, score:0, combo:0, maxCombo:0, blocked:0, lost:0 }; }
 
 // returns {blocked:true} if B-mode and the prompt hasn't been pointed at yet (not counted at all)
 function answer(st, q, side, mode, now){
@@ -432,14 +439,18 @@ function answer(st, q, side, mode, now){
   let gain = 0;
   if (ok){
     st.ok++; st.combo++; if (st.combo > st.maxCombo) st.maxCombo = st.combo;
-    gain = 100 + Math.min(st.combo, 30)*10 + Math.max(0, Math.round((1500 - dt)/10));
+    gain = PT.BASE + Math.min(st.combo, PT.COMBO_CAP)*PT.COMBO_STEP + Math.min(PT.SPEED_MAX, Math.max(0, Math.round((1500 - dt)/10)));
     st.score += gain;
-  } else { st.miss++; st.combo = 0; }
+  } else {
+    st.miss++; st.combo = 0;
+    const loss = Math.min(st.score, PT.MISS);      // 0 点より下にはしない
+    st.score -= loss; st.lost += loss; gain = -loss;
+  }
   return { ok, dt, gain, blocked:false };
 }
 function summarize(st){
   return {
-    n: st.n, ok: st.ok, miss: st.miss, score: st.score, maxCombo: st.maxCombo, blocked: st.blocked,
+    n: st.n, ok: st.ok, miss: st.miss, score: st.score, maxCombo: st.maxCombo, blocked: st.blocked, lost: st.lost,
     acc:  st.n ? st.ok/st.n : null,
     missRate: st.n ? st.miss/st.n : null,
     avg:  st.n ? st.time/st.n/1000 : null,
@@ -557,8 +568,8 @@ const app = $('#app');
 
 // ---------- storage ----------
 const store = {
-  get(){ try { return JSON.parse(localStorage.getItem('yoshi-best') || '{}') || {}; } catch(e){ return {}; } },
-  set(o){ try { localStorage.setItem('yoshi-best', JSON.stringify(o)); } catch(e){} }
+  get(){ try { return JSON.parse(localStorage.getItem('yoshi-best2') || '{}') || {}; } catch(e){ return {}; } },
+  set(o){ try { localStorage.setItem('yoshi-best2', JSON.stringify(o)); } catch(e){} }
 };
 // difficulty: 'normal' (unchanged original) / 'hard'. hard bests live in the same object as 'A-hard'/'B-hard'
 let diff = 'normal'; try { if (localStorage.getItem('yoshi-diff') === 'hard') diff = 'hard'; } catch(e){}
@@ -683,6 +694,12 @@ function showCombo(c){
   el.style.fontSize = Math.min(54 + c*2, 96) + 'px';
   restartAnim(el, 'show');
 }
+function showLoss(n){
+  const el = $('#combo');
+  el.innerHTML = '−' + n + '<small>MISS</small>';
+  el.style.fontSize = '54px';
+  restartAnim(el, 'show');
+}
 function yoshiPop(txt){ const el = $('#yoshiPop'); el.textContent = txt; restartAnim(el, 'show'); }
 
 // ---------- game state ----------
@@ -800,6 +817,8 @@ function onCell(e){
     nextQuestion();                                  // 0 ms: no waiting
   } else {
     sfx.miss(); vibrate([60,40,60]); redFlash(); shake();
+    $('#score').textContent = st.score; restartAnim($('#score'), 'bump');
+    if (r.gain < 0) showLoss(-r.gain);
     e.currentTarget.classList.add('wrong'); cells[correctSide(q)].classList.add('right');
     setFever(0);
     inputLock = true;
@@ -837,8 +856,9 @@ function showResult(){
     if (k === 'n') return s.n;
     if (k === 'score') return s.score;
     if (k === 'combo') return s.maxCombo;
+    if (k === 'lost') return s.lost ? '−' + s.lost : '0';
   };
-  const rows = [['正答率','acc'],['ミス数','miss'],['1問あたり平均','avg'],['食い違い問題のミス率','inc'],['解いた数','n'],['スコア','score'],['最大コンボ','combo']];
+  const rows = [['正答率','acc'],['ミス数','miss'],['1問あたり平均','avg'],['食い違い問題のミス率','inc'],['解いた数','n'],['スコア','score'],['最大コンボ','combo'],['ミスの減点','lost']];
   $('#cmp').innerHTML = '<thead><tr><th></th><th>A そのまま</th><th>B ヨシ！</th></tr></thead><tbody>' +
     rows.map(([lab,k]) => `<tr><td>${lab}</td><td>${f(A,k)}</td><td>${f(B,k)}</td></tr>`).join('') + '</tbody>';
   resultExtras();
@@ -847,7 +867,8 @@ function showResult(){
 // ---------- ranking + X share ----------
 // API: GET /rank?board=  /  POST /rank {board,name,score}. name = exactly 3 [A-Z0-9]. failures never break the game.
 const RANK_API = 'https://feedback.tnks1407.com/rank';
-const boardId = (m, d) => 'yoshi-' + m.toLowerCase() + (d === 'hard' ? '-hard' : '');
+// 板は 'yoshi2-…'。2026-11-28 に採点を改定したので、連打で伸びた前の点（'yoshi-…' の板）とは混ぜない
+const boardId = (m, d) => 'yoshi2-' + m.toLowerCase() + (d === 'hard' ? '-hard' : '');
 async function rankFetch(opt){
   const ac = new AbortController(); const tm = setTimeout(() => ac.abort(), 8000);
   try {
