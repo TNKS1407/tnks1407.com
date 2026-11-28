@@ -112,7 +112,7 @@ body.playing:not(.vs) #boardBox{align-items:flex-end}
 .reg{margin:10px 0 4px;padding:10px;border:1px dashed var(--border);border-radius:10px;background:#fff}
 .reg .lbl{font-size:13px;color:var(--muted);margin-bottom:6px}
 .reg .rrow{display:flex;gap:8px;align-items:stretch}
-.reg input{width:5.4em;flex:0 0 auto;font-family:var(--mono);font-size:24px;font-weight:700;letter-spacing:.25em;text-align:center;text-transform:uppercase;border:2px solid var(--border);border-radius:10px;padding:6px 2px 6px 8px;background:var(--surface);color:var(--text)}
+.reg input{width:0;flex:1.6 1 0;min-width:0;font-family:var(--mono);font-size:19px;font-weight:700;letter-spacing:.06em;text-align:center;text-transform:uppercase;border:2px solid var(--border);border-radius:10px;padding:6px 2px 6px 8px;background:var(--surface);color:var(--text)}
 .reg input:focus{outline:none;border-color:var(--amber)}
 .reg button{flex:1;border:0;border-radius:10px;background:var(--teal);color:#fff;font-size:16px;font-weight:700;padding:8px 6px}
 .reg button:disabled{opacity:.55;cursor:default}
@@ -544,9 +544,10 @@ async function rankFetch(opt){
   }catch(_){return {ok:false,status:0,j:null};}
   finally{clearTimeout(to);}
 }
+// 名前：英数（大文字）とひらがな、1〜8 文字。全角英数は半角へ、カタカナはひらがなへ寄せ、ほかの文字は落とす
 function normName(v){
-  return (v||'').replace(/[Ａ-Ｚａ-ｚ０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xFEE0))
-    .toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,3);
+  let s=String(v||'');try{s=s.normalize('NFKC');}catch(_){}
+  return s.toUpperCase().replace(/[\u30A1-\u30F6]/g, function(c){ return String.fromCharCode(c.charCodeAt(0) - 0x60); }).replace(/[^A-Z0-9\u3041-\u3096\u30FC]/g, '').slice(0, 8);
 }
 
 // ランキング表示（タブ＋上位10件）。同じ部品をメニューと結果画面で使う。
@@ -607,18 +608,18 @@ function renderReg(){
   const why=regBlock();
   if(why){const p=document.createElement('p');p.className='why';p.textContent=why;box.appendChild(p);return;}
   const board=BOARD_ID[S.boardKind];
-  box.innerHTML=`<div class="reg"><div class="lbl">ランキングに登録（${BOARD_LABEL[board]}）— 名前は英数字3文字</div>
-    <div class="rrow"><input id="regName" maxlength="3" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="名前（英数字3文字）" placeholder="AAA"><button id="regBtn">登録する</button></div>
+  box.innerHTML=`<div class="reg"><div class="lbl">ランキングに登録（${BOARD_LABEL[board]}）— 名前は英数ひらがな8文字まで</div>
+    <div class="rrow"><input id="regName" maxlength="8" autocomplete="off" spellcheck="false" aria-label="名前（英数ひらがな8文字まで）" placeholder="なまえ"><button id="regBtn">登録する</button></div>
     <div class="rmsg" id="regMsg"></div></div>`;
   const inp=$('#regName'),btn=$('#regBtn'),msg=$('#regMsg');
   inp.value=normName(lsGet(LS_NAME)||'');
-  const fix=()=>{const v=normName(inp.value);if(v!==inp.value)inp.value=v;btn.disabled=v.length!==3;};
+  const fix=()=>{const v=normName(inp.value);if(v!==inp.value)inp.value=v;btn.disabled=v.length<1;};
   inp.addEventListener('input',e=>{if(!e.isComposing)fix();});
   inp.addEventListener('compositionend',fix);
   inp.addEventListener('keydown',e=>{if(e.key==='Enter'&&!btn.disabled)btn.click();});
   fix();
   btn.onclick=async()=>{
-    const name=normName(inp.value);if(name.length!==3||btn.disabled)return;
+    const name=normName(inp.value);if(name.length<1||btn.disabled)return;
     btn.disabled=true;inp.disabled=true;msg.className='rmsg';msg.textContent='送信中…';
     lsSet(LS_NAME,name);
     const score=Math.round(S.tEnd);

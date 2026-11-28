@@ -168,9 +168,9 @@ a.btn{text-decoration:none; text-align:center}
 .reg .lab{font-size:13px; color:var(--muted); text-align:center; letter-spacing:.08em}
 .reg .in{display:flex; gap:10px; align-items:stretch}
 #nameIn{
-  width:7.2ch; flex:none; padding:6px 4px 6px 12px; border-radius:14px;
+  width:0; flex:1.7 1 0; min-width:0; padding:6px 8px 6px 12px; border-radius:14px;   /* 8 文字（ひらがなは全角）が入る幅に。前は 3 文字ぶんの固定幅 */
   background:#06040f; color:var(--gold); border:2px solid var(--neon); outline:none;
-  font-family:var(--num); font-weight:900; font-size:30px; letter-spacing:.35em; text-transform:uppercase; text-align:left;
+  font-family:var(--num); font-weight:900; font-size:21px; letter-spacing:.06em; text-transform:uppercase; text-align:left;
   box-shadow:0 0 14px rgba(60,242,255,.35) inset; user-select:text; -webkit-user-select:text;
 }
 #nameIn:focus{border-color:var(--gold); box-shadow:0 0 16px rgba(255,210,60,.5)}
@@ -196,7 +196,7 @@ ol.rlist .rn{width:2.6ch; text-align:right; color:var(--muted)}
 ol.rlist li:nth-child(1) .rn{color:var(--gold)}
 ol.rlist li:nth-child(2) .rn{color:#dfe6ff}
 ol.rlist li:nth-child(3) .rn{color:#ff9a5a}
-ol.rlist .nm{flex:1; letter-spacing:.2em}
+ol.rlist .nm{flex:1; min-width:0; overflow:hidden; white-space:nowrap; letter-spacing:.06em}
 ol.rlist .sc{text-align:right}
 ol.rlist li.me{background:rgba(255,63,164,.22); border-radius:10px; box-shadow:0 0 0 2px var(--pink) inset}
 ol.rlist li.me .nm::after{content:' ← YOU'; font-size:11px; letter-spacing:.05em; color:var(--pink)}
@@ -376,9 +376,9 @@ ol.rlist li.me .nm::after{content:' ← YOU'; font-size:11px; letter-spacing:.05
     <div class="newbest" id="newbest"></div>
     <a class="btn x" id="shareX" href="https://twitter.com/intent/tweet" target="_blank" rel="noopener noreferrer">Xでシェア</a>
     <div class="reg" id="reg">
-      <div class="lab">ランキングに登録 ― 名前は英数3文字</div>
+      <div class="lab">ランキングに登録 ― 名前は英数ひらがな8文字まで</div>
       <div class="in">
-        <input id="nameIn" maxlength="3" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" placeholder="AAA" aria-label="名前（英数3文字）">
+        <input id="nameIn" maxlength="8" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="なまえ" aria-label="名前（英数ひらがな8文字まで）">
         <button class="btn" id="regBtn">登録</button>
       </div>
       <div class="rmsg" id="regMsg"></div>
@@ -526,7 +526,8 @@ function placeTwo(W, H, S, rnd){
 }
 const SHARE_URL = 'https://tnks1407.com/yoshi/';
 function shareHref(text){ return 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(SHARE_URL); }
-function cleanName(v){ let s = String(v || ''); try { s = s.normalize('NFKC'); } catch(e){} return s.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3); }
+// 名前：英数（大文字）とひらがな、1〜8 文字。全角英数は半角へ、カタカナはひらがなへ寄せ、ほかの文字は落とす
+function cleanName(v){ let s = String(v || ''); try { s = s.normalize('NFKC'); } catch(e){} return s.toUpperCase().replace(/[\u30A1-\u30F6]/g, function(c){ return String.fromCharCode(c.charCodeAt(0) - 0x60); }).replace(/[^A-Z0-9\u3041-\u3096\u30FC]/g, '').slice(0, 8); }
 // ---- versus (2 players on one device). p = 0 red (top, rotated) / 1 blue (bottom) ----
 const VS_TARGET = 10, VS_MS = 45000;
 function vsNew(needYoshi){
@@ -865,7 +866,7 @@ function showResult(){
 }
 
 // ---------- ranking + X share ----------
-// API: GET /rank?board=  /  POST /rank {board,name,score}. name = exactly 3 [A-Z0-9]. failures never break the game.
+// API: GET /rank?board=  /  POST /rank {board,name,score}. name = 1-8 chars of [A-Z0-9 + hiragana]. failures never break the game.
 const RANK_API = 'https://feedback.tnks1407.com/rank';
 // 板は 'yoshi2-…'。2026-11-28 に採点を改定したので、連打で伸びた前の点（'yoshi-…' の板）とは混ぜない
 const boardId = (m, d) => 'yoshi2-' + m.toLowerCase() + (d === 'hard' ? '-hard' : '');
@@ -882,7 +883,7 @@ async function rankFetch(opt){
 }
 function failText(st){
   if (st === 429) return '送りすぎ。少し待ってからもう一度';
-  if (st === 400) return '名前は英数3文字で';
+  if (st === 400) return '名前は英数ひらがな8文字まで';
   if (st === 0)   return '通信できなかった';
   return 'エラー ' + st;
 }
@@ -940,7 +941,7 @@ $('#closeRank').addEventListener('click', () => $('#rankModal').classList.remove
 $('#rankModal').addEventListener('click', e => { if (e.target.id === 'rankModal') $('#rankModal').classList.remove('on'); });
 addEventListener('keydown', e => { if (e.key === 'Escape') $('#rankModal').classList.remove('on'); });
 
-// name input: arcade style, 3 chars [A-Z0-9], remembered
+// name input: up to 8 chars of [A-Z0-9 + hiragana], remembered
 const nameIn = $('#nameIn');
 try { nameIn.value = cleanName(localStorage.getItem('yoshi-name')); } catch(e){}
 let composing = false;
@@ -970,7 +971,7 @@ $('#regBtn').addEventListener('click', async () => {
   const todo = reg.boards.filter(m => !reg.done[m]);
   if (!todo.length) return;
   const name = cleanName(nameIn.value); nameIn.value = name;
-  if (name.length !== 3){ regMsg('名前は英数3文字で', 'bad'); nameIn.focus(); return; }
+  if (name.length < 1){ regMsg('名前は英数ひらがな8文字まで', 'bad'); nameIn.focus(); return; }
   try { localStorage.setItem('yoshi-name', name); } catch(e){}
   const btn = $('#regBtn'); reg.busy = true; btn.disabled = true; btn.textContent = '送信中…'; regMsg('');
   const fails = []; let lastTop = null, lastM = null;
